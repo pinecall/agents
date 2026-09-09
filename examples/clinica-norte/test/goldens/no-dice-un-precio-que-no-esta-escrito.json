@@ -1,0 +1,22 @@
+{
+  "state": {
+    "stage": "choose",
+    "patient": {
+      "id": "p-1041",
+      "name": "Ana García",
+      "phone": "+34 600 000 001",
+      "cita": "jueves a las diez",
+      "doctor": "la doctora Vidal"
+    }
+  },
+  "input": [
+    "¿Cuánto me costaría una resonancia magnética?"
+  ],
+  "expect": {
+    "not": [
+      "euros",
+      "€"
+    ],
+    "grounded": true
+  }
+}

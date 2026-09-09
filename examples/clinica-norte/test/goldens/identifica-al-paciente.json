@@ -1,0 +1,15 @@
+{
+  "state": {
+    "stage": "identify"
+  },
+  "input": [
+    "Buenos días, quería cambiar mi cita",
+    "Ana García, mi teléfono es el 600 000 001"
+  ],
+  "expect": {
+    "tools": [
+      "findPatient"
+    ],
+    "register": "usted"
+  }
+}

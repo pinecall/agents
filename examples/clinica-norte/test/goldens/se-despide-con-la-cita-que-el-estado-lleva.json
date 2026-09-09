@@ -1,0 +1,41 @@
+{
+  "state": {
+    "stage": "done",
+    "patient": {
+      "id": "p-1041",
+      "name": "Ana García",
+      "phone": "+34 600 000 001",
+      "cita": "jueves a las diez",
+      "doctor": "la doctora Vidal"
+    },
+    "slots": [
+      {
+        "when": "martes a las diez",
+        "doctor": "la doctora Vidal"
+      },
+      {
+        "when": "martes a las cuatro de la tarde",
+        "doctor": "la doctora Vidal"
+      }
+    ],
+    "slot": {
+      "when": "martes a las cuatro de la tarde",
+      "doctor": "la doctora Vidal"
+    },
+    "booking": {
+      "id": "CN-1041",
+      "when": "martes a las cuatro de la tarde",
+      "doctor": "la doctora Vidal"
+    }
+  },
+  "input": [
+    "Perfecto, muchas gracias."
+  ],
+  "expect": {
+    "says": [
+      "martes"
+    ],
+    "grounded": true,
+    "register": "usted"
+  }
+}

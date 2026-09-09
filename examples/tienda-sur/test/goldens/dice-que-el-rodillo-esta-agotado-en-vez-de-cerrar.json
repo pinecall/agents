@@ -1,0 +1,31 @@
+{
+  "state": {
+    "stage": "cart",
+    "customer": {
+      "id": "c-31",
+      "name": "Rosa Medina",
+      "phone": "+34 600 000 011",
+      "address": "Pagés del Corro veintidós, tercero B"
+    },
+    "cart": [
+      {
+        "ref": "TS-203",
+        "product": "rodillo antigoteo de veintidós centímetros",
+        "qty": 1,
+        "price": 7
+      }
+    ]
+  },
+  "input": [
+    "Ya está, nada más.",
+    "Sí, ciérramelo."
+  ],
+  "expect": {
+    "tools": [
+      "confirmOrder"
+    ],
+    "says": [
+      "agotado"
+    ]
+  }
+}

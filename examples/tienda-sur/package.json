@@ -1,0 +1,18 @@
+{
+  "name": "@pinecall/example-tienda-sur",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Tienda Sur: the second tenant \u2014 a shop, a cart, and an order that is only closed after the yes",
+  "type": "module",
+  "scripts": {
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "pinecall": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.1",
+    "vitest": "^5.0.0"
+  }
+}
