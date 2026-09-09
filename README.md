@@ -107,3 +107,13 @@ means editing a list on purpose, which is the point.
 so nothing here runs a generator. `pnpm-workspace.yaml` names that checkout as a workspace
 package until it is published, and that package exports its sources the same way. The golden call log comes from the same package, which is how a
 log folded here and a log folded in Python are proved to be the same log.
+
+## License
+
+[Apache-2.0](LICENSE). Use it, change it, run it in production, sell what you build with it —
+commercially or not, on your own box or somebody else's. The licence carries an explicit patent
+grant, which is why it is the one this stack uses (LiveKit's is the same). There is no NOTICE
+file, so nothing has to be reproduced downstream beyond the licence itself, and there is no CLA:
+a patch is yours and stays under the same terms.
+
+`pinecall` on npm, `pinecall/client` beside it. `@pinecall/protocol` is Apache-2.0 too.

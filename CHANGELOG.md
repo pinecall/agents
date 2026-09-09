@@ -34,6 +34,9 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   `.claude/skills/`.
 
 ### Changed
+- The licence is spelled out where a user of the package meets it: the Apache-2.0 copyright line
+  is filled (`Pinecall`), `README.md` has a License section, `package.json` carries the author and
+  the repository, and `CONTRIBUTING.md` says there is no CLA. npm ships `LICENSE` in the tarball.
 - Comments naming a page of the runtime's engineering notebook now say **the runtime's**
   `docs/decisions/<page>.md`: read from this repository, the bare path pointed at a file that is
   not here.
