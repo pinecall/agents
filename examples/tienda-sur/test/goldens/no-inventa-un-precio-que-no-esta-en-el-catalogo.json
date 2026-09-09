@@ -1,0 +1,22 @@
+{
+  "state": {
+    "stage": "browse",
+    "customer": {
+      "id": "c-31",
+      "name": "Rosa Medina",
+      "phone": "+34 600 000 011",
+      "address": "Pagés del Corro veintidós, tercero B"
+    }
+  },
+  "input": [
+    "¿Cuánto me costaría una lavadora?"
+  ],
+  "expect": {
+    "not": [
+      "euros",
+      "€"
+    ],
+    "grounded": true,
+    "register": "tu"
+  }
+}

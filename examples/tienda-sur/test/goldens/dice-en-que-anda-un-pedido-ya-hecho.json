@@ -1,0 +1,22 @@
+{
+  "state": {
+    "stage": "browse",
+    "customer": {
+      "id": "c-31",
+      "name": "Rosa Medina",
+      "phone": "+34 600 000 011",
+      "address": "Pagés del Corro veintidós, tercero B"
+    }
+  },
+  "input": [
+    "Oye, ¿me miras el pedido TS-7781?"
+  ],
+  "expect": {
+    "tools": [
+      "orderStatus"
+    ],
+    "says": [
+      "reparto"
+    ]
+  }
+}

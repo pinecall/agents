@@ -1,0 +1,35 @@
+{
+  "state": {
+    "stage": "book",
+    "patient": {
+      "id": "p-1041",
+      "name": "Ana García",
+      "phone": "+34 600 000 001",
+      "cita": "jueves a las diez",
+      "doctor": "la doctora Vidal"
+    },
+    "slots": [
+      {
+        "when": "martes a las diez",
+        "doctor": "la doctora Vidal"
+      },
+      {
+        "when": "martes a las cuatro de la tarde",
+        "doctor": "la doctora Vidal"
+      }
+    ]
+  },
+  "input": [
+    "Me viene bien la de las cuatro."
+  ],
+  "expect": {
+    "not_tools": [
+      "book"
+    ],
+    "not": [
+      "queda reservada",
+      "he reservado",
+      "está reservada"
+    ]
+  }
+}

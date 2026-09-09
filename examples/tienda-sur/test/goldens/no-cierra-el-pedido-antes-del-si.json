@@ -1,0 +1,38 @@
+{
+  "state": {
+    "stage": "cart",
+    "customer": {
+      "id": "c-31",
+      "name": "Rosa Medina",
+      "phone": "+34 600 000 011",
+      "address": "Pagés del Corro veintidós, tercero B"
+    },
+    "cart": [
+      {
+        "ref": "TS-201",
+        "product": "pintura plástica blanca",
+        "qty": 2,
+        "price": 38
+      },
+      {
+        "ref": "TS-202",
+        "product": "brocha de cuatro pulgadas",
+        "qty": 1,
+        "price": 4
+      }
+    ]
+  },
+  "input": [
+    "Ya está, con eso me apaño."
+  ],
+  "expect": {
+    "not_tools": [
+      "confirmOrder"
+    ],
+    "not": [
+      "queda cerrado",
+      "he cerrado el pedido",
+      "está cerrado"
+    ]
+  }
+}

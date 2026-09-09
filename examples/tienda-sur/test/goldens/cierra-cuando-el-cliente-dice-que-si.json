@@ -1,0 +1,29 @@
+{
+  "state": {
+    "stage": "cart",
+    "customer": {
+      "id": "c-31",
+      "name": "Rosa Medina",
+      "phone": "+34 600 000 011",
+      "address": "Pagés del Corro veintidós, tercero B"
+    },
+    "cart": [
+      {
+        "ref": "TS-202",
+        "product": "brocha de cuatro pulgadas",
+        "qty": 1,
+        "price": 4
+      }
+    ]
+  },
+  "input": [
+    "Ya está, nada más.",
+    "Sí, ciérramelo."
+  ],
+  "expect": {
+    "tools": [
+      "proposeOrder",
+      "confirmOrder"
+    ]
+  }
+}

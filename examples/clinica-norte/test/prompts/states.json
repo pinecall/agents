@@ -1,0 +1,45 @@
+[
+  {
+    "state": {
+      "stage": "identify"
+    }
+  },
+  {
+    "state": {
+      "stage": "book",
+      "patient": {
+        "id": "p1",
+        "name": "Ana García",
+        "phone": "+34 600 000 001",
+        "cita": "jueves a las diez",
+        "doctor": "la doctora Vidal"
+      },
+      "slots": [
+        { "when": "martes a las cuatro de la tarde", "doctor": "la doctora Vidal" },
+        { "when": "martes a las cinco de la tarde", "doctor": "el doctor Ruiz" }
+      ]
+    }
+  },
+  {
+    "state": {
+      "stage": "done",
+      "patient": {
+        "id": "p1",
+        "name": "Ana García",
+        "phone": "+34 600 000 001",
+        "cita": "jueves a las diez",
+        "doctor": "la doctora Vidal"
+      },
+      "slots": [
+        { "when": "martes a las cuatro de la tarde", "doctor": "la doctora Vidal" },
+        { "when": "martes a las cinco de la tarde", "doctor": "el doctor Ruiz" }
+      ],
+      "slot": { "when": "martes a las cuatro de la tarde", "doctor": "la doctora Vidal" },
+      "booking": {
+        "id": "b-p1",
+        "when": "martes a las cuatro de la tarde",
+        "doctor": "la doctora Vidal"
+      }
+    }
+  }
+]

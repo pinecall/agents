@@ -1,0 +1,16 @@
+{
+  // Everything the framework needs told to the compiler comes from the preset the package ships:
+  // decorators, the JSX runtime, the module system. A tenant writes none of it — if this file
+  // grows a flag of ours, that flag belongs in pinecall/tsconfig.tenant.json instead.
+  "extends": "pinecall/tsconfig.tenant.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"]
+    // No `paths` here, and none in vitest.config.ts either. The tenant resolves `pinecall` the
+    // way any app does — through node_modules, into the package's dist — because `pinecall run`
+    // loads agent.ts with tsx and tsx honours these paths at RUNTIME: a mapping to ../../src
+    // would give the process a second copy of the framework, and an agent built by one copy is
+    // not an agent to the other. That is what `scripts/check` builds before it lints.
+  },
+  "include": ["agent.ts", "views", "lib", "test"]
+}
