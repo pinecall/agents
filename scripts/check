@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Ring 0 for the whole repo: build, then lint, then test — in that order.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+# build FIRST: the examples and the browser package resolve what they import through a dist, so a
+# lint before a build type-checks against types that are not there yet.
+scripts/build
+pnpm lint
+pnpm -r lint
+pnpm test
+pnpm -r test
