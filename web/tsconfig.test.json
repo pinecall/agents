@@ -1,0 +1,10 @@
+{
+  // The sources and the tests under one type-check, emitting nothing: `pnpm lint`.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true,
+    "jsx": "react-jsx"
+  },
+  "include": ["src", "test"]
+}
