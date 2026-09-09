@@ -79,7 +79,6 @@ Beside it:
 |---|---|
 | `examples/` | `clinica-norte` and `tienda-sur`: two tenants, written as a customer writes one |
 | `test/` | mirrors `src/`, plus the three that pin the shape: the tree, the imports, the surface |
-| `docs/decisions/` | why each of the above is the way it is |
 
 ## The three doors out of this package
 
