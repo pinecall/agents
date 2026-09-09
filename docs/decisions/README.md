@@ -41,7 +41,6 @@ repository boundary, because such a link rots the moment somebody clones one of 
 | [console.md](console.md) | why there is a console, why on 127.0.0.1, and why the gateway serves no page |
 | [talk.md](talk.md) | the browser's microphone into the agent's room, and the three doors it was not |
 | [evals-screen.md](evals-screen.md) | the runs, the deltas, and one call read back |
-| [use-call-state.md](use-call-state.md) | `@pinecall/web`: one subscription per call, the public projection, a replay per gap |
 
 ## The tenants
 

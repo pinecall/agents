@@ -11,7 +11,7 @@ never imports it.
 
 ## The tree
 
-`README.md` is the map: six directories under `src/`, `web/` beside it, `examples/` as two real
+`README.md` is the map: six directories under `src/`, and `examples/` as two real
 tenants. `test/` mirrors `src/`. `docs/decisions/<page>.md` holds the why.
 
 ## Invariants the tests enforce
@@ -54,10 +54,10 @@ Versions and tags are the human's call — never pick a number, never tag.
 
 ```
 pnpm install                        the workspace, and the wire from the repo next door
-scripts/build                       the wire, the package, the console, @pinecall/web
+scripts/build                       the wire, the package, the console
 scripts/check                       build, then lint, then test — what CI runs
 pnpm test                           the framework and the console, two vitest projects
-pnpm -r test                        @pinecall/web, both examples, and the wire's own suite
+pnpm -r test                        both examples, and the wire's own suite
 ```
 
 Nothing has to be built to lint or test: every package in the workspace exports its sources.

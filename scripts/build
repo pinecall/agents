@@ -15,6 +15,3 @@ pnpm exec tsc -p tsconfig.json
 # The console is a browser program inside the package; vite writes it straight into
 # dist/cli/ui/console, which is the path `pinecall ui` serves and the one `files` publishes.
 pnpm exec vite build --config src/cli/ui/console/vite.config.ts
-
-# The browser's own package, which installs without any of the above.
-pnpm --filter @pinecall/web build

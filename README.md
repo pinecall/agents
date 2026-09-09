@@ -51,7 +51,7 @@ Working on the framework itself:
 ```
 pnpm test          the framework and the console, in two vitest projects, from the sources
 pnpm lint          tsc over src and test, then over the console against the DOM
-scripts/build      what is published: dist/, the console bundle, @pinecall/web's dist
+scripts/build      what is published: dist/, and the console bundle inside it
 scripts/check      build, then lint, then test — what CI runs
 ```
 
@@ -77,7 +77,6 @@ Beside it:
 
 | | |
 |---|---|
-| `web/` | `@pinecall/web`: a browser's read of its own call. The one thing here that installs alone |
 | `examples/` | `clinica-norte` and `tienda-sur`: two tenants, written as a customer writes one |
 | `test/` | mirrors `src/`, plus the three that pin the shape: the tree, the imports, the surface |
 | `docs/decisions/` | why each of the above is the way it is |
