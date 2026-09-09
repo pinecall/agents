@@ -23,6 +23,7 @@ import { checkViews, layoutOf, type Views } from "../views/layout.js";
 import { render } from "../views/render.js";
 import { routesOf } from "./channels.js";
 import { inOrder, type Serving } from "./dispatch.js";
+import { groundingOf } from "./grounding.js";
 import { runTool, ToolFailed } from "./run-tool.js";
 
 /** What mount needs beyond the class: where to send, what to render, and the class's own source. */
@@ -32,6 +33,8 @@ export interface MountOptions {
   views?: Views;
   /** The class's .ts source, so docstrings and parameter types survive compilation. */
   source?: string;
+  /** The agent file's own path, so the knowledge file the class names is read beside it. */
+  file?: string;
   /** Override the slug the class name would give. */
   slug?: string;
   /** Where every instance of this agent reads `this.last(contact)` from. Per mount, never global. */
@@ -140,11 +143,12 @@ function stateFieldsOf(ctor: Function): AgentOptions["stateFields"] {
 
 /**
  * Everything the class says about itself, as the declaration the gateway is sent. The probe is one
- * instance of the class, read and thrown away; mount builds it once and hands it in.
+ * instance of the class, read and thrown away; mount builds it once and hands it in. `file` is
+ * where the class came from, so what it knows is read beside it.
  */
-export function optionsFor(ctor: Ctor, tools: Tool[], instance: Agent = new ctor()): AgentOptions {
+export function optionsFor(ctor: Ctor, tools: Tool[], instance: Agent = new ctor(), file?: string): AgentOptions {
   const probe = instance as unknown as Record<string, unknown>;
-  const options: AgentOptions = { routes: routesOf(probe), tools };
+  const options: AgentOptions = { routes: routesOf(probe), tools, ...groundingOf(probe, file) };
   const language = probe["language"];
   if (typeof language === "string") options.language = language;
   const llm = modelOf(probe["llm"]);
@@ -171,7 +175,7 @@ export function optionsFor(ctor: Ctor, tools: Tool[], instance: Agent = new ctor
  */
 export function mount(
   ctor: Ctor,
-  { pc, views = {}, source, slug, last, opening, takesUnclaimed = true }: MountOptions,
+  { pc, views = {}, source, file, slug, last, opening, takesUnclaimed = true }: MountOptions,
 ): Mounted {
   if (source !== undefined) describe(ctor, source);
   // A declared block with no function is refused here, at mount, and not at the first call's
@@ -186,7 +190,7 @@ export function mount(
     ...(spec as unknown as Camel<ToolSpec>),
     run: (args, call) => call_(live, call, spec.name, args),
   }));
-  const options = { ...optionsFor(ctor, tools, probe), takesUnclaimed };
+  const options = { ...optionsFor(ctor, tools, probe, file), takesUnclaimed };
   const agent = pc.agent(name, options);
 
   agent.on("call.started", (_payload, call) => {

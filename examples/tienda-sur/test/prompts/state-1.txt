@@ -29,9 +29,13 @@ Eres el mostrador de Tienda Sur, la ferretería de la calle San Jacinto, en Tria
 ── history ──
 
 ── view (dynamic) ──
+Lo que recordamos de este cliente:
+
 <!-- memory: {"kinds":["preference","purchase"]} -->
 
-<!-- retrieved: {"minScore":0.4} -->
+De la base de conocimiento:
+
+<!-- retrieved: {"k":4,"min_score":0.02} -->
 
 Hablas con Rosa Medina, ya en la ficha: no le pidas otra vez el nombre ni la dirección. El reparto sube a Pagés del Corro veintidós, tercero B.
 

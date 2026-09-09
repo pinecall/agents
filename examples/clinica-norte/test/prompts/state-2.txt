@@ -31,8 +31,12 @@ Eres la recepción de Clínica Norte. Hablas de usted, con frases cortas. Todo l
 ── availability (dynamic) ──
 
 ── view (dynamic) ──
+Lo que recordamos de este paciente:
+
 <!-- memory: {"kinds":["preference","health"]} -->
 
-<!-- retrieved: {"minScore":0.4} -->
+De la base de conocimiento:
+
+<!-- retrieved: {"k":4,"min_score":0.02} -->
 
 Confirma que le llega un SMS con la cita del martes a las cuatro de la tarde. Despídete y cuelga.

@@ -5,10 +5,10 @@ order, and the cut between the regions is where the cache is cut:
 
 ```
 ── identity (static) ──      the class docstring · <rules> · <protocols>
-── knowledge (static) ──     <!-- knowledge: … -->, the file the class named
+── knowledge (static) ──     <!-- knowledge: … -->, the file the class named — its text, once per call
 ── tools (static) ──         every tool the class declares, name and docstring, visible or not
 ── history ──                the runtime's turns, and the sentences a collapse() left in them
-── view (dynamic) ──         the memory marker, the retrieval marker, and what the view says about NOW
+── view (dynamic) ──         the memory marker, the retrieval marker — filled per turn — and what the view says about NOW
 ```
 
 A **static** block sits before the history and is cached by the provider; it never reads the
@@ -55,7 +55,10 @@ is in with the tools that stage shows.
 call a tool, read back an irreversible action, offer a person when you cannot help).
 
 **`knowledge`** is one marker, `<!-- knowledge: ./knowledge/clinica.md -->`, when the class named a
-file; empty otherwise. The gateway replaces the line with the text.
+file; empty otherwise. The file itself travels in the declaration — the bridge reads it beside
+`agent.ts` and sends `{ path, text }` — and the runtime puts the text where the marker is, once per
+call, so the cached prefix never moves. A file that is not there is refused when the class is
+loaded, with the path that was looked at.
 
 **`tools`** is every tool the class declares, name and docstring, **visible right now or not**. The
 model reads a tool's docstring, never its JSON schema. Visibility is the wire's business
@@ -66,7 +69,7 @@ summaries `collapse()` left behind, and they show on the printed page only — t
 sent by the app.
 
 **`view`** is your view, plus a memory marker when the class configured `memory` and the view did
-not place one itself.
+not place one itself. Both markers in it are filled again on every turn.
 
 ## The view
 
@@ -75,8 +78,10 @@ A view is a function from the state to text. It is JSX, and it renders to **text
 ```tsx
 export default ({ stage, patient, slots, proposed, memory, call }: ViewProps<ClinicaNorte>) => (
   <>
+    <p>Lo que recordamos de este paciente:</p>
     <Memory kinds={["preference", "health"]} />
-    <Retrieved minScore={0.4} />
+    <p>De la base de conocimiento:</p>
+    <Retrieved k={4} minScore={0.02} />
 
     {stage === "identify" && <p>Saluda y pide nombre y teléfono.</p>}
 
@@ -119,16 +124,32 @@ after and changes on every turn. A block that has nothing to say renders empty a
 ### Markers: what the view asks for and never resolves
 
 `<Memory>`, `<Retrieved>` and `<Knowledge>` render one line of the form
-`<!-- memory: {"kinds":["preference"]} -->`. This package never opens a file, never searches a
-memory, never retrieves a passage: the gateway reads the marker, does the work, and replaces the
-line with text. A view may also shape what comes back:
+`<!-- memory: {"kinds":["preference"],"limit":6} -->`. This package never opens a file, never
+searches a memory, never retrieves a passage: the runtime reads the marker, does the work, and
+replaces the line with text. What it puts there, and when:
+
+| marker | the view writes | the runtime puts in its place |
+|---|---|---|
+| `<Memory kinds limit>` | `<!-- memory: {"kinds":[…],"limit":n} -->` | the contact's facts, one `- fact` per line, found by what the caller just said — per turn, in the dynamic region |
+| `<Retrieved k minScore>` | `<!-- retrieved: {"k":n,"min_score":x} -->` | the chunks of the base `docs` names: `### path › heading` and the text, one blank line between them — per turn, in the dynamic region |
+| `<Knowledge file>` / the `knowledge` field | `<!-- knowledge: ./knowledge/clinica.md -->` | the whole file the declaration carried — once per call, in the static region |
+
+The payload is read by the runtime and never by JavaScript, so its keys are the wire's: the view
+writes `minScore` and the marker carries `min_score`. A fill that finds nothing removes the marker
+line; a fill that runs out of its budget leaves the turn to go on without it and writes an `error`
+entry saying so. The runtime renders bare lines, which is why both examples put a heading of their
+own above each marker (`Lo que recordamos de este paciente:`).
+
+A view may also leave a render prop to shape what comes back:
 
 ```tsx
 <Memory kinds={["preference"]}>{(facts) => <p>Recuerda: {facts.join(", ")}</p>}</Memory>
 ```
 
 The function cannot travel inside a comment, so it stays in this render's registry under an id the
-marker carries, and the filler asks for it by id.
+marker carries (`"fill":"fill-1"`). **This release the runtime renders its own shape and ignores the
+id**: the render props still travel, and the registry is still handed back with the blocks, so a
+later runtime can ask for them by id without a view changing.
 
 ## Where a rule belongs
 

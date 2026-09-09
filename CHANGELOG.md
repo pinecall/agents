@@ -7,6 +7,23 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- What the class knows, reads and remembers travels in the declaration: `knowledge` is read beside
+  `agent.ts` and sent whole as `{ path, text }` (a missing file is refused at load, with the path);
+  `docs` names the base it was pushed under — `docs = "clinica-norte"` or
+  `{ base, mode?, k?, minScore? }`, typed as `DocsDeclaration` — and the old glob form is refused
+  with the verb that replaces it; `memory = { remember, forget }` is `MemoryDeclaration`.
+- `pinecall knowledge push [dir] --base <name>` · `list` · `drop <base>`, and
+  `pinecall memory <contact>` · `memory forget <contact>`: the folder of `*.md` to the gateway
+  under a name, and one contact's facts read or erased. Both leave the planned table.
+- The console: a `memory.ops` and a `docs.sources` each read as one row of the live timeline, and
+  Sessions prints a fill as `n sources · ms` with what was found one click under the turn.
+
+### Changed
+- `<Retrieved minScore>` writes `min_score` in its marker: the payload is the runtime's to read.
+  Render props still travel by id; this release the runtime renders its own shape.
+- Both examples say `docs = "<slug>"`, ask for `<Retrieved k={4} minScore={0.02} />`, and put a
+  heading of their own above each marker, because the runtime renders bare lines.
+
 - The framework, from zero: the `Agent` base whose fields are the state and whose every assignment
   is a change with an author; `@tool` with `when` / `stage` / `confirm` / `preview` / `pii` /
   `timeout`; docstrings read out of the class's own source; `@state({ visibility })`;

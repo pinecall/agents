@@ -33,8 +33,11 @@ export default class TiendaSur extends Agent {
   // el estado se mueve, los nombres que el estado lleva — el del cliente en cuanto se le abre ficha.
   hears = ["Tienda Sur", "Triana", "San Jacinto", "antigoteo", "tirafondos"];
 
+  // `knowledge`: el fichero que el agente se sabe de memoria, leído al lado de esta clase y
+  // enviado entero. `docs`: la base que se recupera por turno, por el NOMBRE con que se subió —
+  // `pinecall knowledge push ./knowledge/docs --base tienda-sur`—, nunca un glob.
   knowledge = "./knowledge/tienda.md";
-  docs = "./knowledge/docs/**/*.md";
+  docs = "tienda-sur";
   memory = {
     remember: ["a qué se dedica", "la marca que suele llevarse", "el piso al que hay que subir"],
     forget: ["formas de pago"],

@@ -9,7 +9,7 @@ import { FakeGateway } from "../../src/client/testing/index.js";
 
 import ClinicaNorte from "../agent/clinica-norte.js";
 import view from "../views/clinica-norte.view.js";
-import { modelOf, mount, slugOf, type Mounted } from "../../src/runtime/connect.js";
+import { modelOf, mount, optionsFor, slugOf, type Mounted } from "../../src/runtime/connect.js";
 import type { Views } from "../../src/views/layout.js";
 
 const KEY = "pk_test";
@@ -17,8 +17,10 @@ const SLUG = "clinica-norte";
 const CALL = "CA_1";
 const KNOWN = "+34 600 000 001";
 // The class's own .ts, so the parameter types survive a transpiler that strips them: without it
-// `day: string` is an untyped argument and the schema can say nothing about it.
-const SOURCE = readFileSync(fileURLToPath(new URL("../agent/clinica-norte.ts", import.meta.url)), "utf8");
+// `day: string` is an untyped argument and the schema can say nothing about it. Its path is what
+// the knowledge file is found beside.
+const FILE = fileURLToPath(new URL("../agent/clinica-norte.ts", import.meta.url));
+const SOURCE = readFileSync(FILE, "utf8");
 
 let gateway: FakeGateway;
 let pc: Pinecall;
@@ -43,7 +45,7 @@ async function settled(): Promise<void> {
 }
 
 async function connected(views: Views = { view }, ctor: typeof ClinicaNorte = ClinicaNorte): Promise<void> {
-  mounted = mount(ctor, { pc, views, source: SOURCE, slug: SLUG });
+  mounted = mount(ctor, { pc, views, source: SOURCE, file: FILE, slug: SLUG });
   await pc.connect();
   await settled();
 }
@@ -259,4 +261,51 @@ it("sends the class's pronunciation map as the wire's list of both halves", asyn
 it("sends the words the ears must know in the order the class wrote them", async () => {
   await connected();
   expect(mounted.options.hears).toEqual(["Clínica Norte", "doctora Vidal"]);
+});
+
+// What the class knows, reads and remembers travels in the declaration: the knowledge file whole,
+// so the runtime can put its text where the marker is once per call; the base by the name it was
+// pushed under; the memory policy in the tenant's own words.
+it("sends the knowledge file whole, the docs base by name and the memory policy in the configure", async () => {
+  await connected();
+  const config = commands("agent.configure")[0]?.["config"] as Record<string, unknown>;
+  expect(config["knowledge"]).toEqual({
+    path: "./knowledge/clinica.md",
+    text: readFileSync(fileURLToPath(new URL("../agent/knowledge/clinica.md", import.meta.url)), "utf8"),
+  });
+  expect(config["docs"]).toEqual({ base: "clinica-norte" });
+  expect(config["memory"]).toEqual({ remember: ["cómo prefiere que le llamen", "alergias"], forget: ["pagos"] });
+});
+
+/** The clinic saying how its chunks reach the model, in the words a class writes them in. */
+class ConAjustes extends ClinicaNorte {
+  override docs = { base: "clinica-norte", k: 4, minScore: 0.02 };
+}
+
+it("writes a docs object out in the wire's own keys: minScore on the class, min_score on the wire", async () => {
+  await connected({ view }, ConAjustes);
+  const config = commands("agent.configure")[0]?.["config"] as Record<string, unknown>;
+  expect(config["docs"]).toEqual({ base: "clinica-norte", k: 4, min_score: 0.02 });
+});
+
+/** The clinic as it was written before the base had a name: a glob the app expanded itself. */
+class ConGlob extends ClinicaNorte {
+  override docs = "./knowledge/docs/**/*.md";
+}
+
+it("refuses the old glob form of docs, naming the verb that pushes the base", () => {
+  expect(() => optionsFor(ConGlob, [], new ConGlob(), FILE)).toThrow(
+    "docs name the base they were pushed to: run `pinecall knowledge push ./knowledge/docs --base <slug>`",
+  );
+});
+
+/** The clinic naming a file nobody wrote. */
+class SinFichero extends ClinicaNorte {
+  override knowledge = "./knowledge/nadie.md";
+}
+
+it("refuses a knowledge file that is not there, with the path it looked at", () => {
+  expect(() => optionsFor(SinFichero, [], new SinFichero(), FILE)).toThrow(
+    /^knowledge \.\/knowledge\/nadie\.md: no such file at .*test\/agent\/knowledge\/nadie\.md$/,
+  );
 });

@@ -9,6 +9,7 @@ import { describe } from "../agent/docstrings.js";
 import { viewFor } from "../views/render.js";
 import { declaredBlocksOf, type View, type Views } from "../views/layout.js";
 import type { MountOptions } from "../runtime/connect.js";
+import { groundingOf } from "../runtime/grounding.js";
 
 /** What the CLI needs to mount or render an agent: the class, the file it came from, its views. */
 export interface Loaded {
@@ -53,6 +54,10 @@ export async function load(file: string = DEFAULT_AGENT): Promise<Loaded> {
   if (typeof ctor !== "function") throw new Error(`${file} has no default-exported Agent class`);
   const source = readFileSync(path, "utf8");
   describe(ctor, source);
+  // What the class says it knows is checked here, where its path is in hand: a knowledge file that
+  // is not there, or `docs` still written as a glob, is refused before a prompt is printed or a
+  // gateway is knocked at — `pinecall prompt` never mounts, and it must say so too.
+  groundingOf(new (ctor as new () => Agent)(), path);
   return { ctor: ctor as new () => Agent, file: path, source, views: await loadViews(path, ctor) };
 }
 
@@ -78,7 +83,7 @@ async function loadView(path: string): Promise<View | undefined> {
   return typeof module_.default === "function" ? (module_.default as View) : undefined;
 }
 
-/** What `mount` is given for a loaded agent: the client, the source, and the views by block name. */
+/** What `mount` is given for a loaded agent: the client, the source, its file, and the views by block name. */
 export function mountOptions(loaded: Loaded, pc: MountOptions["pc"]): MountOptions {
-  return { pc, source: loaded.source, views: loaded.views };
+  return { pc, source: loaded.source, file: loaded.file, views: loaded.views };
 }

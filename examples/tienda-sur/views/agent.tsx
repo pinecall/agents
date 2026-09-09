@@ -19,8 +19,13 @@ export default ({
 }: ViewProps<TiendaSur>) => {
   return (
   <>
+    {/* Los dos marcadores que el runtime rellena en cada turno: lo que la memoria sabe de este
+        cliente y lo que la base de conocimiento tiene que ver con lo que acaba de decir. Vienen
+        como líneas sueltas, así que el título va aquí, encima de cada uno. */}
+    <p>Lo que recordamos de este cliente:</p>
     <Memory kinds={["preference", "purchase"]} />
-    <Retrieved minScore={0.4} />
+    <p>De la base de conocimiento:</p>
+    <Retrieved k={4} minScore={0.02} />
 
     {resumed && <p>Se cortó su llamada anterior. Sigue donde lo dejasteis sin volver a preguntar.</p>}
 

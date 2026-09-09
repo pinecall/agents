@@ -29,9 +29,13 @@ Eres el mostrador de Tienda Sur, la ferretería de la calle San Jacinto, en Tria
 ── history ──
 
 ── view (dynamic) ──
+Lo que recordamos de este cliente:
+
 <!-- memory: {"kinds":["preference","purchase"]} -->
 
-<!-- retrieved: {"minScore":0.4} -->
+De la base de conocimiento:
+
+<!-- retrieved: {"k":4,"min_score":0.02} -->
 
 Todavía no sabes quién llama. Puedes ir buscándole lo que te pida, pero antes de cerrar el pedido necesitas su nombre, su dirección y un teléfono: pídeselos y apúntalos con registerCustomer.
 

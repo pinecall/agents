@@ -1,6 +1,6 @@
 // The design's own class, as the tenant writes it: the shape this seam exists to make possible.
 
-import { Agent, tool, type Call } from "../../src/index.js";
+import { Agent, tool, type Call, type DocsDeclaration } from "../../src/index.js";
 
 export interface Patient {
   id: string;
@@ -45,7 +45,7 @@ export default class ClinicaNorte extends Agent {
   llm = "haiku";
   language = "es";
   knowledge = "./knowledge/clinica.md";
-  docs = "./knowledge/docs/**/*.md";
+  docs: string | DocsDeclaration = "clinica-norte";
   memory = { remember: ["cómo prefiere que le llamen", "alergias"], forget: ["pagos"] };
 
   // state: assigning re-renders, writes state.changed, updates the console

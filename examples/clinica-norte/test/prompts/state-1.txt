@@ -36,9 +36,13 @@ martes a las cuatro de la tarde con la doctora Vidal
 martes a las cinco de la tarde con el doctor Ruiz
 
 ── view (dynamic) ──
+Lo que recordamos de este paciente:
+
 <!-- memory: {"kinds":["preference","health"]} -->
 
-<!-- retrieved: {"minScore":0.4} -->
+De la base de conocimiento:
+
+<!-- retrieved: {"k":4,"min_score":0.02} -->
 
 Hablas con Ana García, ya en la ficha: no vuelvas a pedirle el nombre ni el teléfono. Tiene cita el jueves a las diez con la doctora Vidal.
 
