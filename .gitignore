@@ -1,0 +1,9 @@
+node_modules/
+dist/
+
+.env
+.env.*
+!.env.example
+
+# What a tenant's `pinecall test` writes beside the agent while it runs.
+.pinecall/

@@ -1,0 +1,69 @@
+{
+  "name": "pinecall",
+  "version": "0.0.0",
+  "description": "Write an agent as a class: its fields are the state, its @tool methods are the model's verbs, and its docstrings are the prompt",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "pinecall": "./dist/cli/index.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./client": {
+      "types": "./dist/client/index.d.ts",
+      "import": "./dist/client/index.js"
+    },
+    "./client/testing": {
+      "types": "./dist/client/testing/index.d.ts",
+      "import": "./dist/client/testing/index.js"
+    },
+    "./views/jsx-runtime": {
+      "types": "./dist/views/jsx-runtime.d.ts",
+      "import": "./dist/views/jsx-runtime.js"
+    },
+    "./views/jsx-dev-runtime": {
+      "types": "./dist/views/jsx-dev-runtime.d.ts",
+      "import": "./dist/views/jsx-dev-runtime.js"
+    },
+    "./tsconfig.tenant.json": "./tsconfig.tenant.json"
+  },
+  "files": [
+    "dist",
+    "tsconfig.tenant.json"
+  ],
+  "scripts": {
+    "build": "scripts/build",
+    "lint": "tsc -p tsconfig.lint.json && tsc -p tsconfig.console.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@pinecall/protocol": "workspace:*",
+    "oxc-parser": "^0.148.0",
+    "tsx": "^4.20.6",
+    "ws": "^8.21.3",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.1",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@types/ws": "^8.18.1",
+    "@vitejs/plugin-react": "^6.1.1",
+    "livekit-client": "^2.22.3",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router": "^8.3.1",
+    "typescript": "7.0.2",
+    "vite": "^8.2.2",
+    "vitest": "^5.0.0"
+  },
+  "packageManager": "pnpm@11.2.2",
+  "engines": {
+    "node": ">=24"
+  }
+}
