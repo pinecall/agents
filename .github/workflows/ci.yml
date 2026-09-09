@@ -1,0 +1,54 @@
+# The gate: build, lint, test, on every push and every pull request. One job, because the whole
+# check is under two minutes and a matrix would only make a failure harder to read.
+#
+# Three repositories, laid out the way a laptop has them. `pnpm-workspace.yaml` names
+# `../protocol/typescript` as a workspace package, so the checkout is what makes the wire
+# resolvable — until @pinecall/protocol is published and the line becomes a version range.
+name: ci
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: agents
+
+      - uses: actions/checkout@v4
+        with:
+          repository: pinecall/protocol
+          path: protocol
+          # A read token for the sibling repository while both are private. It is a secret of
+          # this repository and reaches nothing but this checkout.
+          token: ${{ secrets.SIBLING_REPOS_TOKEN }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.2.2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: agents/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+        working-directory: agents
+
+      # build, then lint, then test — the order matters and scripts/check is where it is written.
+      - run: scripts/check
+        working-directory: agents
