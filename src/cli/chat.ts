@@ -45,7 +45,7 @@ export async function run(argv: string[]): Promise<number> {
   const pc = new Pinecall({ url, apiKey: door.apiKey });
   // takesUnclaimed: false is the other half of the `?app=` below. Holding the agent is what makes
   // this a console; taking a call nobody named would make it a server, and a real phone call would
-  // ring in this terminal. See docs/decisions/dispatch.md.
+  // ring in this terminal. See the runtime's docs/decisions/dispatch.md: the registry is its.
   // --state is the same file `pinecall prompt` reads, and it is applied where a call's opening
   // state belongs: through mount's `opening` seam, after the class's own onCall and before the
   // first render, so the model reads one view built from the whole state rather than one per field.

@@ -2,7 +2,7 @@
 
 import { Agent, CONFIG_FIELDS, changes, currentAuthor, internalsOf, isConfigField, withAuthor } from "./agent.js";
 
-// The nine config names as a type, read off the one list agent.ts declares them in: a name added
+// The config names as a type, read off the one list agent.ts declares them in: a name added
 // there is dropped from the snapshot here without anybody remembering to write it twice.
 type ConfigName = (typeof CONFIG_FIELDS)[number];
 
@@ -28,7 +28,7 @@ export interface FieldDiff {
 }
 
 // The state is whatever the app put on the instance: own, enumerable, not a method, not one of the
-// nine config names. Nothing has to be declared twice.
+// config names. Nothing has to be declared twice.
 function isStateField(value: unknown, key: string): boolean {
   return !isConfigField(key) && typeof value !== "function";
 }

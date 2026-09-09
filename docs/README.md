@@ -1,0 +1,16 @@
+# Docs
+
+How to build an agent with this package. Four pages, in the order a person meets them.
+
+| page | about |
+|---|---|
+| [writing-an-agent.md](writing-an-agent.md) | the class: state, tools, stages, channels, hooks, events — and the shape of an app on disk |
+| [the-prompt.md](the-prompt.md) | the view: three regions, what belongs in each, the markers the runtime fills |
+| [testing-an-agent.md](testing-an-agent.md) | the four rings: unit tests, goldens, personas, and the score every real call gets |
+| [the-cli.md](the-cli.md) | every verb, what it needs, and where its key comes from |
+
+What the package IS, file by file, is [../ARCHITECTURE.md](../ARCHITECTURE.md). The two examples
+in `../examples/` are the same material as working code, and they are what CI and the nightly run.
+
+> `docs/decisions/` is the maintainer's engineering notebook — dates, measurements, the arguments
+> as they happened — and it is git-ignored. A clone has these four pages and no such directory.

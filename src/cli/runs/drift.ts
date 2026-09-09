@@ -139,7 +139,8 @@ async function judgedIn(door: Door, sessions: SessionLine[]): Promise<Judged[]> 
 }
 
 // `passed` absent means nobody answered, which is a third thing and not a failure
-// (docs/decisions/scoring.md). Such a call is counted apart and is in neither window's arithmetic.
+// (the runtime's docs/decisions/scoring.md). Such a call is counted apart and is in neither
+// window's arithmetic.
 function wasJudged(judged: Judged): boolean {
   return judged.score !== null && judged.score.passed !== null && judged.score.passed !== undefined;
 }
