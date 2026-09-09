@@ -121,14 +121,14 @@ jobs:
       - name: pinecall test, two models — clinica-norte
         working-directory: agents/examples/clinica-norte
         run: |
-          node ../../dist/cli/index.js test \
+          pnpm exec pinecall test \
             --model haiku --model openai/gpt-4.1-mini \
             --json > "$RUNNER_TEMP/clinica-norte.json" || true
 
       - name: pinecall test, two models — tienda-sur
         working-directory: agents/examples/tienda-sur
         run: |
-          node ../../dist/cli/index.js test \
+          pnpm exec pinecall test \
             --model haiku --model openai/gpt-4.1-mini \
             --json > "$RUNNER_TEMP/tienda-sur.json" || true
 
@@ -154,7 +154,7 @@ jobs:
         run: |
           code=0
           for agent in clinica-norte tienda-sur; do
-            node dist/cli/index.js runs drift \
+            pnpm exec pinecall runs drift \
               --agent "$agent" --window 7d --baseline 30d --threshold 10 \
               > "$RUNNER_TEMP/drift-$agent.txt" || code=$?
             { echo "### drift — $agent"; echo '```'; cat "$RUNNER_TEMP/drift-$agent.txt"; echo '```'; } \

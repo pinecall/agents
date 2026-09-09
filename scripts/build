@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Everything that has to exist before the tree is whole, in the order it has to exist in.
-# Idempotent — run it as often as you like.
+# What gets published, in the order it has to be made. Nothing here is needed to test, lint or
+# run a checkout — every package exports its sources — except the console, which a browser can
+# only read bundled. Idempotent; run it as often as you like.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

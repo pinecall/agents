@@ -7,10 +7,10 @@
     "noEmit": true,
     "types": ["node"]
     // No `paths` here, and none in vitest.config.ts either. The tenant resolves `pinecall` the
-    // way any app does — through node_modules, into the package's dist — because `pinecall run`
-    // loads agent.ts with tsx and tsx honours these paths at RUNTIME: a mapping to ../../src
-    // would give the process a second copy of the framework, and an agent built by one copy is
-    // not an agent to the other. That is what `scripts/check` builds before it lints.
+    // way any app does — through node_modules — and the package's own exports say where that
+    // leads: its sources in this checkout, its dist from npm. One copy of the framework either
+    // way, which matters because `pinecall run` loads agent.ts with tsx and a path mapping
+    // would hand the process a second one.
   },
   "include": ["agent.ts", "views", "lib", "test"]
 }

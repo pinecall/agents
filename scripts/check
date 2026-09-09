@@ -3,8 +3,9 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-# build FIRST: the examples and the browser package resolve what they import through a dist, so a
-# lint before a build type-checks against types that are not there yet.
+# The build first, because what is published is checked too: dist/ has to compile, the console
+# has to bundle, @pinecall/web has to emit its types. Nothing below NEEDS it — every package in
+# the workspace exports its sources — so a red build is a finding of its own.
 scripts/build
 pnpm lint
 pnpm -r lint

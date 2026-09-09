@@ -24,13 +24,49 @@ package can promise.
 ## The wire is a workspace path, not a copy
 
 `@pinecall/protocol` lives in `pinecall/protocol`, one repo over, and `pnpm-workspace.yaml`
-names `../protocol/typescript` as a workspace package. So it is resolved, built and linked like
-any other, and the day it is published the only line that changes is a version range in
+names `../protocol/typescript` as a workspace package. So it is resolved and linked like any
+other, and the day it is published the only line that changes is a version range in
 `package.json`. Nothing here reads its schema, and nothing here generates from it: the protocol
 repo commits its own output, and both languages install it.
 
 The golden call log comes from the same package (`@pinecall/protocol/fixtures/…`), so the log a
 test folds here is byte-for-byte the one Python folds there.
+
+## Exports point at the sources; publishConfig points at the dist
+
+There is no build between a change and a test, and no `pnpm link` either, because the link is
+already there: pnpm links every workspace package into `node_modules`, and what a link leads to
+is whatever `package.json` says. Ours says `./src/index.ts`. `publishConfig` — a pnpm-specific
+field, honoured by `pnpm pack` and `pnpm publish` and by nothing else — swaps `main`, `types`,
+`exports` and `bin` for their `dist/` twins at publish time, so npm gets compiled JavaScript with
+declarations and a bin that needs no loader.
+
+Three things had to be true for this to hold, and each was measured rather than assumed:
+
+- **`tsc` follows an export that ends in `.ts`** under `moduleResolution: NodeNext`, and reads
+  the types off the source. Both examples type-check with no `dist` in either repository.
+- **vitest and tsx follow it too**, and both rewrite the `./x.js` specifiers our sources use to
+  the `.ts` files they name. Node's own type stripping does neither — it refuses TypeScript under
+  `node_modules`, will not transform decorators, and takes a `.js` specifier at its word — which
+  is why a published package still ships a dist, and why the CLI runs under tsx in a checkout.
+- **One copy of the framework.** The old objection to running from source was that a tsconfig
+  `paths` mapping to `../../src` handed `pinecall run` — which loads `agent.ts` with tsx, and tsx
+  honours `paths` at runtime — a second copy of the framework beside the one in `node_modules`,
+  and an agent built by one copy is not an agent to the other. An export is not a mapping: there
+  is one resolution, through `node_modules`, and it leads to the sources. So the `paths` block
+  left `tsconfig.json`, the aliases left `vitest.config.ts`, and the examples carry neither.
+
+The bin is the one place with two spellings, because it has two worlds: `bin/pinecall.js`, the
+checkout's, registers tsx and imports `src/cli/index.ts`; `publishConfig.bin` points npm at
+`dist/cli/index.js`, which has its own shebang. pnpm links bins at install time and silently
+skips one whose file does not exist yet, which is what a bin under `dist/` is in a fresh
+checkout — a warning nobody reads and a `pinecall` that is not on the path.
+
+The console is the exception and the reason `scripts/build` still exists for a developer: a
+browser reads no TypeScript, so `pinecall ui` serves a vite bundle and says so when there is
+none. The test that greps that bundle for a key builds it itself, into a directory of its own —
+a check that depended on somebody having run the build first was a check that passed by being
+skipped.
 
 ## Three tsconfigs, and which is the parent
 
@@ -64,10 +100,7 @@ all take TC39 standard decorators and vite's oxc transform does not. The table i
 
 ## Nothing is aliased in the examples
 
-`examples/*/vitest.config.ts` carries the two oxc facts and no `resolve.alias` at all. Both
-examples resolve `pinecall` the way a customer does — through `node_modules`, into the package's
-`dist` — because `pinecall run` loads `agent.ts` with tsx and tsx honours a tsconfig's `paths` at
-RUNTIME: a mapping to `../../src` would give the process a second copy of the framework, and an
-agent built by one copy is not an agent to the other.
-
-That is what `scripts/build` exists for, and why `scripts/check` builds before it lints.
+`examples/*/vitest.config.ts` carries the two oxc facts and no `resolve.alias` at all, and
+`examples/*/tsconfig.json` carries no `paths`. Both examples resolve `pinecall` exactly as a
+customer does, through `node_modules` — which leads to the sources here and to the dist from
+npm — so an example is a real tenant and not a special case of one.
