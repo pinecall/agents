@@ -12,7 +12,9 @@ never imports it.
 ## The tree
 
 `README.md` is the map: six directories under `src/`, and `examples/` as two real
-tenants. `test/` mirrors `src/`. `docs/decisions/<page>.md` holds the why.
+tenants. `test/` mirrors `src/`. The why behind each part is in `docs/decisions/`, which is this
+laptop's engineering notebook and not the repository's: git ignores it, a clone has no such
+directory, and a comment that names a page there is pointing at a note, not at documentation.
 
 ## Invariants the tests enforce
 
