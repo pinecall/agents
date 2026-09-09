@@ -3,6 +3,8 @@
   "version": "0.0.0",
   "description": "Write an agent as a class: its fields are the state, its @tool methods are the model's verbs, and its docstrings are the prompt",
   "license": "Apache-2.0",
+  "author": "Pinecall <hello@pinecall.io>",
+  "repository": { "type": "git", "url": "git+https://github.com/pinecall/agents.git" },
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",

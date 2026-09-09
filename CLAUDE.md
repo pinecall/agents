@@ -36,6 +36,25 @@ so `pinecall ui` in a checkout needs the bundle once.
   a clone has no such directory, and a comment naming a page there points at a note. A page of
   the runtime's notebook is named as **the runtime's** `docs/decisions/<page>.md`, never bare
 
+## Docs are part of the change
+
+**A change lands with the page that describes it, in the same commit.** Not "later", not a TODO:
+a page that describes what the tree no longer does is worse than no page, because somebody trusts
+it. What to edit, by what you touched:
+
+| you changed | edit |
+|---|---|
+| a module, a directory, an entity or its fields, a line of the import table, the path something takes between two parts | `ARCHITECTURE.md` — the section, and any table that lists the file |
+| a command, a flag, an install step, an export | `README.md`, and `docs/the-cli.md` for a verb |
+| what a tenant writes, renders or tests | `docs/writing-an-agent.md` · `docs/the-prompt.md` · `docs/testing-an-agent.md` |
+| a procedure with a trap in it — a NEVER, an order of steps, a refusal | the skill under `.claude/skills/` |
+| anything a tenant would notice | `CHANGELOG.md`, one line under `Unreleased` |
+
+Before committing a rename or a removal:
+`grep -rn '<the old name>' ARCHITECTURE.md README.md CLAUDE.md docs .claude/skills` — a symbol
+that moved is a stale sentence somewhere. When a doc and the code disagree, the code is what
+happened and the doc is the bug.
+
 ## Rules the tests enforce
 
 - No `.ts` at the repo root. No file over 400 lines. Every file opens with a line saying what it
