@@ -108,7 +108,7 @@ made it, and that is what the log, the console and a golden read.
 
 ```ts
 knowledge = "./knowledge/clinica.md";
-docs = "clinica-norte";                       // or { base: "clinica-norte", k: 4, minScore: 0.02 }
+docs = "clinica-norte";                       // or { base: "clinica-norte", k: 4, minScore: 0.5 }
 memory = {
   remember: ["cómo prefiere que le llamen", "alergias", "su médico habitual"],
   forget: ["pagos"],
@@ -130,7 +130,7 @@ pinecall knowledge list · pinecall knowledge drop clinica-norte
 ```
 
 A push sends the folder whole and replaces the base; the class then says `docs = "clinica-norte"`
-and the view places `<Retrieved k={4} minScore={0.02} />` where the chunks should land. The object
+and the view places `<Retrieved k={4} minScore={0.5} />` where the chunks should land. The object
 form sets the defaults the marker may still override: `mode` (`retrieved` today), `k`, `minScore`.
 The glob the field used to hold is refused with the verb that replaces it: `docs name the base they
 were pushed to: run \`pinecall knowledge push ./knowledge/docs --base <slug>\``. Both are typed —

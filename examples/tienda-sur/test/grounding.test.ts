@@ -45,7 +45,7 @@ describe("los marcadores de la view", () => {
 
     expect(dynamic?.region).toBe("dynamic");
     expect(dynamic?.text).toContain('Lo que recordamos de este cliente:\n\n<!-- memory: {"kinds":["preference","purchase"]} -->');
-    expect(dynamic?.text).toContain('De la base de conocimiento:\n\n<!-- retrieved: {"k":4,"min_score":0.02} -->');
+    expect(dynamic?.text).toContain('De la base de conocimiento:\n\n<!-- retrieved: {"k":4,"min_score":0.5} -->');
     expect(dynamic?.text).not.toContain("minScore");
   });
 

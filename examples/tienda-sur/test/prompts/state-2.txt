@@ -35,7 +35,7 @@ Lo que recordamos de este cliente:
 
 De la base de conocimiento:
 
-<!-- retrieved: {"k":4,"min_score":0.02} -->
+<!-- retrieved: {"k":4,"min_score":0.5} -->
 
 En el carrito lleva:
 

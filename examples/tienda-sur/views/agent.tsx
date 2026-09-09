@@ -25,7 +25,7 @@ export default ({
     <p>Lo que recordamos de este cliente:</p>
     <Memory kinds={["preference", "purchase"]} />
     <p>De la base de conocimiento:</p>
-    <Retrieved k={4} minScore={0.02} />
+    <Retrieved k={4} minScore={0.5} />
 
     {resumed && <p>Se cortó su llamada anterior. Sigue donde lo dejasteis sin volver a preguntar.</p>}
 

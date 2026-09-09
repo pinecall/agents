@@ -42,7 +42,7 @@ Lo que recordamos de este paciente:
 
 De la base de conocimiento:
 
-<!-- retrieved: {"k":4,"min_score":0.02} -->
+<!-- retrieved: {"k":4,"min_score":0.5} -->
 
 Hablas con Ana García, ya en la ficha: no vuelvas a pedirle el nombre ni el teléfono. Tiene cita el jueves a las diez con la doctora Vidal.
 

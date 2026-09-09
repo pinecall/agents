@@ -279,13 +279,13 @@ it("sends the knowledge file whole, the docs base by name and the memory policy 
 
 /** The clinic saying how its chunks reach the model, in the words a class writes them in. */
 class ConAjustes extends ClinicaNorte {
-  override docs = { base: "clinica-norte", k: 4, minScore: 0.02 };
+  override docs = { base: "clinica-norte", k: 4, minScore: 0.5 };
 }
 
 it("writes a docs object out in the wire's own keys: minScore on the class, min_score on the wire", async () => {
   await connected({ view }, ConAjustes);
   const config = commands("agent.configure")[0]?.["config"] as Record<string, unknown>;
-  expect(config["docs"]).toEqual({ base: "clinica-norte", k: 4, min_score: 0.02 });
+  expect(config["docs"]).toEqual({ base: "clinica-norte", k: 4, min_score: 0.5 });
 });
 
 /** The clinic as it was written before the base had a name: a glob the app expanded itself. */
