@@ -14,13 +14,7 @@
     "sourceMap": true,
     "rootDir": "src",
     "outDir": "dist",
-    "types": ["node"],
-    // The package's own views compile against the package's own runtime, by the specifier a
-    // tenant writes. Nothing else in the tree is aliased.
-    "paths": {
-      "pinecall/views/jsx-runtime": ["./src/views/jsx-runtime.ts"],
-      "pinecall/views/jsx-dev-runtime": ["./src/views/jsx-dev-runtime.ts"]
-    }
+    "types": ["node"]
   },
   "include": ["src"],
   // The console is a browser program with a build of its own: vite bundles it and

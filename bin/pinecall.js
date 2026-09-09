@@ -1,7 +1,9 @@
 #!/usr/bin/env node
-// The bin a package manager links at install time, before any dist exists — which is exactly when
-// `pnpm install` runs in a fresh checkout. It only has to be there; the CLI itself is compiled
-// into dist/cli/index.js, and this hands the argv over and leaves with its answer.
-import { main } from "../dist/cli/index.js";
+// The bin of a checkout: the CLI straight from its source, through tsx — the loader it already
+// reads a tenant's agent.ts with. What npm installs is not this file: `publishConfig.bin` points
+// the published package at the compiled dist/cli/index.js, which needs no loader at all.
+import { register } from "tsx/esm/api";
 
+register();
+const { main } = await import("../src/cli/index.ts");
 process.exitCode = await main(process.argv.slice(2));

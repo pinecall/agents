@@ -4,36 +4,40 @@
   "description": "Write an agent as a class: its fields are the state, its @tool methods are the model's verbs, and its docstrings are the prompt",
   "license": "Apache-2.0",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "bin": {
     "pinecall": "./bin/pinecall.js"
   },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
     },
     "./client": {
-      "types": "./dist/client/index.d.ts",
-      "import": "./dist/client/index.js"
+      "types": "./src/client/index.ts",
+      "import": "./src/client/index.ts",
+      "default": "./src/client/index.ts"
     },
     "./client/testing": {
-      "types": "./dist/client/testing/index.d.ts",
-      "import": "./dist/client/testing/index.js"
+      "types": "./src/client/testing/index.ts",
+      "import": "./src/client/testing/index.ts",
+      "default": "./src/client/testing/index.ts"
     },
     "./views/jsx-runtime": {
-      "types": "./dist/views/jsx-runtime.d.ts",
-      "import": "./dist/views/jsx-runtime.js"
+      "types": "./src/views/jsx-runtime.ts",
+      "import": "./src/views/jsx-runtime.ts",
+      "default": "./src/views/jsx-runtime.ts"
     },
     "./views/jsx-dev-runtime": {
-      "types": "./dist/views/jsx-dev-runtime.d.ts",
-      "import": "./dist/views/jsx-dev-runtime.js"
+      "types": "./src/views/jsx-dev-runtime.ts",
+      "import": "./src/views/jsx-dev-runtime.ts",
+      "default": "./src/views/jsx-dev-runtime.ts"
     },
     "./tsconfig.tenant.json": "./tsconfig.tenant.json"
   },
   "files": [
-    "bin",
     "dist",
     "tsconfig.tenant.json"
   ],
@@ -66,5 +70,35 @@
   "packageManager": "pnpm@11.2.2",
   "engines": {
     "node": ">=24"
+  },
+  "publishConfig": {
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./client": {
+        "types": "./dist/client/index.d.ts",
+        "import": "./dist/client/index.js"
+      },
+      "./client/testing": {
+        "types": "./dist/client/testing/index.d.ts",
+        "import": "./dist/client/testing/index.js"
+      },
+      "./views/jsx-runtime": {
+        "types": "./dist/views/jsx-runtime.d.ts",
+        "import": "./dist/views/jsx-runtime.js"
+      },
+      "./views/jsx-dev-runtime": {
+        "types": "./dist/views/jsx-dev-runtime.d.ts",
+        "import": "./dist/views/jsx-dev-runtime.js"
+      },
+      "./tsconfig.tenant.json": "./tsconfig.tenant.json"
+    },
+    "bin": {
+      "pinecall": "./dist/cli/index.js"
+    }
   }
 }

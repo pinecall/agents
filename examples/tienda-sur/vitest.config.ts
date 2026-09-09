@@ -6,7 +6,7 @@
 // two facts are repeated here until oxc can read a tsconfig (docs/decisions/agent.md).
 //
 // Nothing is aliased. This example resolves `pinecall` exactly as a customer does, through
-// node_modules into the package's dist, which is why `scripts/check` builds before it tests.
+// node_modules; the package's exports lead to its sources here and to its dist from npm.
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({

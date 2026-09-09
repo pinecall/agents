@@ -23,8 +23,9 @@ tenants. `test/` mirrors `src/`. `docs/decisions/<page>.md` holds the why.
   saying what it is, no two names in one directory one letter apart.
 - `test/index.test.ts` and `test/client/index.test.ts` pin the two public surfaces by name.
   Adding an export means editing a list on purpose.
-- Both examples resolve `pinecall` through `node_modules` into `dist`, exactly as a customer
-  does. Nothing in `examples/` is aliased, which is why `scripts/check` builds before it lints.
+- `package.json` exports point at `src/` and `publishConfig` swaps them for `dist/` at publish.
+  Both examples resolve `pinecall` through `node_modules` like a customer would — into the sources
+  here, into `dist` from npm — and nothing anywhere is aliased or path-mapped.
 - The golden call log comes from `@pinecall/protocol/fixtures`, so a log folded here is the one
   Python folds there.
 
@@ -59,6 +60,6 @@ pnpm test                           the framework and the console, two vitest pr
 pnpm -r test                        @pinecall/web, both examples, and the wire's own suite
 ```
 
-`scripts/build` must run before `pnpm -r lint` or `pnpm -r test`: everything outside the root
-package resolves what it imports through a `dist`, and a lint before a build type-checks against
-types that are not there yet.
+Nothing has to be built to lint or test: every package in the workspace exports its sources.
+`scripts/build` is for what gets published, and for the console — a browser reads no TypeScript,
+so `pinecall ui` in a checkout needs the bundle once.

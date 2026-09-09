@@ -2,11 +2,7 @@
 // against our own JSX-to-text runtime, and the console, which is a browser page and compiles its
 // JSX against React's. One config could not tell them apart — a console test that imports a screen
 // would silently be transformed by the wrong factory — so neither has to pretend to be the other.
-import { fileURLToPath } from "node:url";
-
 import { defineConfig } from "vitest/config";
-
-const views = fileURLToPath(new URL("./src/views/", import.meta.url));
 
 export default defineConfig({
   test: {
@@ -18,17 +14,12 @@ export default defineConfig({
         // decorators and vite's oxc transform does not, so the package is written against the
         // legacy ones. The table and the migration are in docs/decisions/agent.md.
         //
-        // JSX: a view is a .tsx file whose factory is our own text runtime. The alias points the
-        // specifier a tenant writes at the sources, because this suite runs before there is a dist.
+        // JSX: a view is a .tsx file whose factory is our own text runtime, reached by the
+        // specifier a tenant writes — package.json's exports point at the sources, so nothing here
+        // is aliased and there is no dist between the source and the test.
         oxc: {
           decorator: { legacy: true },
           jsx: { runtime: "automatic", importSource: "pinecall/views" },
-        },
-        resolve: {
-          alias: [
-            { find: "pinecall/views/jsx-dev-runtime", replacement: `${views}jsx-dev-runtime.ts` },
-            { find: "pinecall/views/jsx-runtime", replacement: `${views}jsx-runtime.ts` },
-          ],
         },
         test: {
           name: "pinecall",

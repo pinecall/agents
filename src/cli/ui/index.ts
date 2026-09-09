@@ -12,6 +12,10 @@ import { LocalConsole } from "./server.js";
 
 const USAGE = "usage: pinecall ui [agent]";
 
+// A checkout runs everything else from its sources; the console is the one thing that has to be
+// bundled first, because a browser reads no TypeScript. The sentence names the command.
+const NOT_BUILT = "the console is not built: run scripts/build once, then pinecall ui";
+
 export const group: Group = {
   purpose: "the console: this gateway's agents, their calls and logs as they happen, evals, and a page to talk",
   usage: `${USAGE}
@@ -54,7 +58,12 @@ export async function ui(argv: string[], how: Opening = {}): Promise<number> {
     return 2;
   }
   const agent = argv[0] ?? (await agentOfThisDirectory());
-  const served = await LocalConsole.open(door, how.files ?? consoleFiles());
+  const files = how.files ?? consoleFiles();
+  if (!existsSync(files)) {
+    err.write(`${NOT_BUILT}\n`);
+    return 2;
+  }
+  const served = await LocalConsole.open(door, files);
   const at = agent === null ? served.url : served.at(`a/${agent}`);
   // Which gateway and which of the four places the key came from: the one line that answers
   // "why is it talking to that box" before anybody has to grep for an exported name.
