@@ -44,10 +44,10 @@ export const p: Component = (props) => renderInline(children(props));
 p.inline = true;
 
 /** What the agent remembers about this caller: a marker the memory service fills at send time. */
-export const Memory: Component = (props) => placeholder("memory", props, ["kinds", "limit"]);
+export const Memory: Component = (props) => placeholder("memory", props, { kinds: "kinds", limit: "limit" });
 
 /** The passages retrieved for this turn: a marker the retriever fills at send time. */
-export const Retrieved: Component = (props) => placeholder("retrieved", props, ["k", "minScore"]);
+export const Retrieved: Component = (props) => placeholder("retrieved", props, { k: "k", minScore: "min_score" });
 
 // A render prop is a function the view left behind to shape whatever the gateway finds. It cannot
 // travel inside a marker, so it stays behind under an id and the filler asks for it by that id.
@@ -106,11 +106,13 @@ function lines(props: Props): string {
 }
 
 // The marker carries the props the server needs and, when the view wrote `{facts => …}`, the id of
-// the function that will shape the answer. JSON keeps the props readable and unambiguous.
-function placeholder(name: string, props: Props, keys: string[]): string {
+// the function that will shape the answer. JSON keeps the props readable and unambiguous. The
+// payload is read by the runtime and never by JavaScript, so its keys are the wire's snake_case:
+// the view writes `minScore` and the marker carries `min_score`.
+function placeholder(name: string, props: Props, keys: Record<string, string>): string {
   const payload: Record<string, unknown> = {};
-  for (const key of keys) {
-    if (props[key] !== undefined) payload[key] = props[key];
+  for (const [prop, key] of Object.entries(keys)) {
+    if (props[prop] !== undefined) payload[key] = props[prop];
   }
   const child = props["children"];
   if (typeof child === "function") {

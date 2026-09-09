@@ -26,8 +26,6 @@ export const PLANNED: Record<string, string> = {
   sessions: "list | show | tail | replay | score a call's log",
   observe: "the agent log as it happens, with a persistent cursor",
   costs: "what the calls cost, by agent, model or channel",
-  knowledge: "push | ls | docs | show | rm the indexed documents",
-  memory: "get | history | search | recall | extract | forget a contact",
   supervise: "listen in: whisper, say, takeover, transfer, end",
   call: "the agent dials a number, for real",
   keys: "list | add | rm the org's API keys",

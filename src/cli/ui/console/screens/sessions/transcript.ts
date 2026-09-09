@@ -1,7 +1,8 @@
 /** The CLI's transcript rule in TypeScript: the mark, the time, the payload, the fields beneath. */
 
-import type { Entry } from "@pinecall/protocol";
+import type { DocsSources, Entry, MemoryOps } from "@pinecall/protocol";
 
+import { factLines, memoryLine, sourceLines, sourcesLine } from "../../lib/fills";
 import { compact, said, shapesFor, type Shape } from "../../lib/wire";
 
 // the runtime's cli/sessions/render.py draws these same four columns and the same field
@@ -9,6 +10,10 @@ import { compact, said, shapesFor, type Shape } from "../../lib/wire";
 // console prints the SAME numbers off the SAME fields; when the two disagree one of them is wrong.
 const TURN_TYPES = ["turn.user", "turn.agent"];
 const METRICS_PREFIX = "metrics.";
+// What a fill put in front of the model: the entry sits under the caller's turn it answered, its
+// line says how much and how long, and what was found hangs under it like a metric's fields.
+const MEMORY = "memory.ops";
+const SOURCES = "docs.sources";
 
 // The mark column: → asks, ← answers, ! is the human gate, and everything else keeps the column.
 const MARKS: Record<string, string> = { "tool.call": "→", "tool.result": "←" };
@@ -71,6 +76,12 @@ function inlinePayload(entry: Entry, shape: Shape | undefined): string {
   if (entry.type.startsWith(METRICS_PREFIX)) {
     return "";
   }
+  if (entry.type === MEMORY) {
+    return memoryLine(entry.data as MemoryOps);
+  }
+  if (entry.type === SOURCES) {
+    return sourcesLine(entry.data as DocsSources);
+  }
   return compact(entry.data, shape);
 }
 
@@ -83,6 +94,12 @@ function fieldsOf(entry: Entry, shape: Shape | undefined): Field[] {
   }
   if (entry.type.startsWith(METRICS_PREFIX)) {
     return flattened(entry.data, "", shape);
+  }
+  if (entry.type === MEMORY) {
+    return factLines(entry.data as MemoryOps).map((value) => ({ name: "fact", value }));
+  }
+  if (entry.type === SOURCES) {
+    return sourceLines(entry.data as DocsSources).map((value) => ({ name: "source", value }));
   }
   return [];
 }

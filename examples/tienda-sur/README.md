@@ -7,7 +7,7 @@ segundo tenant del repositorio: la misma forma que la Clínica Norte, otro negoc
 ```
 agent.ts          la clase: el estado son campos, las tools son métodos con docstring
 views/agent.tsx   el prompt como función del estado
-knowledge/        tienda.md cacheado delante de todo · docs/ indexado y recuperado por turno
+knowledge/        tienda.md cacheado delante de todo · docs/ se sube con `pinecall knowledge push` y se recupera por turno
 lib/catalog.ts    los doce artículos y cómo se busca uno hablando
 lib/shop.ts       el mostrador: fichas, pedidos, almacén y lo que la tienda anota
 test/             la clase como software, y los goldens que el runtime ejecuta

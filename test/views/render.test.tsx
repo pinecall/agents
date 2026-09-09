@@ -105,7 +105,7 @@ describe("the view", () => {
   it("opens with the memory and retrieval markers, in that order", () => {
     const text = block(render(clinica(), { view }, onThePhone), "view");
     expect(text.indexOf('<!-- memory: {"kinds":["preference","health"]} -->')).toBe(0);
-    expect(text).toContain('<!-- retrieved: {"minScore":0.4} -->');
+    expect(text).toContain('<!-- retrieved: {"min_score":0.4} -->');
   });
 
   it("is told it is resuming a call that was cut", () => {

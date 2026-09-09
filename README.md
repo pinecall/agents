@@ -39,6 +39,7 @@ cd examples/clinica-norte
 pnpm exec pinecall chat            the agent in this terminal, and a prompt against it
 pnpm exec pinecall prompt --state test/prompts/states.json   the exact prompt a state produces
 pnpm exec pinecall run             the app: the process you deploy
+pnpm exec pinecall knowledge push  ./knowledge/docs to the gateway, under the agent's name
 pnpm exec pinecall test            ring 1: the goldens, through the app in this process
 scripts/build && pnpm exec pinecall ui     the console on 127.0.0.1 — the one thing a browser
                                            cannot read from TypeScript, so it is bundled first
@@ -95,8 +96,8 @@ means editing a list on purpose, which is the point.
 | | |
 |---|---|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | what this package is, file by file: the entities, the bridge, the CLI, the console, the import table, and where LiveKit is and is not |
-| [docs/writing-an-agent.md](docs/writing-an-agent.md) | the class: state, tools, stages, channels, hooks, events |
-| [docs/the-prompt.md](docs/the-prompt.md) | the prompt: named blocks in two regions, the view, and where a rule belongs |
+| [docs/writing-an-agent.md](docs/writing-an-agent.md) | the class: state, tools, stages, channels, knowledge · docs · memory, hooks, events |
+| [docs/the-prompt.md](docs/the-prompt.md) | the prompt: named blocks in two regions, the view, the markers and what fills them, and where a rule belongs |
 | [docs/testing-an-agent.md](docs/testing-an-agent.md) | the four rings: unit tests, goldens, personas, the score every call gets |
 | [docs/the-cli.md](docs/the-cli.md) | every verb, what it needs, and where its key comes from |
 | [CHANGELOG.md](CHANGELOG.md) · [CLAUDE.md](CLAUDE.md) | what changed · the working agreement |

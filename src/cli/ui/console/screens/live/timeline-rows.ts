@@ -3,8 +3,10 @@
 import {
   eventOf,
   type Confirm,
+  type DocsSources,
   type Entry,
   type EventSource,
+  type MemoryOps,
   type State,
   type StateCause,
   type ToolRun,
@@ -21,6 +23,8 @@ export type Row =
   | { kind: "confirm"; seq: number; confirm: Confirm }
   | { kind: "event"; seq: number; name: string; source: EventSource; data: Record<string, unknown> }
   | { kind: "supervisor"; seq: number; mark: SupervisorMark }
+  | { kind: "memory"; seq: number; ops: MemoryOps }
+  | { kind: "sources"; seq: number; sources: DocsSources }
   | { kind: "quiet"; seq: number; entries: Entry[] };
 
 // Every row that is not a turn shows the object the reducer already built — the ToolRun with its
@@ -88,6 +92,11 @@ function rowOf(entry: Entry, state: State): Row | null {
         source: event.data.source,
         data: event.data.data,
       };
+    // What a fill put in front of the model before it answered: read by the turn it sits under.
+    case "memory.ops":
+      return { kind: "memory", seq, ops: event.data };
+    case "docs.sources":
+      return { kind: "sources", seq, sources: event.data };
     // The interim words are the live row at the foot of the timeline, not a row of their own, and
     // the final ones already arrived as a turn.
     default:

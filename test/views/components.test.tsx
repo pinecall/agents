@@ -63,9 +63,11 @@ describe("the components", () => {
     );
   });
 
-  it("renders retrieved as a marker carrying its props", () => {
+  // The payload is read by the runtime, never by JavaScript: the view writes `minScore` and the
+  // marker carries the wire's `min_score`.
+  it("renders retrieved as a marker carrying its props, in the wire's own keys", () => {
     expect(renderToText(<Retrieved k={5} minScore={0.4} />)).toBe(
-      '<!-- retrieved: {"k":5,"minScore":0.4} -->',
+      '<!-- retrieved: {"k":5,"min_score":0.4} -->',
     );
   });
 

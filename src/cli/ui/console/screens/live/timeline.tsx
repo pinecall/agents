@@ -3,6 +3,7 @@
 import type { Entry, State } from "@pinecall/protocol";
 import type { ReactNode } from "react";
 
+import { MemoryRow, SourcesRow } from "./fill-rows";
 import { ConfirmRow, EventRow, QuietRow, StateRow, SupervisorRow } from "./marks";
 import { rowsOf, type Row } from "./timeline-rows";
 import { ToolRow } from "./tool-run";
@@ -35,6 +36,10 @@ function RowOf({ row, state }: { row: Row; state: State }): ReactNode {
       return <EventRow name={row.name} source={row.source} data={row.data} seq={row.seq} />;
     case "supervisor":
       return <SupervisorRow mark={row.mark} seq={row.seq} />;
+    case "memory":
+      return <MemoryRow ops={row.ops} seq={row.seq} />;
+    case "sources":
+      return <SourcesRow sources={row.sources} seq={row.seq} />;
     case "quiet":
       return <QuietRow entries={row.entries} />;
   }

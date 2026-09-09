@@ -21,13 +21,15 @@ on the PATH: `pinecall run`. In this workspace: `pnpm exec pinecall run`.
 | `eval <call-id>` | ring 3: one real call re-evaluated by the runtime's code checks. `--policy`, `--json`. Exits 1 when a check does not hold | yes |
 | `runs list \| show \| diff \| promote \| drift` | what this gateway ran, and what moved between two windows | yes |
 | `personas list \| show \| try` | the synthetic callers in `test/personas` | for `try` |
+| `knowledge push [dir] [--base <name>] [--agent agent.ts]` | every `*.md` under the directory (`./knowledge/docs` beside the agent file by default), sent whole to `PUT /v1/knowledge/<base>`; the base is the agent's slug unless named. Prints `base · files · chunks · ms`. `list` and `drop <base>` beside it | yes |
+| `memory <contact>` | everything memory kept about one contact: the current facts first, the superseded ones dimmed with the date they stopped holding. `memory forget <contact>` asks once on a terminal, erases all of it, and prints `forgotten: n` | yes |
 | `login <gateway>` | the key typed once (never echoed), proved at `/v1/whoami`, kept in `~/.pinecall/credentials`. `--key-stdin` for a script | yes |
 | `whoami` | which gateway, which org, which key id — and **where the key came from** | yes |
 
 ## The verbs that are declared and not written
 
-`new`, `g`, `sessions`, `observe`, `costs`, `knowledge`, `memory`, `supervise`, `call`, `keys`,
-`tokens`, `phones`, `agents`, `deploy`. Typing one prints what it *will* be and exits 0 — a person
+`new`, `g`, `sessions`, `observe`, `costs`, `supervise`, `call`, `keys`, `tokens`, `phones`,
+`agents`, `deploy`. Typing one prints what it *will* be and exits 0 — a person
 who types `pinecall supervise` deserves better than "unknown command". `src/cli/groups.ts` is the
 one place that says which half of the CLI is still a design, and a verb leaves that table in the
 commit that writes it.

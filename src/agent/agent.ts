@@ -4,6 +4,8 @@
 // call time, and both exports are hoisted function declarations.
 import { AsyncLocalStorage } from "node:async_hooks";
 
+import type { DocsMode } from "@pinecall/protocol";
+
 import { docOf, toolsOf, visibleToolsOf, type ToolSpec } from "./tools.js";
 import type { CallWorld } from "../call/call.js";
 import type { EventDeclarations, EventMeta } from "./accepts.js";
@@ -71,6 +73,24 @@ export type EventListener = (heard: EventHeard) => void;
 export interface PromptDeclaration {
   static?: string[];
   dynamic?: string[];
+}
+
+/**
+ * What `docs` says: the knowledge base the agent answers from, by the name it was pushed under
+ * (`pinecall knowledge push --base <name>`), and how its chunks reach the model. The bare string
+ * form `docs = "clinica-norte"` is the base alone, with every other setting the runtime's.
+ */
+export interface DocsDeclaration {
+  base: string;
+  mode?: DocsMode;
+  k?: number;
+  minScore?: number;
+}
+
+/** What `memory` says: what to keep about a contact across calls, in the tenant's words, and what never to. */
+export interface MemoryDeclaration {
+  remember?: string[];
+  forget?: string[];
 }
 
 /** Everything the framework knows about one live agent, kept off the instance's own fields. */

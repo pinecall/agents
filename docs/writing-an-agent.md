@@ -13,7 +13,7 @@ Both examples in `../examples/` are complete versions of everything below.
 agent.ts            the class: the state is fields, the tools are methods with a docstring
 views/agent.tsx     the view: the prompt as a function of the state, the last thing the model reads
 views/<name>.tsx    one per block the class declares in `static prompt` — optional
-knowledge/          clinica.md, cached ahead of everything · docs/ indexed and retrieved per turn
+knowledge/          clinica.md, cached ahead of everything · docs/ pushed by name, retrieved per turn
 lib/                the tenant's own systems: an agenda, a CRM, a catalogue
 test/
   goldens/          one file per case: { state, input, expect }
@@ -87,8 +87,8 @@ never rendered, never in a snapshot:
 | `language` | which standing rules the framework contributes (`es`, `en`) |
 | `says` | `{ DKV: "de ka uve" }` — how a word the voice would misread is said |
 | `hears` | the words the ears must know: names, brands, the doctor's surname |
-| `knowledge` | one file cached ahead of everything |
-| `docs` | a glob, indexed and retrieved per turn |
+| `knowledge` | one file, read beside `agent.ts` and sent whole: cached ahead of everything |
+| `docs` | the knowledge base retrieved per turn, **by the name it was pushed under** |
 | `memory` | what to remember about a caller across calls, and what never to |
 
 **Everything else you put on the instance is state**, and so is every getter — `get identified()
@@ -103,6 +103,44 @@ knowing before they surprise you:
 **Tools are the only writers.** A field assigned outside a tool and outside a lifecycle hook throws
 `UnauthoredWrite`. This is not a style rule: every change is recorded with the name of whoever
 made it, and that is what the log, the console and a golden read.
+
+### Knowledge, docs and memory
+
+```ts
+knowledge = "./knowledge/clinica.md";
+docs = "clinica-norte";                       // or { base: "clinica-norte", k: 4, minScore: 0.02 }
+memory = {
+  remember: ["cómo prefiere que le llamen", "alergias", "su médico habitual"],
+  forget: ["pagos"],
+};
+```
+
+**`knowledge`** is the one file the agent knows by heart. The path is relative to `agent.ts`; the
+CLI reads it there and sends `{ path, text }` in the declaration, and the runtime puts the text
+where the `knowledge` marker is, once per call, in the cached prefix. A file that is not there is
+refused at load: `knowledge ./knowledge/nadie.md: no such file at /…/knowledge/nadie.md`.
+
+**`docs`** names the knowledge base the agent answers from — the folder under `knowledge/docs/`,
+pushed to the gateway under a name:
+
+```bash
+pinecall knowledge push                       # ./knowledge/docs beside agent.ts, base = the slug
+pinecall knowledge push ./knowledge/docs --base clinica-norte
+pinecall knowledge list · pinecall knowledge drop clinica-norte
+```
+
+A push sends the folder whole and replaces the base; the class then says `docs = "clinica-norte"`
+and the view places `<Retrieved k={4} minScore={0.02} />` where the chunks should land. The object
+form sets the defaults the marker may still override: `mode` (`retrieved` today), `k`, `minScore`.
+The glob the field used to hold is refused with the verb that replaces it: `docs name the base they
+were pushed to: run \`pinecall knowledge push ./knowledge/docs --base <slug>\``. Both are typed —
+`DocsDeclaration`, `MemoryDeclaration` — for a class that annotates its fields.
+
+**`memory`** is the policy, in your own words: what the runtime extracts about a contact at
+hang-up (one model call, after `call.ended` and before `call.summary`) and what it must never
+write. The facts are recalled on every turn into the `<Memory kinds>` marker, and a person reads or
+erases them with `pinecall memory <contact>` and `pinecall memory forget <contact>`. `onMemory` still
+hears every op the runtime wrote, so a CRM of your own can keep a copy.
 
 ## Tools
 
@@ -217,6 +255,7 @@ what a browser widget may read; `pii` is masked in the log at write time.
 cp .env.example .env               # PINECALL_URL and PINECALL_API_KEY
 pinecall chat                      # the app in THIS terminal, and a written caller against it
 pinecall prompt --state test/prompts/states.json    # what the model would read, offline
+pinecall knowledge push            # ./knowledge/docs to the gateway, under the agent's slug
 pinecall run                       # the app registered and answering: the process you deploy
 pinecall ui                        # the console on 127.0.0.1: talk, calls, sessions, evals
 ```

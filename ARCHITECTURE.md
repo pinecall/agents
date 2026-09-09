@@ -91,6 +91,7 @@ a directory earns its place there by having a line in that table (§13).
 |---|---|
 | `connect.ts` | `mount()`: the class registered once, one live instance per call, and the sync that sends only what changed. Also `slugOf`, `modelOf`, `optionsFor` |
 | `channels.ts` | `phone` / `whatsapp` / `web` fields → the routes the agent registers |
+| `grounding.ts` | `knowledge` / `docs` / `memory` fields → what the declaration carries: the file read beside the agent, the base by name (the old glob refused), the policy |
 | `dispatch.ts` | an outside fact off the wire, gated by the declaration and handed to `onEvent` — one at a time, in order |
 | `run-tool.ts` | one tool call: the args checked against the spec, the method run through the instance, the result cut to its `preview` |
 
@@ -105,6 +106,7 @@ a directory earns its place there by having a line in that table (§13).
 | `load.ts` | a tenant's `agent.ts` loaded with tsx, handed its own source, with its view beside it |
 | `run.ts` · `chat.ts` · `prompt.ts` | the app, the app in this terminal, the prompt offline |
 | `test.ts` · `simulate.ts` · `eval.ts` · `runs/` | ring 1, a live persona, ring 3, and what the gateway has run |
+| `knowledge.ts` · `memory.ts` | the folder pushed whole under a name, listed, dropped · one contact's facts, and the right to be forgotten |
 | `personas.ts` · `machine.ts` · `view.ts` | the synthetic callers, the state machine on one page, the terminal view as a pure function |
 | `login.ts` · `whoami.ts` | the key typed once, and which key a verb would use |
 | `testing/` | what those verbs need: the gateway's eval doors, goldens off disk, latency, the matrix, the progress screen, the score, the seeding check, the voice door |
@@ -162,6 +164,8 @@ Beside `src/`:
 |---|---|---|
 | `Blocks` / `Block` | `views/layout.ts` | `blocks` in send order, each `name`, `region` (`static` · `dynamic`), `text`; `history`; `fills` |
 | `PromptDeclaration` | `agent/agent.ts` | what `static prompt` says: `static?: string[]`, `dynamic?: string[]` |
+| `DocsDeclaration` / `MemoryDeclaration` | `agent/agent.ts` | what `docs` and `memory` may hold: `base`, `mode?`, `k?`, `minScore?` · `remember?`, `forget?` |
+| `Grounding` | `runtime/grounding.ts` | the three as the wire carries them: `knowledge {path, text}`, `docs {base, …}`, `memory {remember, forget}` |
 | `ViewProps<T>` | `views/layout.ts` | the snapshot, plus `memory`, `resumed`, `call: { channel, from? }` |
 | `Fills` | `views/components.ts` | `keep(render)` → an id, `fill(id, data)`, `has(id)` — one registry per render, on the async context |
 
@@ -190,7 +194,9 @@ one does not go through the change recorder.
 | `says` | `Pronunciation[]` — `{ Vidal: "bidál" }` written as a map, carried as a list |
 | `hears` | the words the ears must know |
 | `language` | which of `views/lang.ts`'s two word-sets the `identity` block carries |
-| `knowledge`, `docs`, `memory` | read by the view and the runtime; `knowledge` is also the whole `knowledge` block, a `<!-- knowledge: … -->` marker |
+| `knowledge` | one file, relative to `agent.ts`: read there by `runtime/grounding.ts`, sent whole as `{path, text}`, and the whole `knowledge` block — a `<!-- knowledge: … -->` marker the runtime replaces once per call. A missing file is refused at load |
+| `docs` | the knowledge base **by the name it was pushed under** (`pinecall knowledge push --base`): `"clinica-norte"` or `{ base, mode?, k?, minScore? }`. The old glob form is refused with the verb that replaces it |
+| `memory` | `{ remember, forget }`, in the tenant's words: what the runtime extracts at hang-up and what it never writes |
 
 **State** — everything else the app puts on the instance, plus its getters. The rules, enforced in
 code:
@@ -254,11 +260,15 @@ A class declares its own with `static prompt = { static: ["faq"], dynamic: ["ava
 in `agent.configure`, and every block is written by name with `prompt.set`.
 
 A **marker** is a placeholder this package writes and never resolves — `<!-- memory: {"kinds":…} -->`,
-`<!-- retrieved: {"k":…} -->`, `<!-- knowledge: ./file.md -->`. The gateway reads the line, does the
-work, and replaces it. A view that wrote `{facts => …}` left a **render prop** behind: the function
-cannot travel inside a marker, so it stays in that render's `Fills` registry under an id the marker
-carries, and the filler asks for it by id. The registry rides the async context, so two renders in
-one process never share one.
+`<!-- retrieved: {"k":…,"min_score":…} -->`, `<!-- knowledge: ./file.md -->`. The runtime reads the
+line, does the work, and replaces it: the knowledge file's text once per call in the static region;
+the contact's facts and the base's chunks on every turn in the dynamic region, found by what the
+caller just said, under a budget. The payload's keys are the wire's (`min_score`), because the
+runtime reads it and JavaScript never does. A view that wrote `{facts => …}` left a **render prop**
+behind: the function cannot travel inside a marker, so it stays in that render's `Fills` registry
+under an id the marker carries. This release the runtime renders its own shape and ignores the id;
+the registry still rides the async context and is still handed back with the blocks, so two renders
+in one process never share one and a later runtime can ask by id.
 
 `pinecall prompt` and `pinecall run --show-prompt` print exactly these blocks, each under
 `── <name> (<region>) ──` with `── history ──` between the two regions, and the stage and the
@@ -285,13 +295,14 @@ waiting on a `say`.
 
 ## 8. The bridge, step by step
 
-`mount(Class, { pc, views, source, slug, last, opening, takesUnclaimed })` is the only place the
-class and the socket know about each other.
+`mount(Class, { pc, views, source, file, slug, last, opening, takesUnclaimed })` is the only place
+the class and the socket know about each other.
 
 1. **At mount** — `describe(ctor, source)` gives the class its own text back (a docstring sits
    *above* the class, where `toString()` cannot see it, and parameter types are gone after
    compilation). One **probe** instance is built, read for its tools and its config, and thrown
-   away. `pc.agent(slug, options)` declares it. Nothing is sent until `pc.connect()`.
+   away; `file` is where the class came from, so the knowledge file it names is read beside it.
+   `pc.agent(slug, options)` declares it. Nothing is sent until `pc.connect()`.
 2. **`call.started`** → `start()`: a fresh instance, `seal`ed; `setLast` and `setCall` hand it the
    store and its `CallWorld`; `runHook(onCall)`; then `opening?.(call)` applies the state a golden
    or `--state` asked for — after `onCall` so it is not overwritten, before the first render so the
@@ -347,13 +358,15 @@ prompt` must not pay for a websocket client.
 | `eval` | ring 3: one real call re-evaluated by the runtime's code checks | yes |
 | `runs` | `list · show · diff · promote · drift` — what this gateway ran, and what moved | yes |
 | `personas` | `list · show · try` the synthetic callers in `test/personas` | for `try` |
+| `knowledge` | `push [dir] --base <name>` · `list` · `drop <base>`: the folder of `*.md` sent whole to `PUT /v1/knowledge/{base}` | yes |
+| `memory` | `<contact>` · `forget <contact>`: one contact's facts, current first, and the right to be forgotten | yes |
 | `login` | the key typed once, proved at the gateway, kept in `~/.pinecall/credentials` (0600) | yes |
 | `whoami` | which gateway, which org, and **where this terminal's key came from** | yes |
 
 `groups.ts` also declares every verb the design names and this tree has not written — `new`, `g`,
-`sessions`, `observe`, `costs`, `knowledge`, `memory`, `supervise`, `call`, `keys`, `tokens`,
-`phones`, `agents`, `deploy`. Typing one prints what it *will* be and exits 0. A verb leaves that
-table in the commit that writes it.
+`sessions`, `observe`, `costs`, `supervise`, `call`, `keys`, `tokens`, `phones`, `agents`,
+`deploy`. Typing one prints what it *will* be and exits 0. A verb leaves that table in the commit
+that writes it.
 
 **Where the key comes from** (`cli/env.ts`, the one place that decides it, for every verb):
 
@@ -385,8 +398,8 @@ decision:
 | screen | what it reads |
 |---|---|
 | `agents/` | which agents this gateway holds — so `/` offers a list and not a URL shape |
-| `calls/` + `live/` | the calls happening now; one watched call: transcript, marks, `STATE`, `PROMPT` (every block by name, hash and length), `ROOM`, `METRICS`, and the supervisor's six verbs |
-| `sessions/` | every finished call; one of them read whole — envelope, latency, consent join, score, the prompt block by block, then every entry in `seq` |
+| `calls/` + `live/` | the calls happening now; one watched call: transcript, marks — a `memory.ops` and a `docs.sources` each one row, `op · n facts · ms` and `n sources · ms`, what was found under it — `STATE`, `PROMPT` (every block by name, hash and length), `ROOM`, `METRICS`, and the supervisor's six verbs |
+| `sessions/` | every finished call; one of them read whole — envelope, latency, consent join, score, the prompt block by block, then every entry in `seq`, a fill's sources one click under the turn it answered |
 | `evals/` | every run this agent's suites scored, the diff between two runs, and what each finished call was sealed with |
 | `pipeline/` | the three providers of a voice turn, the anatomy of a turn as a waterfall, and the overrides an operator may change between two calls |
 | `talk/` | a person reaches the agent from this tab, with this browser's microphone |
@@ -395,9 +408,10 @@ Its own laws. Three are held by a test of their own: vite bundles every screen's
 one file, so **a class name is global** whatever directory it was written in
 (`one-stylesheet-one-class`); the desk sends **one** verb per gesture and one seat request
 (`the-desk-sends-one-verb`); a supervisor's six entries each read back as **one sentence**
-(`a-supervisor-reads-as-one-line`). Two more are conventions the reader enforces: `lib/api.ts` is
-the only place a request to the gateway is built, and `lib/metrics.ts` the only file that names a
-metric — Sessions must print the same digits as `pinecall-runtime sessions show`.
+(`a-supervisor-reads-as-one-line`), and so do a fill's two (`a-fill-reads-as-one-line`, off
+`lib/fills.ts`, which both timelines print from). Two more are conventions the reader enforces:
+`lib/api.ts` is the only place a request to the gateway is built, and `lib/metrics.ts` the only
+file that names a metric — Sessions must print the same digits as `pinecall-runtime sessions show`.
 
 ## 12. LiveKit: where it is, and where it is not
 

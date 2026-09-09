@@ -32,8 +32,12 @@ export default class ClinicaNorte extends Agent {
   // identifica — porque la clase ya sabe con quién está hablando.
   hears = ["Clínica Norte", "doctora Vidal", "doctor Sáez", "doctor Ferrán"];
 
+  // `knowledge`: el fichero que el agente se sabe de memoria, leído al lado de esta clase y
+  // enviado entero; el runtime lo pone donde está el marcador, en el bloque estático, una vez por
+  // llamada. `docs`: la base que se recupera por turno, por el NOMBRE con que se subió —
+  // `pinecall knowledge push ./knowledge/docs --base clinica-norte`—, nunca un glob.
   knowledge = "./knowledge/clinica.md";
-  docs = "./knowledge/docs/**/*.md";
+  docs = "clinica-norte";
   memory = {
     remember: ["cómo prefiere que le llamen", "alergias", "su médico habitual"],
     forget: ["pagos"],
