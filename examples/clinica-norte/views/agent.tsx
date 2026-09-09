@@ -24,7 +24,7 @@ export default ({
     <p>Lo que recordamos de este paciente:</p>
     <Memory kinds={["preference", "health"]} />
     <p>De la base de conocimiento:</p>
-    <Retrieved k={4} minScore={0.02} />
+    <Retrieved k={4} minScore={0.5} />
 
     {resumed && <p>Se cortó su llamada anterior. Retoma desde donde quedó sin volver a preguntar.</p>}
 

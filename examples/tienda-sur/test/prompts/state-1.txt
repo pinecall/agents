@@ -35,7 +35,7 @@ Lo que recordamos de este cliente:
 
 De la base de conocimiento:
 
-<!-- retrieved: {"k":4,"min_score":0.02} -->
+<!-- retrieved: {"k":4,"min_score":0.5} -->
 
 Hablas con Rosa Medina, ya en la ficha: no le pidas otra vez el nombre ni la dirección. El reparto sube a Pagés del Corro veintidós, tercero B.
 

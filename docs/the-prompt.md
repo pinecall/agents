@@ -81,7 +81,7 @@ export default ({ stage, patient, slots, proposed, memory, call }: ViewProps<Cli
     <p>Lo que recordamos de este paciente:</p>
     <Memory kinds={["preference", "health"]} />
     <p>De la base de conocimiento:</p>
-    <Retrieved k={4} minScore={0.02} />
+    <Retrieved k={4} minScore={0.5} />
 
     {stage === "identify" && <p>Saluda y pide nombre y teléfono.</p>}
 
