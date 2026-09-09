@@ -1,0 +1,168 @@
+# The goldens, every weekday night, on the baseline model and on one from another vendor.
+#
+# Its own file and not a job of ci.yml on purpose: CI judges a branch tip and holds no provider
+# key, while this one spends real euros on real calls and only ever runs on main. It needs all
+# three repositories, because a golden is the whole product answering: the class from here, the
+# log and the judges from the runtime, the wire from the protocol.
+name: nightly
+
+on:
+  # 04:00 in Madrid through the summer and 03:00 through the winter — GitHub's cron is UTC and has
+  # no zone. Weekdays only, and seventeen past the hour rather than on it, where every scheduled
+  # workflow on the platform queues at once. A schedule only ever runs on the default branch and
+  # only ever reads main's copy of this file, which is why the nightly watches what landed.
+  schedule:
+    - cron: "17 2 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One nightly at a time, and never cancelled: a finished run is the record of what two models did
+# on a given night, and half a run that was killed says nothing about either of them.
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+jobs:
+  goldens:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # The gateway's log lives in Postgres. The dev stack's image adds pgvector and pg_textsearch
+    # for the retriever and nothing this job runs asks for either — the migrations create no
+    # extension — so the stock image starts in seconds instead of being built here.
+    services:
+      postgres:
+        image: postgres:17.11-alpine
+        env:
+          POSTGRES_USER: pinecall
+          POSTGRES_PASSWORD: pinecall
+          POSTGRES_DB: pinecall
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pinecall -d pinecall"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    env:
+      DATABASE_URL: postgresql://pinecall:pinecall@127.0.0.1:5432/pinecall
+      # One key that needs no api_keys row. The CLI reads the same name (src/cli/env.ts), so the
+      # terminal and the gateway agree without a key ever being issued in a throwaway database.
+      PINECALL_DEV_KEY: dev
+      PINECALL_URL: http://127.0.0.1:8080
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: agents
+      - uses: actions/checkout@v4
+        with:
+          repository: pinecall/protocol
+          path: protocol
+          token: ${{ secrets.SIBLING_REPOS_TOKEN }}
+      - uses: actions/checkout@v4
+        with:
+          repository: pinecall/runtime
+          path: runtime
+          token: ${{ secrets.SIBLING_REPOS_TOKEN }}
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: runtime/uv.lock
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.2.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: agents/pnpm-lock.yaml
+
+      # `--extra runtime` carries livekit-agents and its plugins; the judges are in the same
+      # distribution, so nothing else has to be asked for.
+      - name: install the runtime
+        working-directory: runtime
+        run: uv sync --locked --extra runtime --group dev
+
+      - name: build the workspace, so the CLI this run drives is this tree's
+        working-directory: agents
+        run: |
+          pnpm install --frozen-lockfile
+          scripts/build
+
+      - name: the gateway this run talks to
+        working-directory: runtime
+        run: |
+          uv run pinecall-runtime migrate up
+          uv run pinecall-runtime gateway > "$RUNNER_TEMP/gateway.log" 2>&1 &
+          for _ in $(seq 1 30); do
+            if curl -fsS -o /dev/null -H "Authorization: Bearer $PINECALL_DEV_KEY" "$PINECALL_URL/v1/routes"; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "the gateway never answered /v1/routes"
+          cat "$RUNNER_TEMP/gateway.log"
+          exit 1
+
+      # The class is mounted in this step's own process, the way a tenant runs it. A golden that
+      # does not hold is not this step's business: it writes the run down and the gate below reads
+      # it, so a red on the second model is a finding in the summary rather than a dead job.
+      #
+      # One step per agent, and never one process for both: `pinecall test` mounts the class of the
+      # directory it runs in, and the gateway runs one suite at a time and answers a second with a
+      # 409. So the two runs are serial by construction, and each writes down its own matrix.
+      - name: pinecall test, two models — clinica-norte
+        working-directory: agents/examples/clinica-norte
+        run: |
+          node ../../dist/cli/index.js test \
+            --model haiku --model openai/gpt-4.1-mini \
+            --json > "$RUNNER_TEMP/clinica-norte.json" || true
+
+      - name: pinecall test, two models — tienda-sur
+        working-directory: agents/examples/tienda-sur
+        run: |
+          node ../../dist/cli/index.js test \
+            --model haiku --model openai/gpt-4.1-mini \
+            --json > "$RUNNER_TEMP/tienda-sur.json" || true
+
+      # The matrix as a person reads it, and the one gate: a golden that does not hold on the
+      # BASELINE model fails the night. A golden two models disagree about is the whole reason
+      # there are two of them, so it is written into the summary as a finding and fails nothing —
+      # the answer to a divergence is a fix, never a softened golden.
+      - name: the matrix, and the gate on the baseline model
+        run: python3 agents/.github/nightly-summary.py "$RUNNER_TEMP/clinica-norte.json" "$RUNNER_TEMP/tienda-sur.json"
+
+      # The second gate, and it reads nothing new: each judge's held-rate is a count over the
+      # `call.score` verdicts this gateway's own log already carries, and the delta between two
+      # windows is the drift. `if: always()` because a matrix that went red must not hide a judge
+      # that has been sliding for a week — the night fails on either, and says which.
+      #
+      # On this job's throwaway Postgres both windows come out of tonight, so the baseline is empty
+      # and the step holds by construction: a delta needs two windows that both settled something.
+      # It bites the day PINECALL_URL points at a gateway that keeps its log — see
+      # docs/decisions/pinecall-test.md, § `runs drift`.
+      - name: the drift watch on call.score
+        if: always()
+        working-directory: agents
+        run: |
+          code=0
+          for agent in clinica-norte tienda-sur; do
+            node dist/cli/index.js runs drift \
+              --agent "$agent" --window 7d --baseline 30d --threshold 10 \
+              > "$RUNNER_TEMP/drift-$agent.txt" || code=$?
+            { echo "### drift — $agent"; echo '```'; cat "$RUNNER_TEMP/drift-$agent.txt"; echo '```'; } \
+              >> "$GITHUB_STEP_SUMMARY"
+            cat "$RUNNER_TEMP/drift-$agent.txt"
+          done
+          exit "$code"
+
+      - name: what the gateway said, when something went wrong
+        if: failure()
+        run: cat "$RUNNER_TEMP/gateway.log" || true

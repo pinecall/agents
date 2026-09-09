@@ -1,0 +1,91 @@
+# pinecall
+
+Write an agent as a class. Its fields are what it remembers, its `@tool` methods are what the
+model may do, its docstrings are the prompt, and its `.tsx` view is what it knows right now.
+
+```ts
+export default class ClinicaNorte extends Agent {
+  phone = "+34910000000";
+  language = "es";
+
+  stage: Stages<"identify" | "choose" | "book"> = "identify";
+  patient?: Patient;
+  slot?: Slot;
+
+  /** Busca al paciente por nombre y teléfono. Pide los dos antes de llamarla. */
+  @tool({ stage: "identify" })
+  async findPatient(name: string, phone: string): Promise<Patient | null> {
+    this.patient = await agenda.find(name, phone);
+    if (this.patient) this.stage = "choose";
+    return this.patient;
+  }
+}
+```
+
+One class, three doors: the same agent answers the web, WhatsApp and the telephone, and
+remembers the customer across them. What does the real time — the audio, the rooms, the log,
+the tenants — is `pinecall/runtime`, a Python distribution this package never imports and only
+ever talks to over a socket.
+
+```
+npm install pinecall
+```
+
+## Five minutes
+
+```
+pnpm install                       and `scripts/build`, which also builds the wire next door
+cd examples/clinica-norte
+pinecall chat                      the agent in this terminal, and a prompt against it
+pinecall prompt --state test/prompts/states.json   the exact prompt a state produces, offline
+pinecall run                       the app: the process you deploy
+pinecall ui                        the console on 127.0.0.1: talk, calls, sessions, evals
+pinecall test                      ring 1: the goldens, through the app in this process
+```
+
+Working on the framework itself:
+
+```
+scripts/build      the wire, then the package, then the console, then @pinecall/web
+scripts/check      build, then lint, then test — what CI runs
+pnpm test          the framework and the console, in two vitest projects
+```
+
+## The map
+
+`src/` is the package. Six directories, and the import table in `test/the-imports.test.ts` is
+what keeps them apart — a directory earns its place there by having a line.
+
+| directory | what it is |
+|---|---|
+| `agent/` | the class a tenant extends: the Proxy, `@tool`, the state, the stages, the hooks |
+| `views/` | the JSX-to-text runtime: the three regions, the markers the runtime fills |
+| `call/` | the live call as a value: the room, the turns, the verbs. Reduced from entries |
+| `client/` | `pinecall/client` — the socket, and nothing above it. Knows only the wire |
+| `runtime/` | the bridge: what the class does, become what the wire sees |
+| `cli/` | `pinecall <verb>`, and under `cli/ui/console/` the page one of them serves |
+
+Beside it:
+
+| | |
+|---|---|
+| `web/` | `@pinecall/web`: a browser's read of its own call. The one thing here that installs alone |
+| `examples/` | `clinica-norte` and `tienda-sur`: two tenants, written as a customer writes one |
+| `test/` | mirrors `src/`, plus the three that pin the shape: the tree, the imports, the surface |
+| `docs/decisions/` | why each of the above is the way it is |
+
+## The three doors out of this package
+
+- `pinecall` — the framework: the class, the views, the call, and `mount()`.
+- `pinecall/client` — the socket alone, for an app that decides for itself what to answer.
+- `pinecall/tsconfig.tenant.json` — the compiler flags an agent needs, so a tenant writes none.
+
+`test/index.test.ts` and `test/client/index.test.ts` pin the first two by name. Adding an export
+means editing a list on purpose, which is the point.
+
+## The wire
+
+`@pinecall/protocol` is generated from JSON Schema in `pinecall/protocol` and committed there,
+so nothing here runs a generator. `pnpm-workspace.yaml` names that checkout as a workspace
+package until it is published. The golden call log comes from the same package, which is how a
+log folded here and a log folded in Python are proved to be the same log.
