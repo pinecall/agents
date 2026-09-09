@@ -55,7 +55,7 @@ export async function run(argv: string[]): Promise<number> {
   const loaded = await load(positionals[0]);
   // What the `s` key and --show-prompt both print: the prompt the model would read, and under it
   // the stage this instance is in with the tools that stage shows.
-  const promptPage = (agent: AgentClass): string => `${showPrompt(agent, loaded.view)}\n\n${showMachine(agent)}`;
+  const promptPage = (agent: AgentClass): string => `${showPrompt(agent, loaded.views)}\n\n${showMachine(agent)}`;
 
   // --show-prompt never connects: it is the question "what would the model read at the start of a
   // call", and answering it must not need a gateway, a key or a network.

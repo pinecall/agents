@@ -1,6 +1,6 @@
 // One live call, as the app holds it: what is known about the line, and every command it can send.
 
-import type { Camel, Channel, CommandData, CommandType, Contact, EventType, PromptRegion, ToolResult, ToolSpec } from "@pinecall/protocol";
+import type { Camel, Channel, CommandData, CommandType, Contact, EventType, ToolResult, ToolSpec } from "@pinecall/protocol";
 import type { AnyListener, CamelEvent, Listener } from "./listeners.js";
 import { Listeners } from "./listeners.js";
 
@@ -70,9 +70,9 @@ export class Call {
     this.gateway.command("agent.reply", this.id, { instructions, ...options });
   }
 
-  /** Rewrite one region of the prompt: the cached static prefix, or the view rendered from state. */
-  setPrompt(region: PromptRegion, text: string): void {
-    this.gateway.command("prompt.set", this.id, { region, text });
+  /** Rewrite one block of the prompt, whole, by name: one of the framework's four, or one the agent declared. */
+  setPrompt(name: string, text: string): void {
+    this.gateway.command("prompt.set", this.id, { name, text });
   }
 
   /** The tools the model may see now: the subset of the declaration this state allows. */

@@ -11,6 +11,11 @@ import { crm } from "./lib/crm.js";
  * Nunca inventes una hora: las horas salen de la agenda, siempre.
  */
 export default class ClinicaNorte extends Agent {
+  // un bloque del prompt propio: las horas sobre la mesa viven en `views/availability.tsx` y se
+  // reescriben solas cuando freeSlots vuelve con otras. Es dinámico —va después de la historia,
+  // justo antes de la view— y así la view queda para decir qué hacer en ESTE turno.
+  static override prompt = { dynamic: ["availability"] };
+
   // canales: un agente, tres puertas
   phone = "+34910000000";
   whatsapp = "+34910000000";

@@ -11,7 +11,8 @@ Both examples in `../examples/` are complete versions of everything below.
 
 ```
 agent.ts            the class: the state is fields, the tools are methods with a docstring
-views/agent.tsx     the prompt as a function of the state
+views/agent.tsx     the view: the prompt as a function of the state, the last thing the model reads
+views/<name>.tsx    one per block the class declares in `static prompt` — optional
 knowledge/          clinica.md, cached ahead of everything · docs/ indexed and retrieved per turn
 lib/                the tenant's own systems: an agenda, a CRM, a catalogue
 test/
@@ -66,8 +67,8 @@ export default class ClinicaNorte extends Agent {
 }
 ```
 
-The **class docstring is the first thing the model reads** — it opens the cached static region. It
-has to be above the class, in a `/** … */`, and the CLI is what makes that possible: it hands the
+The **class docstring is the first thing the model reads** — it opens `identity`, the first cached
+block of the prompt. It has to be above the class, in a `/** … */`, and the CLI is what makes that possible: it hands the
 class its own source so the docstring survives compilation.
 
 The class is the **default export** of `agent.ts`. Its name gives the slug it registers under
@@ -146,8 +147,8 @@ invents `{day, time, doctor}` and the agenda receives a slot it never offered.
 stage: Stages<"identify" | "choose" | "book" | "done"> = "identify";
 ```
 
-`pinecall run --show-prompt` and `pinecall prompt` print, under the three regions, the stage the
-instance is in and the tools that stage shows. That page is how a state machine is read.
+`pinecall run --show-prompt` and `pinecall prompt` print, under the blocks of the prompt, the stage
+the instance is in and the tools that stage shows. That page is how a state machine is read.
 
 ## The call
 

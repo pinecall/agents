@@ -23,8 +23,9 @@ const MAY_IMPORT: Record<string, string[]> = {
   "agent": ["call", "@pinecall/protocol", "oxc-parser", "zod"],
   // The live call as a value: the room, the turns, the six verbs. Reduced from entries it is given.
   "call": ["agent", "@pinecall/protocol"],
-  // The JSX-to-text runtime. It reads the class to lay the prompt out and nothing else of ours.
-  "views": ["agent"],
+  // The JSX-to-text runtime. It reads the class to lay the prompt out, and the wire for the shape
+  // of a block's name — one definition of that rule, and it is the schema's.
+  "views": ["agent", "@pinecall/protocol"],
   // The bridge: what the class does, become what the wire sees.
   "runtime": ["agent", "call", "views", "client", "@pinecall/protocol"],
   // The verbs. Anything of ours except the page the console is — that one is served, not imported.

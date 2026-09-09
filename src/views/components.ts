@@ -6,7 +6,7 @@ import { blocks, renderInline, renderToText, type Child, type Component, type Pr
 /**
  * A placeholder the framework writes and never resolves: the gateway reads the marker, does the
  * work (open the file, search the memory, retrieve the passages) and replaces the line with text.
- * One syntax for all of them, on its own line, so a filler is a line-by-line pass over the region.
+ * One syntax for all of them, on its own line, so a filler is a line-by-line pass over a block.
  */
 export function marker(name: string, payload: string): string {
   return `<!-- ${name}: ${payload} -->`;
@@ -52,13 +52,13 @@ export const Retrieved: Component = (props) => placeholder("retrieved", props, [
 // A render prop is a function the view left behind to shape whatever the gateway finds. It cannot
 // travel inside a marker, so it stays behind under an id and the filler asks for it by that id.
 
-/** The render props ONE render left behind. It is handed back with that render's regions. */
+/** The render props ONE render left behind. It is handed back with that render's blocks. */
 export interface Fills {
   /** Keep a render prop until the gateway comes back with its data; the id goes in the marker. */
   keep(render: (data: unknown) => Child): string;
   /** Render one kept render prop against what the gateway found. */
   fill(id: string, data: unknown): string;
-  /** Whether an id is still fillable — what a runtime checks before it walks a region's markers. */
+  /** Whether an id is still fillable — what a runtime checks before it walks a block's markers. */
   has(id: string): boolean;
 }
 
@@ -96,7 +96,8 @@ function children(props: Props): Child {
   return (props["children"] ?? null) as Child;
 }
 
-function tagged(name: string, body: string): string {
+/** A body wrapped in the tag the model reads it under, or nothing at all when the body is empty. */
+export function tagged(name: string, body: string): string {
   return body ? `<${name}>\n${body}\n</${name}>` : "";
 }
 

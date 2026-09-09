@@ -63,6 +63,16 @@ export interface EventHeard {
 
 export type EventListener = (heard: EventHeard) => void;
 
+/**
+ * What a class declares under `static prompt`: the blocks of its own around the framework's four,
+ * by region. A `static` block is cached and reads no state; a `dynamic` one is rewritten every turn.
+ * Each is `views/<name>.tsx` beside the class, a function like the view.
+ */
+export interface PromptDeclaration {
+  static?: string[];
+  dynamic?: string[];
+}
+
 /** Everything the framework knows about one live agent, kept off the instance's own fields. */
 export interface Internals {
   changes: Change[];
@@ -160,6 +170,9 @@ export class Agent {
 
   /** The outside facts this class accepts, and from whom: `static events = {...}`. */
   static events?: EventDeclarations;
+
+  /** The prompt blocks of this class's own: `static prompt = { static: ["faq"], dynamic: ["availability"] }`. */
+  static prompt?: PromptDeclaration;
 
   /** Who may see a field, for a class that would rather write a map than a `@state`. */
   static visibility?: Record<string, Visibility>;

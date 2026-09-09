@@ -1,15 +1,19 @@
-// Criterio 2 del hito, clavado por un test: la región estática es byte a byte la misma en los tres
-// estados capturados, y la dinámica cambia en los tres. El orden nunca se reordena: static · history
-// · dynamic, que es el que el KV-cache del proveedor premia (docs/decisions/prompt-regions.md).
+// Criterio 2 del hito, clavado por un test: cada bloque estático es byte a byte el mismo en los tres
+// estados capturados, y la view cambia en los tres. El orden nunca se reordena: los bloques
+// estáticos · la historia · los dinámicos, la view al final — el orden que el KV-cache del
+// proveedor premia (docs/decisions/prompt-blocks.md).
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
-import { describe as describeClass, render, seal, showPrompt, toolNamed } from "pinecall";
+import { describe as describeClass, render, seal, showPrompt, toolNamed, type Blocks } from "pinecall";
 
 import ClinicaNorte from "../agent.js";
 import view from "../views/agent.js";
+import availability from "../views/availability.js";
+
+const views = { view, availability };
 
 const here = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 const SOURCE = readFileSync(here("../agent.ts"), "utf8");
@@ -33,17 +37,26 @@ function at(index: number): ClinicaNorte {
   return agent;
 }
 
-describe("las tres regiones del prompt", () => {
-  it("mantiene la región estática idéntica en los tres estados", () => {
-    const regions = STATES.map((_, index) => render(at(index), view));
+/** El texto de un bloque, por nombre. */
+function block(blocks: Blocks, name: string): string {
+  const found = blocks.blocks.find((one) => one.name === name);
+  if (found === undefined) throw new Error(`no hay bloque ${name}`);
+  return found.text;
+}
 
-    for (const region of regions) expect(region.static).toBe(regions[0]!.static);
-    // Y no está vacía: un prefijo vacío también sería "idéntico" y no probaría nada.
-    expect(regions[0]!.static).toContain("recepción de Clínica Norte");
+describe("los bloques del prompt", () => {
+  it("mantiene cada bloque estático idéntico en los tres estados", () => {
+    const rendered = STATES.map((_, index) => render(at(index), views));
+
+    for (const name of ["identity", "knowledge", "tools"]) {
+      for (const one of rendered) expect(block(one, name)).toBe(block(rendered[0]!, name));
+    }
+    // Y no está vacío: un prefijo vacío también sería "idéntico" y no probaría nada.
+    expect(block(rendered[0]!, "identity")).toContain("recepción de Clínica Norte");
   });
 
-  it("cambia la región dinámica en cada uno de los tres", () => {
-    const dynamics = STATES.map((_, index) => render(at(index), view).dynamic);
+  it("cambia la view en cada uno de los tres", () => {
+    const dynamics = STATES.map((_, index) => block(render(at(index), views), "view"));
 
     expect(new Set(dynamics).size).toBe(STATES.length);
     expect(dynamics[0]).toContain("Saluda y pide nombre");
@@ -51,18 +64,25 @@ describe("las tres regiones del prompt", () => {
     expect(dynamics[2]).toContain("SMS");
   });
 
-  it("imprime las regiones en su único orden", () => {
-    const printed = showPrompt(at(1), view);
+  it("imprime los bloques en su único orden: los estáticos, la historia, los dinámicos y la view al final", () => {
+    const headers = showPrompt(at(1), views)
+      .split("\n")
+      .filter((line) => line.startsWith("── "));
 
-    expect(printed.indexOf("── static ──")).toBe(0);
-    expect(printed.indexOf("── history ──")).toBeGreaterThan(printed.indexOf("── static ──"));
-    expect(printed.indexOf("── dynamic ──")).toBeGreaterThan(printed.indexOf("── history ──"));
+    expect(headers).toEqual([
+      "── identity (static) ──",
+      "── knowledge (static) ──",
+      "── tools (static) ──",
+      "── history ──",
+      "── availability (dynamic) ──",
+      "── view (dynamic) ──",
+    ]);
   });
 
   it("coincide con lo capturado, para que las capturas no se pudran", () => {
     for (const [index] of STATES.entries()) {
       const captured = readFileSync(here(`./prompts/state-${index}.txt`), "utf8");
-      expect(`${showPrompt(at(index), view)}\n`).toBe(captured);
+      expect(`${showPrompt(at(index), views)}\n`).toBe(captured);
     }
   });
 
@@ -76,6 +96,25 @@ describe("las tres regiones del prompt", () => {
   });
 });
 
+// El bloque propio: las horas viven en `availability`, que se reescribe solo cuando freeSlots vuelve
+// con otras, y la view —que va después— queda para decir qué hacer con ellas en este turno.
+describe("el bloque availability", () => {
+  it("está vacío hasta que freeSlots vuelve, y entonces lleva las horas y la view no", async () => {
+    const agent = at(0);
+    expect(block(render(agent, views), "availability")).toBe("");
+
+    agent.startIn({ ...STATES[0]!.state, stage: "choose", patient: { name: "Ana García", phone: "+34 600 000 001" } });
+    await agent.freeSlots("martes");
+
+    const rendered = render(agent, views);
+    expect(agent.slots.length).toBeGreaterThan(0);
+    expect(block(rendered, "availability")).toContain("Horas libres, en orden:");
+    expect(block(rendered, "availability")).toContain(agent.slots[0]!.when);
+    expect(block(rendered, "view")).not.toContain("Horas libres");
+    expect(block(rendered, "view")).toContain("de estas horas");
+  });
+});
+
 describe("un caso de goldens nombra unos campos y calla los demás", () => {
   it("rinde el primer caso de choose.json, que no habla de horas", () => {
     // El caso está en `choose` y no menciona `slots`: la clase le dio `[]` y la vista lee
@@ -84,7 +123,7 @@ describe("un caso de goldens nombra unos campos y calla los demás", () => {
     const agent = seal(new ClinicaNorte());
     agent.startIn(CASES[0]!.state);
 
-    expect(render(agent, view).dynamic).toContain("pregúntale para qué día quiere cambiarla");
+    expect(block(render(agent, views), "view")).toContain("pregúntale para qué día quiere cambiarla");
   });
 });
 
@@ -95,7 +134,7 @@ describe("la clase y la vista dicen lo mismo sobre el día que nombra el pacient
   it("repite en la vista la regla que freeSlots lleva en su docstring", () => {
     const agent = seal(new ClinicaNorte());
     agent.startIn(CASES[0]!.state);
-    const dynamic = render(agent, view).dynamic;
+    const dynamic = block(render(agent, views), "view");
 
     expect(toolNamed(agent, "freeSlots")?.spec.description).toContain("se consulta SIEMPRE");
     expect(dynamic).toContain("consulta SIEMPRE la agenda de ese día");
@@ -113,7 +152,7 @@ describe("la clase y la vista dicen lo mismo sobre el día que nombra el pacient
 describe("con horas sobre la mesa, elegir una no la reserva", () => {
   it("manda repetir la hora entera y esperar el sí, en la vista y en el docstring de book", () => {
     const agent = at(1);
-    const dynamic = render(agent, view).dynamic;
+    const dynamic = block(render(agent, views), "view");
 
     expect(dynamic).toContain("todavía no la reserva");
     expect(dynamic).toContain("pregúntale si se la confirmas");
@@ -125,6 +164,6 @@ describe("con horas sobre la mesa, elegir una no la reserva", () => {
     const agent = seal(new ClinicaNorte());
     agent.startIn(CASES[0]!.state);
 
-    expect(render(agent, view).dynamic).not.toContain("todavía no la reserva");
+    expect(block(render(agent, views), "view")).not.toContain("todavía no la reserva");
   });
 });

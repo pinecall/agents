@@ -28,7 +28,7 @@ describe("connecting", () => {
     const pc = await connected();
     pc.agent("clinica-norte", {
       routes: [{ channel: "phone", number: "+34910000001", label: "centralita" }, { channel: "web" }],
-      instructions: "Atiendes la centralita.",
+      language: "es",
       greeting: "Clínica Norte, ¿en qué puedo ayudarte?",
     });
     await pc.connect();
@@ -42,7 +42,7 @@ describe("connecting", () => {
     expect(register?.data["sdk"]).toMatch(/^pinecall\//);
 
     const [configure] = gateway.commandsOf("agent.configure");
-    expect(configure?.data["config"]).toMatchObject({ instructions: "Atiendes la centralita.", greeting: "Clínica Norte, ¿en qué puedo ayudarte?" });
+    expect(configure?.data["config"]).toMatchObject({ language: "es", greeting: "Clínica Norte, ¿en qué puedo ayudarte?" });
   });
 
   it("refuses to start without a url and a key", () => {

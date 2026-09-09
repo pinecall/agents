@@ -68,7 +68,7 @@ file by file, is [ARCHITECTURE.md](ARCHITECTURE.md).
 | directory | what it is |
 |---|---|
 | `agent/` | the class a tenant extends: the Proxy, `@tool`, the state, the stages, the hooks |
-| `views/` | the JSX-to-text runtime: the three regions, the markers the runtime fills |
+| `views/` | the JSX-to-text runtime: the prompt as named blocks in two regions, the markers the runtime fills |
 | `call/` | the live call as a value: the room, the turns, the verbs. Reduced from entries |
 | `client/` | `pinecall/client` — the socket, and nothing above it. Knows only the wire |
 | `runtime/` | the bridge: what the class does, become what the wire sees |
@@ -96,7 +96,7 @@ means editing a list on purpose, which is the point.
 |---|---|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | what this package is, file by file: the entities, the bridge, the CLI, the console, the import table, and where LiveKit is and is not |
 | [docs/writing-an-agent.md](docs/writing-an-agent.md) | the class: state, tools, stages, channels, hooks, events |
-| [docs/the-prompt.md](docs/the-prompt.md) | the view: three regions, and where a rule belongs |
+| [docs/the-prompt.md](docs/the-prompt.md) | the prompt: named blocks in two regions, the view, and where a rule belongs |
 | [docs/testing-an-agent.md](docs/testing-an-agent.md) | the four rings: unit tests, goldens, personas, the score every call gets |
 | [docs/the-cli.md](docs/the-cli.md) | every verb, what it needs, and where its key comes from |
 | [CHANGELOG.md](CHANGELOG.md) · [CLAUDE.md](CLAUDE.md) | what changed · the working agreement |

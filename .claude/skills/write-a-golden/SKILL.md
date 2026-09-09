@@ -64,7 +64,7 @@ latency each was answered with — read from each turn's own metrics entry, neve
 | what you see | look at |
 |---|---|
 | the tool never ran | is it **visible** in that state? `pinecall prompt --state …` prints the stage and its tools |
-| the wrong tool ran | two docstrings that read alike; every tool's docstring is in the static region whether or not it is visible |
+| the wrong tool ran | two docstrings that read alike; every tool's docstring is in the static `tools` block whether or not it is visible |
 | it said something nobody wrote | `grounded` is the check; the cause is usually a view branch offering data the state no longer has |
 | it acted before the yes | the view has to say that **this** turn is the one to wait in; `confirm` travels in the declaration, not in the prompt text |
 | it holds on one model only | a finding, not a flake. Fix the view or the docstring, never the golden |

@@ -59,9 +59,9 @@ a directory earns its place there by having a line in that table (§13).
 | `jsx-runtime.ts` | the element factory and the renderer: a tree of tags becomes TEXT, never DOM. `renderToText`, `renderInline`, `blocks`, `Fragment`, the `JSX` namespace |
 | `jsx-dev-runtime.ts` | the same factory under the name a dev-mode transform imports |
 | `components.ts` | the tags a view is written in: `Prompt`, `Rule`, `Rules`, `Protocols`, `Section`, `Example`, `p`, `Knowledge`, `Memory`, `Retrieved`, the `marker()` syntax, and `Fills` — the render props one render leaves behind |
-| `layout.ts` | the three regions: `staticRegion`, `historyRegion`, `dynamicRegion`, `layout`, `ViewProps`, `View`, `propsFor` |
+| `layout.ts` | the prompt as named blocks in two regions: `layout` → `Blocks`, `layoutOf` (the send order a class declares), `declaredBlocksOf`, `checkViews`, `ViewProps`, `View`, `Views`, `propsFor` |
 | `lang.ts` | the framework's own words — the standing rules and the protocols, `es` and `en`, chosen by the class's `language` |
-| `render.ts` | `render()`, `showPrompt()` (what `--show-prompt` prints), `viewFor()` (where a view lives) |
+| `render.ts` | `render()`, `headerFor()`, `showPrompt()` (what `--show-prompt` prints), `viewFor()` (where the view and a declared block live) |
 
 ### `src/call/` — the live call as a value
 
@@ -160,7 +160,8 @@ Beside `src/`:
 
 | entity | where | fields |
 |---|---|---|
-| `Regions` | `views/layout.ts` | `static`, `history`, `dynamic`, `fills` |
+| `Blocks` / `Block` | `views/layout.ts` | `blocks` in send order, each `name`, `region` (`static` · `dynamic`), `text`; `history`; `fills` |
+| `PromptDeclaration` | `agent/agent.ts` | what `static prompt` says: `static?: string[]`, `dynamic?: string[]` |
 | `ViewProps<T>` | `views/layout.ts` | the snapshot, plus `memory`, `resumed`, `call: { channel, from? }` |
 | `Fills` | `views/components.ts` | `keep(render)` → an id, `fill(id, data)`, `has(id)` — one registry per render, on the async context |
 
@@ -188,8 +189,8 @@ one does not go through the change recorder.
 | `llm` | `ModelConfig` — `"haiku"`/`"sonnet"`/`"opus"` are lowered to real model ids; `"provider/model"` names both halves |
 | `says` | `Pronunciation[]` — `{ Vidal: "bidál" }` written as a map, carried as a list |
 | `hears` | the words the ears must know |
-| `language` | which of `views/lang.ts`'s two word-sets the static region carries |
-| `knowledge`, `docs`, `memory` | read by the view and the runtime; `knowledge` also becomes a `<!-- knowledge: … -->` marker in the static region |
+| `language` | which of `views/lang.ts`'s two word-sets the `identity` block carries |
+| `knowledge`, `docs`, `memory` | read by the view and the runtime; `knowledge` is also the whole `knowledge` block, a `<!-- knowledge: … -->` marker |
 
 **State** — everything else the app puts on the instance, plus its getters. The rules, enforced in
 code:
@@ -233,15 +234,24 @@ What the declaration refuses, before a model ever sees it (`DeclarationRefused`)
 sentence back, hears the yes, and only then runs. `preview: n` cuts what the **model** sees of an
 array result; the state field keeps every row.
 
-## 6. The prompt: three regions, in one order, always
+## 6. The prompt: named blocks in two regions, in one order, always
 
-`layout(agent, view, context)` → `Regions`. Nothing may reorder them; the cut is where the cache is.
+`layout(agent, views, context)` → `Blocks`: every block in send order, each with its name, its
+region and its text. Nothing may reorder them; the cut between the regions is where the cache is.
 
-| region | what is in it | when it changes |
-|---|---|---|
-| `static` | the class docstring · the `knowledge` marker · `<rules>` and `<protocols>` from `views/lang.ts` · every tool's name and docstring | never during a call — it is the cached prefix |
-| `history` | the `<!-- collapsed: … -->` summaries a `collapse()` left. The turns themselves belong to the runtime | when the app collapses |
-| `dynamic` | what the view rendered: the memory marker, the retrieval marker, and everything the state says right now | on every state change |
+| block | region | what is in it | when it changes |
+|---|---|---|---|
+| `identity` | static | the class docstring · `<rules>` and `<protocols>` from `views/lang.ts` | never during a call — it is the cached prefix |
+| `knowledge` | static | the `<!-- knowledge: … -->` marker, or nothing | never |
+| `tools` | static | every tool's name and docstring, visible or not | never |
+| the class's own static blocks | static | `views/<name>.tsx`, called against props that throw on the first read | never |
+| — | the history | the runtime's turns; on the printed page, the `<!-- collapsed: … -->` summaries a `collapse()` left. Never sent by the app | when the app collapses |
+| the class's own dynamic blocks | dynamic | `views/<name>.tsx`, called with the view's props | on every state change |
+| `view` | dynamic, LAST | what the view rendered: the memory marker, the retrieval marker, and everything the state says right now | on every state change |
+
+A class declares its own with `static prompt = { static: ["faq"], dynamic: ["availability"] }`
+(`layoutOf` puts them in send order; a framework name is refused). The whole layout travels once,
+in `agent.configure`, and every block is written by name with `prompt.set`.
 
 A **marker** is a placeholder this package writes and never resolves — `<!-- memory: {"kinds":…} -->`,
 `<!-- retrieved: {"k":…} -->`, `<!-- knowledge: ./file.md -->`. The gateway reads the line, does the
@@ -250,9 +260,9 @@ cannot travel inside a marker, so it stays in that render's `Fills` registry und
 carries, and the filler asks for it by id. The registry rides the async context, so two renders in
 one process never share one.
 
-`pinecall prompt` and `pinecall run --show-prompt` print exactly these three regions, each under
-`── static ──` / `── history ──` / `── dynamic ──`, with the stage and the visible tools beneath.
-Neither needs a gateway, a key or a network.
+`pinecall prompt` and `pinecall run --show-prompt` print exactly these blocks, each under
+`── <name> (<region>) ──` with `── history ──` between the two regions, and the stage and the
+visible tools beneath. Neither needs a gateway, a key or a network.
 
 ## 7. The call, and the six things a class may do to it
 
@@ -275,7 +285,7 @@ waiting on a `say`.
 
 ## 8. The bridge, step by step
 
-`mount(Class, { pc, view, source, slug, last, opening, takesUnclaimed })` is the only place the
+`mount(Class, { pc, views, source, slug, last, opening, takesUnclaimed })` is the only place the
 class and the socket know about each other.
 
 1. **At mount** — `describe(ctor, source)` gives the class its own text back (a docstring sits
@@ -290,9 +300,10 @@ class and the socket know about each other.
    start listening, so `onCall` writing five fields is one prompt and not five.
 4. **On every change** — `state.set` with the field that moved; when the write came from an event,
    one `state.cause` line naming it; then `sync()`.
-5. **`sync()`** renders and compares against what **this call** was last sent: `prompt.set static`
-   only if the static text differs, `prompt.set view` only if the view's text differs, `tools.set`
-   only if the visible list differs. Re-sending identical text is a cache miss for nothing.
+5. **`sync()`** renders and compares each block against what **this call** was last sent under
+   that name: one `prompt.set <name>` per block whose text differs (a block never sent counts as
+   empty, so an empty block is never sent), then `tools.set` only if the visible list differs.
+   Re-sending identical text is a cache miss for nothing.
 6. **A tool call** — the SDK routes it to the instance serving that call; unknown call, unknown
    tool and a failed tool all come back as one `tool.result` carrying `error`, because a turn that
    never gets one waits forever.
@@ -374,8 +385,8 @@ decision:
 | screen | what it reads |
 |---|---|
 | `agents/` | which agents this gateway holds — so `/` offers a list and not a URL shape |
-| `calls/` + `live/` | the calls happening now; one watched call: transcript, marks, `STATE`, `ROOM`, `METRICS`, and the supervisor's six verbs |
-| `sessions/` | every finished call; one of them read whole — envelope, latency, consent join, score, then every entry in `seq` |
+| `calls/` + `live/` | the calls happening now; one watched call: transcript, marks, `STATE`, `PROMPT` (every block by name, hash and length), `ROOM`, `METRICS`, and the supervisor's six verbs |
+| `sessions/` | every finished call; one of them read whole — envelope, latency, consent join, score, the prompt block by block, then every entry in `seq` |
 | `evals/` | every run this agent's suites scored, the diff between two runs, and what each finished call was sealed with |
 | `pipeline/` | the three providers of a voice turn, the anatomy of a turn as a waterfall, and the overrides an operator may change between two calls |
 | `talk/` | a person reaches the agent from this tab, with this browser's microphone |

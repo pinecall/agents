@@ -16,7 +16,7 @@ describe("a command frame", () => {
   });
 
   it("refuses a shape the gateway would have refused, here, where the app can read it", () => {
-    expect(() => frame("prompt.set", "clinica-norte", "CA_1", { region: "middle" as "view", text: "" })).toThrow(PinecallError);
+    expect(() => frame("prompt.set", "clinica-norte", "CA_1", { region: "view", text: "" } as unknown as { name: string; text: string })).toThrow(PinecallError);
   });
 });
 

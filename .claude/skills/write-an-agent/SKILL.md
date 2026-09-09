@@ -34,7 +34,7 @@ pnpm exec pinecall test --grep <name> --watch                # ring 1, while wri
 ```
 
 `prompt` and `run --show-prompt` are free and instant. Use them before every ring-1 run: half of
-what looks like a model problem is a region that says the wrong thing.
+what looks like a model problem is a block that says the wrong thing.
 
 ## Adding a tool — the five things that are checked
 
@@ -62,16 +62,19 @@ Read in this order. Each line is a real diagnosis from these two examples:
 
 | symptom | usually |
 |---|---|
-| asks again for something it already has | the tool's docstring is in the **static** region whether or not the tool is visible. The view has to say "you already know who you are talking to" |
-| does the irreversible thing without the yes | the standing rule lives in the static prefix and is generic. `side_effect` and `confirm` travel in the declaration, not in the text: the **view** has to say that *this* is the turn to wait in |
+| asks again for something it already has | the tool's docstring is in the static `tools` block whether or not the tool is visible. The view has to say "you already know who you are talking to" |
+| does the irreversible thing without the yes | the standing rule lives in `identity`, static and generic. `side_effect` and `confirm` travel in the declaration, not in the text: the **view** has to say that *this* is the turn to wait in |
 | reads the same option back forever | one view branch is covering two different turns. Add the state field that tells them apart (`proposed`) and write a branch for each |
 | invents an option | the state that was on the table moved and the view did not clear it, or the tool resolved a free-text argument loosely |
 | never leaves the first stage | a stage with no way out. Every stage needs a tool that can move it — including the "not on file" path |
 
 ## Views
 
-- The view is the **dynamic** region and the only one that may change between two turns. Never
-  write into the class docstring per call; never reorder the regions.
+- The view is a **dynamic** block, the last one, and only a dynamic block may change between two
+  turns. Never write into the class docstring per call; never reorder the blocks. Data a tool
+  feeds that the view only reads back — a slot list, a cart — can be a dynamic block of its own
+  (`static prompt = { dynamic: ["availability"] }`, `views/availability.tsx`); prose the model
+  should read once and cached is a static one, and it may read no state.
 - `{condition && <p>…</p>}` is the whole control flow: `false`, `null` and `undefined` render
   nothing. `<p>` is a paragraph; siblings are one blank line apart.
 - `<Memory>`, `<Retrieved>` and `<Knowledge>` render markers the **gateway** fills. This package

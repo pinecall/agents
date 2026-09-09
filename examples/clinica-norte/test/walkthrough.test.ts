@@ -12,6 +12,7 @@ import { mount, type Mounted } from "pinecall";
 
 import ClinicaNorte from "../agent.js";
 import view from "../views/agent.js";
+import availability from "../views/availability.js";
 import { REFUSED_HOUR, type Slot } from "../lib/agenda.js";
 
 const KEY = "pk_test";
@@ -30,7 +31,7 @@ beforeEach(async () => {
   // Una tool que falla llega al modelo como tool.result y a la app como error; aquí se lee el cable,
   // así que el lado de la app se calla en vez de imprimirse.
   pc.onErrors(() => {});
-  mounted = mount(ClinicaNorte, { pc, view, source: SOURCE, slug: SLUG });
+  mounted = mount(ClinicaNorte, { pc, views: { view, availability }, source: SOURCE, slug: SLUG });
   await pc.connect();
   await settled();
 });
@@ -101,6 +102,8 @@ it("recorre identificar, ofrecer y reservar, y dice que no cuando la agenda dice
   expect(offered()).toEqual(["transfer"]);
   expect(gateway.commandsOf("call.log")[0]?.data["name"]).toBe("appointment.booked");
 
+  // La view es el último bloque que se manda: lo que el modelo lee en último lugar es el turno.
   const prompt = gateway.commandsOf("prompt.set").at(-1)?.data;
+  expect(prompt?.["name"]).toBe("view");
   expect(String(prompt?.["text"])).toContain("le llega un SMS");
 });

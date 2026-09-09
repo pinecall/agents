@@ -26,16 +26,16 @@ expect(agent.stage).toBe("choose");
 // the same walk against the gateway that is not there: the same tool.result a model would see
 const gateway = await FakeGateway.start({ apiKey: KEY });
 const pc = new Pinecall({ url: gateway.url, apiKey: KEY });
-const mounted = mount(ClinicaNorte, { pc, view, source: SOURCE });
+const mounted = mount(ClinicaNorte, { pc, views: { view }, source: SOURCE });
 ```
 
 `pinecall/client/testing` is that fake: a gateway that answers the app socket, and a log nobody
 stored. An app's own suite needs neither a network nor a key.
 
-The third one worth writing is a **prompt-regions** test: render the class in three captured
-states and assert the static region is byte-for-byte identical in all three and the dynamic one
+The third one worth writing is a **prompt-blocks** test: render the class in three captured
+states and assert every static block is byte-for-byte identical in all three and the view
 changed in all three. That is the invariant the whole prompt cache rests on, and nothing else
-notices when a view starts writing into the static half.
+notices when a view starts writing into the cached half.
 
 ## Ring 1 — the goldens
 
