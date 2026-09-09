@@ -7,11 +7,17 @@ half of the product has a page of the same name in `pinecall/runtime`; nothing h
 
 `pinecall` is the package, and its source is `src/` at the repo root — the layout
 `anthropic-sdk-typescript` uses, and for its reason: a `packages/` directory is for what
-somebody installs SEPARATELY, and nothing here is except one thing.
+somebody installs SEPARATELY, and nothing here is.
 
-That one thing is `web/`: `@pinecall/web` is a browser's read of its own call, and a customer's
-page must not pull in `oxc-parser`, `tsx` and `ws` to get it. It installs alone, so it is a
-package.
+There was one candidate, and it is worth writing down why it left. `@pinecall/web` — a
+browser's read of its own call, `useCallState` over the DataChannel or the SSE door — sat in a
+`web/` directory of its own for a day, on the argument that a customer's page must not install a
+TypeScript loader to read a call. True, and beside the point: nothing in this repository
+imported it, no example used it, and the console reads the room through livekit's own
+transcription streams instead. A boundary with no consumer is a wish. The runtime still
+publishes the projection it would have read (`docs/protocol/projections.md`); the day a browser
+package is designed — with a widget, a session, the things v1's `@pinecall/web` actually has —
+it will be designed for that consumer, and this repository's history holds the 496 lines.
 
 The console is the counter-example and the useful one. It is 5,000 lines of React, it has its
 own compiler settings and its own bundler — and nobody installs it. It is the page one verb

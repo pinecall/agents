@@ -10,9 +10,9 @@ import { describe, expect, it } from "vitest";
 
 const REPO = fileURLToPath(new URL("..", import.meta.url));
 
-// The four trees of hand-written TypeScript. `web/` is a package of its own and the examples are
-// applications, but the rules that make code readable do not change with the directory.
-const TREES = ["src", "test", "web/src", "web/test", "examples"];
+// The three trees of hand-written TypeScript. The examples are applications and not the
+// package, but the rules that make code readable do not change with the directory.
+const TREES = ["src", "test", "examples"];
 
 // 400 lines is the ceiling and 150 the norm. A file over it is not a style problem: it is two
 // ideas that were never separated, and it stops fitting in a reading.

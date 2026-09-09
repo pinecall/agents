@@ -1,7 +1,4 @@
 packages:
-  # @pinecall/web: the browser's own read of its own call. The one thing here somebody
-  # installs without the framework — a customer's page must not pull in a TypeScript loader.
-  - web
   - examples/*
   # The wire, from the repo next door: one contract, two languages, its own version. A path
   # today because nothing is published yet; a range in package.json the day it is.
