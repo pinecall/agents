@@ -1,0 +1,31 @@
+/* The front page: the fleet's agents, one line each, and nothing else on the screen. */
+
+.agents {
+  max-width: 40rem;
+}
+
+.agents-title {
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  margin: 0 0 calc(var(--step) * 2);
+  text-transform: uppercase;
+}
+
+.agents-one {
+  align-items: baseline;
+  border-bottom: 1px solid var(--edge);
+  display: flex;
+  gap: calc(var(--step) * 2);
+  justify-content: space-between;
+  padding: var(--step) 0;
+}
+
+.agents-channels {
+  color: var(--ink-soft);
+}
+
+.agents-one:hover {
+  background: var(--panel);
+}

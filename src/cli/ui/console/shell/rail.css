@@ -1,0 +1,43 @@
+/* The rail. The screen you are on is the one in the accent; there is no other selected thing. */
+
+.rail-group {
+  margin-bottom: calc(var(--step) * 6);
+}
+
+.rail-label {
+  color: var(--ink-faint);
+  letter-spacing: 0.12em;
+  padding: 0 calc(var(--step) * 3) calc(var(--step) * 1.5);
+  text-transform: uppercase;
+}
+
+/* The agent's group is labelled with the slug it acts on: an identifier, not a heading. */
+.rail-label-path {
+  color: var(--ink-soft);
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.rail-link {
+  align-items: center;
+  border-left: 2px solid transparent;
+  color: var(--ink-soft);
+  display: flex;
+  gap: calc(var(--step) * 1.5);
+  padding: var(--step) calc(var(--step) * 3);
+}
+
+.rail-link:hover {
+  color: var(--ink);
+}
+
+.rail-link-here {
+  border-left-color: var(--accent);
+  color: var(--ink);
+}
+
+.rail-foot {
+  color: var(--ink-faint);
+  line-height: 1.8;
+  padding: 0 calc(var(--step) * 3);
+}

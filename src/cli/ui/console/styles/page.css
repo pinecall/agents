@@ -1,0 +1,367 @@
+/* The page vocabulary every screen is built from: a head, sections, panels, tables, chips, tabs.
+ * Layout only — every colour, size and step comes from tokens.css. */
+
+/* ── page ────────────────────────────────────────────────────────────────── */
+
+.page {
+  max-width: 1040px;
+  padding: calc(var(--step) * 3) calc(var(--step) * 2) calc(var(--step) * 8);
+}
+
+.page-wide {
+  max-width: 1320px;
+}
+
+.page-eyebrow {
+  color: var(--ink-faint);
+  font-family: var(--face-fixed);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.page-title {
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  margin: calc(var(--step) * 1.5) 0 0;
+}
+
+.page-title-fixed {
+  font-family: var(--face-fixed);
+  letter-spacing: 0;
+}
+
+.page-lede {
+  color: var(--ink-soft);
+  line-height: 1.7;
+  margin: calc(var(--step) * 2) 0 0;
+  max-width: 64ch;
+}
+
+.section {
+  margin-top: calc(var(--step) * 6);
+}
+
+.section-title {
+  color: var(--ink-faint);
+  font-family: var(--face-fixed);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  margin: 0 0 calc(var(--step) * 2);
+  text-transform: uppercase;
+}
+
+/* A line of small print under a block: where these numbers came from, or why there are none. */
+.note {
+  color: var(--ink-faint);
+  font-family: var(--face-fixed);
+  font-size: 12px;
+  margin: calc(var(--step) * 1.5) 0 0;
+}
+
+.note + .panel {
+  margin-top: calc(var(--step) * 2);
+}
+
+.note-warn {
+  color: var(--warn);
+}
+
+/* ── panels ──────────────────────────────────────────────────────────────── */
+
+.panel {
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+}
+
+.panel-head {
+  align-items: baseline;
+  display: flex;
+  gap: calc(var(--step) * 2);
+  justify-content: space-between;
+  padding: calc(var(--step) * 2) calc(var(--step) * 3) var(--step);
+}
+
+.panel-title {
+  font-family: var(--face-fixed);
+  font-size: 13px;
+}
+
+.panel-body {
+  padding: 0 calc(var(--step) * 3) calc(var(--step) * 2);
+}
+
+.grid {
+  display: grid;
+  gap: calc(var(--step) * 2);
+}
+
+.grid-3 {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+/* ── badges and mono bits ────────────────────────────────────────────────── */
+
+.badge {
+  color: var(--ink-faint);
+  font-family: var(--face-fixed);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.badge-live {
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  color: var(--accent);
+  letter-spacing: 0.06em;
+  padding: 1px var(--step);
+}
+
+.mono {
+  font-family: var(--face-fixed);
+  font-size: 0.95em;
+}
+
+.dim {
+  color: var(--ink-soft);
+}
+
+.faint {
+  color: var(--ink-faint);
+}
+
+.accent {
+  color: var(--accent);
+}
+
+/* ── tables — the one place density is the point ─────────────────────────── */
+
+.table-wrap {
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  overflow-x: auto;
+}
+
+.table {
+  border-collapse: collapse;
+  font-size: 12px;
+  width: 100%;
+}
+
+.table th {
+  border-bottom: 1px solid var(--edge);
+  color: var(--ink-faint);
+  font-family: var(--face-fixed);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  padding: calc(var(--step) * 1.5) calc(var(--step) * 2);
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.table td {
+  border-bottom: 1px solid var(--edge);
+  padding: calc(var(--step) * 1.5) calc(var(--step) * 2);
+  vertical-align: baseline;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover td {
+  background: var(--panel);
+}
+
+.table td.num,
+.table th.num {
+  font-family: var(--face-fixed);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.table td.id {
+  color: var(--ink-soft);
+  font-family: var(--face-fixed);
+}
+
+tr.is-open td {
+  background: var(--panel-2);
+}
+
+/* ── key/value readouts inside a panel ───────────────────────────────────── */
+
+.kv {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.kv td {
+  font-family: var(--face-fixed);
+  font-size: 12px;
+  padding: var(--step) 0;
+}
+
+.kv tr + tr td {
+  border-top: 1px solid var(--edge);
+}
+
+.kv-key {
+  color: var(--ink-faint);
+}
+
+.kv-val {
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* ── chips: one measure, one score, one fact ─────────────────────────────── */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--step);
+}
+
+.chip {
+  align-items: baseline;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  display: inline-flex;
+  font-family: var(--face-fixed);
+  font-size: 11px;
+  gap: calc(var(--step) / 2);
+  padding: 1px var(--step);
+}
+
+.chip-key {
+  color: var(--ink-faint);
+}
+
+.chip-val {
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── tabs ────────────────────────────────────────────────────────────────── */
+
+.tabs {
+  border-bottom: 1px solid var(--edge);
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--step) / 2);
+  margin-top: calc(var(--step) * 3);
+}
+
+/* A tab is a button with the browser's chrome taken off: the active rule lands ON the strip's
+   hairline, not under it. */
+.tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: var(--radius) var(--radius) 0 0;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-family: var(--face-fixed);
+  font-size: 12px;
+  line-height: 1.5;
+  margin-bottom: -1px;
+  padding: var(--step) calc(var(--step) * 1.5);
+}
+
+.tab:hover {
+  background: var(--panel-2);
+  color: var(--ink);
+}
+
+.tab:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.tab.is-active {
+  border-bottom-color: var(--accent);
+  color: var(--ink);
+}
+
+/* ── buttons and links ───────────────────────────────────────────────────── */
+
+.button {
+  background: none;
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--radius);
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-family: var(--face-fixed);
+  font-size: 12px;
+  padding: var(--step) calc(var(--step) * 1.5);
+}
+
+.button:hover:not(:disabled) {
+  border-color: var(--ink-faint);
+  color: var(--ink);
+}
+
+.button:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.link {
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-family: var(--face-fixed);
+  font-size: 12px;
+  padding: 0;
+}
+
+.link:hover {
+  color: var(--accent);
+}
+
+/* ── empty states — honest, and they name what fills them ────────────────── */
+
+.empty {
+  border-top: 1px solid var(--edge);
+  max-width: 72ch;
+  padding-top: calc(var(--step) * 3);
+}
+
+.empty-title {
+  font-size: 15px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.empty-body {
+  color: var(--ink-soft);
+  line-height: 1.75;
+  margin: calc(var(--step) * 2) 0 0;
+}
+
+.empty-cmd {
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  color: var(--ink-soft);
+  display: block;
+  font-family: var(--face-fixed);
+  font-size: 12px;
+  margin-top: calc(var(--step) * 2);
+  overflow-x: auto;
+  padding: calc(var(--step) * 1.5) calc(var(--step) * 2);
+  white-space: pre;
+}
+
+.empty-cmd::before {
+  color: var(--ink-faint);
+  content: "$ ";
+}

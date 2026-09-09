@@ -1,0 +1,81 @@
+/* Calls owns its own styles: the list on the left, and as much room as there is for what is live. */
+
+.calls {
+  display: flex;
+  gap: calc(var(--step) * 3);
+  height: 100%;
+  min-height: 0;
+}
+
+.call-list {
+  border-right: 1px solid var(--edge);
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: calc(var(--step) * 2);
+  overflow: auto;
+  padding-right: calc(var(--step) * 2);
+  width: calc(var(--rail) - var(--step) * 2);
+}
+
+.call-list-standing {
+  color: var(--ink-faint);
+  margin: 0;
+}
+
+.call-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.call-group-name {
+  color: var(--ink-faint);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  margin: 0 0 var(--step);
+  text-transform: uppercase;
+}
+
+.call-line {
+  align-items: baseline;
+  border-left: 2px solid transparent;
+  color: var(--ink-soft);
+  display: flex;
+  gap: var(--step);
+  padding: calc(var(--step) * 0.75) var(--step);
+}
+
+.call-line:hover {
+  color: var(--ink);
+}
+
+.call-line-here {
+  border-left-color: var(--accent);
+  color: var(--accent);
+}
+
+.call-line-glyph {
+  flex: none;
+}
+
+.call-line-who {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.call-line-when {
+  color: var(--ink-faint);
+  flex: none;
+}
+
+/* Two live calls sit side by side and neither of them shrinks below what a transcript needs. */
+.calls-watching {
+  display: flex;
+  flex: 1;
+  gap: calc(var(--step) * 2);
+  min-width: 0;
+  overflow-x: auto;
+}

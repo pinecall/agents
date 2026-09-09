@@ -1,0 +1,98 @@
+/* Evals — the run table and the score sheet, the scored calls and their evidence.
+ * The palette says three things and nothing else: the accent means a judgment that held or a run
+ * that is done, `--danger` means one that did not hold, `--warn` means a run that did not finish. */
+
+.ev-row {
+  cursor: pointer;
+}
+
+.ev-status-done {
+  color: var(--accent);
+}
+
+.ev-status-failed {
+  color: var(--danger);
+}
+
+.ev-status-running {
+  color: var(--warn);
+}
+
+.ev-bad {
+  color: var(--danger);
+}
+
+.ev-delta-up {
+  color: var(--accent);
+}
+
+.ev-delta-down {
+  color: var(--danger);
+}
+
+/* ── the score sheet ─────────────────────────────────────────────────────── */
+
+.ev-detail {
+  display: grid;
+  gap: calc(var(--step) * 2);
+}
+
+.ev-scores td {
+  vertical-align: middle;
+}
+
+.ev-score {
+  align-items: center;
+  display: inline-flex;
+  gap: calc(var(--step) * 1.5);
+  justify-content: flex-end;
+}
+
+.ev-score-value {
+  font-family: var(--face-fixed);
+  font-variant-numeric: tabular-nums;
+}
+
+.ev-track {
+  background: var(--panel-3);
+  border-radius: 2px;
+  height: 4px;
+  width: 96px;
+}
+
+.ev-bar {
+  background: var(--accent);
+  border-radius: 2px;
+  display: block;
+  height: 100%;
+}
+
+.ev-bar-bad {
+  background: var(--warn);
+}
+
+.ev-reason {
+  color: var(--ink-soft);
+  line-height: 1.6;
+  margin: 0;
+  max-width: 48ch;
+}
+
+/* ── the evidence under an open call ─────────────────────────────────────── */
+
+.ev-said .panel-body {
+  display: grid;
+  gap: calc(var(--step) * 1.5);
+}
+
+.ev-quote {
+  border-left: 2px solid var(--edge-strong);
+  color: var(--ink);
+  line-height: 1.6;
+  margin: 0;
+  padding-left: calc(var(--step) * 1.5);
+}
+
+a.chip:hover .chip-val {
+  color: var(--accent);
+}

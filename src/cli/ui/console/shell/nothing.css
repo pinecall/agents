@@ -1,0 +1,7 @@
+/* An empty screen is still a screen: the sentence sits where the first row would have been. */
+
+.nothing {
+  color: var(--ink-faint);
+  margin: 0;
+  max-width: 48ch;
+}

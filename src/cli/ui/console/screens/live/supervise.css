@@ -1,0 +1,73 @@
+/* The supervisor's panel in the head of a watched call: small moves, one box, one refusal line. */
+
+.supervise {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--step);
+}
+
+.supervise-move {
+  background: none;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  color: var(--ink-faint);
+  cursor: not-allowed;
+  font-family: var(--face-fixed);
+  font-size: 11px;
+  font-weight: 400;
+  padding: 2px var(--step);
+}
+
+/* A move that is built is a button; a move that is heard is the accent. */
+.supervise-can {
+  border-color: var(--edge-strong);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.supervise-can:hover {
+  color: var(--ink);
+}
+
+.supervise-live {
+  border-color: var(--accent);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+/* The second click of an end: the button says what it is about to do, in the colour of a refusal. */
+.supervise-danger {
+  border-color: var(--danger);
+  color: var(--danger);
+  cursor: pointer;
+}
+
+.supervise-text,
+.supervise-to {
+  background: var(--ground);
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-family: var(--face-fixed);
+  font-size: 11px;
+  padding: 2px var(--step);
+}
+
+.supervise-text {
+  min-width: 22ch;
+}
+
+.supervise-text:focus,
+.supervise-to:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.supervise-to {
+  min-width: 14ch;
+}
+
+.supervise-refused {
+  color: var(--danger);
+}

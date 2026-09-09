@@ -1,0 +1,273 @@
+/* The pipeline screen: three provider panels, the turn waterfall, the control form.
+ * Every colour, size and gap is a token — this file adds no palette of its own. The waterfall
+ * spends the one accent on the end-to-end rail, because that bar is the only one the caller
+ * actually experiences; the four stages are greys, so the eye compares lengths and not hues. */
+
+/* ── a provider panel ────────────────────────────────────────────────────── */
+
+.leg-model {
+  border-bottom: 1px solid var(--edge);
+  color: var(--accent);
+  font-size: 13px;
+  padding-bottom: calc(var(--step) * 1.5);
+}
+
+.leg-rows {
+  margin: 0;
+}
+
+.leg-row {
+  padding: calc(var(--step) * 1.5) 0;
+}
+
+.leg-row + .leg-row {
+  border-top: 1px solid var(--edge);
+}
+
+.leg-k {
+  color: var(--ink-faint);
+  font-family: var(--face-fixed);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.leg-v {
+  color: var(--ink);
+  font-size: 13px;
+  margin: calc(var(--step) / 2) 0 0;
+  overflow-wrap: anywhere;
+}
+
+.leg-note {
+  color: var(--ink-faint);
+  font-size: 12px;
+  line-height: 1.5;
+  margin: calc(var(--step) / 2) 0 0;
+}
+
+.leg-refused {
+  border-top: 1px solid var(--edge);
+  margin-top: calc(var(--step) * 2);
+  padding-top: calc(var(--step) * 1.5);
+}
+
+.leg-refused-title {
+  color: var(--warn);
+  font-family: var(--face-fixed);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.leg-refused-row {
+  color: var(--ink-faint);
+  font-size: 11px;
+  line-height: 1.55;
+  margin: var(--step) 0 0;
+}
+
+/* ── the waterfall ───────────────────────────────────────────────────────── */
+
+.wf {
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  padding: calc(var(--step) * 3);
+}
+
+.wf-row {
+  align-items: center;
+  display: grid;
+  gap: calc(var(--step) * 2);
+  grid-template-columns: 140px 1fr 90px;
+  padding: calc(var(--step) * 1.5) 0;
+}
+
+.wf-row + .wf-row {
+  border-top: 1px solid var(--edge);
+}
+
+.wf-row-total {
+  border-top: 1px solid var(--edge-strong);
+  margin-top: var(--step);
+}
+
+.wf-label {
+  color: var(--ink-soft);
+  font-family: var(--face-fixed);
+  font-size: 12px;
+}
+
+.wf-row-total .wf-label {
+  color: var(--ink);
+}
+
+.wf-track {
+  background: var(--panel-2);
+  border-radius: 2px;
+  height: 14px;
+  position: relative;
+}
+
+.wf-bar {
+  background: var(--ink-faint);
+  border-radius: 2px;
+  bottom: 0;
+  position: absolute;
+  top: 0;
+}
+
+.wf-row-total .wf-bar {
+  background: var(--accent);
+}
+
+.wf-unmeasured {
+  color: var(--ink-faint);
+  font-family: var(--face-fixed);
+  font-size: 11px;
+  left: var(--step);
+  position: absolute;
+  top: -2px;
+}
+
+.wf-value {
+  color: var(--ink);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.wf-row-total .wf-value {
+  color: var(--accent);
+}
+
+.wf-note {
+  color: var(--ink-faint);
+  font-size: 12px;
+  grid-column: 2 / 4;
+  line-height: 1.5;
+  margin: calc(var(--step) / 2) 0 0;
+}
+
+.wf-caption {
+  border-top: 1px solid var(--edge);
+  color: var(--ink-faint);
+  font-size: 12px;
+  line-height: 1.6;
+  margin: calc(var(--step) * 2) 0 0;
+  max-width: 78ch;
+  padding-top: calc(var(--step) * 1.5);
+}
+
+/* ── the control form ────────────────────────────────────────────────────── */
+
+.ctl {
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  display: grid;
+  gap: calc(var(--step) * 3);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  padding: calc(var(--step) * 3);
+}
+
+.ctl-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--step);
+}
+
+.ctl-field-wide {
+  grid-column: 1 / -1;
+}
+
+.ctl-label {
+  color: var(--ink-faint);
+  font-family: var(--face-fixed);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.ctl-input {
+  background: var(--panel);
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 13px;
+  padding: var(--step) calc(var(--step) * 1.5);
+  width: 100%;
+}
+
+.ctl-input:focus-visible {
+  border-color: var(--accent);
+}
+
+.ctl-textarea {
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.ctl-note {
+  color: var(--ink-faint);
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.ctl-foot {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--step) * 2);
+  grid-column: 1 / -1;
+  padding-top: var(--step);
+}
+
+.ctl-save {
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  color: var(--accent);
+  cursor: pointer;
+  font-family: var(--face-fixed);
+  font-size: 12px;
+  padding: var(--step) calc(var(--step) * 3);
+}
+
+.ctl-save:disabled {
+  background: transparent;
+  border-color: var(--edge-strong);
+  color: var(--ink-faint);
+  cursor: default;
+}
+
+.ctl-banner {
+  color: var(--ink-faint);
+  font-size: 12px;
+}
+
+.ctl-error {
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  color: var(--danger);
+  font-family: var(--face-fixed);
+  font-size: 12px;
+  grid-column: 1 / -1;
+  line-height: 1.6;
+  margin: 0;
+  padding: calc(var(--step) * 1.5) calc(var(--step) * 2);
+}
+
+.ctl-ok {
+  color: var(--ink-faint);
+  font-family: var(--face-fixed);
+  font-size: 12px;
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.ctl + .table-wrap,
+.ctl + .note {
+  margin-top: calc(var(--step) * 2);
+}

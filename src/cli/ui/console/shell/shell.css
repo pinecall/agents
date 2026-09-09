@@ -1,0 +1,111 @@
+/* The frame: a brand cell, a header strip, the rail, and one scrolling work surface. */
+
+.shell {
+  display: grid;
+  grid-template-areas:
+    "brand head"
+    "rail  screen";
+  grid-template-columns: var(--rail) 1fr;
+  grid-template-rows: var(--head) 1fr;
+  height: 100%;
+}
+
+.shell-brand {
+  align-items: center;
+  border-bottom: 1px solid var(--edge);
+  border-right: 1px solid var(--edge);
+  display: flex;
+  gap: var(--step);
+  grid-area: brand;
+  padding: 0 calc(var(--step) * 3);
+}
+
+.shell-head {
+  border-bottom: 1px solid var(--edge);
+  grid-area: head;
+}
+
+.shell-rail {
+  border-right: 1px solid var(--edge);
+  grid-area: rail;
+  overflow-y: auto;
+  padding: calc(var(--step) * 4) 0 calc(var(--step) * 6);
+}
+
+.shell-screen {
+  grid-area: screen;
+  min-width: 0;
+  overflow: auto;
+  padding: calc(var(--step) * 3) calc(var(--step) * 4) calc(var(--step) * 8);
+}
+
+/* ── the brand, and the header beside it ─────────────────────────────────── */
+
+.brand-mark {
+  background: var(--accent);
+  border-radius: 1px;
+  height: 7px;
+  width: 7px;
+}
+
+.brand-name {
+  font-family: var(--face-fixed);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.brand-kind {
+  color: var(--ink-faint);
+  font-family: var(--face-fixed);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.head {
+  align-items: center;
+  display: flex;
+  gap: calc(var(--step) * 3);
+  height: 100%;
+  justify-content: space-between;
+  padding: 0 calc(var(--step) * 4);
+}
+
+.head-crumbs {
+  align-items: center;
+  color: var(--ink-soft);
+  display: flex;
+  gap: var(--step);
+  min-width: 0;
+}
+
+.head-crumbs b {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.head-sep {
+  color: var(--ink-faint);
+}
+
+/* One hairline glyph, the weight of the crumbs beside it — a switch, not a button. */
+.theme-toggle {
+  align-items: center;
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  line-height: 0;
+  padding: calc(var(--step) / 2);
+}
+
+.theme-toggle:hover {
+  color: var(--ink);
+}
+
+.theme-toggle svg {
+  stroke-width: 1.5;
+}

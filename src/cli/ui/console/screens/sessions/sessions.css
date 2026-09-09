@@ -1,0 +1,316 @@
+/* The two session screens. Layout and density only — every colour comes from tokens.css.
+ * A log is the one place this instrument is allowed to be dense: 12px rows, hairlines, tabular
+ * numbers. The accent is spent exactly twice — on a phone call, and on the consent that authorised
+ * something irreversible — because those are the two things worth interrupting a scan for. */
+
+.by-hand {
+  display: flex;
+  gap: var(--step);
+  max-width: 48ch;
+}
+
+/* ── the call log's own columns ──────────────────────────────────────────── */
+
+.medium {
+  color: var(--ink-faint);
+  font-family: var(--face-fixed);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.medium-phone {
+  color: var(--accent);
+}
+
+.outcome {
+  color: var(--ink-soft);
+  font-family: var(--face-fixed);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.outcome-caller_hung_up,
+.outcome-agent_hung_up {
+  color: var(--ink);
+}
+
+.outcome-error,
+.outcome-timeout {
+  color: var(--warn);
+}
+
+/* ── the envelope: one row of labelled facts ─────────────────────────────── */
+
+.facts {
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  display: flex;
+  flex-wrap: wrap;
+  overflow: hidden;
+}
+
+.fact {
+  border-right: 1px solid var(--edge);
+  flex: 1 0 auto;
+  min-width: 132px;
+  padding: calc(var(--step) * 1.5) calc(var(--step) * 2);
+}
+
+.fact:last-child {
+  border-right: none;
+}
+
+.fact-key {
+  color: var(--ink-faint);
+  font-family: var(--face-fixed);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.fact-val {
+  color: var(--ink);
+  font-family: var(--face-fixed);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  margin-top: calc(var(--step) / 2);
+  overflow-wrap: anywhere;
+}
+
+.fact-accent .fact-val {
+  color: var(--accent);
+}
+
+/* ── the latency strip ───────────────────────────────────────────────────── */
+
+.strip {
+  background: var(--edge);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  display: grid;
+  gap: 1px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  overflow: hidden;
+}
+
+.strip-cell {
+  background: var(--ground);
+  padding: calc(var(--step) * 2) calc(var(--step) * 3);
+}
+
+.strip-leg {
+  color: var(--ink-faint);
+  font-family: var(--face-fixed);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+
+.strip-median {
+  font-family: var(--face-fixed);
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  margin-top: var(--step);
+}
+
+.strip-foot {
+  color: var(--ink-faint);
+  display: flex;
+  font-family: var(--face-fixed);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  gap: calc(var(--step) * 1.5);
+  justify-content: space-between;
+  margin-top: var(--step);
+}
+
+.strip-max {
+  color: var(--ink-soft);
+}
+
+/* ── consent — the only evidence on the screen ───────────────────────────── */
+
+.consent {
+  border: 1px solid var(--edge);
+  border-left: 2px solid var(--accent);
+  border-radius: var(--radius);
+  padding: calc(var(--step) * 2) calc(var(--step) * 3);
+}
+
+.consent + .consent {
+  margin-top: calc(var(--step) * 1.5);
+}
+
+.consent-join {
+  color: var(--accent);
+  margin: 0;
+}
+
+.consent-said {
+  color: var(--ink);
+  line-height: 1.6;
+  margin: var(--step) 0 0;
+  max-width: 72ch;
+}
+
+.consent-problem {
+  color: var(--warn);
+  margin: var(--step) 0 0;
+}
+
+.consent-problem::before {
+  content: "! ";
+}
+
+/* ── the score, check by check ───────────────────────────────────────────── */
+
+.score-list {
+  display: grid;
+  gap: calc(var(--step) * 1.5);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.score-row {
+  align-items: baseline;
+  display: grid;
+  gap: calc(var(--step) * 2);
+  grid-template-columns: 16px 120px 90px minmax(0, 1fr) auto;
+  padding-top: calc(var(--step) * 1.5);
+}
+
+.score-row + .score-row {
+  border-top: 1px solid var(--edge);
+}
+
+.score-row:first-child {
+  padding-top: var(--step);
+}
+
+.score-row-mark {
+  font-family: var(--face-fixed);
+}
+
+.score-row-pass .score-row-mark {
+  color: var(--accent);
+}
+
+.score-row-fail .score-row-mark {
+  color: var(--danger);
+}
+
+.score-row-na {
+  color: var(--ink-faint);
+}
+
+.score-row-kind {
+  color: var(--ink-faint);
+  font-family: var(--face-fixed);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.score-row-reason {
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.score-row-said {
+  color: var(--ink);
+}
+
+.score-row-seqs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--step);
+}
+
+.player {
+  width: 100%;
+}
+
+/* ── the log: read digit by digit beside `pinecall-runtime sessions show` ──── */
+
+.timeline {
+  border: 1px solid var(--edge);
+  border-collapse: collapse;
+  border-radius: var(--radius);
+  font-size: 12px;
+  table-layout: auto;
+  width: 100%;
+}
+
+.timeline td {
+  border-bottom: 1px solid var(--edge);
+  padding: calc(var(--step) / 2) var(--step);
+  vertical-align: top;
+}
+
+.timeline .row-opens {
+  cursor: pointer;
+}
+
+.timeline .row-opens:hover td {
+  background: var(--panel);
+}
+
+/* Every cell below is this table's own: the console is one bundle, so a screen's class carries
+   the thing it belongs to and never a word another screen could want.
+   The row a verdict cites: the reader followed a link from a score to this one line. */
+.timeline .row-cited td {
+  background: var(--panel-2);
+  box-shadow: inset 2px 0 var(--accent);
+}
+
+.timeline .mark {
+  color: var(--accent);
+  width: 1.5em;
+}
+
+.timeline .seq {
+  color: var(--ink-soft);
+  width: 4em;
+}
+
+.timeline .type {
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.timeline .payload {
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.timeline .field td {
+  border-bottom: none;
+  padding-bottom: 0;
+  padding-top: 0;
+}
+
+.timeline .field-name {
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+
+.timeline .field-value {
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+
+.timeline .chips {
+  display: inline-flex;
+  margin-left: var(--step);
+}
+
+.timeline .number {
+  text-align: right;
+}
+
+.timeline .soft {
+  color: var(--ink-soft);
+}
