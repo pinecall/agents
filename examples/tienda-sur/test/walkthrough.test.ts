@@ -30,7 +30,7 @@ beforeEach(async () => {
   // Una tool que falla llega al modelo como tool.result y a la app como error; aquí se lee el cable,
   // así que el lado de la app se calla en vez de imprimirse.
   pc.onErrors(() => {});
-  mounted = mount(TiendaSur, { pc, view, source: SOURCE, slug: SLUG });
+  mounted = mount(TiendaSur, { pc, views: { view }, source: SOURCE, slug: SLUG });
   await pc.connect();
   await settled();
 });

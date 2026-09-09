@@ -44,7 +44,7 @@ describe("a fake gateway meeting traffic it cannot parse", () => {
     await vi.waitFor(() => expect(gateway?.connections).toBe(0));
 
     client = new Pinecall({ url: gateway.url, apiKey: KEY });
-    client.agent("clinica-norte", { routes: [{ channel: "web" }], instructions: "Atiendes la centralita." });
+    client.agent("clinica-norte", { routes: [{ channel: "web" }], greeting: "Clínica Norte, ¿en qué puedo ayudarte?" });
     await client.connect();
 
     expect(gateway.commandsOf("agent.register")).toHaveLength(1);

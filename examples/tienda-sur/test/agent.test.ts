@@ -30,6 +30,13 @@ describeClass(TiendaSur, SOURCE);
 
 let sur: TiendaSur;
 
+/** El texto de un bloque del prompt, por nombre, en el estado en que esté la tienda. */
+function block(name: string, context = {}): string {
+  const found = render(sur, { view }, context).blocks.find((one) => one.name === name);
+  if (found === undefined) throw new Error(`no hay bloque ${name}`);
+  return found.text;
+}
+
 beforeEach(() => {
   sur = seal(new TiendaSur());
 });
@@ -145,7 +152,7 @@ describe("cerrar el pedido", () => {
   it("deja el hecho en el log y colapsa la historia en una frase", async () => {
     await call("proposeOrder");
     await call("confirmOrder");
-    expect(render(sur, view).history).toContain("cerrado por Rosa Medina");
+    expect(render(sur, { view }).history).toContain("cerrado por Rosa Medina");
   });
 
   it("un artículo agotado deja el pedido sin hacer y dice qué hacer con él", async () => {
@@ -246,7 +253,7 @@ describe("las cuatro fases", () => {
 });
 
 describe("la view", () => {
-  const dynamic = (context = {}): string => render(sur, view, context).dynamic;
+  const dynamic = (context = {}): string => block("view", context);
 
   it("dice que no sabe quién llama mientras no haya ficha", () => {
     expect(dynamic()).toContain("Todavía no sabes quién llama");
@@ -306,13 +313,12 @@ describe("la view", () => {
   });
 });
 
-describe("el prompt estático", () => {
-  it("apunta al fichero de conocimiento y lista las seis tools", () => {
-    const { static: prefix } = render(sur, view);
-    expect(prefix).toContain("<!-- knowledge: ./knowledge/tienda.md -->");
-    expect(prefix).toContain("Un precio sale del catálogo");
+describe("los bloques estáticos", () => {
+  it("apuntan al fichero de conocimiento y listan las seis tools", () => {
+    expect(block("knowledge")).toBe("<!-- knowledge: ./knowledge/tienda.md -->");
+    expect(block("identity")).toContain("Un precio sale del catálogo");
     for (const name of ["findProduct", "addToCart", "proposeOrder", "confirmOrder", "registerCustomer", "orderStatus"]) {
-      expect(prefix).toContain(`- ${name}:`);
+      expect(block("tools")).toContain(`- ${name}:`);
     }
   });
 

@@ -1,4 +1,4 @@
-/** One call being watched: its head, the transcript in the middle, and the three panels beside it. */
+/** One call being watched: its head, the transcript in the middle, and the four panels beside it. */
 
 import type { ReactNode } from "react";
 
@@ -7,6 +7,7 @@ import type { Entry } from "@pinecall/protocol";
 import { useDeclaredState } from "../../lib/declared-state";
 import { Player, recordingIn } from "../sessions/recording";
 import { MetricsPanel } from "./metrics-panel";
+import { PromptPanel } from "./prompt-panel";
 import { RoomPanel } from "./room-panel";
 import { StatePanel } from "./state-panel";
 import { Supervise } from "./supervise";
@@ -47,6 +48,7 @@ export function Live({ call }: { call: string }): ReactNode {
         <Timeline entries={watched.entries} state={state} />
         <aside className="live-panels">
           <StatePanel fields={state.app_state} declared={declared} />
+          <PromptPanel prompt={state.prompt} />
           <RoomPanel room={state.room} from={state.from} />
           <MetricsPanel metrics={state.metrics} entries={watched.entries} />
         </aside>

@@ -17,7 +17,10 @@ import {
 
 import ClinicaNorte from "../agent.js";
 import view from "../views/agent.js";
+import availability from "../views/availability.js";
 import { agendaFor, REFUSED_HOUR, type Slot } from "../lib/agenda.js";
+
+const views = { view, availability };
 
 // El .ts de la clase, para que los tipos de los parámetros sobrevivan al transpilador: sin él,
 // `day: string` es un argumento sin tipo y el esquema no puede decir nada de él.
@@ -44,6 +47,13 @@ function names(): string[] {
   return clinica.visibleTools().map((spec) => spec.name);
 }
 
+/** El texto de un bloque del prompt, por nombre, en el estado en que esté la clínica. */
+function block(name: string, context = {}): string {
+  const found = render(clinica, views, context).blocks.find((one) => one.name === name);
+  if (found === undefined) throw new Error(`no hay bloque ${name}`);
+  return found.text;
+}
+
 describe("identificar al paciente", () => {
   it("deja la ficha en el estado cuando el nombre y el teléfono cuadran", async () => {
     expect(clinica.stage).toBe("identify");
@@ -65,8 +75,8 @@ describe("identificar al paciente", () => {
     expect(clinica.patient?.name).toBe("Bernardo");
     expect(clinica.patient?.cita).toBeUndefined();
     expect(clinica.stage).toBe("choose");
-    expect(render(clinica, view).dynamic).toContain("paciente nuevo");
-    expect(render(clinica, view).dynamic).toContain("para qué día quiere la cita");
+    expect(block("view")).toContain("paciente nuevo");
+    expect(block("view")).toContain("para qué día quiere la cita");
   });
 
   it("encuentra la ficha por el número desde el que se llama, sin preguntar nada", async () => {
@@ -136,8 +146,7 @@ describe("reservar", () => {
     await call("book", { chosen: free.when });
     expect(clinica.booking?.when).toBe(free.when);
     expect(clinica.stage).toBe("done");
-    const prompt = render(clinica, view);
-    expect(prompt.history).toContain("Reservado");
+    expect(render(clinica, views).history).toContain("Reservado");
     expect(await agendaFor(clinica).free("martes")).not.toContainEqual(free);
   });
 
@@ -211,7 +220,7 @@ describe("las cuatro fases", () => {
 });
 
 describe("la view", () => {
-  const dynamic = (context = {}): string => render(clinica, view, context).dynamic;
+  const dynamic = (context = {}): string => block("view", context);
 
   it("pide nombre y teléfono mientras no haya paciente", () => {
     expect(dynamic()).toContain("Saluda y pide nombre y teléfono");
@@ -275,13 +284,12 @@ describe("la view", () => {
   });
 });
 
-describe("el prompt estático", () => {
-  it("apunta al fichero de conocimiento y lista las cinco tools", () => {
-    const { static: prefix } = render(clinica, view);
-    expect(prefix).toContain("<!-- knowledge: ./knowledge/clinica.md -->");
-    expect(prefix).toContain("Nunca inventes una hora");
+describe("los bloques estáticos", () => {
+  it("apuntan al fichero de conocimiento y listan las cinco tools", () => {
+    expect(block("knowledge")).toBe("<!-- knowledge: ./knowledge/clinica.md -->");
+    expect(block("identity")).toContain("Nunca inventes una hora");
     for (const name of ["findPatient", "freeSlots", "propose", "book", "transfer"]) {
-      expect(prefix).toContain(`- ${name}:`);
+      expect(block("tools")).toContain(`- ${name}:`);
     }
   });
 

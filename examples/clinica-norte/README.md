@@ -6,7 +6,8 @@ la consola — lo pone la plataforma.
 
 ```
 agent.ts          la clase: el estado son campos, las tools son métodos con docstring
-views/agent.tsx   el prompt como función del estado
+views/agent.tsx   el prompt como función del estado: la view, lo último que lee el modelo
+views/availability.tsx   un bloque propio del prompt, `static prompt = { dynamic: ["availability"] }` en la clase
 knowledge/        clinica.md cacheado delante de todo · docs/ indexado y recuperado por turno
 lib/agenda.ts     el sistema de la clínica; aquí es un doble determinista
 test/             la clase como software, y los goldens que `pinecall test` ejecuta

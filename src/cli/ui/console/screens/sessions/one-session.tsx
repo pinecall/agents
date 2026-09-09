@@ -6,6 +6,7 @@ import { Link, useParams } from "react-router";
 
 import { started } from "../../lib/clock";
 import { medians } from "../../lib/metrics";
+import { PromptBlocks } from "../live/prompt-blocks";
 import { Consents, consents } from "./consent";
 import { duration, euros } from "./finished-calls";
 import { Recording, recordingIn } from "./recording";
@@ -123,6 +124,21 @@ export function Session(): ReactNode {
                     EUR at {read.state.cost.rate.usd_to_eur} USD, as of {read.state.cost.rate.as_of}
                     {read.state.cost.unpriced.length > 0 &&
                       ` · unpriced: ${read.state.cost.unpriced.map((row) => `${row.provider}/${row.model}`).join(", ")}`}
+                  </p>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {Object.keys(read.state.prompt).length > 0 && (
+            <section className="section">
+              <h2 className="section-title">The prompt, block by block</h2>
+              <div className="panel">
+                <div className="panel-body">
+                  <PromptBlocks prompt={read.state.prompt} />
+                  <p className="note">
+                    What the app wrote, by name, with the hash and length of each block. The text never enters the
+                    log; <code className="mono">pinecall prompt --state</code> prints it offline.
                   </p>
                 </div>
               </div>

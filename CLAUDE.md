@@ -87,9 +87,10 @@ sentences; small methods; 150 lines is the norm. Tests read as sentences.
   `@tool({ stage })` on a class with no `stage` field is refused too.
 - **The class docstring lives above the class,** where `toString()` cannot see it, and parameter
   types are gone after compilation. `describe(ctor, source)` in `cli/load.ts` and `mount({source})`
-  are the only reason the static region has a first line and the tools have typed arguments.
-- **Only `dynamic` may differ between two turns.** Re-sending identical text is a cache miss for
-  nothing, and reordering the three regions breaks the prefix cache.
+  are the only reason the `identity` block has a first line and the tools have typed arguments.
+- **Only a `dynamic` block may differ between two turns.** Re-sending identical text is a cache
+  miss for nothing, and reordering the blocks breaks the prefix cache. A tenant's static block is
+  called against props that throw on the first read, so "static reads no state" is an exception.
 - **A view says what to do in THIS turn.** Two facts the examples paid for: a rule that lives only
   in the static prefix is read once and generically, and the rule for "the caller just named a
   slot" is the opposite of the one for "the caller just said yes".

@@ -50,12 +50,8 @@ export default ({
         )}
         {slots.length > 0 && (
           <>
-            <p>Horas libres, en orden:</p>
-            {slots.map((slot) => (
-              <p>
-                {slot.when} con {slot.doctor}
-              </p>
-            ))}
+            {/* Las horas mismas van en el bloque `availability`, justo antes de esta view: aquí
+                solo qué hacer con ellas. */}
             {call.channel === "phone" ? (
               <p>Ofrece como máximo dos de estas horas y pregunta cuál prefiere.</p>
             ) : (

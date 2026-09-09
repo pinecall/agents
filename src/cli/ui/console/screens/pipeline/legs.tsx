@@ -20,7 +20,7 @@ export function HearsLeg({ stage, unavailable }: { stage: Stage; unavailable: st
 export function DecidesLeg({ stage, unavailable }: { stage: Stage; unavailable: string | null }): ReactNode {
   return (
     <Leg role="decides" vendor={stage.vendor} model={stage.model} unavailable={unavailable}>
-      <Row k="prompt" v="static · history · view" note="three regions, in that order, so the static prefix is cached and never reordered" />
+      <Row k="prompt" v="identity · knowledge · tools · history · view" note="named blocks in two regions, never reordered: the static ones before the history are cached, the dynamic ones after it are rewritten every turn; an agent adds blocks of its own on either side" />
       <Row k="tools" v="the class's @tool methods" note="visible by stage; the only thing that changes the state" />
     </Leg>
   );

@@ -21,7 +21,7 @@ export const group: Group = {
 
 /**
  * No runtime, no gateway, no key: load the class, put it in the state the goldens describe, and
- * print the three regions with a header each, and under them the stage and the tools it shows. This
+ * print every block of the prompt under its header, and under them the stage and the tools it shows. This
  * is the verb a person runs while writing a view, and it must answer in the time it takes to save
  * the file.
  */
@@ -42,7 +42,7 @@ export async function run(
   const loaded = await load(positionals[0]);
   const agent = new loaded.ctor();
   agent.startIn(firstState(values.state, values.case));
-  out.write(`${showPrompt(agent, loaded.view)}\n\n${showMachine(agent)}\n`);
+  out.write(`${showPrompt(agent, loaded.views)}\n\n${showMachine(agent)}\n`);
   return 0;
 }
 

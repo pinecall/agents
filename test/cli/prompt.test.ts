@@ -1,4 +1,4 @@
-// `pinecall prompt --state`: the loader, the goldens file, and the three regions in their one order.
+// `pinecall prompt --state`: the loader, the goldens file, and every block under its header in the one order.
 
 import { fileURLToPath } from "node:url";
 
@@ -31,7 +31,7 @@ describe("loading an agent from disk", () => {
   it("brings the view that sits beside the agent, and calls it with the state", async () => {
     const loaded = await load(AGENT);
 
-    expect(loaded.view?.({
+    expect(loaded.views["view"]?.({
         identified: false,
         slots: [],
         memory: { has: () => false },
@@ -57,16 +57,16 @@ describe("the goldens file a state comes from", () => {
 });
 
 describe("the prompt a state would produce", () => {
-  it("prints the three regions, each under its header, in the one order they are ever sent", async () => {
+  it("prints every block under its header, the static ones before the history and the view after it", async () => {
     const out = collected();
 
     const code = await run([AGENT, "--state", GOLDENS], out.stream);
 
     expect(code).toBe(0);
     const printed = out.text();
-    expect(printed.indexOf("── static ──")).toBeGreaterThanOrEqual(0);
-    expect(printed.indexOf("── static ──")).toBeLessThan(printed.indexOf("── history ──"));
-    expect(printed.indexOf("── history ──")).toBeLessThan(printed.indexOf("── dynamic ──"));
+    expect(printed.indexOf("── identity (static) ──")).toBe(0);
+    expect(printed.indexOf("── tools (static) ──")).toBeLessThan(printed.indexOf("── history ──"));
+    expect(printed.indexOf("── history ──")).toBeLessThan(printed.indexOf("── view (dynamic) ──"));
   });
 
   it("renders the view against the state the goldens describe, not against a fresh instance", async () => {
@@ -86,14 +86,14 @@ describe("the prompt a state would produce", () => {
   });
 });
 
-describe("the same three regions on the example the design is written around", () => {
+describe("the same blocks on the example the design is written around", () => {
   it("puts the clinic's own state into Clínica Norte and renders its view at the end", () => {
     const agent = new ClinicaNorte();
     agent.restore(firstState(GOLDENS, "1"));
 
-    const page = showPrompt(agent, view, { call: { channel: "web" } });
+    const page = showPrompt(agent, { view }, { call: { channel: "web" } });
 
-    expect(page.indexOf("── static ──")).toBeLessThan(page.indexOf("── dynamic ──"));
+    expect(page.indexOf("── identity (static) ──")).toBeLessThan(page.indexOf("── view (dynamic) ──"));
     expect(page).toContain("Ana García");
   });
 });

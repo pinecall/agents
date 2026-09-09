@@ -66,7 +66,7 @@ describe("a call", () => {
 
     await vi.waitFor(() => expect(gateway.commandsOf("call.hangup")).toHaveLength(1));
     expect(gateway.commandsOf("agent.say")[0]?.data).toEqual({ text: "Un momento" });
-    expect(gateway.commandsOf("prompt.set")[0]?.data).toEqual({ region: "view", text: "El paciente pregunta por una cita" });
+    expect(gateway.commandsOf("prompt.set")[0]?.data).toEqual({ name: "view", text: "El paciente pregunta por una cita" });
     // The app's own state is never renamed under it; the command's own keys are the wire's.
     expect(gateway.commandsOf("state.set")[0]?.data).toEqual({ state: { patient: "Marta", slot_held: null }, changed: ["patient"] });
     expect(gateway.commandsOf("tools.set")[0]?.data["tools"]).toEqual([

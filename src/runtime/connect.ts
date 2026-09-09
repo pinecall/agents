@@ -19,7 +19,7 @@ import { describe } from "../agent/docstrings.js";
 import { runHook, type Call as HookCall } from "../agent/lifecycle.js";
 import { snapshot, type LastCall, type Snapshot } from "../agent/state.js";
 import { toolNamed } from "../agent/tools.js";
-import type { View } from "../views/layout.js";
+import { checkViews, layoutOf, type Views } from "../views/layout.js";
 import { render } from "../views/render.js";
 import { routesOf } from "./channels.js";
 import { inOrder, type Serving } from "./dispatch.js";
@@ -28,7 +28,8 @@ import { runTool, ToolFailed } from "./run-tool.js";
 /** What mount needs beyond the class: where to send, what to render, and the class's own source. */
 export interface MountOptions {
   pc: Pinecall;
-  view?: View;
+  /** The functions in `views/`, by block name: `view` for `views/agent.tsx`, one per declared block. */
+  views?: Views;
   /** The class's .ts source, so docstrings and parameter types survive compilation. */
   source?: string;
   /** Override the slug the class name would give. */
@@ -62,8 +63,8 @@ type Send = <K extends CommandType>(type: K, call: string, data: Camel<CommandDa
 // What was last put on the wire for one call, so the next render is compared against it rather
 // than re-sent. A prompt.set the model would read as identical text is a cache miss for nothing.
 interface Sent {
-  static?: string;
-  view?: string;
+  /** Each block's text as last sent, by name. A block never sent is the empty text the runtime starts it as. */
+  blocks: Map<string, string>;
   tools?: string;
 }
 
@@ -154,6 +155,9 @@ export function optionsFor(ctor: Ctor, tools: Tool[], instance: Agent = new ctor
   if (says) options.says = says;
   const hears = hearsOf(probe["hears"]);
   if (hears) options.hears = hears;
+  // The layout is always sent whole: the send order is the framework's contract, and the wire
+  // carrying it is what lets the runtime and the console name every block the same way.
+  options.prompt = layoutOf(ctor);
   const stateFields = stateFieldsOf(ctor);
   if (stateFields) options.stateFields = stateFields;
   const events = eventsOf(ctor);
@@ -167,9 +171,12 @@ export function optionsFor(ctor: Ctor, tools: Tool[], instance: Agent = new ctor
  */
 export function mount(
   ctor: Ctor,
-  { pc, view, source, slug, last, opening, takesUnclaimed = true }: MountOptions,
+  { pc, views = {}, source, slug, last, opening, takesUnclaimed = true }: MountOptions,
 ): Mounted {
   if (source !== undefined) describe(ctor, source);
+  // A declared block with no function is refused here, at mount, and not at the first call's
+  // render — which would land inside start() with nobody awaiting it.
+  checkViews(ctor, views);
   const name = slug ?? slugOf(ctor);
   const live = new Map<string, Live>();
   // One instance to read the class with: its tools and everything it declares about itself are
@@ -184,7 +191,7 @@ export function mount(
 
   agent.on("call.started", (_payload, call) => {
     if (call !== null) {
-      void start(ctor, view, live, call, (type, id, data) => agent.command(type, id, data), last, opening);
+      void start(ctor, views, live, call, (type, id, data) => agent.command(type, id, data), last, opening);
     }
   });
   agent.on("call.ended", (_payload, call) => {
@@ -212,7 +219,7 @@ async function call_(
 // only then start listening — so the opening send is one prompt and not one per field onCall set.
 async function start(
   ctor: Ctor,
-  view: View | undefined,
+  views: Views,
   live: Map<string, Live>,
   call: SdkCall,
   send: Send,
@@ -224,13 +231,13 @@ async function start(
   const world = new CallWorld(hookCall(call), (type, data) => send(type, call.id, data));
   setCall(agent, world);
   const serving: Serving = { agent, ctor, call: world, warned: new Set<string>(), queue: Promise.resolve() };
-  const link: Live = { agent, sent: {}, stop: [], serving };
+  const link: Live = { agent, sent: { blocks: new Map() }, stop: [], serving };
   live.set(call.id, link);
   await runHook(agent, "onCall", hookCall(call));
   const wanted = opening?.(call);
   if (wanted !== undefined) agent.startIn(wanted);
   call.setState(snapshot(agent));
-  sync(link, view, call);
+  sync(link, views, call);
   link.stop.push(
     onChange(agent, (change) => {
       call.setState(snapshot(agent), [change.field]);
@@ -238,7 +245,7 @@ async function start(
       // to it: one line naming the event, the field and the event's place in this call's stream.
       const cause = world.cause;
       if (cause !== null) call.log("state.cause", { field: change.field, kind: "event", ...cause });
-      sync(link, view, call);
+      sync(link, views, call);
     }),
     onLog(agent, (entry) => call.log(entry.name, dataOf(entry.data))),
     call.onAny((event) => {
@@ -272,17 +279,14 @@ async function end(live: Map<string, Live>, call: SdkCall): Promise<void> {
 }
 
 // The one rule this card exists for: render, then compare with what this call was last sent, and
-// send only the region whose text is different. Tools are compared as their whole declaration,
+// send only the block whose text is different. Tools are compared as their whole declaration,
 // because a `when` flipping changes the list and nothing else about a spec ever changes mid-call.
-function sync(serving: Live, view: View | undefined, call: SdkCall): void {
-  const regions = render(serving.agent, view, { call: lineOf(call) });
-  if (regions.static !== serving.sent.static) {
-    serving.sent.static = regions.static;
-    call.setPrompt("static", regions.static);
-  }
-  if (regions.dynamic !== serving.sent.view) {
-    serving.sent.view = regions.dynamic;
-    call.setPrompt("view", regions.dynamic);
+function sync(serving: Live, views: Views, call: SdkCall): void {
+  const { blocks } = render(serving.agent, views, { call: lineOf(call) });
+  for (const block of blocks) {
+    if (block.text === (serving.sent.blocks.get(block.name) ?? "")) continue;
+    serving.sent.blocks.set(block.name, block.text);
+    call.setPrompt(block.name, block.text);
   }
   const visible = serving.agent.visibleTools();
   const key = JSON.stringify(visible);

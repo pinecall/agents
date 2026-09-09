@@ -1,12 +1,14 @@
-// Criterio 2 del hito, clavado por un test: la región estática es byte a byte la misma en los tres
-// estados capturados, y la dinámica cambia en los tres. El orden nunca se reordena: static · history
-// · dynamic, que es el que el KV-cache del proveedor premia (docs/decisions/prompt-regions.md).
+// Criterio 2 del hito, clavado por un test: cada bloque estático es byte a byte el mismo en los tres
+// estados capturados, y la view cambia en los tres. El orden nunca se reordena: los bloques
+// estáticos · la historia · los dinámicos, la view al final — el orden que el KV-cache del
+// proveedor premia (docs/decisions/prompt-blocks.md). La tienda no declara bloques propios: este
+// es el layout por defecto, tal cual.
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
-import { describe as describeClass, render, seal, showPrompt, toolNamed } from "pinecall";
+import { describe as describeClass, render, seal, showPrompt, toolNamed, type Blocks } from "pinecall";
 
 import TiendaSur from "../agent.js";
 import view from "../views/agent.js";
@@ -29,17 +31,26 @@ function at(index: number): TiendaSur {
   return agent;
 }
 
-describe("las tres regiones del prompt", () => {
-  it("mantiene la región estática idéntica en los tres estados", () => {
-    const regions = STATES.map((_, index) => render(at(index), view));
+/** El texto de un bloque, por nombre. */
+function block(blocks: Blocks, name: string): string {
+  const found = blocks.blocks.find((one) => one.name === name);
+  if (found === undefined) throw new Error(`no hay bloque ${name}`);
+  return found.text;
+}
 
-    for (const region of regions) expect(region.static).toBe(regions[0]!.static);
-    // Y no está vacía: un prefijo vacío también sería "idéntico" y no probaría nada.
-    expect(regions[0]!.static).toContain("mostrador de Tienda Sur");
+describe("los bloques del prompt", () => {
+  it("mantiene cada bloque estático idéntico en los tres estados", () => {
+    const rendered = STATES.map((_, index) => render(at(index), { view }));
+
+    for (const name of ["identity", "knowledge", "tools"]) {
+      for (const one of rendered) expect(block(one, name)).toBe(block(rendered[0]!, name));
+    }
+    // Y no está vacío: un prefijo vacío también sería "idéntico" y no probaría nada.
+    expect(block(rendered[0]!, "identity")).toContain("mostrador de Tienda Sur");
   });
 
-  it("cambia la región dinámica en cada uno de los tres", () => {
-    const dynamics = STATES.map((_, index) => render(at(index), view).dynamic);
+  it("cambia la view en cada uno de los tres", () => {
+    const dynamics = STATES.map((_, index) => block(render(at(index), { view }), "view"));
 
     expect(new Set(dynamics).size).toBe(STATES.length);
     expect(dynamics[0]).toContain("El carrito está vacío");
@@ -47,18 +58,24 @@ describe("las tres regiones del prompt", () => {
     expect(dynamics[2]).toContain("TS-8001");
   });
 
-  it("imprime las regiones en su único orden", () => {
-    const printed = showPrompt(at(1), view);
+  it("imprime los cuatro bloques por defecto en su único orden, con la historia en medio", () => {
+    const headers = showPrompt(at(1), { view })
+      .split("\n")
+      .filter((line) => line.startsWith("── "));
 
-    expect(printed.indexOf("── static ──")).toBe(0);
-    expect(printed.indexOf("── history ──")).toBeGreaterThan(printed.indexOf("── static ──"));
-    expect(printed.indexOf("── dynamic ──")).toBeGreaterThan(printed.indexOf("── history ──"));
+    expect(headers).toEqual([
+      "── identity (static) ──",
+      "── knowledge (static) ──",
+      "── tools (static) ──",
+      "── history ──",
+      "── view (dynamic) ──",
+    ]);
   });
 
   it("coincide con lo capturado, para que las capturas no se pudran", () => {
     for (const [index] of STATES.entries()) {
       const captured = readFileSync(here(`./prompts/state-${index}.txt`), "utf8");
-      expect(`${showPrompt(at(index), view)}\n`).toBe(captured);
+      expect(`${showPrompt(at(index), { view })}\n`).toBe(captured);
     }
   });
 
@@ -81,7 +98,7 @@ describe("un caso que nombra unos campos y calla los demás", () => {
     const agent = seal(new TiendaSur());
     agent.startIn({ stage: "browse" });
 
-    expect(render(agent, view).dynamic).toContain("El carrito está vacío");
+    expect(block(render(agent, { view }), "view")).toContain("El carrito está vacío");
   });
 });
 
@@ -91,7 +108,7 @@ describe("un caso que nombra unos campos y calla los demás", () => {
 describe("la clase y la vista dicen lo mismo sobre buscar antes de decir un precio", () => {
   it("repite en la vista la regla que findProduct lleva en su docstring", () => {
     const agent = at(0);
-    const dynamic = render(agent, view).dynamic;
+    const dynamic = block(render(agent, { view }), "view");
 
     expect(toolNamed(agent, "findProduct")?.spec.description).toContain("Llámala SIEMPRE");
     expect(dynamic).toContain("búscalo SIEMPRE con findProduct");
@@ -108,7 +125,7 @@ describe("con el carrito lleno, terminar la compra no cierra el pedido", () => {
       stage: "cart",
       cart: [{ ref: "TS-202", product: "brocha de cuatro pulgadas", qty: 1, price: 4 }],
     });
-    const dynamic = render(agent, view).dynamic;
+    const dynamic = block(render(agent, { view }), "view");
 
     expect(dynamic).toContain("todavía no es un pedido");
     expect(dynamic).toContain("pregúntale si se lo cierras");
@@ -117,7 +134,7 @@ describe("con el carrito lleno, terminar la compra no cierra el pedido", () => {
   });
 
   it("y una vez leído dice lo contrario, que es la otra mitad de la regla", () => {
-    const dynamic = render(at(1), view).dynamic;
+    const dynamic = block(render(at(1), { view }), "view");
 
     expect(dynamic).toContain("llama a confirmOrder en ese mismo turno");
     expect(dynamic).not.toContain("todavía no es un pedido");
