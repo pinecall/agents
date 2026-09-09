@@ -21,7 +21,8 @@ export interface Supervising {
 }
 
 // Warm transfer needs a second leg the SIP stack does not have yet, and the door answers ONLY_COLD
-// to anything else (docs/decisions/supervise.md), so the desk asks for the one mode there is.
+// to anything else (the runtime's docs/decisions/supervise.md), so the desk asks for the one mode
+// there is.
 const THE_ONLY_MODE = "cold";
 
 /**

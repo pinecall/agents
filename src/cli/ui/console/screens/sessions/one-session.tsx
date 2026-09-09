@@ -21,7 +21,7 @@ import "./sessions.css";
 // is derived from the table — nothing on this screen comes from anywhere the CLI could not reach.
 
 // call.summary and NOT the terminal entry: the log seals on call.score, which is a verdict and
-// carries no pointer to anything (docs/decisions/scoring.md).
+// carries no pointer to anything (the runtime's docs/decisions/scoring.md).
 const A_SUMMARY = "call.summary";
 
 export function Session(): ReactNode {

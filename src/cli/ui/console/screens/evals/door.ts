@@ -14,8 +14,8 @@ const OpenedSchema = z.object({
 });
 
 // Ring 3's own vocabulary, and deliberately not ring 4's four words: a check's status is the
-// operator's and a verdict on the wire is the tenant's (docs/decisions/scoring.md). `score` is
-// livekit's arithmetic over a judgment and is shown as the judgment wrote it, never averaged.
+// operator's and a verdict on the wire is the tenant's (the runtime's docs/decisions/scoring.md).
+// `score` is livekit's arithmetic over a judgment, shown as the judgment wrote it, never averaged.
 /** What one judge answered about one golden: the number, the sentence, and what it was asked. */
 const JudgedSchema = z.object({
   metric: z.string(),

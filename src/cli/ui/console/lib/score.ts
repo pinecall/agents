@@ -4,9 +4,10 @@ import { CallScoreSchema, LogPageSchema, TERMINAL_EVENT, type CallScore } from "
 
 import { read, type Credentials } from "./api";
 
-// `call.score` is the entry the log SEALS on (TERMINAL_EVENT, docs/decisions/scoring.md), so on a
-// finished call it is the entry at `last_seq` and nowhere else. Reading from one below it is
-// therefore one request and one entry, rather than paging a whole conversation to reach its end.
+// `call.score` is the entry the log SEALS on (TERMINAL_EVENT, and the runtime's
+// docs/decisions/scoring.md), so on a finished call it is the entry at `last_seq` and nowhere
+// else. Reading from one below it is therefore one request and one entry, rather than paging a
+// whole conversation to reach its end.
 /** The verdict a finished call was sealed with, or null when the log carries none. */
 export async function readScore(
   credentials: Credentials,

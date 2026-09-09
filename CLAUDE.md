@@ -1,67 +1,86 @@
-# pinecall/agents — working agreement
+# pinecall/agents
 
-The framework a tenant writes an agent in, its CLI, the console that CLI serves, and the
-browser's own package. Reply to the human in Spanish; code, comments, commit messages and this
-file in English.
+The framework a tenant writes an agent in — a class whose fields are the state and whose `@tool`
+methods are the model's verbs — its CLI, and the console that CLI serves. Reply to the human in
+Spanish; code, comments, commit messages and this file in English. What it is:
+[ARCHITECTURE.md](ARCHITECTURE.md). How to build an agent with it: [docs/](docs/). Procedures with
+traps in them are skills under `.claude/skills/`.
 
-**Thesis.** An agent is an object. Fields are state. Methods are capabilities. Docstrings are
-prompts. Types are contracts. The prompt is `render(state)`. Tools are the only thing that
-changes state. What does the real time is `pinecall/runtime`, over a socket, and this package
-never imports it.
+## Workflow
 
-## The tree
-
-`README.md` is the map: six directories under `src/`, and `examples/` as two real
-tenants. `test/` mirrors `src/`. The why behind each part is in `docs/decisions/`, which is this
-laptop's engineering notebook and not the repository's: git ignores it, a clone has no such
-directory, and a comment that names a page there is pointing at a note, not at documentation.
-
-## Invariants the tests enforce
-
-- `test/the-imports.test.ts` is the import table. `client/` knows only the wire and `ws`;
-  `cli/ui/console/` is a browser page and may never reach the framework; a directory earns its
-  place in `src/` by having a line. A line nobody uses is a line the test deletes.
-- `test/the-tree.test.ts`: no `.ts` at the repo root, no file over 400 lines, every file opens by
-  saying what it is, no two names in one directory one letter apart.
-- `test/index.test.ts` and `test/client/index.test.ts` pin the two public surfaces by name.
-  Adding an export means editing a list on purpose.
-- `package.json` exports point at `src/` and `publishConfig` swaps them for `dist/` at publish.
-  Both examples resolve `pinecall` through `node_modules` like a customer would — into the sources
-  here, into `dist` from npm — and nothing anywhere is aliased or path-mapped.
-- The golden call log comes from `@pinecall/protocol/fixtures`, so a log folded here is the one
-  Python folds there.
-
-## Hygiene — what every review greps for
-
-One definition per thing. No dead code, no code "for later": a symbol with no user outside its
-own file and its own test goes in the commit that notices it. The public surface is explicit and
-tested. No module-level mutable state — a registry or a "current" holder is per call, per mount
-or per request, or it rides `AsyncLocalStorage`. One idea per file, named by the idea. A stale
-comment is a bug.
-
-## Code style
-
-Files open with a one-line docstring, then imports, then public methods, then private ones. A
-short comment above any method whose name does not say everything — why, never what. Names are
-sentences: `find_patient`, `render_static_region`, never `mgr` or `ctx2`. Small methods, small
-files: 400 lines is the ceiling, 150 the norm. Two-space indentation. Tests read as sentences.
-If it would not have shipped in Rails 2.3, do not write it.
-
-## Commits, versions
-
-`Bernardo Castro <me@bernardocastro.dev>`, no `Co-Authored-By`, no generated-with trailers.
-Versions and tags are the human's call — never pick a number, never tag.
-
-## Commands
-
-```
-pnpm install                        the workspace, and the wire from the repo next door
-scripts/build                       the wire, the package, the console
-scripts/check                       build, then lint, then test — what CI runs
-pnpm test                           the framework and the console, two vitest projects
-pnpm -r test                        both examples, and the wire's own suite
+```bash
+pnpm install                     # the workspace, and the wire from the repo next door
+pnpm test                        # the framework and the console, two vitest projects — from the sources
+pnpm lint                        # tsc over src and test, then over the console against the DOM
+pnpm -r test                     # both examples, and the wire's own suite
+scripts/build                    # what is published: dist/, and the console bundle inside it
+scripts/check                    # build → lint → test, in that order — what CI runs
+pnpm vitest run test/agent       # one directory; `-t "a sentence"` for one test
+cd examples/clinica-norte && pnpm exec pinecall chat     # the agent in this terminal
+cd examples/clinica-norte && pnpm exec pinecall prompt --state test/prompts/states.json
 ```
 
 Nothing has to be built to lint or test: every package in the workspace exports its sources.
 `scripts/build` is for what gets published, and for the console — a browser reads no TypeScript,
 so `pinecall ui` in a checkout needs the bundle once.
+
+## Structure
+
+- `src/` — six directories, kept apart by the import table in `test/the-imports.test.ts`
+  - `agent/` the class · `views/` JSX→text · `call/` the live call as a value
+  - `client/` `pinecall/client`: the socket, and nothing above it · `runtime/` the bridge
+  - `cli/` `pinecall <verb>`, and under `cli/ui/console/` the browser page one of them serves
+- `test/` mirrors `src/`; `the-tree`, `the-imports`, `index` and `client/index` are the tree's rules
+- `examples/` two tenants written the way a customer writes one — and what the nightly drives
+- `docs/` how to build an agent · `docs/decisions/` the maintainer's notebook, **git-ignored**:
+  a clone has no such directory, and a comment naming a page there points at a note. A page of
+  the runtime's notebook is named as **the runtime's** `docs/decisions/<page>.md`, never bare
+
+## Rules the tests enforce
+
+- No `.ts` at the repo root. No file over 400 lines. Every file opens with a line saying what it
+  is. No two names in one directory one letter apart.
+- The import table is the architecture: `client/` knows only the wire and `ws`; `cli/ui/console/`
+  is a browser page and may never reach the framework; a line nobody uses is a line the test
+  deletes.
+- `test/index.test.ts` and `test/client/index.test.ts` pin the two public surfaces by name —
+  never a CLI module, never a bridge internal, never a test helper.
+- `package.json` exports point at `src/` and `publishConfig` swaps in `dist/`. Both examples
+  resolve `pinecall` through `node_modules` like a customer; nothing is aliased or path-mapped.
+- The golden call log comes from `@pinecall/protocol/fixtures`, so a log folded here is the one
+  Python folds there.
+
+## What a review comes back to
+
+One definition per thing — `grep` before writing a constant, a parser, a helper. No dead code and
+no code "for later": a symbol with no user outside its file and its test goes in the commit that
+notices it. No module-level mutable state — per call, per mount, per request, or on the async
+context (`AsyncLocalStorage`). One idea per file, named by the idea. A stale comment is a bug, and
+so is a count inside one (`snapshot` drops "the config fields", not "the nine"). Names are
+sentences; small methods; 150 lines is the norm. Tests read as sentences.
+
+## Traps — each one cost an afternoon
+
+- **A gateway on a dev key honours that key and no other.** `PINECALL_API_KEY` exported in the
+  shell is then ignored, out loud (`cli/env.ts`). A bare `403` with no sentence in it:
+  `env | grep PINECALL`, then `unset`. `pinecall whoami` says which key a verb would use.
+- **A tool with no docstring is refused,** because without one no model can choose it; and
+  `@tool({ stage })` on a class with no `stage` field is refused too.
+- **The class docstring lives above the class,** where `toString()` cannot see it, and parameter
+  types are gone after compilation. `describe(ctor, source)` in `cli/load.ts` and `mount({source})`
+  are the only reason the static region has a first line and the tools have typed arguments.
+- **Only `dynamic` may differ between two turns.** Re-sending identical text is a cache miss for
+  nothing, and reordering the three regions breaks the prefix cache.
+- **A view says what to do in THIS turn.** Two facts the examples paid for: a rule that lives only
+  in the static prefix is read once and generically, and the rule for "the caller just named a
+  slot" is the opposite of the one for "the caller just said yes".
+- `pinecall test --voice` is ring 2 and is **not built**: it says so instead of running ring 1 and
+  calling it voice.
+- Versions and tags are the human's: never pick a number, never tag.
+
+## Commits
+
+`Bernardo Castro <me@bernardocastro.dev>`, a subject line and a body that says why, no
+`Co-Authored-By`, no generated-with trailers. `pnpm lint` and `pnpm test` exit 0 before a commit;
+`scripts/check` before anything that touches the build or the console. `CHANGELOG.md` gains a line
+under `Unreleased` for anything a tenant would notice.

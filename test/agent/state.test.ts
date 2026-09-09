@@ -9,7 +9,7 @@ function clinica(): ClinicaNorte {
 }
 
 describe("the snapshot", () => {
-  it("leaves the nine config fields out and keeps the derived getters in", () => {
+  it("leaves the config fields out and keeps the derived getters in", () => {
     const state = snapshot(clinica());
     expect(Object.keys(state).sort()).toEqual([
       "booking",

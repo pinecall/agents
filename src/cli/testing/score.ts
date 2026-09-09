@@ -19,7 +19,8 @@ const MARK: Record<string, string> = {
 
 // `passed` means no judge answered broken, which is the answer to a question somebody asked. A
 // call nobody asked about has NO answer: the field is absent, and absent is a third thing that
-// must read as neither green nor red. docs/decisions/scoring.md says so, and this line is that.
+// must read as neither green nor red. The runtime's docs/decisions/scoring.md says so, and this
+// line is that.
 const NOBODY_JUDGED = "nobody judged this call";
 
 const NO_REASON = "no reason was written down";

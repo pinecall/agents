@@ -313,7 +313,7 @@ export function onLog(agent: object, listener: LogListener): () => void {
   return () => own.logListeners.delete(listener);
 }
 
-/** Whether a name is one of the nine config fields rather than a piece of state. */
+/** Whether a name is one of CONFIG_FIELDS rather than a piece of state. */
 export function isConfigField(name: string): boolean {
   return CONFIG.has(name);
 }

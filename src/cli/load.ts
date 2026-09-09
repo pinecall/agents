@@ -18,7 +18,7 @@ export interface Loaded {
   view?: View;
 }
 
-/** Where an agent lives when nobody said: the file `pinecall new` writes, in the current directory. */
+/** Where an agent lives when nobody said: `agent.ts` in the current directory, as every example has it. */
 export const DEFAULT_AGENT = "agent.ts";
 
 let registered = false;

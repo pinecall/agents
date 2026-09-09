@@ -68,7 +68,7 @@ export default class ClinicaNorte extends Agent {
   async registerPatient(name: string, phone: string): Promise<Patient> {
     // Sin esta puerta, quien no está en la ficha se queda en `identify` para siempre: las horas no
     // se le hacen visibles y el modelo inventa un motivo para no mirarlas (2026-09-08, la primera
-    // llamada real desde `pinecall talk`).
+    // llamada real desde la pantalla Talk de `pinecall ui`).
     this.patient = await this.agenda().register(name, phone);
     this.stage = "choose";
     return this.patient;

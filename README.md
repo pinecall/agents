@@ -62,7 +62,8 @@ through `node_modules` like any package, and there is no build between a change 
 ## The map
 
 `src/` is the package. Six directories, and the import table in `test/the-imports.test.ts` is
-what keeps them apart — a directory earns its place there by having a line.
+what keeps them apart — a directory earns its place there by having a line. What each one is,
+file by file, is [ARCHITECTURE.md](ARCHITECTURE.md).
 
 | directory | what it is |
 |---|---|
@@ -88,6 +89,17 @@ Beside it:
 
 `test/index.test.ts` and `test/client/index.test.ts` pin the first two by name. Adding an export
 means editing a list on purpose, which is the point.
+
+## Where the rest is
+
+| | |
+|---|---|
+| [ARCHITECTURE.md](ARCHITECTURE.md) | what this package is, file by file: the entities, the bridge, the CLI, the console, the import table, and where LiveKit is and is not |
+| [docs/writing-an-agent.md](docs/writing-an-agent.md) | the class: state, tools, stages, channels, hooks, events |
+| [docs/the-prompt.md](docs/the-prompt.md) | the view: three regions, and where a rule belongs |
+| [docs/testing-an-agent.md](docs/testing-an-agent.md) | the four rings: unit tests, goldens, personas, the score every call gets |
+| [docs/the-cli.md](docs/the-cli.md) | every verb, what it needs, and where its key comes from |
+| [CHANGELOG.md](CHANGELOG.md) · [CLAUDE.md](CLAUDE.md) | what changed · the working agreement |
 
 ## The wire
 

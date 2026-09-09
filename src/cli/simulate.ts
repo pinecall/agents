@@ -56,7 +56,11 @@ const A_TURN_MAY_TAKE_MS = 30_000;
 const JUDGING_MAY_TAKE_MS = 60_000;
 const TERMINAL_ENTRY = "call.score";
 
-const NOT_SEALED = `no ${TERMINAL_ENTRY} within ${JUDGING_MAY_TAKE_MS / 1000}s: read the call with \`pinecall sessions show\``;
+// `sessions` is a group of the runtime's CLI, not of this one: pointing a person at `pinecall
+// sessions show` sends them to a stub that prints "not built yet" and nothing else.
+const notSealed = (call: string): string =>
+  `no ${TERMINAL_ENTRY} within ${JUDGING_MAY_TAKE_MS / 1000}s: read the call with ` +
+  `\`pinecall-runtime sessions show ${call}\`, or \`pinecall ui\` → Sessions`;
 
 /** What one simulated call left behind: where to read it, and what the judges made of it. */
 export interface Simulated {
@@ -119,7 +123,7 @@ export function degradedBy(noise: string | undefined, loss: string | undefined):
 // A call nobody could open is a failure of this command; a call a judge answered `broken` about is
 // a failure of the agent. A call NOBODY judged is neither — and it does not exit zero either,
 // because an exit code is a gate and "nobody looked at this" must not open one. The three states
-// are told apart on the screen, where a verdict belongs — docs/decisions/scoring.md.
+// are told apart on the screen, where a verdict belongs — the runtime's docs/decisions/scoring.md.
 export function exitCodeOf(said: Simulated | undefined): number {
   if (said === undefined) return 2;
   if (said.score === undefined) return 0;
@@ -264,7 +268,7 @@ async function theScore(
     }
     await after(SETTLE_MS);
   }
-  out.write(`${NOT_SEALED}\n`);
+  out.write(`${notSealed(call)}\n`);
   return undefined;
 }
 

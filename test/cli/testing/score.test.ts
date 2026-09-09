@@ -27,7 +27,8 @@ describe("the headline", () => {
   });
 
   // The one thing this renderer exists for: absent is neither green nor red, and the reason the
-  // entry carries is printed in place of a verdict nobody wrote. See docs/decisions/scoring.md.
+  // entry carries is printed in place of a verdict nobody wrote. See the runtime's
+  // docs/decisions/scoring.md — ring 4 is written there, and the page is that repository's.
   it("says nobody judged the call, with the entry's own reason, when passed is absent", () => {
     const lines = linesOfScore(score({ not_judged: "the judges are not installed on this box" }));
 

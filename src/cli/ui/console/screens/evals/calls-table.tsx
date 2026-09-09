@@ -8,8 +8,8 @@ import { started } from "../../lib/clock";
 import type { Scored } from "../../lib/use-scored-calls";
 
 // `passed` is OPTIONAL on `call.score`, and its absence is a THIRD thing: nobody answered, which is
-// neither a green call nor a red one (docs/decisions/scoring.md). So the word is read off the field
-// being there at all, and `not_judged` says why when it is not.
+// neither a green call nor a red one (the runtime's docs/decisions/scoring.md). So the word is
+// read off the field being there at all, and `not_judged` says why when it is not.
 export function CallsTable({ agent, rows }: { agent: string; rows: Scored[] }): ReactNode {
   const [open, setOpen] = useState<string | null>(null);
   const opened = rows.find((row) => row.line.call === open) ?? null;
@@ -98,7 +98,7 @@ function Evidence({ agent, row }: { agent: string; row: Scored }): ReactNode {
 }
 
 // A judge of the panel with no row of its own answered nothing — it raised, and livekit's group
-// dropped it rather than inventing a verdict for it (docs/decisions/scoring.md).
+// dropped it rather than inventing a verdict for it (the runtime's docs/decisions/scoring.md).
 function Silent({ score }: { score: CallScore }): ReactNode {
   const answered = new Set(score.judges.map((judge) => judge.name));
   const silent = (score.panel ?? []).filter((name) => !answered.has(name));
