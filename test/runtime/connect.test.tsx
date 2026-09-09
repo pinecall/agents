@@ -1,0 +1,221 @@
+// The bridge, against a gateway that is not there: what the class does becomes what the wire sees.
+
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
+import { afterEach, beforeEach, expect, it } from "vitest";
+import { Pinecall } from "../../src/client/index.js";
+import { FakeGateway } from "../../src/client/testing/index.js";
+
+import ClinicaNorte from "../agent/clinica-norte.js";
+import view from "../views/clinica-norte.view.js";
+import { modelOf, mount, slugOf, type Mounted } from "../../src/runtime/connect.js";
+
+const KEY = "pk_test";
+const SLUG = "clinica-norte";
+const CALL = "CA_1";
+const KNOWN = "+34 600 000 001";
+// The class's own .ts, so the parameter types survive a transpiler that strips them: without it
+// `day: string` is an untyped argument and the schema can say nothing about it.
+const SOURCE = readFileSync(fileURLToPath(new URL("../agent/clinica-norte.ts", import.meta.url)), "utf8");
+
+let gateway: FakeGateway;
+let pc: Pinecall;
+let mounted: Mounted;
+
+beforeEach(async () => {
+  gateway = await FakeGateway.start({ apiKey: KEY });
+  pc = new Pinecall({ url: gateway.url, apiKey: KEY });
+  // A tool that failed reaches the model as a tool.result and the app as an error; the tests read
+  // the wire, so the app's side is silenced rather than printed by the client's default.
+  pc.onErrors(() => {});
+});
+
+afterEach(async () => {
+  pc.close();
+  await gateway.close();
+});
+
+/** Let every promise the socket started settle: the bridge's own work is all awaited, not timed. */
+async function settled(): Promise<void> {
+  for (let turn = 0; turn < 20; turn++) await new Promise((resolve) => setTimeout(resolve, 1));
+}
+
+async function connected(agentView = view, ctor: typeof ClinicaNorte = ClinicaNorte): Promise<void> {
+  mounted = mount(ctor, { pc, view: agentView, source: SOURCE, slug: SLUG });
+  await pc.connect();
+  await settled();
+}
+
+function started(from = KNOWN): void {
+  gateway.emit(SLUG, CALL, "call.started", {
+    channel: "phone",
+    direction: "inbound",
+    from,
+    to: "+34 910 000 000",
+    caller: null,
+    started_at: Date.now() / 1000,
+  });
+}
+
+function calls(name: string, args: Record<string, unknown>, id = `t${name}`): void {
+  gateway.emit(SLUG, CALL, "tool.call", { call_id: id, name, arguments: args });
+}
+
+function commands(type: string): Record<string, unknown>[] {
+  return gateway.commandsOf(type).map((command) => command.data);
+}
+
+it("registers the class under its name in kebab-case, with its four tools and its three doors", async () => {
+  await connected();
+  expect(slugOf(ClinicaNorte)).toBe(SLUG);
+  const [register] = commands("agent.register");
+  expect(register?.["routes"]).toEqual([
+    { channel: "phone", number: "+34 910 000 000" },
+    { channel: "whatsapp", number: "clinica-norte" },
+    { channel: "web", number: null },
+  ]);
+  const config = commands("agent.configure")[0]?.["config"] as { tools: { name: string }[] };
+  expect(config.tools.map((tool) => tool.name)).toEqual([
+    "findPatient",
+    "freeSlots",
+    "book",
+    "transfer",
+  ]);
+});
+
+it("sends the static prefix, the view and the visible tools when a call starts", async () => {
+  await connected();
+  started();
+  await settled();
+  expect(commands("prompt.set").map((data) => data["region"])).toEqual(["static", "view"]);
+  const [tools] = commands("tools.set");
+  expect((tools?.["tools"] as { name: string }[]).map((tool) => tool.name)).toEqual([
+    "freeSlots",
+    "transfer",
+  ]);
+});
+
+it("sends state.set and no prompt.set when the tool wrote a field the view never reads", async () => {
+  // A view that reads two getters and nothing else: `slots` changing cannot change its text.
+  await connected(({ identified, done }: Record<string, any>) => (
+    <p>{identified ? "identificado" : "sin identificar"} {done ? "cerrado" : "abierto"}</p>
+  ));
+  started();
+  await settled();
+  const before = commands("prompt.set").length;
+  calls("freeSlots", { day: "2026-03-02" });
+  await settled();
+  expect(commands("state.set").at(-1)?.["changed"]).toEqual(["slots"]);
+  expect(commands("prompt.set")).toHaveLength(before);
+});
+
+it("sends one prompt.set when the tool wrote a field the view does read", async () => {
+  await connected();
+  started("+34 000 000 000");
+  await settled();
+  const before = commands("prompt.set").length;
+  calls("findPatient", { name: "Ana", phone: KNOWN });
+  await settled();
+  const sent = commands("prompt.set").slice(before);
+  expect(sent).toHaveLength(1);
+  expect(sent[0]?.["region"]).toBe("view");
+  expect(String(sent[0]?.["text"])).toContain("Ana");
+});
+
+it("sends tools.set with the new visible set when a `when` flips", async () => {
+  await connected();
+  started();
+  await settled();
+  calls("freeSlots", { day: "2026-03-02" });
+  await settled();
+  const visible = commands("tools.set").at(-1)?.["tools"] as { name: string }[];
+  expect(visible.map((tool) => tool.name)).toEqual(["freeSlots", "book", "transfer"]);
+});
+
+it("answers a tool call whose args fail validation with an error, and runs the next one", async () => {
+  await connected();
+  started();
+  await settled();
+  calls("book", { slot: "mañana a las diez" }, "t-bad");
+  await settled();
+  const refused = commands("tool.result").at(-1);
+  expect(refused?.["call_id"]).toBe("t-bad");
+  expect(String(refused?.["error"])).toContain("slot must be a object");
+  expect(refused?.["output"]).toBeUndefined();
+
+  calls("freeSlots", { day: "2026-03-02" }, "t-good");
+  await settled();
+  const ran = commands("tool.result").at(-1);
+  expect(ran?.["call_id"]).toBe("t-good");
+  expect(ran?.["error"]).toBeUndefined();
+  // preview: 2 — the model reads two of the three the agenda returned.
+  expect(ran?.["output"]).toHaveLength(2);
+});
+
+it("writes what the agent logged into the call's log", async () => {
+  await connected();
+  started();
+  await settled();
+  calls("freeSlots", { day: "2026-03-02" });
+  await settled();
+  calls("book", { slot: { when: "2026-03-02 10:00", doctor: "Ruiz" } });
+  await settled();
+  const [logged] = commands("call.log");
+  expect(logged?.["name"]).toBe("appointment.booked");
+  expect(logged?.["data"]).toMatchObject({ id: "b-p1" });
+});
+
+const ended: string[] = [];
+
+/** The same clinic, saying out loud that its call ended: onEnd is a method, never a field. */
+class Despedida extends ClinicaNorte {
+  override onEnd(call: { id: string }): void {
+    ended.push(call.id);
+  }
+}
+
+it("runs onEnd and forgets the instance when the call ends", async () => {
+  await connected(view, Despedida);
+  started();
+  await settled();
+  expect(mounted.instanceOf(CALL)).toBeInstanceOf(Despedida);
+  gateway.emit(SLUG, CALL, "call.ended", {
+    reason: "caller_hung_up",
+    ended_by: "caller",
+    ended_at: Date.now() / 1000,
+    duration_s: 12,
+  });
+  await settled();
+  expect(ended).toEqual([CALL]);
+  expect(mounted.instanceOf(CALL)).toBeUndefined();
+});
+
+// `llm = "haiku"` is the design's sugar; the provider needs the id behind it or the first turn is a 404.
+it("expands a short model name to the id the provider recognises", () => {
+  expect(modelOf("haiku")).toEqual({ provider: "anthropic", model: "claude-haiku-4-5-20251001" });
+  expect(modelOf("openai/gpt-4.1-mini")).toEqual({ provider: "openai", model: "gpt-4.1-mini" });
+  expect(modelOf({ provider: "anthropic", model: "claude-opus-5" })).toEqual({
+    provider: "anthropic",
+    model: "claude-opus-5",
+  });
+});
+
+// `voice = "carolina"` reached ElevenLabs as a voice_id once and came back 1008 seven times in one
+// call. The class's word travels as the word it is; the platform holds the table that has the id.
+it("sends the voice as the word the class wrote, never as a vendor's id", async () => {
+  await connected();
+  expect(mounted.options.voice).toEqual({ name: "carolina" });
+});
+
+// A map is how anybody thinks about how a word is said; the wire carries a list so the schema can
+// name both halves, and the voice is given the spoken form while the log keeps what was written.
+it("sends the class's pronunciation map as the wire's list of both halves", async () => {
+  await connected();
+  expect(mounted.options.says).toEqual([{ word: "Vidal", spoken: "bidál" }]);
+});
+
+it("sends the words the ears must know in the order the class wrote them", async () => {
+  await connected();
+  expect(mounted.options.hears).toEqual(["Clínica Norte", "doctora Vidal"]);
+});
