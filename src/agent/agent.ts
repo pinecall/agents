@@ -2,15 +2,14 @@
 
 // tools.ts imports this module back; the cycle is fine because both sides only reach across at
 // call time, and both exports are hoisted function declarations.
-import { AsyncLocalStorage } from "node:async_hooks";
-
 import type { DocsMode } from "@pinecall/protocol";
 
+import { currentAuthor, UnauthoredWrite } from "./authors.js";
 import { docOf, toolsOf, visibleToolsOf, type ToolSpec } from "./tools.js";
 import type { Child } from "../views/jsx-runtime.js";
 import type { CallWorld } from "../call/call.js";
 import type { EventDeclarations, EventMeta } from "./accepts.js";
-import type { Visibility } from "./visibility.js";
+import { declaredStateOf, type Visibility } from "./visibility.js";
 import type { Call, MemoryOp } from "./lifecycle.js";
 import { collapse, restore, snapshot, type LastCall, type Snapshot } from "./state.js";
 
@@ -104,44 +103,15 @@ export interface Internals {
 
 const internals = new WeakMap<object, Internals>();
 
-// Who is writing right now, carried by the async context and not by a module-level stack: one
-// process runs many calls at once, and a tool that awaits its agenda while another tool runs would
-// otherwise read the other tool's name off the top of a shared stack. AsyncLocalStorage follows
-// each tool's own chain of awaits, so a write inside it is authored by it and by nothing else.
-const author = new AsyncLocalStorage<string>();
-
-/** The name of whoever is writing state right now, or null when nobody claimed the write. */
-export function currentAuthor(): string | null {
-  return author.getStore() ?? null;
-}
-
-/** Run `body` with every state write inside it attributed to `author`. */
-export function withAuthor<T>(name: string, body: () => T): T {
-  return author.run(name, body);
-}
-
-/** Like withAuthor, for a tool or a hook that returns a promise: the awaits inside keep the name. */
-export function withAuthorAsync<T>(name: string, body: () => Promise<T> | T): Promise<T> {
-  return author.run(name, async () => await body());
-}
-
-/** A field assigned with no tool and no hook running: the framework refuses it by design. */
-export class UnauthoredWrite extends Error {
-  constructor(field: string) {
-    super(
-      `state field ${field} was assigned outside a tool and outside a lifecycle hook; ` +
-        `tools are the only writers of state`,
-    );
-    this.name = "UnauthoredWrite";
-  }
-}
-
 /**
  * The base every app agent extends. The constructor hands back a Proxy, so a plain
  * `this.patient = row` inside a tool is the whole state API: one change, one author, one seq.
  */
 export class Agent {
   constructor() {
+    // Which fields this class said are its state, read once: every `@state` of a class has run by
+    // the time one of it exists. null means it decorated none, and then every own field is state.
+    const stateFields = declaredStateOf(this.constructor);
     const own: Internals = {
       changes: [],
       log: [],
@@ -157,7 +127,10 @@ export class Agent {
     };
     const proxy = new Proxy(this, {
       set(target, key, next, receiver) {
-        if (typeof key !== "string" || CONFIG.has(key)) {
+        // Config is not state, and neither is a field a class that declares its state left out:
+        // that one is the tenant's own scratch space and nothing here records it, sends it or
+        // asks it for an author.
+        if (typeof key !== "string" || CONFIG.has(key) || (stateFields !== null && !stateFields.has(key))) {
           return Reflect.set(target, key, next, target);
         }
         const prev = Reflect.get(target, key, target) as unknown;

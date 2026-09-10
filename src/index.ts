@@ -9,6 +9,7 @@
 // way of deciding what to answer wants it without any of this.
 
 export * from "./agent/agent.js";
+export * from "./agent/authors.js";
 export * from "./agent/state.js";
 export * from "./agent/tools.js";
 export * from "./agent/decorators.js";
@@ -19,7 +20,9 @@ export * from "./agent/docstrings.js";
 export * from "./agent/lifecycle.js";
 export * from "./views/jsx-runtime.js";
 export * from "./views/components.js";
-export * from "./views/layout.js";
+// Not `layout` itself: `promptOf(agent)` next door is that function under the name a tenant reads
+// it by, and one thing with two names is one name too many.
+export { PROMPT_BLOCKS, type Block, type Blocks } from "./views/layout.js";
 export * from "./views/render.js";
 export * from "./runtime/channels.js";
 // Not the whole module: `runTool` and its error are how a tenant runs one tool the way the bridge

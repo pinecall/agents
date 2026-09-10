@@ -1,6 +1,6 @@
-/** Tienda Sur: la clase entera del tenant — el carrito, el pedido, las tres puertas y su prompt. */
+/** Tienda Sur: el prompt como función del agente, y la clase entera — carrito, pedido, tres puertas. */
 
-import { Agent, tool, type Call, type MemoryOp, type Stages } from "pinecall";
+import { Agent, render, tool, type Call, type MemoryOp, type Stages } from "pinecall";
 
 import { named, search, type Product } from "./lib/catalog.js";
 import {
@@ -13,10 +13,122 @@ import {
 } from "./lib/shop.js";
 
 /**
+ * El prompt como función del agente: los props SON la instancia, así que desestructurar los
+ * campos funciona y sigue tipado sin envoltorio ninguno. Los métodos se llaman sobre `tienda`:
+ * `remembers` desestructurado perdería su `this`. Un getter —`total`— se lee al desestructurar,
+ * que es justo lo que hace falta.
+ *
+ * Son todas palabras de la tienda: lo que la memoria recuerda de este cliente y lo que dice la
+ * base de conocimiento le llegan al modelo como resultados de una herramienta, nunca metidos
+ * dentro de estas frases.
+ */
+const TiendaPrompt = (tienda: TiendaSur) => {
+  const { stage, customer, counter, cart, total, order } = tienda;
+  return (
+    <>
+      {stage !== "done" && (
+        /* Quién está al teléfono, y que ya lo sabes. Sin la segunda frase el modelo ve
+           `registerCustomer` en la lista de herramientas del prefijo estático —que las lleva todas,
+           porque ese prefijo no cambia entre turnos— y vuelve a pedirle el nombre y la dirección a
+           un cliente cuya ficha tiene delante. */
+        customer ? (
+          <p>
+            Hablas con {customer.name}, ya en la ficha: no le pidas otra vez el nombre ni la
+            dirección. El reparto sube a {customer.address}.
+          </p>
+        ) : (
+          <p>
+            Todavía no sabes quién llama. Puedes ir buscándole lo que te pida, pero antes de cerrar
+            el pedido necesitas su nombre, su dirección y un teléfono: pídeselos y apúntalos con
+            registerCustomer.
+          </p>
+        )
+      )}
+
+      {tienda.remembers("marca") && <p>Ofrécele primero la marca que se suele llevar.</p>}
+
+      {stage === "browse" && cart.length === 0 && (
+        /* La misma regla que el docstring de `findProduct`, dicha aquí en el momento en que el
+           modelo decide. El catálogo es una tool y no está escrito en ninguna parte del prompt, así
+           que sin esta frase el modelo contesta de memoria lo que la tienda tiene y lo que vale. */
+        <p>
+          El carrito está vacío. Pregúntale qué necesita y búscalo SIEMPRE con findProduct antes de
+          decir un precio o de darlo por hecho: lo que la tienda tiene y lo que cuesta sale de ahí.
+        </p>
+      )}
+
+      {counter.length > 0 && (
+        <>
+          <p>Sobre el mostrador tienes, con su precio, lo último delante:</p>
+          {counter.map((product) => (
+            <p>
+              {product.name}, {product.price} euros {product.unit}
+            </p>
+          ))}
+          {tienda.call.channel === "phone" ? (
+            <p>Nómbrale como mucho tres de los primeros y pregúntale cuál se lleva.</p>
+          ) : (
+            <p>Enumérale hasta cinco, uno por línea.</p>
+          )}
+        </>
+      )}
+
+      {cart.length > 0 && (
+        <>
+          <p>En el carrito lleva:</p>
+          {cart.map((line) => (
+            <p>
+              {line.qty} × {line.product}, {line.price} euros
+            </p>
+          ))}
+          <p>Suman {total} euros.</p>
+        </>
+      )}
+
+      {/* Lo que pasa en el turno siguiente, dicho donde el modelo decide. Un carrito lleno y un
+          cliente que dice «ya está» son todas las condiciones que el modelo puede ver para cerrar:
+          `confirmOrder` está visible, su fase se cumple y su predicado también. Que cerrar sea
+          irreversible viaja en `side_effect` y en `confirm`, que son declaración y no texto, así que
+          el prompt no lo dice en ninguna parte — es la lección de la Clínica, y aquí se dice antes de
+          que cueste una llamada. */}
+      {stage === "cart" && (
+        <p>
+          Que el carrito esté lleno todavía no es un pedido. Cuando te diga que ya está, llama
+          primero a proposeOrder, léeselo entero —cada línea y el total— y pregúntale si se lo
+          cierras. confirmOrder solo después de que te haya dicho que sí.
+        </p>
+      )}
+
+      {/* El otro turno, y el que la Clínica descubrió que le faltaba: el pedido ya está sobre la
+          mesa. La frase de arriba vale para el turno en que el cliente termina la compra y es
+          exactamente la contraria de la que hace falta en el turno en que dice que sí — un modelo
+          que la sigue al pie de la letra vuelve a leer el carrito y la llamada acaba sin pedido.
+          Aquí las dos frases no pueden coincidir nunca porque las separa la fase, no un campo. */}
+      {stage === "confirm" && (
+        <p>
+          Le estás proponiendo este pedido de {total} euros. Léeselo entero si todavía no lo has
+          hecho y espera su respuesta. En cuanto conteste que sí, llama a confirmOrder en ese mismo
+          turno, sin repetírselo otra vez ni volver a preguntar. Si quiere cambiar algo, búscalo y
+          vuelve a metérselo en el carrito.
+        </p>
+      )}
+
+      {stage === "done" && (
+        <p>
+          El pedido {order!.reference} queda cerrado, {order!.total} euros, y sube {order!.delivery}.
+          Dile la referencia, despídete y cuelga.
+        </p>
+      )}
+    </>
+  );
+};
+
+/**
  * Eres el mostrador de Tienda Sur, la ferretería de la calle San Jacinto, en Triana. Tuteas a
  * todo el mundo, con frases cortas y sin prisa. Todo lo que dices se lee en voz alta: sin listas,
  * sin markdown. Un precio sale del catálogo y nunca de tu cabeza, y se dice con la palabra euros.
  */
+@render(TiendaPrompt)
 export default class TiendaSur extends Agent {
   // canales: un agente, tres puertas
   phone = "+34910000100";
@@ -135,112 +247,6 @@ export default class TiendaSur extends Agent {
   @tool()
   async orderStatus(reference: string): Promise<Order | null> {
     return await tienda.status(reference);
-  }
-
-  /**
-   * El prompt como función del estado: lo único que cambia entre dos turnos de una llamada, y lo
-   * último que lee el modelo. Son todas palabras de la tienda: lo que la memoria recuerda de este
-   * cliente y lo que dice la base de conocimiento le llegan al modelo como resultados de una
-   * herramienta, nunca metidos dentro de estas frases.
-   */
-  override render() {
-    return (
-      <>
-        {this.stage !== "done" && (
-          /* Quién está al teléfono, y que ya lo sabes. Sin la segunda frase el modelo ve
-             `registerCustomer` en la lista de herramientas del prefijo estático —que las lleva todas,
-             porque ese prefijo no cambia entre turnos— y vuelve a pedirle el nombre y la dirección a
-             un cliente cuya ficha tiene delante. */
-          this.customer ? (
-            <p>
-              Hablas con {this.customer.name}, ya en la ficha: no le pidas otra vez el nombre ni la
-              dirección. El reparto sube a {this.customer.address}.
-            </p>
-          ) : (
-            <p>
-              Todavía no sabes quién llama. Puedes ir buscándole lo que te pida, pero antes de cerrar
-              el pedido necesitas su nombre, su dirección y un teléfono: pídeselos y apúntalos con
-              registerCustomer.
-            </p>
-          )
-        )}
-
-        {this.remembers("marca") && <p>Ofrécele primero la marca que se suele llevar.</p>}
-
-        {this.stage === "browse" && this.cart.length === 0 && (
-          /* La misma regla que el docstring de `findProduct`, dicha aquí en el momento en que el
-             modelo decide. El catálogo es una tool y no está escrito en ninguna parte del prompt, así
-             que sin esta frase el modelo contesta de memoria lo que la tienda tiene y lo que vale. */
-          <p>
-            El carrito está vacío. Pregúntale qué necesita y búscalo SIEMPRE con findProduct antes de
-            decir un precio o de darlo por hecho: lo que la tienda tiene y lo que cuesta sale de ahí.
-          </p>
-        )}
-
-        {this.counter.length > 0 && (
-          <>
-            <p>Sobre el mostrador tienes, con su precio, lo último delante:</p>
-            {this.counter.map((product) => (
-              <p>
-                {product.name}, {product.price} euros {product.unit}
-              </p>
-            ))}
-            {this.call.channel === "phone" ? (
-              <p>Nómbrale como mucho tres de los primeros y pregúntale cuál se lleva.</p>
-            ) : (
-              <p>Enumérale hasta cinco, uno por línea.</p>
-            )}
-          </>
-        )}
-
-        {this.cart.length > 0 && (
-          <>
-            <p>En el carrito lleva:</p>
-            {this.cart.map((line) => (
-              <p>
-                {line.qty} × {line.product}, {line.price} euros
-              </p>
-            ))}
-            <p>Suman {this.total} euros.</p>
-          </>
-        )}
-
-        {/* Lo que pasa en el turno siguiente, dicho donde el modelo decide. Un carrito lleno y un
-            cliente que dice «ya está» son todas las condiciones que el modelo puede ver para cerrar:
-            `confirmOrder` está visible, su fase se cumple y su predicado también. Que cerrar sea
-            irreversible viaja en `side_effect` y en `confirm`, que son declaración y no texto, así que
-            el prompt no lo dice en ninguna parte — es la lección de la Clínica, y aquí se dice antes de
-            que cueste una llamada. */}
-        {this.stage === "cart" && (
-          <p>
-            Que el carrito esté lleno todavía no es un pedido. Cuando te diga que ya está, llama
-            primero a proposeOrder, léeselo entero —cada línea y el total— y pregúntale si se lo
-            cierras. confirmOrder solo después de que te haya dicho que sí.
-          </p>
-        )}
-
-        {/* El otro turno, y el que la Clínica descubrió que le faltaba: el pedido ya está sobre la
-            mesa. La frase de arriba vale para el turno en que el cliente termina la compra y es
-            exactamente la contraria de la que hace falta en el turno en que dice que sí — un modelo
-            que la sigue al pie de la letra vuelve a leer el carrito y la llamada acaba sin pedido.
-            Aquí las dos frases no pueden coincidir nunca porque las separa la fase, no un campo. */}
-        {this.stage === "confirm" && (
-          <p>
-            Le estás proponiendo este pedido de {this.total} euros. Léeselo entero si todavía no lo has
-            hecho y espera su respuesta. En cuanto conteste que sí, llama a confirmOrder en ese mismo
-            turno, sin repetírselo otra vez ni volver a preguntar. Si quiere cambiar algo, búscalo y
-            vuelve a metérselo en el carrito.
-          </p>
-        )}
-
-        {this.stage === "done" && (
-          <p>
-            El pedido {this.order!.reference} queda cerrado, {this.order!.total} euros, y sube {this.order!.delivery}.
-            Dile la referencia, despídete y cuelga.
-          </p>
-        )}
-      </>
-    );
   }
 
   override onMemory(ops: MemoryOp[], call: Call): void {

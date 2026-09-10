@@ -1,6 +1,6 @@
 /** The three hooks: what happens when a call starts, when it ends, and when memory is written. */
 
-import { withAuthorAsync } from "./agent.js";
+import { withAuthorAsync } from "./authors.js";
 import type { EventMeta } from "./accepts.js";
 
 /** The call an agent is answering, as much of it as this seam needs to name. */

@@ -32,7 +32,7 @@ const mounted = mount(ClinicaNorte, { pc, source: SOURCE });
 `pinecall/client/testing` is that fake: a gateway that answers the app socket, and a log nobody
 stored. An app's own suite needs neither a network nor a key.
 
-**Rendering in a test.** `render(agent)` gives the blocks and `showPrompt(agent)` the printed page.
+**Rendering in a test.** `promptOf(agent)` gives the blocks and `showPrompt(agent)` the printed page.
 A `render()` that reads `this.call` needs a call, and a `remembers()` branch needs something to
 have been recalled — both are one line, and both are the same doors the runtime uses:
 

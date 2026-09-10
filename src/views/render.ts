@@ -6,7 +6,7 @@ import type { Agent } from "../agent/agent.js";
 import { layout, type Blocks } from "./layout.js";
 
 /** The prompt of this agent right now, block by block, in the order the runtime sends them. */
-export function render(agent: Agent): Blocks {
+export function promptOf(agent: Agent): Blocks {
   return layout(agent);
 }
 
@@ -25,7 +25,7 @@ export function headerFor(name: string, region?: PromptRegion): string {
  * blocks are cached and which one is rewritten every turn.
  */
 export function showPrompt(agent: Agent): string {
-  const { blocks, history } = render(agent);
+  const { blocks, history } = promptOf(agent);
   const section = (name: string, text: string, region?: PromptRegion): string =>
     `${headerFor(name, region)}\n${text}`.trimEnd();
   const of = (region: PromptRegion): string[] =>

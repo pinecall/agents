@@ -229,8 +229,23 @@ render() {
 `this` is the state, and JSX renders to **text, never to DOM**: `<p>` is a paragraph, siblings are
 one blank line apart, and `null`/`false`/`undefined` render nothing — which is what makes
 `{condition && <p>…</p>}` the whole control flow. A class with no `render()` sends an empty view.
-The whole of it, with where a rule belongs and what it costs to get wrong, is
-[the-prompt.md](the-prompt.md).
+
+A prompt that has grown deserves a function of its own, and `@render` gives it one — the props ARE
+the instance, so there is nothing to pass and nothing to type:
+
+```tsx
+/** El prompt como función del agente. */
+const SupportPrompt = ({ stage, customer }: Support) => (
+  <>{stage === "identify" && <p>Pide el número de pedido.</p>}</>
+);
+
+@render(SupportPrompt)
+class Support extends Agent { … }
+```
+
+It is exactly `render() { return SupportPrompt(this); }`, byte for byte. Write one spelling or the
+other: a class with both is refused when it is defined. The whole of it, with where a rule belongs
+and what it costs to get wrong, is [the-prompt.md](the-prompt.md).
 
 ## The call
 
@@ -278,16 +293,27 @@ The pair is the gate: an event declared `from: ["app"]` that arrives from a part
 is somebody else's event with your name on it, and the hook never sees it. Events run one at a
 time, in the order the wire delivered them.
 
-## Who may see a field
+## Who may see a field, and which fields are the state
 
 ```ts
-@state({ visibility: "pii" }) patient?: Patient;
+@state stage: Stages<"identify" | "resolve"> = "identify";   // state, nothing said about who sees it
+@state({ pii: true }) patient?: Patient | undefined;         // sugar for visibility: "pii"
+@state({ visibility: "public" }) total = 0;
 // or, for a class that would rather write a map:
 static visibility = { patient: "pii", stage: "public" };
 ```
 
 `tenant` is the default and the wire's own, so a field with no declaration sends none. `public` is
-what a browser widget may read; `pii` is masked in the log at write time.
+what a browser widget may read; `pii` is masked in the log at write time. `pii: true` and a
+`visibility` that says something else are refused when the class is defined, by name.
+
+**Decorating one field decides them all.** A class that decorates NO field has every own field as
+state, which is what both examples do. A class that decorates ANY field means *these, and nothing
+else*: an undecorated field on it is your own scratch space — out of the snapshot, out of the
+prompt, out of `state.changed` and out of the console, and writable from anywhere, since "tools are
+the only writers" is a rule about state. It is the one way to keep a helper field out of the log. A
+getter is derived, not scratch, and is always state; `static visibility` answers who may see a
+field and never whether it is one.
 
 ## Long calls, and callers who come back
 

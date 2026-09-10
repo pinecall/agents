@@ -78,7 +78,7 @@ file by file, is [ARCHITECTURE.md](ARCHITECTURE.md).
 
 | directory | what it is |
 |---|---|
-| `agent/` | the class a tenant extends: the Proxy, `@tool`, the state, the stages, the hooks |
+| `agent/` | the class a tenant extends: the Proxy, `@tool`, `@render`, `@state`, the stages, the hooks |
 | `views/` | the JSX-to-text runtime, and the prompt as named blocks in two regions |
 | `call/` | the live call as a value: the room, the turns, the verbs. Reduced from entries |
 | `client/` | `pinecall/client` — the socket, and nothing above it. Knows only the wire |

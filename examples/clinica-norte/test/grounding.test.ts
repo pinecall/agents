@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
-import { Agent, optionsFor, render, seal } from "pinecall";
+import { Agent, optionsFor, promptOf, seal } from "pinecall";
 
 import ClinicaNorte from "../agent.js";
 
@@ -47,7 +47,7 @@ describe("la declaración que recibe el gateway", () => {
 // eso no hay ni un hueco que alguien rellene después (runtime/docs/security/prompt-injection.md).
 describe("la view", () => {
   it("no lleva ningún marcador, ni una palabra que no sea de la clínica", () => {
-    const rendered = render(seal(new ClinicaNorte()));
+    const rendered = promptOf(seal(new ClinicaNorte()));
     const dynamic = rendered.blocks.find((block) => block.name === "view");
 
     expect(dynamic?.region).toBe("dynamic");
@@ -56,7 +56,7 @@ describe("la view", () => {
   });
 
   it("deja el bloque de conocimiento al runtime, que escribe en él el fichero de la declaración", () => {
-    const rendered = render(seal(new ClinicaNorte()));
+    const rendered = promptOf(seal(new ClinicaNorte()));
     const knowledge = rendered.blocks.find((block) => block.name === "knowledge");
 
     expect(knowledge?.region).toBe("static");

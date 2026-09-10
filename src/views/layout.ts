@@ -40,7 +40,7 @@ const BLOCKS = [
 /** Every block of the prompt, by name and region, in the one order they are sent. */
 export const PROMPT_BLOCKS: readonly PromptBlockSpec[] = BLOCKS.map(({ name, region }) => ({ name, region }));
 
-/** The whole prompt, block by block in send order: this is what `render(agent)` is. */
+/** The whole prompt, block by block in send order: this is what `promptOf(agent)` is. */
 export function layout(agent: Agent): Blocks {
   const blocks = BLOCKS.map(({ name, region, text }) => ({ name, region, text: text(agent) }));
   return { blocks, history: collapsedHistory(agent) };

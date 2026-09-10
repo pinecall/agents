@@ -2,16 +2,16 @@
 
 import { describe, expect, it } from "vitest";
 
-import { Example, Protocols, Prompt, Rule, Rules, Section } from "../../src/views/components.js";
+import { Example, Protocols, Rule, Rules, Section } from "../../src/views/components.js";
 import { renderToText } from "../../src/views/jsx-runtime.js";
 
 describe("the components", () => {
-  it("renders a prompt as its paragraphs", () => {
+  it("renders siblings as paragraphs, one blank line apart", () => {
     const text = renderToText(
-      <Prompt>
+      <>
         <p>Uno.</p>
         <p>Dos.</p>
-      </Prompt>,
+      </>,
     );
     expect(text).toBe("Uno.\n\nDos.");
   });
