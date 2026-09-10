@@ -171,10 +171,15 @@ export default class ClinicaNorte extends Agent {
               // La misma regla que el docstring de `freeSlots`, dicha aquí en el momento en que
               // el modelo decide: si el paciente ya ha nombrado un día, mirar la agenda es lo
               // siguiente que toca, y preguntarle otra vez por el día es no haberle escuchado.
+              //
+              // El ORDEN de estas dos frases es la regla, no el estilo. Con la pregunta al final,
+              // haiku la tomaba aunque el paciente acabase de nombrar el martes: la última línea
+              // de la región dinámica es la última que lee antes de contestar. La acción va
+              // última. Es el mismo hallazgo que arregló `no-reserva-antes-del-si`.
               <p>
-                Si el paciente nombra un día, consulta SIEMPRE la agenda de ese día, aunque su ficha ya
-                tenga cita ese día. Si todavía no ha nombrado ninguno, pregúntale para qué día quiere
-                {this.patient!.cita ? " cambiarla." : " la cita."}
+                Si todavía no ha nombrado ningún día, pregúntale para qué día quiere
+                {this.patient!.cita ? " cambiarla." : " la cita."} En cuanto nombre uno, consulta
+                SIEMPRE la agenda de ese día con freeSlots, aunque su ficha ya tenga cita ese día.
               </p>
             )}
             {this.slots.length > 0 && this.hoursOnTheTable()}
