@@ -83,7 +83,8 @@ async function atTheDesk(
   let ended = false;
   const watching = (async () => {
     for await (const seen of pc.observe({ call })) {
-      const line = lineOf(seen.entry.seq, seen.entry.type, seen.event as Record<string, unknown>);
+      // The entry's own data and not the folded event: what a desk prints is what the log wrote.
+      const line = lineOf(seen.entry.seq, seen.entry.type, seen.entry.data);
       if (line !== null) out.write(`\r${line}\n`);
       lines.prompt();
       if (seen.entry.type === "call.ended") ended = true;
