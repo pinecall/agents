@@ -147,6 +147,79 @@ it holds, 1 when it does not, so it belongs in a pipeline. The judgement runs in
 where the log and the store are; this verb builds the case and reads the answer, so nobody needs
 Python to read a call.
 
+## And the read side: does recall bring back the right facts?
+
+The golden above judges what a call TEACHES. This one judges what a turn GETS. They are the two
+halves of one table and neither answers for the other: a call may extract the perfect fact and
+never see it again, because six facts is what a turn is handed and the seventh is cut.
+
+No ring can ask this one either. A ring watches a conversation, so it only ever sees the facts
+memory handed over; whether a better one existed and was missed is invisible to it, and invisible
+to the grounding judge at hang-up too, which weighs what the agent said against what it was given.
+
+A memory golden is a list of questions, each bringing its own facts:
+
+```json
+[
+  { "holds": ["Prefiere mañanas", "Paciente de la doctora Vidal desde 2024", "Alérgica a la penicilina"],
+    "asks": "¿le va bien el martes?",
+    "expects": ["Prefiere mañanas"] }
+]
+```
+
+| field | means |
+|---|---|
+| `holds` | every fact memory holds about this question's contact, in the words a fact is written in |
+| `asks` | what the caller just said, in their own words — this is the query `recall` is given |
+| `expects` | the fact or facts that should come back |
+
+**No contact of yours is read or written.** Each question's facts go to a scratch contact of your
+org, `recall` runs, and they are deleted again before the next question — which is also what makes
+the figures the real ranking: the same two index scans, the same fusion, the same embedder a call
+uses, rather than an arithmetic in a test.
+
+**A fact answers when what came back CONTAINS what you expected**, folded for case, accents and
+whitespace. A fact is a sentence a model wrote and you know the substance, not the wording: so
+`"Prefiere mañanas"` is answered by *"Prefiere mañanas, nunca después de comer"*, and an expected
+`"Alérgica a la penicilina"` is not answered by *"Alérgica"*, which says less than you asked for.
+
+```bash
+pinecall memory eval                  # memory/golden.json beside the agent file
+pinecall memory eval --k 1            # the best fact alone: is the right one first?
+```
+
+```
+memory · pplx-embed-context-v1-0.6b · 7 questions · recall@6 1.00 · nDCG@10 0.78 · 11108 ms
+```
+
+| figure | means |
+|---|---|
+| `recall@k` | the share of the facts you asked for that came back at all. A fact the model never sees cannot be used, whatever its rank |
+| `nDCG@10` | how high they ranked, discounted logarithmically. **For memory this is usually the figure that moves**, because a turn takes six facts and most contacts hold fewer than six |
+| the model named | the embedder that wrote the vectors. Two scores are comparable only under one model |
+
+**Write questions whose contact holds more facts than a turn asks for.** A contact with four facts
+gets all four back whatever the ranking did, and `recall@6 1.00` then says nothing at all. Clínica
+Norte's golden holds eight or nine per question for that reason — and the way to make recall bite
+is a smaller `k`:
+
+```
+$ pinecall memory eval --k 1
+memory · pplx-embed-context-v1-0.6b · 7 questions · recall@1 0.57 · nDCG@10 0.57 · 9167 ms
+  missed: me han mandado una resonancia, ¿me la puedo hacer? → wanted Le pusieron un marcapasos en 2023, got Prefiere que le llamen don Julián
+  missed: me han pedido una radiografía de la espalda → wanted Está embarazada de cinco meses, got Su médico habitual es el doctor Ferrán
+  missed: llamadme mañana a las nueve para confirmar → wanted Trabaja de noche, Prefiere que le escriban por WhatsApp, got Prefiere que le llamen Aixa
+```
+
+Every question memory did not answer whole is printed with what came back instead, and the verb
+**exits 1** when anything did. Both figures are computed by code with no model in the loop, so two
+runs answer the same numbers; one embedding per fact and one per question is the whole cost, which
+is why this belongs in CI beside the index's golden and the extraction golden does not.
+
+A golden is fixed and the ranking is the variable. **A question is never softened so a change can
+pass.** What you change instead is the words a fact is written in — `memory.remember` is that
+vocabulary — the embedder, or `k`.
+
 ## The index has a golden of its own
 
 The five rings test the agent. None of them tests the **index**, and they cannot: a ring watches a
@@ -240,8 +313,9 @@ approval.
 ## What CI runs, and what the nightly runs
 
 - **CI** (`.github/workflows/ci.yml`): `scripts/check` — build, lint, test — on every push. Ring
-  0 only: no key, no model, no money. A knowledge golden belongs here too when the gateway is
-  reachable: `pinecall knowledge eval` costs one embedding per question and no model at all.
+  0 only: no key, no model, no money. Both retrieval goldens belong here too when the gateway is
+  reachable: `pinecall knowledge eval` and `pinecall memory eval` cost one embedding per question
+  and no model at all.
 - **The nightly** (`.github/workflows/nightly.yml`): rings 1 and 4 on real money, weekday nights.
   All three repositories checked out, a throwaway Postgres, a gateway on `PINECALL_DEV_KEY`, both
   examples, **two models** — and two gates: the goldens on the baseline model, and each judge's

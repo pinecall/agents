@@ -89,7 +89,7 @@ export function usage(): string {
     "  runs      list | show | diff the suites, promote a call, and watch the drift",
     "  personas  list | show | try the synthetic callers in test/personas",
     "  knowledge push | list | drop the knowledge base the agent answers from",
-    "  memory    what memory kept about a contact, and forget it on request",
+    "  memory    what memory kept about a contact, forget it, and hold recall to a golden",
     "  keys      add | rm | list the provider keys this org brought of its own",
     "  login     sign in to a gateway once; the key is kept in ~/.pinecall/credentials",
     "  whoami    which gateway, which org, and where this terminal's key came from",

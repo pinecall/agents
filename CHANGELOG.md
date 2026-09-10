@@ -7,6 +7,16 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- `pinecall memory eval [golden.json] [--k n]`: a memory golden, the read side of the table. A
+  list of `{holds, asks, expects}` — what memory holds about a question's contact, what the caller
+  said, and the fact or facts that should come back — asked of `recall` and answered as `recall@k`
+  and `nDCG@10`, computed by code with no model in the loop. No contact of the org is read or
+  written: each question's facts go to a scratch contact and are deleted again, which is what makes
+  the figures the real ranking. A fact answers when what came back CONTAINS what was expected,
+  folded for case, accents and whitespace, because a fact is a sentence a model wrote. Every
+  question memory did not answer whole is printed with what came back instead, and the verb exits 1
+  when anything did. `memory/golden.json` beside the agent file by default; Clínica Norte ships one
+  of seven questions, eight or nine facts each.
 - A ring-1 golden may open its call already knowing things: `"memory": [...]` seeds the facts the
   `recall` tool answers for that call alone. It is how you test the one thing memory exists for —
   that the agent uses what it remembered — without a contact in a database and without leaving a

@@ -108,7 +108,7 @@ a directory earns its place there by having a line in that table (§13).
 | `load.ts` | a tenant's `agent.tsx` (or `agent.ts`) loaded with tsx, handed its own source, and `instanceFor` — one instance with a line to answer on, for the pages that print a prompt |
 | `run.ts` · `chat.ts` · `prompt.ts` | the app, the app in this terminal, the prompt offline |
 | `test.ts` · `simulate.ts` · `eval.ts` · `runs/` | ring 1, a live persona, ring 3, and what the gateway has run |
-| `knowledge.ts` · `memory.ts` | the folder pushed whole under a name, listed, dropped · one contact's facts, and the right to be forgotten |
+| `knowledge.ts` · `memory.ts` | the folder pushed whole under a name, listed, dropped · one contact's facts, and the right to be forgotten. Each also holds its golden's verb: `eval` prints `recall@k` and `nDCG@10`, computed in the gateway by code with no model, and exits 1 on a miss |
 | `keys.ts` | the provider keys this org brought of its own: one added from stdin, one taken back, the vendors read by name — never a value |
 | `personas.ts` · `machine.ts` · `view.ts` | the synthetic callers, the state machine on one page, the terminal view as a pure function |
 | `login.ts` · `whoami.ts` · `secret.ts` | the key typed once, which key a verb would use, and the one place a secret is read without echoing it |
@@ -370,7 +370,7 @@ prompt` must not pay for a websocket client.
 | `runs` | `list · show · diff · promote · drift` — what this gateway ran, and what moved | yes |
 | `personas` | `list · show · try` the synthetic callers in `test/personas` | for `try` |
 | `knowledge` | `push [dir] --base <name>` · `list` · `drop <base>`: the folder of `*.md` sent whole to `PUT /v1/knowledge/{base}` | yes |
-| `memory` | `<contact>` · `forget <contact>`: one contact's facts, current first, and the right to be forgotten | yes |
+| `memory` | `<contact>` · `forget <contact>`: one contact's facts, current first, and the right to be forgotten · `eval [golden.json] [--k n]`: every question of `memory/golden.json` asked of `recall`, each bringing its own facts, and the two figures a golden answers | yes |
 | `login` | the key typed once, proved at the gateway, kept in `~/.pinecall/credentials` (0600) | yes |
 | `whoami` | which gateway, which org, and **where this terminal's key came from** | yes |
 

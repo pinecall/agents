@@ -1,17 +1,29 @@
-/** `pinecall memory <contact> | forget <contact>`: what memory kept about one contact, and the right to be forgotten. */
+/** `pinecall memory <contact> | forget <contact> | eval`: what memory kept about one contact, the right to be forgotten, and how well recall ranks. */
 
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { createInterface } from "node:readline";
+import { parseArgs } from "node:util";
 
-import type { ContactFact, ContactMemory, Forgotten } from "@pinecall/protocol";
+import type { ContactFact, ContactMemory, Forgotten, MemoryScore } from "@pinecall/protocol";
 
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { dayAndTime } from "./knowledge.js";
+import { load } from "./load.js";
 import { asked, type Door } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
 
 const USAGE = `usage: pinecall memory <contact>
-       pinecall memory forget <contact>`;
+       pinecall memory forget <contact>
+       pinecall memory eval [golden.json] [--k <n>] [--agent agent.tsx]`;
+
+// The golden beside the agent that answers with those facts: the questions recall is held to, and
+// what each should have brought back. `memory/golden.json` is where `eval` looks when nobody says.
+const DEFAULT_GOLDEN = "memory/golden.json";
+
+// The door takes the whole golden and needs no contact: every question carries its own facts.
+const EVAL = "/v1/contacts/memory/eval";
 
 // A fact that a later call superseded is still in the history, and it is drawn dimmer so the
 // current ones read first — on a terminal, that is; a pipe gets the plain line.
@@ -19,13 +31,19 @@ const DIM = "\u001b[2m";
 const PLAIN = "\u001b[0m";
 
 export const group: Group = {
-  purpose: "what memory kept about a contact, and forget it on request",
+  purpose: "what memory kept about a contact, forget it on request, and what a golden says of recall",
   usage: `${USAGE}
 
   With a contact — the caller's number, or the id the app named — prints everything memory ever
   kept about them: the current facts first, then the ones a later call superseded, with the date
   they stopped holding. forget erases all of it, the right to be forgotten; on a terminal it asks
-  once, and it prints how many facts went.`,
+  once, and it prints how many facts went.
+
+  eval asks recall every question of a golden — a JSON list of {holds, asks, expects}, where holds
+  is what memory holds about that question's contact — and prints recall@k and nDCG@10, computed by
+  code with no model in the loop, plus every question it did not answer whole. No contact of yours
+  is read or written: each question's facts go to a scratch contact and are deleted again. A golden
+  is fixed and the ranking is the variable: never soften a question so a change can pass.`,
   run,
 };
 
@@ -42,22 +60,26 @@ export interface Recalling {
 export async function run(argv: string[], how: Recalling = {}): Promise<number> {
   const out = how.out ?? process.stdout;
   const err = how.err ?? process.stderr;
-  const [first, second] = argv;
-  const forgetting = first === "forget";
-  const contact = forgetting ? second : first;
-  if (contact === undefined || contact.startsWith("-")) {
-    err.write(`${USAGE}\n`);
-    return 2;
-  }
+  const { values, positionals } = parseArgs({
+    args: argv,
+    allowPositionals: true,
+    options: { agent: { type: "string" }, k: { type: "string" } },
+  });
+  const [verb, second] = positionals;
   const door = theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
   try {
-    if (forgetting) return await forget(door, contact, how.confirm ?? askOnATerminal, out);
-    return await history(door, contact, out);
+    if (verb === "eval") return await evaluate(door, second, values.k, values.agent, out, err);
+    if (verb === "forget" && second !== undefined) {
+      return await forget(door, second, how.confirm ?? askOnATerminal, out);
+    }
+    if (verb !== undefined && verb !== "forget") return await history(door, verb, out);
   } catch (refused) {
     err.write(`${refusal(refused)}\n`);
     return 1;
   }
+  err.write(`${USAGE}\n`);
+  return 2;
 }
 
 async function history(door: Door, contact: string, out: NodeJS.WritableStream): Promise<number> {
@@ -86,6 +108,48 @@ async function forget(
   const gone = await asked<Forgotten>(door, memoryPath(contact), { method: "DELETE" });
   out.write(`forgotten: ${gone.forgotten}\n`);
   return 0;
+}
+
+// A golden is run when somebody changed the vocabulary a fact is written in, the embedder or a
+// knob — never on a caller's clock — so it reads its questions off the disk and asks them in order.
+// No contact of the org is read: each question's facts are the question's own.
+async function evaluate(
+  door: Door,
+  file: string | undefined,
+  k: string | undefined,
+  agent: string | undefined,
+  out: NodeJS.WritableStream,
+  err: NodeJS.WritableStream,
+): Promise<number> {
+  const golden = resolve(file ?? join(dirname((await load(agent)).file), DEFAULT_GOLDEN));
+  if (!existsSync(golden)) {
+    err.write(`no golden at ${golden}: a JSON list of {holds, asks, expects}\n`);
+    return 2;
+  }
+  const questions: unknown = JSON.parse(readFileSync(golden, "utf8"));
+  if (!Array.isArray(questions) || questions.length === 0) {
+    err.write(`${golden} holds no questions: a golden is a JSON list of {holds, asks, expects}\n`);
+    return 2;
+  }
+  const body: Record<string, unknown> = { questions };
+  if (k !== undefined) body["k"] = Number(k);
+  const score = await asked<MemoryScore>(door, EVAL, { method: "POST", body });
+  out.write(`${recallLines(score).join("\n")}\n`);
+  return score.misses.length === 0 ? 0 : 1;
+}
+
+/** What a golden prints: the two figures on one line, then a line per question memory did not answer whole. */
+export function recallLines(score: MemoryScore): string[] {
+  const figures =
+    `memory · ${score.model} · ${score.questions} questions · ` +
+    `recall@${score.k} ${score.recall_at_k.toFixed(2)} · nDCG@10 ${score.ndcg_at_10.toFixed(2)} · ` +
+    `${Math.round(score.took_ms)} ms`;
+  return [
+    figures,
+    ...score.misses.map(
+      (missed) => `  missed: ${missed.asks} → wanted ${missed.missing.join(", ")}, got ${missed.found[0] ?? "nothing"}`,
+    ),
+  ];
 }
 
 /** One fact as a line: the text, its category when it has one, and — dimmed — when it stopped holding. */
