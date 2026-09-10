@@ -10,7 +10,7 @@ import { modelOf, mount } from "../runtime/connect.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { load, mountOptions } from "./load.js";
-import { aRun, entriesOf, Refused, theRuns, type Door, type EvalRun } from "./testing/gateway.js";
+import { aRun, entriesOf, Refused, theRuns, type Door, type EvalRun, type Wanted } from "./testing/gateway.js";
 import { GOLDENS, goldensIn, matching, NO_GOLDENS } from "./testing/goldens.js";
 import { mediansOf } from "./testing/latency.js";
 import { reportOf, type Latencies } from "./testing/matrix.js";
@@ -23,12 +23,28 @@ export const group: Group = {
 };
 
 const USAGE =
-  "usage: pinecall test [paths] [--agent agent.tsx] [--model m]… [--grep x] [--watch] [--json]\n";
+  "usage: pinecall test [paths] [--agent agent.tsx] [--model m]… [--grep x] [--watch] [--json]\n" +
+  "       pinecall test --voice [--background-noise dB] [--packet-loss 0.05]\n";
 
-// Ring 2 is a synthetic caller on the wire — a room, a voice and a persona worker — and none of
-// that is in this tree yet. The flag says so rather than running ring 1 and calling it voice,
-// which would be a green suite that tested nothing it claimed to.
-const NO_VOICE = "--voice is ring 2: it needs a room and a spoken caller, and neither is built yet\n";
+// Ring 2: the same goldens, said out loud. Only the three fields a spoken run adds travel — a
+// written run must not carry a `voice: false` that reads as a decision somebody made.
+function aLine(values: { voice?: boolean; "background-noise"?: string; "packet-loss"?: string }): Partial<Wanted> {
+  if (values.voice !== true) return {};
+  const noise = numberOf(values["background-noise"]);
+  const loss = numberOf(values["packet-loss"]);
+  return {
+    voice: true,
+    ...(noise === undefined ? {} : { interferer_db: noise }),
+    ...(loss === undefined ? {} : { packet_loss: loss }),
+  };
+}
+
+/** A flag that must be a number to mean anything: anything else is left out rather than sent as NaN. */
+function numberOf(said: string | undefined): number | undefined {
+  if (said === undefined) return undefined;
+  const value = Number(said);
+  return Number.isFinite(value) ? value : undefined;
+}
 
 // How long a change waits before the suite runs again: two saves of the same file in an editor
 // are one change to a person, and a run costs real calls.
@@ -55,12 +71,10 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
       watch: { type: "boolean", default: false },
       json: { type: "boolean", default: false },
       voice: { type: "boolean", default: false },
+      "background-noise": { type: "string" },
+      "packet-loss": { type: "string" },
     },
   });
-  if (values.voice === true) {
-    process.stderr.write(NO_VOICE);
-    return 2;
-  }
   const door = theDoor();
   if (door === undefined) return 2;
   if (positionals.length === 0 && !existsSync(GOLDENS)) {
@@ -98,6 +112,7 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
         goldens,
         ...(models.length > 0 ? { models } : {}),
         ...(mounted.agent.app === undefined ? {} : { app: mounted.agent.app }),
+        ...aLine(values),
       });
       const watched = {
         agent: mounted.slug,

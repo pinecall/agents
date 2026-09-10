@@ -68,6 +68,12 @@ export interface Wanted {
   goldens: Golden[];
   models?: Camel<ModelConfig>[];
   app?: string;
+  /** Ring 2: the same goldens said out loud on a real line, instead of written into a text session. */
+  voice?: boolean;
+  /** How many dB under the caller's own voice an interferer sits, on a spoken run. */
+  interferer_db?: number;
+  /** The share of the caller's packets that never arrive, 0 to 1, on a spoken run. */
+  packet_loss?: number;
 }
 
 /** One entry of a call's log, as `GET /v1/calls/{call}/events` projects it for this reader. */
