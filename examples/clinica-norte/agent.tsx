@@ -19,6 +19,11 @@ export default class ClinicaNorte extends Agent {
   llm = "haiku";
   language = "es";
 
+  // `greeting`: quién abre la llamada y cómo. Las palabras tal cual, porque una recepción dice
+  // siempre lo mismo al descolgar y una frase fija se lee igual todas las veces. La otra forma,
+  // `greeting = { reply: "saluda y preséntate" }`, deja que el modelo la encuentre él.
+  greeting = "Clínica Norte, buenos días. ¿En qué puedo ayudarle?";
+
   // `says`: cómo se dice una palabra que la voz leería mal. DKV es una aseguradora y TAC una
   // prueba: deletreadas suenan a error, dichas suenan a lo que la recepcionista dice.
   says = { DKV: "de ka uve", TAC: "tac" };

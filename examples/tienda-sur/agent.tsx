@@ -138,6 +138,11 @@ export default class TiendaSur extends Agent {
   llm = "haiku";
   language = "es";
 
+  // La otra forma de abrir una llamada: el mostrador no dice siempre la misma frase, así que
+  // aquí no se declaran las palabras sino lo que el modelo lee antes de encontrarlas él. El que
+  // llama nunca oye esta línea; oye lo que el modelo hace con ella.
+  greeting = { reply: "saluda, di que esto es Ferretería Tienda Sur y pregunta qué necesita" };
+
   // `says`: cómo se dice lo que la voz leería mal. Las referencias del catálogo empiezan por dos
   // letras que juntas no son una palabra, y "LED" se dice como suena y no deletreada.
   says = { TS: "te ese", LED: "led" };

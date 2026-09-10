@@ -81,10 +81,10 @@ export function Controls({
           className="ctl-input ctl-textarea"
           value={valueOf("greeting")}
           rows={3}
-          placeholder={declared.greeting === "" ? "empty = the class opens the call as it always has" : declaredAs(declared.greeting)}
+          placeholder={declared.greeting === "" ? "empty = the class opens the call as it declared, or not at all" : declaredAs(declared.greeting)}
           onChange={(event) => change("greeting", event.target.value)}
         />
-        <p className="ctl-note">spoken verbatim as the call opens — said, never generated. It applies to the NEXT session.</p>
+        <p className="ctl-note">spoken verbatim as the call opens — said, never generated, so typing here also stops a class that improvises its opening. It applies to the NEXT session.</p>
       </label>
 
       <div className="ctl-foot">

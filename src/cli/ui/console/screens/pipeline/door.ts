@@ -36,13 +36,21 @@ export const MeasuredSchema = z.object({
 });
 export type Measured = z.infer<typeof MeasuredSchema>;
 
+/** How the class opens a call: exactly one of the two verbs, as the wire carries it. */
+export const GreetingSchema = z.object({
+  say: z.string().nullable(),
+  reply: z.string().nullable(),
+  allow_interruptions: z.boolean().nullable(),
+});
+export type Greeting = z.infer<typeof GreetingSchema>;
+
 /** The whole screen in one answer: the stages, their cost, what is turned, what may be asked. */
 export const ReportSchema = z.object({
   agent: z.string(),
   hears: StageSchema,
   decides: StageSchema,
   speaks: StageSchema,
-  greeting: z.string().nullable(),
+  greeting: GreetingSchema.nullable(),
   overrides: OverriddenSchema,
   // The names the voice knob may be turned to, off the runtime's one voices table. The console
   // keeps no list of its own: a name this build does not curate is an id no vendor answers for.
@@ -71,4 +79,14 @@ export async function turnKnobs(
 
 function door(agent: string): string {
   return `/v1/agents/${encodeURIComponent(agent)}/pipeline`;
+}
+
+// The knob below the line is a text box and therefore always sets words, so the screen has to say
+// which of the two the class declared: typing over an improvised opening changes what it IS, and
+// an operator about to press save should be able to see that before they do.
+/** What the class declared, as the one line the control shows above its box. */
+export function greetingLine(greeting: Greeting | null): string {
+  if (greeting === null) return "";
+  if (greeting.say !== null && greeting.say !== undefined) return greeting.say;
+  return `the class improvises: ${greeting.reply ?? ""}`;
 }

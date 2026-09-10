@@ -5,6 +5,7 @@ import { useParams } from "react-router";
 
 import { Nothing } from "../../shell/nothing";
 import { Controls } from "./controls";
+import { greetingLine } from "./door";
 import { DecidesLeg, HearsLeg, SpeaksLeg } from "./legs";
 import { Overrides } from "./overrides";
 import { usePipeline } from "./use-pipeline";
@@ -57,7 +58,7 @@ export function Pipeline(): ReactNode {
                 llm: `${report.decides.vendor}/${report.decides.model ?? ""}`,
                 voice: report.speaks.voice_id ?? "",
                 tts_model: report.speaks.model ?? "",
-                greeting: report.greeting ?? "",
+                greeting: greetingLine(report.greeting),
               }}
               voices={report.voices}
               saving={saving}
