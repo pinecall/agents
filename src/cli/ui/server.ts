@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 import { createReadStream, existsSync, readFileSync, statSync } from "node:fs";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
-import { extname, join, normalize, sep } from "node:path";
+import { extname, join, normalize, resolve, sep } from "node:path";
 import { Readable } from "node:stream";
 
 import type { Door } from "../testing/gateway.js";
@@ -52,7 +52,11 @@ export class LocalConsole {
 
   private constructor(door: Door, files: string) {
     this.#door = door;
-    this.#files = files;
+    // Resolved, which is what strips a trailing separator: the directory arrives as a URL's path
+    // and so ends in one, and `#serve` compares against `#files + sep`. Left as it came, that
+    // comparison is `…/console//`, which no file under it starts with, and EVERY request fell
+    // through to the page — including the bundle, which the browser then parsed as HTML.
+    this.#files = resolve(files);
     this.#nonce = randomBytes(NONCE_BYTES).toString("hex");
     this.#server = createServer((request, response) => {
       void this.#answer(request, response);

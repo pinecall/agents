@@ -96,9 +96,15 @@ async function agentOfThisDirectory(): Promise<string | null> {
 // writes its build to dist/cli/ui/console, which is what `files` publishes. So from the compiled
 // verb the page is the sibling directory, and from the source under a loader it is the same path
 // in dist — one of the two exists, and a tree where neither does was never built.
-function consoleFiles(): string {
-  const built = fileURLToPath(new URL("console/", import.meta.url));
-  if (existsSync(built)) return built;
+// Beside this module sits `console/` twice over: in the published package it is the BUILT console,
+// and in a checkout it is the SOURCE, whose index.html points at `main.tsx` — TypeScript, which no
+// browser runs, and which served a blank page for as long as the check was `existsSync` alone.
+// What tells them apart is that source file, so that is what is asked about.
+export function consoleFiles(): string {
+  const beside = fileURLToPath(new URL("console/", import.meta.url));
+  if (existsSync(beside) && !existsSync(fileURLToPath(new URL("console/main.tsx", import.meta.url)))) {
+    return beside;
+  }
   return fileURLToPath(new URL("../../../dist/cli/ui/console/", import.meta.url));
 }
 

@@ -6,6 +6,15 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Fixed
+- **`pinecall ui` served a blank page from a checkout, and had for as long as it has existed.** Two
+  faults, one evening. The console's directory arrives as a URL's path and so ends in a separator,
+  and the server guarded its own root with `files + sep` — which reads `…/console//`, which no file
+  under it starts with, so every request fell through to the page and the browser parsed a megabyte
+  of JavaScript as HTML. And beside the module sits `console/` twice: the built one in the package
+  and the SOURCE in a checkout, whose `index.html` points at `main.tsx`, which no browser runs. The
+  existence check could not tell them apart. Both are pinned by tests that fail without the fix.
+
 ### Added
 - **`pinecall supervise <call>`** — a human at the desk, from this terminal. The call's transcript
   as it lands, and one line per move: `w <text>` whispers to the agent, `s <text>` puts a sentence
