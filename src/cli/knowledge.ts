@@ -1,10 +1,10 @@
-/** `pinecall knowledge push | list | drop`: the base the agent answers from, pushed by name to the gateway. */
+/** `pinecall knowledge push | list | drop | eval`: the base the agent answers from, and what a golden says of it. */
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { parseArgs } from "node:util";
 
-import type { KnowledgeFile, KnowledgeList, KnowledgePushed } from "@pinecall/protocol";
+import type { KnowledgeFile, KnowledgeList, KnowledgePushed, KnowledgeScore } from "@pinecall/protocol";
 
 import { slugOf } from "../runtime/connect.js";
 import { theDoor } from "./env.js";
@@ -15,7 +15,12 @@ import { refusal } from "./whoami.js";
 
 const USAGE = `usage: pinecall knowledge push [dir] [--base <name>] [--agent agent.tsx]
        pinecall knowledge list
-       pinecall knowledge drop <base>`;
+       pinecall knowledge drop <base>
+       pinecall knowledge eval [golden.json] [--base <name>] [--k <n>] [--agent agent.tsx]`;
+
+// The golden beside the documents it asks about: the questions the base is held to, and the chunk
+// each should have found. `knowledge/golden.json` is where `eval` looks when nobody says.
+const DEFAULT_GOLDEN = "knowledge/golden.json";
 
 // Where a tenant keeps what is retrieved per turn, beside the agent file: the layout every
 // example has, and the one `docs = "<base>"` on the class was pushed from.
@@ -28,7 +33,12 @@ export const group: Group = {
   push reads every *.md under the directory (./knowledge/docs beside the agent file when none
   is named) and sends the folder whole to PUT /v1/knowledge/<base>: the base is replaced, never
   merged. The base is the agent's slug unless --base says otherwise, and the class names it with
-  \`docs = "<base>"\`. list prints every base this org has pushed; drop removes one.`,
+  \`docs = "<base>"\`. list prints every base this org has pushed; drop removes one.
+
+  eval asks the base every question of a golden — a JSON list of {asks, expects}, where expects is
+  the heading path the answer should carry — and prints recall@k and nDCG@10, computed by code with
+  no model in the loop, plus every question it missed and what came back instead. A golden is fixed
+  and the index is the variable: never soften a question so a change can pass.`,
   run,
 };
 
@@ -46,7 +56,7 @@ export async function run(argv: string[], how: Pushing = {}): Promise<number> {
   const { values, positionals } = parseArgs({
     args: argv,
     allowPositionals: true,
-    options: { base: { type: "string" }, agent: { type: "string" } },
+    options: { base: { type: "string" }, agent: { type: "string" }, k: { type: "string" } },
   });
   const [verb, ...rest] = positionals;
   const door = theDoor(how.env ?? process.env, err);
@@ -55,6 +65,7 @@ export async function run(argv: string[], how: Pushing = {}): Promise<number> {
     if (verb === "push") return await push(door, rest[0], values.base, values.agent, out, err);
     if (verb === "list") return await list(door, out);
     if (verb === "drop" && rest[0] !== undefined) return await drop(door, rest[0], out);
+    if (verb === "eval") return await evaluate(door, rest[0], values.base, values.k, values.agent, out, err);
   } catch (refused) {
     // The gateway's own sentence, as it was said: "this gateway keeps no knowledge: it runs on
     // a dev key" names the fix, and nothing here knows better.
@@ -112,6 +123,53 @@ async function drop(door: Door, base: string, out: NodeJS.WritableStream): Promi
   await asked(door, `/v1/knowledge/${encodeURIComponent(base)}`, { method: "DELETE" });
   out.write(`dropped ${base}\n`);
   return 0;
+}
+
+// A golden is run when somebody changed the documents, the embedder or a knob — never on a
+// caller's clock — so it reads its questions off the disk and asks them one at a time.
+async function evaluate(
+  door: Door,
+  file: string | undefined,
+  base: string | undefined,
+  k: string | undefined,
+  agent: string | undefined,
+  out: NodeJS.WritableStream,
+  err: NodeJS.WritableStream,
+): Promise<number> {
+  const loaded = file === undefined || base === undefined ? await load(agent) : undefined;
+  const golden = resolve(file ?? join(dirname(loaded!.file), DEFAULT_GOLDEN));
+  const name = base ?? slugOf(loaded!.ctor);
+  if (!existsSync(golden)) {
+    err.write(`no golden at ${golden}: a JSON list of {asks, expects}\n`);
+    return 2;
+  }
+  const questions: unknown = JSON.parse(readFileSync(golden, "utf8"));
+  if (!Array.isArray(questions) || questions.length === 0) {
+    err.write(`${golden} holds no questions: a golden is a JSON list of {asks, expects}\n`);
+    return 2;
+  }
+  const body: Record<string, unknown> = { questions };
+  if (k !== undefined) body["k"] = Number(k);
+  const score = await asked<KnowledgeScore>(door, `/v1/knowledge/${encodeURIComponent(name)}/eval`, {
+    method: "POST",
+    body,
+  });
+  out.write(`${scoreLines(score).join("\n")}\n`);
+  return score.misses.length === 0 ? 0 : 1;
+}
+
+/** What a golden prints: the two figures on one line, then a line per question the base missed. */
+export function scoreLines(score: KnowledgeScore): string[] {
+  const figures =
+    `${score.base} · ${score.model} · ${score.questions} questions · ` +
+    `recall@${score.k} ${score.recall_at_k.toFixed(2)} · nDCG@10 ${score.ndcg_at_10.toFixed(2)} · ` +
+    `${Math.round(score.took_ms)} ms`;
+  return [
+    figures,
+    ...score.misses.map(
+      (missed) => `  missed: ${missed.asks} → wanted ${missed.expects}, got ${missed.found[0] ?? "nothing"}`,
+    ),
+  ];
 }
 
 /** The one line a push prints: the base, what was sent, what it became, and how long it took. */
