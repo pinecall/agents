@@ -28,7 +28,6 @@ export const PLANNED: Record<string, string> = {
   costs: "what the calls cost, by agent, model or channel",
   supervise: "listen in: whisper, say, takeover, transfer, end",
   call: "the agent dials a number, for real",
-  keys: "list | add | rm the org's API keys",
   tokens: "mint a browser token for a web call",
   phones: "list | buy | attach the numbers the org owns",
   agents: "list | show the agents this org has registered",

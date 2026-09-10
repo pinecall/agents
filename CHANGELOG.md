@@ -12,6 +12,10 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   `docs` names the base it was pushed under — `docs = "clinica-norte"` or
   `{ base, mode?, k?, minScore? }`, typed as `DocsDeclaration` — and the old glob form is refused
   with the verb that replaces it; `memory = { remember, forget }` is `MemoryDeclaration`.
+- `pinecall keys add <vendor>` · `rm <vendor>` · `list`: the org brings its own provider key for
+  a vendor without an operator, on its own API key. The key is read from stdin and never from the
+  command line, it is echoed and printed nowhere, and `list` answers vendor names alone — no door
+  of the runtime ever gives a provider key back. `keys` leaves the planned table.
 - `pinecall knowledge push [dir] --base <name>` · `list` · `drop <base>`, and
   `pinecall memory <contact>` · `memory forget <contact>`: the folder of `*.md` to the gateway
   under a name, and one contact's facts read or erased. Both leave the planned table.

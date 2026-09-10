@@ -1,10 +1,10 @@
 /** `pinecall login <gateway>`: the key typed once, verified there, and kept in ~/.pinecall/credentials. */
 
-import { createInterface } from "node:readline";
 import { parseArgs } from "node:util";
 
 import { pinecallHome, writeGateway } from "./credentials.js";
 import type { Group } from "./groups.js";
+import { aLineOfStdin, typedInSilence } from "./secret.js";
 import { refusal, whoIs, type Who } from "./whoami.js";
 
 const USAGE = "usage: pinecall login <gateway-url> [--key-stdin]";
@@ -46,7 +46,7 @@ export async function login(argv: string[], how: Signing = {}): Promise<number> 
     err.write(`${USAGE}\n`);
     return 2;
   }
-  const key = (await (how.key ?? (values["key-stdin"] === true ? aLineOfStdin : () => hidden(out)))()).trim();
+  const key = (await (how.key ?? (values["key-stdin"] === true ? aLineOfStdin : () => typedInSilence(PROMPT, out)))()).trim();
   if (key === "") {
     err.write("no key was typed: nothing was kept\n");
     return 2;
@@ -65,29 +65,3 @@ export async function login(argv: string[], how: Signing = {}): Promise<number> 
   return 0;
 }
 
-/**
- * One line typed with nothing echoed.
- *
- * A key on the screen is a key in the scrollback, in a screen share and in whatever recorded the
- * terminal. readline echoes what it reads through one method, so muting is overriding that method
- * rather than putting the terminal in raw mode and reading bytes.
- */
-async function hidden(out: NodeJS.WritableStream): Promise<string> {
-  const reading = createInterface({ input: process.stdin, output: out, terminal: true });
-  (reading as unknown as { _writeToOutput(text: string): void })._writeToOutput = () => {};
-  out.write(PROMPT);
-  const key = await new Promise<string>((typed) => reading.question("", typed));
-  reading.close();
-  out.write("\n");
-  return key;
-}
-
-// The script's way in: one line, no terminal, nothing asked. `echo $KEY | pinecall login … --key-stdin`.
-async function aLineOfStdin(): Promise<string> {
-  const reading = createInterface({ input: process.stdin });
-  for await (const line of reading) {
-    reading.close();
-    return line;
-  }
-  return "";
-}

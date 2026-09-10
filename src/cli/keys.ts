@@ -1,0 +1,101 @@
+/** `pinecall keys add | rm | list`: the provider keys this org brought of its own, never read back. */
+
+import { theDoor } from "./env.js";
+import type { Group } from "./groups.js";
+import { aLineOfStdin, typedInSilence } from "./secret.js";
+import { asked, type Door } from "./testing/gateway.js";
+import { refusal } from "./whoami.js";
+
+const USAGE = `usage: pinecall keys add <vendor>     the key on stdin, never on the command line
+       pinecall keys rm <vendor>
+       pinecall keys list`;
+
+export const group: Group = {
+  purpose: "add | rm | list the provider keys this org brought of its own",
+  usage: `${USAGE}
+
+  A key added here is this org's own account with that vendor, and every call of this org runs
+  on it from the next one; every vendor nobody brought runs on the box's own key. add reads the
+  key from stdin — typed with nothing echoed on a terminal, one piped line off one — and never
+  from a flag: argv is visible in \`ps\` to every user on the box, and a key pasted as an argument
+  is a key in the shell history. rm gives that vendor back to the box's key.
+
+  No door of the runtime ever answers with a provider key: list prints the vendors and nothing
+  else, not a value, not a prefix, not a fingerprint. A key that was lost was lost at the vendor,
+  and the fix is to add it again.`,
+  run,
+};
+
+/** What the verb can be told besides the argv: where to print, which environment, and the key. */
+export interface Bringing {
+  out?: NodeJS.WritableStream;
+  err?: NodeJS.WritableStream;
+  env?: NodeJS.ProcessEnv;
+  /** How the key arrives. A test hands one in rather than driving a terminal. */
+  key?: () => Promise<string>;
+}
+
+/** Read the sub-verb and do it: one key up, one key gone, or the vendors this org brought. */
+export async function run(argv: string[], how: Bringing = {}): Promise<number> {
+  const out = how.out ?? process.stdout;
+  const err = how.err ?? process.stderr;
+  const [verb, vendor] = argv;
+  const door = theDoor(how.env ?? process.env, err);
+  if (door === undefined) return 2;
+  try {
+    if (verb === "add" && vendor !== undefined) return await add(door, vendor, how.key, out, err);
+    if (verb === "rm" && vendor !== undefined) return await remove(door, vendor, out);
+    if (verb === "list") return await list(door, out);
+  } catch (refused) {
+    // The gateway's own sentence, as it was said: "no vendor named 11labs; this build runs: …"
+    // names the fix, and nothing here knows better. It never carries the key back.
+    err.write(`${refusal(refused)}\n`);
+    return 1;
+  }
+  err.write(`${USAGE}\n`);
+  return 2;
+}
+
+// The key never touches the argv and never reaches a log: it is read here, sent once, and the
+// only thing printed afterwards is the vendor it was stored under.
+async function add(
+  door: Door,
+  vendor: string,
+  given: (() => Promise<string>) | undefined,
+  out: NodeJS.WritableStream,
+  err: NodeJS.WritableStream,
+): Promise<number> {
+  const key = (await (given ?? (() => aKeyFor(vendor, out)))()).trim();
+  if (key === "") {
+    err.write("no key was given: nothing was brought\n");
+    return 2;
+  }
+  await asked(door, pathFor(vendor), { method: "PUT", body: { key } });
+  out.write(`${vendor}\n`);
+  return 0;
+}
+
+async function remove(door: Door, vendor: string, out: NodeJS.WritableStream): Promise<number> {
+  await asked(door, pathFor(vendor), { method: "DELETE" });
+  out.write(`${vendor}\n`);
+  return 0;
+}
+
+async function list(door: Door, out: NodeJS.WritableStream): Promise<number> {
+  const brought = await asked<{ vendors: string[] }>(door, "/v1/provider-keys");
+  if (brought.vendors.length === 0) {
+    out.write("no provider key brought: every call runs on the keys of the box\n");
+    return 0;
+  }
+  for (const vendor of brought.vendors) out.write(`${vendor}\n`);
+  return 0;
+}
+
+/** Typed with nothing echoed when a person is there, and one piped line when nobody is. */
+async function aKeyFor(vendor: string, out: NodeJS.WritableStream): Promise<string> {
+  return process.stdin.isTTY === true ? await typedInSilence(`${vendor} key: `, out) : await aLineOfStdin();
+}
+
+function pathFor(vendor: string): string {
+  return `/v1/provider-keys/${encodeURIComponent(vendor)}`;
+}

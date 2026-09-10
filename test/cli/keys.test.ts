@@ -1,0 +1,206 @@
+// `pinecall keys`: the org's own provider key sent once and never printed, the vendor names read
+// back, and the gateway's own refusal said as it was written.
+
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import type { AddressInfo } from "node:net";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
+import { run } from "../../src/cli/keys.js";
+import { written } from "./said.js";
+
+const A_KEY = "pk_the_orgs_own_key";
+
+// The thing that must never come back out: it is added, and every assertion below asks whether
+// this string appears anywhere a person or a log would see it.
+const THE_ORGS_OWN = "sk-the-clinic-brought-its-own-elevenlabs-key";
+
+/** One request as the gateway heard it: the method, the path, and the body it was sent. */
+interface Heard {
+  method: string;
+  path: string;
+  body: unknown;
+}
+
+/** A gateway with the three tenant provider-key doors, which knows one key and one org's vendors. */
+class FakeGateway {
+  readonly heard: Heard[] = [];
+  vendors: string[] = [];
+  refuse: { status: number; detail: string } | undefined;
+  #server!: Server;
+  url = "";
+
+  async open(): Promise<void> {
+    this.#server = createServer((request, response) => void this.#answer(request, response));
+    await new Promise<void>((bound) => this.#server.listen(0, "127.0.0.1", bound));
+    this.url = `http://127.0.0.1:${(this.#server.address() as AddressInfo).port}`;
+  }
+
+  async close(): Promise<void> {
+    this.#server.closeAllConnections();
+    await new Promise<void>((closed) => this.#server.close(() => closed()));
+  }
+
+  async #answer(request: IncomingMessage, response: ServerResponse): Promise<void> {
+    const chunks: Buffer[] = [];
+    for await (const chunk of request) chunks.push(chunk as Buffer);
+    const text = Buffer.concat(chunks).toString("utf8");
+    this.heard.push({ method: request.method ?? "", path: request.url ?? "", body: text === "" ? null : JSON.parse(text) });
+    if (request.headers.authorization !== `Bearer ${A_KEY}`) return this.#said(response, 401, { detail: "this door takes an API key" });
+    if (this.refuse !== undefined) return this.#said(response, this.refuse.status, { detail: this.refuse.detail });
+    if (request.method === "GET") return this.#said(response, 200, { vendors: this.vendors });
+    return this.#said(response, 204, null);
+  }
+
+  #said(response: ServerResponse, status: number, body: unknown): void {
+    if (body === null) {
+      response.writeHead(status);
+      response.end();
+      return;
+    }
+    response.writeHead(status, { "content-type": "application/json" });
+    response.end(JSON.stringify(body));
+  }
+}
+
+const gateway = new FakeGateway();
+let env: NodeJS.ProcessEnv;
+
+beforeEach(async () => {
+  gateway.heard.length = 0;
+  gateway.vendors = [];
+  gateway.refuse = undefined;
+  await gateway.open();
+  env = { PINECALL_URL: gateway.url, PINECALL_API_KEY: A_KEY };
+});
+
+afterEach(async () => {
+  await gateway.close();
+});
+
+/** The key as stdin hands it over, so no test drives a terminal. */
+function typed(key: string): () => Promise<string> {
+  return async () => key;
+}
+
+describe("bringing a key", () => {
+  it("sends it once in the body and prints the vendor and nothing else", async () => {
+    const out = written();
+
+    const code = await run(["add", "elevenlabs"], { out: out.stream, env, key: typed(THE_ORGS_OWN) });
+
+    expect(code).toBe(0);
+    expect(gateway.heard).toHaveLength(1);
+    expect(gateway.heard[0]).toMatchObject({ method: "PUT", path: "/v1/provider-keys/elevenlabs", body: { key: THE_ORGS_OWN } });
+    expect(out.text()).toBe("elevenlabs\n");
+  });
+
+  it("prints the key nowhere, not on the way out and not on the way back", async () => {
+    gateway.vendors = ["elevenlabs"];
+    const out = written();
+    const err = written();
+
+    await run(["add", "elevenlabs"], { out: out.stream, err: err.stream, env, key: typed(THE_ORGS_OWN) });
+    await run(["list"], { out: out.stream, err: err.stream, env });
+
+    expect(out.text()).not.toContain(THE_ORGS_OWN);
+    expect(err.text()).not.toContain(THE_ORGS_OWN);
+  });
+
+  it("trims what was typed, so a pasted line with a newline in it is still the key", async () => {
+    await run(["add", "soniox"], { out: written().stream, env, key: typed(`  ${THE_ORGS_OWN}\n`) });
+
+    expect(gateway.heard[0]?.body).toEqual({ key: THE_ORGS_OWN });
+  });
+
+  it("brings nothing when nothing was given, and knocks at no door", async () => {
+    const err = written();
+
+    const code = await run(["add", "elevenlabs"], { err: err.stream, env, key: typed("  ") });
+
+    expect(code).toBe(2);
+    expect(err.text()).toBe("no key was given: nothing was brought\n");
+    expect(gateway.heard).toEqual([]);
+  });
+
+  it("prints the gateway's own sentence when the vendor is not one this build runs", async () => {
+    gateway.refuse = { status: 400, detail: "no vendor named 11labs; this build runs: anthropic, deepgram, elevenlabs, openai, soniox, whatsapp" };
+    const err = written();
+
+    const code = await run(["add", "11labs"], { err: err.stream, env, key: typed(THE_ORGS_OWN) });
+
+    expect(code).toBe(1);
+    expect(err.text()).toBe("the gateway answered 400: no vendor named 11labs; this build runs: anthropic, deepgram, elevenlabs, openai, soniox, whatsapp\n");
+    expect(err.text()).not.toContain(THE_ORGS_OWN);
+  });
+});
+
+describe("taking one back and reading the names", () => {
+  it("deletes the vendor and says which one", async () => {
+    const out = written();
+
+    const code = await run(["rm", "elevenlabs"], { out: out.stream, env });
+
+    expect(code).toBe(0);
+    expect(gateway.heard[0]).toMatchObject({ method: "DELETE", path: "/v1/provider-keys/elevenlabs" });
+    expect(out.text()).toBe("elevenlabs\n");
+  });
+
+  it("says what the gateway said when the org never brought that vendor", async () => {
+    gateway.refuse = { status: 404, detail: "org clinica has no soniox key" };
+    const err = written();
+
+    const code = await run(["rm", "soniox"], { err: err.stream, env });
+
+    expect(code).toBe(1);
+    expect(err.text()).toBe("the gateway answered 404: org clinica has no soniox key\n");
+  });
+
+  it("prints one vendor per line, and no value beside it", async () => {
+    gateway.vendors = ["anthropic", "elevenlabs"];
+    const out = written();
+
+    const code = await run(["list"], { out: out.stream, env });
+
+    expect(code).toBe(0);
+    expect(gateway.heard[0]).toMatchObject({ method: "GET", path: "/v1/provider-keys" });
+    expect(out.text()).toBe("anthropic\nelevenlabs\n");
+  });
+
+  it("says which keys run instead when this org brought none", async () => {
+    const out = written();
+
+    await run(["list"], { out: out.stream, env });
+
+    expect(out.text()).toBe("no provider key brought: every call runs on the keys of the box\n");
+  });
+});
+
+describe("what it will not do", () => {
+  it("prints the usage on a sub-verb it does not have, and knocks at no door", async () => {
+    const err = written();
+
+    const code = await run(["drop", "elevenlabs"], { err: err.stream, env });
+
+    expect(code).toBe(2);
+    expect(err.text()).toContain("usage: pinecall keys add <vendor>");
+    expect(gateway.heard).toEqual([]);
+  });
+
+  it("takes a vendor for add and for rm, and asks for the key nowhere until it has one", async () => {
+    const err = written();
+
+    expect(await run(["add"], { err: err.stream, env })).toBe(2);
+    expect(await run(["rm"], { err: err.stream, env })).toBe(2);
+    expect(gateway.heard).toEqual([]);
+  });
+
+  it("says where to get a key before it knocks, when this terminal holds none", async () => {
+    const err = written();
+
+    const code = await run(["list"], { err: err.stream, env: { PINECALL_URL: gateway.url } });
+
+    expect(code).toBe(2);
+    expect(err.text()).toContain(`no key for ${gateway.url}`);
+    expect(gateway.heard).toEqual([]);
+  });
+});

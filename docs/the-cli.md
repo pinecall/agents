@@ -23,12 +23,13 @@ on the PATH: `pinecall run`. In this workspace: `pnpm exec pinecall run`.
 | `personas list \| show \| try` | the synthetic callers in `test/personas` | for `try` |
 | `knowledge push [dir] [--base <name>] [--agent agent.ts]` | every `*.md` under the directory (`./knowledge/docs` beside the agent file by default), sent whole to `PUT /v1/knowledge/<base>`; the base is the agent's slug unless named. Prints `base · files · chunks · ms`. `list` and `drop <base>` beside it | yes |
 | `memory <contact>` | everything memory kept about one contact: the current facts first, the superseded ones dimmed with the date they stopped holding. `memory forget <contact>` asks once on a terminal, erases all of it, and prints `forgotten: n` | yes |
+| `keys add <vendor>` | the org's own key for that vendor, read from **stdin** and never from a flag — typed with nothing echoed on a terminal, one piped line off one — sent to `PUT /v1/provider-keys/<vendor>`. Every call of this org then runs on that account; every vendor nobody brought runs on the box's own key. `keys rm <vendor>` gives one back, `keys list` prints the vendors and **never a value**: no door of the runtime answers with a provider key | yes |
 | `login <gateway>` | the key typed once (never echoed), proved at `/v1/whoami`, kept in `~/.pinecall/credentials`. `--key-stdin` for a script | yes |
 | `whoami` | which gateway, which org, which key id — and **where the key came from** | yes |
 
 ## The verbs that are declared and not written
 
-`new`, `g`, `sessions`, `observe`, `costs`, `supervise`, `call`, `keys`, `tokens`, `phones`,
+`new`, `g`, `sessions`, `observe`, `costs`, `supervise`, `call`, `tokens`, `phones`,
 `agents`, `deploy`. Typing one prints what it *will* be and exits 0 — a person
 who types `pinecall supervise` deserves better than "unknown command". `src/cli/groups.ts` is the
 one place that says which half of the CLI is still a design, and a verb leaves that table in the
