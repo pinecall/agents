@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { Agent, describe as describeClass, seal, tool } from "../../src/index.js";
+import { Agent, describe as describeClass, Memory, seal, tool } from "../../src/index.js";
 import { declaredBlocksOf, layoutOf, type Block, type Blocks, type View, type ViewProps } from "../../src/views/layout.js";
 import { render, showPrompt, viewFor } from "../../src/views/render.js";
 import ClinicaNorte from "../agent/clinica-norte.js";
@@ -104,7 +104,7 @@ describe("the view", () => {
 
   it("opens with the memory and retrieval markers, in that order", () => {
     const text = block(render(clinica(), { view }, onThePhone), "view");
-    expect(text.indexOf('<!-- memory: {"kinds":["preference","health"]} -->')).toBe(0);
+    expect(text.indexOf('<!-- memory: {} -->')).toBe(0);
     expect(text).toContain('<!-- retrieved: {"min_score":0.4} -->');
   });
 
@@ -209,6 +209,45 @@ describe("the printed page", () => {
       "── availability (dynamic) ──",
       "── view (dynamic) ──",
     ]);
+  });
+});
+
+// A fact is filed under the words the class declared, so those words are the only ones a view may
+// ask for by name. A live call filed `cómo prefiere que le llamen` while the view asked for
+// `preference`, and every recall came back empty for ever, looking exactly like a caller nobody had
+// met (2026-09-10). The render is where the marker is written, so the render is where it is refused.
+describe("a memory kind the class never said it remembers", () => {
+  /** Agenda que dice con qué palabras recuerda. */
+  class ConMemoria extends Agent {
+    language = "es";
+    memory = { remember: ["cómo prefiere que le llamen", "alergias"], forget: ["pagos"] };
+  }
+
+  it("is refused, naming the kind and the words the class remembers", () => {
+    const view: View = () => <Memory kinds={["preference"]} />;
+
+    expect(() => render(seal(new ConMemoria()), { view })).toThrow(
+      'memory kinds: "preference" is not one of the words this class remembers ' +
+        "(cómo prefiere que le llamen, alergias)",
+    );
+  });
+
+  it("renders when every kind is one of those words", () => {
+    const view: View = () => <Memory kinds={["alergias"]} limit={3} />;
+
+    expect(block(render(seal(new ConMemoria()), { view }), "view")).toBe(
+      '<!-- memory: {"kinds":["alergias"],"limit":3} -->',
+    );
+  });
+
+  it("takes any kind at all from a class that says nothing about what it remembers", () => {
+    /** Agenda que recuerda lo que al modelo le parezca. */
+    class SinMemoria extends Agent {
+      language = "es";
+    }
+    const view: View = () => <Memory kinds={["preference"]} />;
+
+    expect(block(render(seal(new SinMemoria()), { view }), "view")).toBe('<!-- memory: {"kinds":["preference"]} -->');
   });
 });
 

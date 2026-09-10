@@ -2,7 +2,7 @@
 
 import { PromptBlockSpecSchema, type PromptBlockSpec } from "@pinecall/protocol";
 
-import { changes, type PromptDeclaration } from "../agent/agent.js";
+import { changes, type MemoryDeclaration, type PromptDeclaration } from "../agent/agent.js";
 import { snapshot, type Snapshot } from "../agent/state.js";
 import { docOf, toolsOf } from "../agent/tools.js";
 import { marker, tagged, withFills, type Fills } from "./components.js";
@@ -139,9 +139,19 @@ export function layout(agent: object, views: Views = {}, context: ViewContext = 
   const ctor = (agent as { constructor: Function }).constructor;
   checkViews(ctor, views);
   // Only a rendered function can leave a render prop behind, so the registry is made around the
-  // whole render and handed out with the texts it belongs to.
-  const rendered = withFills(() => layoutOf(ctor).map((spec) => ({ ...spec, text: textOf(agent, spec, views, context) })));
+  // whole render and handed out with the texts it belongs to. The words the class remembers travel
+  // with it, because a `<Memory kinds>` naming any other word is refused as it is written.
+  const rendered = withFills(
+    () => layoutOf(ctor).map((spec) => ({ ...spec, text: textOf(agent, spec, views, context) })),
+    remembersOf(agent),
+  );
   return { blocks: rendered.rendered, history: collapsedHistory(agent), fills: rendered.fills };
+}
+
+/** The words a class said it remembers about a caller: the only categories a view may ask for by name. */
+function remembersOf(agent: object): readonly string[] {
+  const configured = agent as { memory?: MemoryDeclaration };
+  return configured.memory?.remember ?? [];
 }
 
 // The text of one block: the framework's four are written here; a tenant's is its own function,

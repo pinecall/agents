@@ -4,7 +4,7 @@ import { Memory, Retrieved } from "../../src/views/components.js";
 
 export default ({ patient, slots, booking, identified, done, memory, resumed, call }: Record<string, any>) => (
   <>
-    <Memory kinds={["preference", "health"]} />
+    <Memory />
     <Retrieved minScore={0.4} />
     {resumed && <p>Se cortó su llamada anterior. Retoma desde donde quedó sin volver a preguntar.</p>}
     {!identified && <p>Saluda y pide nombre y teléfono. Nada más hasta identificar al paciente.</p>}

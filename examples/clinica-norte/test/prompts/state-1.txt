@@ -38,7 +38,7 @@ martes a las cinco de la tarde con el doctor Ruiz
 ── view (dynamic) ──
 Lo que recordamos de este paciente:
 
-<!-- memory: {"kinds":["preference","health"]} -->
+<!-- memory: {} -->
 
 De la base de conocimiento:
 
