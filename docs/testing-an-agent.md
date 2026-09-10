@@ -130,6 +130,74 @@ it holds, 1 when it does not, so it belongs in a pipeline. The judgement runs in
 where the log and the store are; this verb builds the case and reads the answer, so nobody needs
 Python to read a call.
 
+## The index has a golden of its own
+
+The five rings test the agent. None of them tests the **index**, and they cannot: a ring watches a
+conversation, so it only ever sees the passage retrieval handed over. Whether a better one existed
+and was missed is a question no conversation can answer, because the model never saw the one it
+missed.
+
+That is what a knowledge golden is for. One file beside the documents it asks about, a question and
+the chunk that should answer it:
+
+```json
+[
+  { "asks": "¿cuánto tengo que pagar de copago?",
+    "expects": "seguros-y-autorizaciones.md › Seguros, autorizaciones y facturación › Copagos" },
+  { "asks": "¿tengo que ir en ayunas para el análisis?",
+    "expects": "preparacion-de-pruebas.md › Preparación de las pruebas › Analíticas" }
+]
+```
+
+`expects` is the heading path a chunk carries, which is what you can read off your own documents.
+Naming a file alone accepts any chunk of it; naming a heading accepts that section and what is
+under it. Fifty to a hundred questions per base is the size that stops being noise.
+
+```bash
+pinecall knowledge eval                        # knowledge/golden.json beside the agent file
+pinecall knowledge eval --k 4                  # as many chunks as the class asks for
+pinecall knowledge eval golden.json --base clinica-norte
+```
+
+```
+clinica-norte · pplx-embed-context-v1-0.6b · 7 questions · recall@4 1.00 · nDCG@10 0.89 · 918 ms
+```
+
+| figure | means |
+|---|---|
+| `recall@k` | the share of questions whose chunk came back at all. **The one that matters**: a chunk the model never sees cannot be used, whatever its rank |
+| `nDCG@10` | how high it ranked, discounted logarithmically. Two indexes that both find a passage are not equal if one puts it first and the other seventh, because `k` cuts |
+| the model named | the embedder that wrote the vectors. Two scores are comparable only under one model |
+
+Every question it missed is printed with what came back instead, and the verb **exits 1** when
+anything did — so a base belongs in CI beside the unit tests. Both figures are computed by code,
+with no model in the loop, so two runs over one base answer the same numbers and a change is a
+change and not a mood.
+
+A golden is fixed and the index is the variable. **A question is never softened so a change can
+pass** — the same rule the conversation goldens are held to. What you change instead is the
+documents, the chunking, `k`, `min_score`, or the embedder, and then you run it again.
+
+## Is there a score for retrieval on a call?
+
+No, and the reason is worth knowing rather than working around.
+
+On a finished call, `call.score` carries the panel's verdicts, and the one that touches retrieval is
+`grounded`: it checks that every price, hour, date and name the agent stated appears in the evidence
+it was given — and since a lookup arrives as a tool result, that evidence **is** the chunks. So the
+rate of `held` over calls that carry a `docs.sources` entry is the precision of retrieval, measured
+on real traffic, for free.
+
+What no live call can score is whether the index missed a **better** passage, because nobody knows
+what the right passage was: there is no truth to compare against outside a golden. That is the
+division of labour. The judge says the answer was grounded in what it was given; the golden says
+what it was given was the best there was.
+
+What a call does carry, per turn, is the fact of it: `docs.sources` with the query, every chunk and
+its score, and `took_ms`; `memory.ops` with the facts recalled; `metrics.eou` with what the whole
+lookup cost the caller in silence. `runtime/docs/retrieval/spec.md` is the contract for all of it,
+with the four numbers worth watching and what each targets.
+
 ## Ring 4 — every call, judged at hang-up
 
 The runtime writes a `call.score` entry on every finished call, with nobody watching. Read it:
@@ -154,8 +222,9 @@ approval.
 
 ## What CI runs, and what the nightly runs
 
-- **CI** (`.github/workflows/ci.yml`): `scripts/check` — build, lint, test — on every push. Rings
-  0 only: no key, no model, no money.
+- **CI** (`.github/workflows/ci.yml`): `scripts/check` — build, lint, test — on every push. Ring
+  0 only: no key, no model, no money. A knowledge golden belongs here too when the gateway is
+  reachable: `pinecall knowledge eval` costs one embedding per question and no model at all.
 - **The nightly** (`.github/workflows/nightly.yml`): rings 1 and 4 on real money, weekday nights.
   All three repositories checked out, a throwaway Postgres, a gateway on `PINECALL_DEV_KEY`, both
   examples, **two models** — and two gates: the goldens on the baseline model, and each judge's
