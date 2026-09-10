@@ -28,6 +28,11 @@ export interface Golden {
   name: string;
   state?: Record<string, unknown>;
   input: string[];
+  /** What memory already holds about this caller when the call opens, in the words a fact is
+   * written in. A golden that seeds one asks the question memory exists for — does the agent USE
+   * what it remembered — and it never touches the memory table: the facts are answered to the
+   * `recall` tool for this call and nothing is written down. */
+  memory?: string[];
   events?: EventStep[];
   /** `YYYY-MM-DD`: the day the call is opened on. A golden that names a weekday pins the one
    * it means, so it reads the same in September and in a year. Without it, the real today. */
