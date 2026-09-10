@@ -6,6 +6,18 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Added
+- **`hangup = { when: "..." }`** on a class: the model may end the call itself, and you say in your
+  own words when. The tool is livekit's own `end_call`, hidden while the agent is greeting, and the
+  call's log gets `call.ended` with `agent_hung_up` rather than the drain its close reason would
+  otherwise have looked like. A class that declares nothing cannot hang up: only the caller and a
+  supervisor end a call. Clínica Norte declares one.
+
+### Removed
+- Clínica Norte's `transfer()` tool, which returned a sentence and did nothing. A tool the model can
+  call that changes nothing is a trap, and this one was the tool a model reached for on the first
+  real call of this project. What replaces it is real: the agent can now end the call.
+
 ### Changed
 - An extraction golden is the schema's shape, not this package's: `ExtractionGolden`,
   `ExtractionExpected`, `ExtractionBroke`, `ExtractionJudged`, `ExtractionCases` and

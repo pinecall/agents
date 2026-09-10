@@ -170,19 +170,19 @@ describe("reservar", () => {
 describe("las cuatro fases", () => {
   it("las herramientas visibles cambian con la fase y con nada más", async () => {
     expect(clinica.stage).toBe("identify");
-    expect(names()).toEqual(["findPatient", "registerPatient", "transfer"]);
+    expect(names()).toEqual(["findPatient", "registerPatient"]);
 
     await call("findPatient", { name: "Ana García", phone: ANA });
     expect(clinica.stage).toBe("choose");
-    expect(names()).toEqual(["freeSlots", "transfer"]);
+    expect(names()).toEqual(["freeSlots"]);
 
     await call("freeSlots", { day: "jueves" });
     expect(clinica.stage).toBe("book");
-    expect(names()).toEqual(["freeSlots", "propose", "book", "transfer"]);
+    expect(names()).toEqual(["freeSlots", "propose", "book"]);
 
     await call("book", { chosen: clinica.slots[0]!.when });
     expect(clinica.stage).toBe("done");
-    expect(names()).toEqual(["transfer"]);
+    expect(names()).toEqual([]);
   });
 
   it("book pide las dos cosas: la fase y horas sobre la mesa", async () => {
@@ -194,14 +194,6 @@ describe("las cuatro fases", () => {
     await call("freeSlots", { day: "domingo" });
 
     expect(names()).not.toContain("book");
-  });
-
-  it("transfer no nombra ninguna fase, y por eso está en todas", async () => {
-    for (const stage of ["identify", "choose", "book", "done"] as const) {
-      // Restaurar un estado es una escritura firmada, como la del runtime al retomar una llamada.
-      clinica.startIn({ stage });
-      expect(names()).toContain("transfer");
-    }
   });
 
   it("no compila una fase que la clase no nombra", () => {
@@ -305,7 +297,7 @@ describe("los bloques estáticos", () => {
   it("dejan el conocimiento al runtime y listan las cinco tools", () => {
     expect(block("knowledge")).toBe("");
     expect(block("identity")).toContain("Nunca inventes una hora");
-    for (const name of ["findPatient", "freeSlots", "propose", "book", "transfer"]) {
+    for (const name of ["findPatient", "freeSlots", "propose", "book"]) {
       expect(block("tools")).toContain(`- ${name}:`);
     }
   });

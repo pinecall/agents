@@ -11,7 +11,7 @@ import type {
 } from "@pinecall/protocol";
 import type { Agent as SdkAgent, AgentOptions, Call as SdkCall, Pinecall, Tool } from "../client/index.js";
 
-import { Agent, onChange, onLog, recalled, seal, setCall, setLast } from "../agent/agent.js";
+import { Agent, type HangupDeclaration, onChange, onLog, recalled, seal, setCall, setLast } from "../agent/agent.js";
 import { eventsOf } from "../agent/accepts.js";
 import { visibilityOf } from "../agent/visibility.js";
 import { CallWorld } from "../call/call.js";
@@ -135,6 +135,14 @@ function hearsOf(value: unknown): string[] | undefined {
 
 // Only what the class declared: a field nobody wrote a visibility for is tenant by the wire's own
 // default, and saying so again would be the framework inventing a declaration.
+// `hangup = {}` is a declaration too: the empty object says the model may end the call and leaves
+// the wording to livekit's own description. Only a class that says nothing at all gets no tool.
+function hangupOf(value: unknown): AgentOptions["hangup"] {
+  if (typeof value !== "object" || value === null) return undefined;
+  const declared = value as HangupDeclaration;
+  return { when: declared.when ?? "" };
+}
+
 function stateFieldsOf(ctor: Function): AgentOptions["stateFields"] {
   const declared = visibilityOf(ctor);
   return declared.length === 0 ? undefined : declared;
@@ -158,6 +166,8 @@ export function optionsFor(ctor: Ctor, tools: Tool[], instance: Agent = new ctor
   if (says) options.says = says;
   const hears = hearsOf(probe["hears"]);
   if (hears) options.hears = hears;
+  const hangup = hangupOf(probe["hangup"]);
+  if (hangup) options.hangup = hangup;
   // The layout is always sent whole: the send order is the framework's contract, and the wire
   // carrying it is what lets the runtime and the console name every block the same way.
   options.prompt = [...PROMPT_BLOCKS];

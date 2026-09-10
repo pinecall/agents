@@ -34,6 +34,11 @@ export default class ClinicaNorte extends Agent {
   // trozos y con qué nota mínima se dice aquí, en la declaración, y no dentro del prompt.
   knowledge = "./knowledge/clinica.md";
   docs = { base: "clinica-norte", k: 4, minScore: 0.5 };
+  // `hangup`: el modelo puede terminar la llamada él mismo. La herramienta es la de livekit
+  // (`end_call`), va oculta mientras saluda, y el log recibe `call.ended` con `agent_hung_up`.
+  // Sin esta línea nadie cuelga salvo el paciente o un supervisor.
+  hangup = { when: "cuando el paciente ya tiene su cita, o dice que no quiere nada más y se despide" };
+
   memory = {
     remember: ["cómo prefiere que le llamen", "alergias", "su médico habitual"],
     forget: ["pagos"],
@@ -131,13 +136,6 @@ export default class ClinicaNorte extends Agent {
     this.collapse(`Reservado ${slot.when} con ${slot.doctor}, confirmado por el paciente.`);
     this.log("appointment.booked", this.booking);
     return this.booking;
-  }
-
-  /** Pasa la llamada a una persona. Solo si el paciente lo pide o no puedes ayudarle. */
-  @tool()
-  transfer(): string {
-    // TODO: devolver `call.forward("+34 910 000 099", …)` cuando el framework lo tenga.
-    return "Le paso con recepción.";
   }
 
   /**
