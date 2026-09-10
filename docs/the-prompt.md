@@ -79,7 +79,7 @@ A view is a function from the state to text. It is JSX, and it renders to **text
 export default ({ stage, patient, slots, proposed, memory, call }: ViewProps<ClinicaNorte>) => (
   <>
     <p>Lo que recordamos de este paciente:</p>
-    <Memory kinds={["preference", "health"]} />
+    <Memory />
     <p>De la base de conocimiento:</p>
     <Retrieved k={4} minScore={0.5} />
 
@@ -124,7 +124,7 @@ after and changes on every turn. A block that has nothing to say renders empty a
 ### Markers: what the view asks for and never resolves
 
 `<Memory>`, `<Retrieved>` and `<Knowledge>` render one line of the form
-`<!-- memory: {"kinds":["preference"],"limit":6} -->`. This package never opens a file, never
+`<!-- memory: {"kinds":["alergias"],"limit":6} -->`. This package never opens a file, never
 searches a memory, never retrieves a passage: the runtime reads the marker, does the work, and
 replaces the line with text. What it puts there, and when:
 
@@ -133,6 +133,15 @@ replaces the line with text. What it puts there, and when:
 | `<Memory kinds limit>` | `<!-- memory: {"kinds":[…],"limit":n} -->` | the contact's facts, one `- fact` per line, found by what the caller just said — per turn, in the dynamic region |
 | `<Retrieved k minScore>` | `<!-- retrieved: {"k":n,"min_score":x} -->` | the chunks of the base `docs` names: `### path › heading` and the text, one blank line between them — per turn, in the dynamic region |
 | `<Knowledge file>` / the `knowledge` field | `<!-- knowledge: ./knowledge/clinica.md -->` | the whole file the declaration carried — once per call, in the static region |
+
+A fact is filed under the word the class named it with, so `<Memory kinds>` asks for some of what
+was kept **in the class's own words** — the ones under `memory.remember` — and any other word is
+refused as the marker is written: `memory kinds: "preference" is not one of the words this class
+remembers (cómo prefiere que le llamen, alergias, su médico habitual)`. It would have matched
+nothing, for ever, and an empty recall reads exactly like a caller nobody has met. A `<Memory />`
+with no `kinds` at all asks for everything the class keeps, which is what both examples write; a
+class that declares no `memory.remember` keeps whatever the model finds worth keeping and puts no
+constraint on `kinds`.
 
 The payload is read by the runtime and never by JavaScript, so its keys are the wire's: the view
 writes `minScore` and the marker carries `min_score`. A fill that finds nothing removes the marker
@@ -143,7 +152,7 @@ own above each marker (`Lo que recordamos de este paciente:`).
 A view may also leave a render prop to shape what comes back:
 
 ```tsx
-<Memory kinds={["preference"]}>{(facts) => <p>Recuerda: {facts.join(", ")}</p>}</Memory>
+<Memory>{(facts) => <p>Recuerda: {facts.join(", ")}</p>}</Memory>
 ```
 
 The function cannot travel inside a comment, so it stays in this render's registry under an id the

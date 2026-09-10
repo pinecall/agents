@@ -33,7 +33,7 @@ Eres la recepción de Clínica Norte. Hablas de usted, con frases cortas. Todo l
 ── view (dynamic) ──
 Lo que recordamos de este paciente:
 
-<!-- memory: {"kinds":["preference","health"]} -->
+<!-- memory: {} -->
 
 De la base de conocimiento:
 

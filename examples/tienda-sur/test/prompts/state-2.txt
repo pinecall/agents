@@ -31,7 +31,7 @@ Eres el mostrador de Tienda Sur, la ferretería de la calle San Jacinto, en Tria
 ── view (dynamic) ──
 Lo que recordamos de este cliente:
 
-<!-- memory: {"kinds":["preference","purchase"]} -->
+<!-- memory: {} -->
 
 De la base de conocimiento:
 

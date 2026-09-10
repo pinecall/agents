@@ -196,7 +196,7 @@ one does not go through the change recorder.
 | `language` | which of `views/lang.ts`'s two word-sets the `identity` block carries |
 | `knowledge` | one file, relative to `agent.ts`: read there by `runtime/grounding.ts`, sent whole as `{path, text}`, and the whole `knowledge` block — a `<!-- knowledge: … -->` marker the runtime replaces once per call. A missing file is refused at load |
 | `docs` | the knowledge base **by the name it was pushed under** (`pinecall knowledge push --base`): `"clinica-norte"` or `{ base, mode?, k?, minScore? }`. The old glob form is refused with the verb that replaces it |
-| `memory` | `{ remember, forget }`, in the tenant's words: what the runtime extracts at hang-up and what it never writes |
+| `memory` | `{ remember, forget }`, in the tenant's words: what the runtime extracts at hang-up and what it never writes. Each fact is filed under the word it was remembered by, so those words are the only ones a `<Memory kinds>` may name |
 
 **State** — everything else the app puts on the instance, plus its getters. The rules, enforced in
 code:
@@ -268,7 +268,9 @@ runtime reads it and JavaScript never does. A view that wrote `{facts => …}` l
 behind: the function cannot travel inside a marker, so it stays in that render's `Fills` registry
 under an id the marker carries. This release the runtime renders its own shape and ignores the id;
 the registry still rides the async context and is still handed back with the blocks, so two renders
-in one process never share one and a later runtime can ask by id.
+in one process never share one and a later runtime can ask by id. The words the class remembers ride
+that same context, because `<Memory kinds>` may only name one of them and the render is where the
+marker is written: any other word is refused there, by name.
 
 `pinecall prompt` and `pinecall run --show-prompt` print exactly these blocks, each under
 `── <name> (<region>) ──` with `── history ──` between the two regions, and the stage and the

@@ -19,12 +19,18 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   `?contact=`, so an agent that declares `memory` can be made to remember somebody from a terminal.
 - The console: a `memory.ops` and a `docs.sources` each read as one row of the live timeline, and
   Sessions prints a fill as `n sources · ms` with what was found one click under the turn.
+- A `<Memory kinds>` naming a word the class never wrote under `memory.remember` is refused as the
+  marker is written: `memory kinds: "preference" is not one of the words this class remembers
+  (cómo prefiere que le llamen, alergias, su médico habitual)`. The recall filters by the word a
+  fact was filed under, so any other word matched nothing for ever while looking like it worked.
 
 ### Changed
 - `<Retrieved minScore>` writes `min_score` in its marker: the payload is the runtime's to read.
   Render props still travel by id; this release the runtime renders its own shape.
 - Both examples say `docs = "<slug>"`, ask for `<Retrieved k={4} minScore={0.02} />`, and put a
   heading of their own above each marker, because the runtime renders bare lines.
+- Both examples ask for `<Memory />` with no `kinds`: a clinic and a shop recall everything they
+  said they keep, and the words they keep it under are their own, not `preference` and `health`.
 
 - The framework, from zero: the `Agent` base whose fields are the state and whose every assignment
   is a change with an author; `@tool` with `when` / `stage` / `confirm` / `preview` / `pii` /

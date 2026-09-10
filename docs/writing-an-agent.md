@@ -138,9 +138,13 @@ were pushed to: run \`pinecall knowledge push ./knowledge/docs --base <slug>\``.
 
 **`memory`** is the policy, in your own words: what the runtime extracts about a contact at
 hang-up (one model call, after `call.ended` and before `call.summary`) and what it must never
-write. The facts are recalled on every turn into the `<Memory kinds>` marker, and a person reads or
-erases them with `pinecall memory <contact>` and `pinecall memory forget <contact>`. `onMemory` still
-hears every op the runtime wrote, so a CRM of your own can keep a copy.
+write. The facts are recalled on every turn into the `<Memory>` marker, filed under the very words
+you wrote here — so a `<Memory kinds>` that names any other word is refused as it renders: `memory
+kinds: "preference" is not one of the words this class remembers (cómo prefiere que le llamen,
+alergias, su médico habitual)`. A marker with no `kinds` asks for everything the class keeps. A
+person reads or erases the facts with `pinecall memory <contact>` and `pinecall memory forget
+<contact>`, and `onMemory` still hears every op the runtime wrote, so a CRM of your own can keep a
+copy.
 
 A phone call names its caller; a written one does not, so `pinecall chat --as +34600123456` is how
 you say who is calling from this terminal and the only way to exercise memory before there is a

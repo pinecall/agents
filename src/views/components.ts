@@ -43,8 +43,14 @@ export const Example: Component = (props) => tagged("example", renderToText(chil
 export const p: Component = (props) => renderInline(children(props));
 p.inline = true;
 
-/** What the agent remembers about this caller: a marker the memory service fills at send time. */
-export const Memory: Component = (props) => placeholder("memory", props, { kinds: "kinds", limit: "limit" });
+/**
+ * What the agent remembers about this caller: a marker the memory service fills at send time.
+ * `kinds` asks for some of it, by the words the class said it remembers, and is refused otherwise.
+ */
+export const Memory: Component = (props) => {
+  refuseAKindNobodyRemembers(props["kinds"]);
+  return placeholder("memory", props, { kinds: "kinds", limit: "limit" });
+};
 
 /** The passages retrieved for this turn: a marker the retriever fills at send time. */
 export const Retrieved: Component = (props) => placeholder("retrieved", props, { k: "k", minScore: "min_score" });
@@ -81,15 +87,43 @@ export function fills(): Fills {
   };
 }
 
-// Which registry a placeholder writes into, for as long as one render lasts. It rides the async
-// context rather than a module variable: two renders in one process each see their own, and so
-// will a render that one day awaits in the middle.
-const rendering = new AsyncLocalStorage<Fills>();
+/** What one render carries around with it: the registry its markers write into, and the words the class remembers. */
+interface Rendering {
+  fills: Fills;
+  remembers: readonly string[];
+}
 
-/** Render `body` against a registry of its own, and hand back both. Never overlaps another. */
-export function withFills<T>(body: () => T): { rendered: T; fills: Fills } {
-  const mine = fills();
-  return { rendered: rendering.run(mine, body), fills: mine };
+// Which render a tag belongs to, for as long as that render lasts. It rides the async context
+// rather than a module variable: two renders in one process each see their own, and so will a
+// render that one day awaits in the middle.
+const rendering = new AsyncLocalStorage<Rendering>();
+
+/**
+ * Render `body` in a context of its own — a registry of render props, and the words the class said
+ * it remembers — and hand the registry back. Never overlaps another render.
+ */
+export function withFills<T>(body: () => T, remembers: readonly string[] = []): { rendered: T; fills: Fills } {
+  const mine: Rendering = { fills: fills(), remembers };
+  return { rendered: rendering.run(mine, body), fills: mine.fills };
+}
+
+// `kinds` asks the memory for some of what it kept, by the CATEGORY each fact was filed under —
+// and a fact is filed under one of the words the class declared in `memory.remember`. A kind that
+// is not one of them matches nothing, for ever, and an empty recall reads exactly like a caller
+// nobody has met yet, so the view looks like it works: a real call filed `cómo prefiere que le
+// llamen` while the view asked for `preference` (2026-09-10). It is a typo, and the render is the
+// only place that sees the marker and the class at once. A class that declares no `remember` keeps
+// whatever the model finds worth keeping and constrains no kind at all.
+function refuseAKindNobodyRemembers(kinds: unknown): void {
+  const remembers = rendering.getStore()?.remembers ?? [];
+  if (remembers.length === 0 || !Array.isArray(kinds)) return;
+  for (const kind of kinds) {
+    if (remembers.includes(String(kind))) continue;
+    throw new Error(
+      `memory kinds: ${JSON.stringify(String(kind))} is not one of the words this class remembers ` +
+        `(${remembers.join(", ")})`,
+    );
+  }
 }
 
 function children(props: Props): Child {
@@ -120,7 +154,7 @@ function placeholder(name: string, props: Props, keys: Record<string, string>): 
     if (current === undefined) {
       throw new Error(`<${name}> was given a render prop outside a render; call render() or withFills()`);
     }
-    payload["fill"] = current.keep(child as (data: unknown) => Child);
+    payload["fill"] = current.fills.keep(child as (data: unknown) => Child);
   }
   return marker(name, JSON.stringify(payload));
 }
