@@ -1,15 +1,15 @@
 // `pinecall ui`: the console served on 127.0.0.1 under a nonce, the gateway's doors forwarded with
 // the key this process holds, and the one thing that must never leave it — that key.
 
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { createServer, type IncomingMessage, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join, sep } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { headless } from "../../src/cli/ui/browser.js";
-import { ui } from "../../src/cli/ui/index.js";
+import { consoleFiles, ui } from "../../src/cli/ui/index.js";
 import { LocalConsole } from "../../src/cli/ui/server.js";
 
 const KEY = "pk_the_org_key_that_stays_here";
@@ -107,6 +107,22 @@ describe("the server under the nonce", () => {
     expect(await screen.text()).toContain(`<base href="/${served.url.split("/")[3]}/">`);
   });
 
+  // The defect this pins, found by opening the console on 2026-09-10: the directory arrives as a
+  // URL's path and so ends in a separator, and `#serve` guarded with `files + sep` — which reads
+  // `…/console//`, which no file under it starts with. Every request fell through to the page,
+  // the bundle included, and the browser parsed a megabyte of JavaScript as HTML. The fixture
+  // above hands a path with no trailing slash, which is a shape the real caller never produces.
+  it("serves its files when the directory it was given ends in a separator", async () => {
+    const trailing = await LocalConsole.open({ url: gateway.url, apiKey: KEY }, `${aBuiltConsole()}${sep}`);
+    try {
+      const asset = await fetch(`${trailing.url}assets/app.js`);
+      expect(asset.headers.get("content-type")).toContain("text/javascript");
+      expect(await asset.text()).toContain("the console");
+    } finally {
+      await trailing.close();
+    }
+  });
+
   it("forwards a door with the key on the header and nothing of the browser's", async () => {
     const answered = await fetch(`${served.url}v1/agents?limit=1`, { headers: { cookie: "session=browser" } });
 
@@ -153,6 +169,15 @@ describe("the server under the nonce", () => {
 });
 
 describe("before anything opens", () => {
+  // The other half of the same evening: beside this module sits `console/` in the published package
+  // and `console/` in a checkout, and only one of them is a browser's. The checkout's index.html
+  // points at main.tsx, which no browser runs — a blank page, served happily, for as long as the
+  // check was that the directory existed.
+  it("picks the built console and never the sources beside it", () => {
+    expect(basename(consoleFiles())).toBe("console");
+    expect(existsSync(join(consoleFiles(), "main.tsx"))).toBe(false);
+  });
+
   it("prints the usage for a flag it does not know", async () => {
     const out = collected();
 
