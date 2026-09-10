@@ -24,9 +24,9 @@ describe("the groups the CLI answers to", () => {
   it("tells a person what a group that does not exist yet will be, and leaves with a zero", async () => {
     const out = collected();
 
-    const code = await main(["supervise"], out.stream);
+    const code = await main(["costs"], out.stream);
 
-    expect(out.text()).toBe("supervise is not built yet: listen in: whisper, say, takeover, transfer, end\n");
+    expect(out.text()).toBe("costs is not built yet: what the calls cost, by agent, model or channel\n");
     expect(code).toBe(0);
   });
 
