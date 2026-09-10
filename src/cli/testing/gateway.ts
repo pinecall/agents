@@ -17,12 +17,25 @@ export interface Score {
   judge_calls: number;
 }
 
+/** One request as the provider received it: the system blocks apart, then the messages in order. */
+export interface Asked {
+  /** One string per static block — identity, knowledge, tools — for the vendor that keeps them
+   * apart. Empty for a vendor whose system text travels inside `messages`. */
+  system: string[];
+  /** Every tool the request carried, as a JSON schema — the list the model actually had. */
+  tools: Record<string, unknown>[];
+  messages: Record<string, unknown>[];
+}
+
 /** One cell of the matrix: a golden under a model, every judge's answer, and the call's summary. */
 export interface Cell {
   model: string;
   golden: string;
   scores: Score[];
   summary: Summary | null;
+  /** Every request this golden's call made, present only on a cell where something broke: the
+   * prompt is not in the log, and a broken golden is the one thing a person has to reproduce. */
+  asked?: Asked[];
 }
 
 /** `call.summary` as the log wrote it. Nothing here is recomputed by anybody who reads it. */
