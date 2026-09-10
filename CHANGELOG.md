@@ -6,6 +6,14 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Changed
+- An extraction golden is the schema's shape, not this package's: `ExtractionGolden`,
+  `ExtractionExpected`, `ExtractionBroke`, `ExtractionJudged`, `ExtractionCases` and
+  `ExtractionRun` come from `@pinecall/protocol` and are generated, so a case written in
+  TypeScript, in Python or in Ruby is one contract and not three that drift. The file format
+  is unchanged — a transcript stays a list of `[who, what]` pairs, which the schema now says
+  in its own words.
+
 ### Added
 - `pinecall memory eval [golden.json] [--k n]`: a memory golden, the read side of the table. A
   list of `{holds, asks, expects}` — what memory holds about a question's contact, what the caller

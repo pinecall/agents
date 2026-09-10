@@ -7,13 +7,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { CASES, extracted, linesOf, NO_CASES, run, type Answer, type Case } from "../../src/cli/remember.js";
+import type { ExtractionGolden, ExtractionRun } from "@pinecall/protocol";
+
+import { CASES, extracted, linesOf, NO_CASES, run } from "../../src/cli/remember.js";
 import { casesIn } from "../../src/cli/testing/goldens.js";
 import { onStderr } from "./said.js";
 
 const A_KEY = "pk_the_orgs_own_key";
 
-const ANSWERED: Answer = {
+const ANSWERED: ExtractionRun = {
   agent: "clinica-norte",
   model: "anthropic/claude-haiku-4-5",
   cases: 2,
@@ -31,7 +33,7 @@ const ANSWERED: Answer = {
   ],
 };
 
-const A_CASE: Case = {
+const A_CASE: ExtractionGolden = {
   name: "anota la alergia",
   said: [["caller", "Soy Marta, alérgica a la penicilina"]],
   expect: { writes: ["alergias"] },
@@ -85,7 +87,7 @@ describe("the cases a run reads off the disk", () => {
     const directory = mkdtempSync(join(tmpdir(), "pinecall-remember-"));
     writeFileSync(join(directory, "anota-la-alergia.json"), JSON.stringify({ said: A_CASE.said }));
 
-    const [read] = await casesIn<Case>([directory], CASES);
+    const [read] = await casesIn<ExtractionGolden>([directory], CASES);
 
     expect(read?.name).toBe("anota-la-alergia");
   });
