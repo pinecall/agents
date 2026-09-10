@@ -26,7 +26,6 @@ export const PLANNED: Record<string, string> = {
   sessions: "list | show | tail | replay | score a call's log",
   observe: "the agent log as it happens, with a persistent cursor",
   costs: "what the calls cost, by agent, model or channel",
-  supervise: "listen in: whisper, say, takeover, transfer, end",
   call: "the agent dials a number, for real",
   tokens: "mint a browser token for a web call",
   phones: "list | buy | attach the numbers the org owns",

@@ -9,7 +9,7 @@ import { helpFor, PLANNED, plannedGroup, type Group } from "./groups.js";
 // The order this table is written is the order the help prints: run and chat first, because
 // they are what a person types on the first day, and the planned groups after, in the design's
 // order. run is rails server and chat is rails console — see docs/decisions/tenant-cli.md.
-const BUILT = ["run", "chat", "ui", "prompt", "test", "simulate", "eval", "runs", "personas", "knowledge", "memory", "remember", "keys", "login", "whoami"] as const;
+const BUILT = ["run", "chat", "ui", "prompt", "test", "simulate", "eval", "runs", "personas", "knowledge", "memory", "remember", "supervise", "keys", "login", "whoami"] as const;
 
 /** Everything `pinecall` answers to, built and planned alike, in the order help prints them. */
 export function groupNames(): string[] {
@@ -68,6 +68,7 @@ async function groupFor(name: string, out: NodeJS.WritableStream): Promise<Group
   if (name === "knowledge") return (await import("./knowledge.js")).group;
   if (name === "memory") return (await import("./memory.js")).group;
   if (name === "remember") return (await import("./remember.js")).group;
+  if (name === "supervise") return (await import("./supervise.js")).group;
   if (name === "keys") return (await import("./keys.js")).group;
   if (name === "login") return (await import("./login.js")).group;
   if (name === "whoami") return (await import("./whoami.js")).group;
@@ -92,6 +93,7 @@ export function usage(): string {
     "  knowledge push | list | drop the knowledge base the agent answers from",
     "  memory    what memory kept about a contact, forget it, and hold recall to a golden",
     "  remember  the goldens memory.remember is held to: what a call teaches, and what it never keeps",
+    "  supervise listen in on a live call: whisper, say, take the line, give it back, end",
     "  keys      add | rm | list the provider keys this org brought of its own",
     "  login     sign in to a gateway once; the key is kept in ~/.pinecall/credentials",
     "  whoami    which gateway, which org, and where this terminal's key came from",

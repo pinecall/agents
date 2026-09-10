@@ -7,6 +7,12 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **`pinecall supervise <call>`** — a human at the desk, from this terminal. The call's transcript
+  as it lands, and one line per move: `w <text>` whispers to the agent, `s <text>` puts a sentence
+  in its mouth verbatim, `t` takes the line, `x` gives it back, `e [reason]` ends the call, `q`
+  leaves and the call goes on. Every move lands in the caller's own log as its own `supervisor.*`
+  entry with a seq, so what a human did is read the way what the agent did is read. The audio is
+  `pinecall ui`, which has a room; a terminal has no speakers this process may reach.
 - **`hangup = { when: "..." }`** on a class: the model may end the call itself, and you say in your
   own words when. The tool is livekit's own `end_call`, hidden while the agent is greeting, and the
   call's log gets `call.ended` with `agent_hung_up` rather than the drain its close reason would
