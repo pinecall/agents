@@ -150,9 +150,22 @@ describe("la clase y la vista dicen lo mismo sobre el día que nombra el pacient
 
     expect(toolNamed(agent, "freeSlots")?.spec.description).toContain("se consulta SIEMPRE");
     expect(dynamic).toContain("consulta SIEMPRE la agenda de ese día");
-    // Y la vista sigue diciendo qué hacer cuando todavía no ha nombrado ninguno: son dos ramas,
-    // no una regla que sustituye a la otra.
-    expect(dynamic).toContain("todavía no ha nombrado ninguno");
+    // Y la vista sigue diciendo qué hacer cuando todavía no ha nombrado ningún día: son dos
+    // ramas, no una regla que sustituye a la otra.
+    expect(dynamic).toContain("todavía no ha nombrado ningún día");
+  });
+
+  // El ORDEN de las dos ramas es la regla, no el estilo: la última frase de la región dinámica es
+  // la que haiku ejecuta. Con la pregunta al final tomaba la pregunta aunque el paciente acabase
+  // de nombrar el martes, y el golden volvía "ran no tool at all". La acción va última.
+  it("deja la acción al final y la pregunta antes", () => {
+    const agent = fresh();
+    agent.startIn(CASES[0]!.state);
+    const dynamic = block(promptOf(agent), "view");
+
+    expect(dynamic.indexOf("todavía no ha nombrado ningún día")).toBeLessThan(
+      dynamic.indexOf("consulta SIEMPRE la agenda de ese día"),
+    );
   });
 });
 
