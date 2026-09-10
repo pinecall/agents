@@ -64,9 +64,31 @@ export async function followed(
       bottom.draw([...settledLines(soFar, watched), ...readingLines(soFar), bar(soFar, total, knocked)]);
     }
     bottom.erase();
-    return await answered;
+    return await settledRun(door, answered, id);
   } finally {
     bottom.giveBack();
+  }
+}
+
+// A spoken suite is minutes of real calls, and the POST that started it is one request held open
+// the whole time: node's fetch gives up on a response that has not begun in five, and a run of
+// ten spoken goldens crosses that. The run itself is fine — the gateway is still driving it and
+// writing its row — so a connection that died is not a run that died. The row is the answer.
+async function settledRun(door: Door, answered: Promise<EvalRun>, id: string | undefined): Promise<EvalRun> {
+  try {
+    return await answered;
+  } catch (lost) {
+    if (id === undefined) throw lost;
+    return await untilItStops(door, id);
+  }
+}
+
+/** Poll one run's row until it is no longer running, and answer with it however it ended. */
+async function untilItStops(door: Door, id: string): Promise<EvalRun> {
+  for (;;) {
+    const run = await oneRun(door, id);
+    if (run.status !== "running") return run;
+    await sleep(EVERY_MS);
   }
 }
 
