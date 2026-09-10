@@ -29,7 +29,7 @@ describe("connecting", () => {
     pc.agent("clinica-norte", {
       routes: [{ channel: "phone", number: "+34910000001", label: "centralita" }, { channel: "web" }],
       language: "es",
-      greeting: "Clínica Norte, ¿en qué puedo ayudarte?",
+      greeting: { say: "Clínica Norte, ¿en qué puedo ayudarte?" },
     });
     await pc.connect();
 
@@ -42,7 +42,7 @@ describe("connecting", () => {
     expect(register?.data["sdk"]).toMatch(/^pinecall\//);
 
     const [configure] = gateway.commandsOf("agent.configure");
-    expect(configure?.data["config"]).toMatchObject({ language: "es", greeting: "Clínica Norte, ¿en qué puedo ayudarte?" });
+    expect(configure?.data["config"]).toMatchObject({ language: "es", greeting: { say: "Clínica Norte, ¿en qué puedo ayudarte?" } });
   });
 
   it("refuses to start without a url and a key", () => {

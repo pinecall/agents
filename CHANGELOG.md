@@ -7,6 +7,12 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **`greeting`: how a class opens a call**, without an `onCall` hook to do it.
+  `greeting = "Clínica Norte, buenos días."` is the words, read out as written;
+  `greeting = { reply: "saluda y preséntate" }` hands the model an instruction the caller never
+  hears and lets it find its own opening. Exactly one of the two, refused at load when it is
+  neither or both. `allowInterruptions: false` is the legal notice nobody talks over.
+  Clínica Norte opens with words, Tienda Sur improvises — one of each, in the examples.
 - **`pinecall sessions [call]`** — the calls this gateway has run, and what one of them came to.
   With nothing after it, one row per call newest first: when it came in, how long it lasted, why it
   ended, what it cost and the line the agent left as its outcome. With a call id, that call's

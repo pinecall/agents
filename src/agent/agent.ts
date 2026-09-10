@@ -13,7 +13,7 @@ import { declaredStateOf, type Visibility } from "./visibility.js";
 import type { Call, MemoryOp } from "./lifecycle.js";
 import { collapse, restore, snapshot, type LastCall, type Snapshot } from "./state.js";
 
-// The eleven names an app uses to configure the agent rather than to remember something about the
+// The names an app uses to configure the agent rather than to remember something about the
 // caller. They live on the instance like any other field, but they are never state: they do not
 // change during a call, they are not diffed, and no snapshot carries them.
 export const CONFIG_FIELDS = [
@@ -21,6 +21,7 @@ export const CONFIG_FIELDS = [
   "whatsapp",
   "web",
   "voice",
+  "greeting",
   "says",
   "hears",
   "llm",
@@ -76,6 +77,19 @@ export interface DocsDeclaration {
   mode?: DocsMode;
   k?: number;
   minScore?: number;
+}
+
+/**
+ * What `greeting` says: how the agent opens a call, before the caller has said anything. Exactly
+ * one of the two, because there are only two ways to open one — `say` are the words themselves,
+ * read out as written, and `reply` is what the model is told before it finds its own. The bare
+ * string form `greeting = "Clínica Norte, buenos días."` is the words. A class that declares
+ * nothing waits for the caller.
+ */
+export interface GreetingDeclaration {
+  say?: string;
+  reply?: string;
+  allowInterruptions?: boolean;
 }
 
 /**

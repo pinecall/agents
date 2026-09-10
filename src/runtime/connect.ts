@@ -11,7 +11,7 @@ import type {
 } from "@pinecall/protocol";
 import type { Agent as SdkAgent, AgentOptions, Call as SdkCall, Pinecall, Tool } from "../client/index.js";
 
-import { Agent, type HangupDeclaration, onChange, onLog, recalled, seal, setCall, setLast } from "../agent/agent.js";
+import { Agent, type GreetingDeclaration, type HangupDeclaration, onChange, onLog, recalled, seal, setCall, setLast } from "../agent/agent.js";
 import { eventsOf } from "../agent/accepts.js";
 import { visibilityOf } from "../agent/visibility.js";
 import { CallWorld } from "../call/call.js";
@@ -133,6 +133,26 @@ function hearsOf(value: unknown): string[] | undefined {
   return heard.length === 0 ? undefined : heard;
 }
 
+// The same sentence the runtime refuses with, because it is the same rule: a greeting names one
+// of the two verbs the wire already has, and a class that named both has not decided which.
+const GREETING_IS_ONE_VERB =
+  "a greeting is one of two things: `say` the words, or `reply` what the model reads before it finds its own.";
+
+/** `greeting = "Buenos días."` or `greeting = { reply: "saluda y preséntate" }`: the opening. */
+function greetingOf(value: unknown): AgentOptions["greeting"] {
+  if (typeof value === "string") return value === "" ? undefined : { say: value };
+  if (typeof value !== "object" || value === null) return undefined;
+  const declared = value as GreetingDeclaration;
+  const said = declared.say !== undefined;
+  const replied = declared.reply !== undefined;
+  if (said === replied) {
+    throw new Error(`${GREETING_IS_ONE_VERB} ${said ? "Both were declared" : "Neither was"} — pick one.`);
+  }
+  const greeting: NonNullable<AgentOptions["greeting"]> = said ? { say: declared.say } : { reply: declared.reply };
+  if (declared.allowInterruptions !== undefined) greeting.allowInterruptions = declared.allowInterruptions;
+  return greeting;
+}
+
 // Only what the class declared: a field nobody wrote a visibility for is tenant by the wire's own
 // default, and saying so again would be the framework inventing a declaration.
 // `hangup = {}` is a declaration too: the empty object says the model may end the call and leaves
@@ -166,6 +186,8 @@ export function optionsFor(ctor: Ctor, tools: Tool[], instance: Agent = new ctor
   if (says) options.says = says;
   const hears = hearsOf(probe["hears"]);
   if (hears) options.hears = hears;
+  const greeting = greetingOf(probe["greeting"]);
+  if (greeting) options.greeting = greeting;
   const hangup = hangupOf(probe["hangup"]);
   if (hangup) options.hangup = hangup;
   // The layout is always sent whole: the send order is the framework's contract, and the wire

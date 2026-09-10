@@ -185,7 +185,7 @@ Beside `src/`:
 
 Two kinds of field live on the instance, and the difference is the whole model.
 
-**Config** — the eleven names in `CONFIG_FIELDS` (`agent/agent.ts`). They configure the agent; they
+**Config** — the names in `CONFIG_FIELDS` (`agent/agent.ts`). They configure the agent; they
 are not state. They are never diffed, never rendered by a view, never in a snapshot, and assigning
 one does not go through the change recorder.
 
@@ -197,6 +197,7 @@ one does not go through the change recorder.
 | `says` | `Pronunciation[]` — `{ Vidal: "bidál" }` written as a map, carried as a list |
 | `hears` | the words the ears must know |
 | `language` | which of `views/lang.ts`'s two word-sets the `identity` block carries |
+| `greeting` | `GreetingConfig` — how the call opens: `"words"` (or `{ say }`) is read out as written, `{ reply }` is what the model is told before it finds its own. Exactly one of the two, refused at load otherwise. `runtime/connect.ts:greetingOf` |
 | `knowledge` | one file, relative to `agent.tsx`: read there by `runtime/grounding.ts` and sent whole as `{path, text}`. The runtime writes its text into the `knowledge` block, once per call; the app sends nothing for that block. A missing file is refused at load |
 | `docs` | the knowledge base **by the name it was pushed under** (`pinecall knowledge push --base`): `"clinica-norte"` or `{ base, mode?, k?, minScore? }`. The old glob form is refused with the verb that replaces it |
 | `memory` | `{ remember, forget }`, in the tenant's words: what the runtime extracts at hang-up and what it never writes. Each fact is filed under the word it was remembered by, and `this.remembers(word)` is how a `render()` asks whether this call has been told one |

@@ -308,6 +308,56 @@ it("refuses a knowledge file that is not there, with the path it looked at", () 
   );
 });
 
+/** The clinic that opens the call with the words themselves, in the bare-string form. */
+class Saluda extends ClinicaNorte {
+  greeting = "Clínica Norte, buenos días.";
+}
+
+it("reads the bare string form of a greeting as the words, said as written", () => {
+  expect(optionsFor(Saluda, [], new Saluda(), FILE).greeting).toEqual({ say: "Clínica Norte, buenos días." });
+});
+
+/** The clinic that lets the model find its own opening, and says what it is for. */
+class Improvisa extends ClinicaNorte {
+  greeting = { reply: "saluda, di que eres la recepción y pregunta en qué puedes ayudar" };
+}
+
+it("sends an improvised opening as the instruction the model reads and the caller never hears", () => {
+  expect(optionsFor(Improvisa, [], new Improvisa(), FILE).greeting).toEqual({
+    reply: "saluda, di que eres la recepción y pregunta en qué puedes ayudar",
+  });
+});
+
+/** The clinic that reads a legal notice: nobody talks over it. */
+class NoSeInterrumpe extends ClinicaNorte {
+  greeting = { say: "Esta llamada será grabada.", allowInterruptions: false };
+}
+
+it("carries allowInterruptions when the class asked for it, and leaves it out when it did not", () => {
+  expect(optionsFor(NoSeInterrumpe, [], new NoSeInterrumpe(), FILE).greeting).toEqual({
+    say: "Esta llamada será grabada.",
+    allowInterruptions: false,
+  });
+  expect(optionsFor(Saluda, [], new Saluda(), FILE).greeting).not.toHaveProperty("allowInterruptions");
+});
+
+/** A class that declared both has not decided which of the two it means. */
+class DiceLasDos extends ClinicaNorte {
+  greeting = { say: "Buenos días.", reply: "saluda" };
+}
+
+it("refuses a greeting that names both verbs, and one that names neither", () => {
+  expect(() => optionsFor(DiceLasDos, [], new DiceLasDos(), FILE)).toThrow(/Both were declared — pick one/);
+  class DiceNinguna extends ClinicaNorte {
+    greeting = {};
+  }
+  expect(() => optionsFor(DiceNinguna, [], new DiceNinguna(), FILE)).toThrow(/Neither was — pick one/);
+});
+
+it("sends no greeting for a class that declares none, so nobody speaks until the caller does", () => {
+  expect(optionsFor(ClinicaNorte, [], new ClinicaNorte(), FILE).greeting).toBeUndefined();
+});
+
 /** The clinic that may not hang up: the field the class never wrote. */
 class SinColgar extends ClinicaNorte {
   hangup = undefined as unknown as { when?: string };

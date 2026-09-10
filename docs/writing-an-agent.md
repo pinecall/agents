@@ -78,8 +78,8 @@ The class is the **default export** of `agent.tsx`. Its name gives the slug it r
 
 ### Config, and state
 
-Eleven field names configure the agent instead of remembering something. They are never diffed,
-never rendered, never in a snapshot:
+A handful of field names configure the agent instead of remembering something. They are never
+diffed, never rendered, never in a snapshot:
 
 | field | what it means |
 |---|---|
@@ -87,6 +87,7 @@ never rendered, never in a snapshot:
 | `voice` | a voice **by name** — the platform resolves it to a vendor and an id |
 | `llm` | `"haiku"`, `"sonnet"`, `"opus"`, or `"provider/model"` |
 | `language` | which standing rules the framework contributes (`es`, `en`) |
+| `greeting` | how the call opens: the words, or what the model reads before finding its own |
 | `says` | `{ DKV: "de ka uve" }` — how a word the voice would misread is said |
 | `hears` | the words the ears must know: names, brands, the doctor's surname |
 | `knowledge` | one file, read beside `agent.tsx` and sent whole: cached ahead of everything |
@@ -105,6 +106,36 @@ knowing before they surprise you:
 **Tools are the only writers.** A field assigned outside a tool and outside a lifecycle hook throws
 `UnauthoredWrite`. This is not a style rule: every change is recorded with the name of whoever
 made it, and that is what the log, the console and a golden read.
+
+### Opening the call
+
+An agent that answers a phone speaks first. `greeting` says how, and there are exactly two ways:
+
+```ts
+// the words, read out as written — no model runs, so it is the same sentence every time
+greeting = "Clínica Norte, buenos días. ¿En qué puedo ayudarle?";
+
+// or: what the model is told before it finds its own words. The caller never hears this line
+greeting = { reply: "saluda, di que eres la recepción y pregunta en qué puedes ayudar" };
+
+// a notice nobody may talk over
+greeting = { say: "Esta llamada será grabada.", allowInterruptions: false };
+```
+
+Declaring both, or neither, is refused when the class loads: a greeting is one of the two.
+Declaring nothing at all is the third, quieter option — nobody speaks until the caller does.
+
+The opening is a `turn.agent` like any other: it is on the log, the console draws it, and ring 4
+judges the call it starts. `{ say }` costs nothing; `{ reply }` costs one model turn.
+
+Two places it deliberately does **not** sound. A **golden** never hears it — a golden is one turn
+under the state it declares, so the call it runs is already underway. And an **operator** can
+replace it from the pipeline screen without a deploy; because that box takes words, turning it
+also stops an agent that improvises.
+
+Mid-call the same two verbs are methods, for when something happens that the caller should hear
+now: `this.say("Se ha liberado una hora a las diez y cuarto.")` and
+`this.reply("dile que acaba de liberarse una hora a las diez y cuarto")`.
 
 ### Knowledge, docs and memory
 
