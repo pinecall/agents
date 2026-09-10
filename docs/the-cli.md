@@ -13,7 +13,7 @@ on the PATH: `pinecall run`. In this workspace: `pnpm exec pinecall run`.
 | verb | what it does | gateway |
 |---|---|---|
 | `run [agent.ts]` | the app registered and answering — **the process you deploy**. Binds no port, serves no page. `--ui` for the full-screen terminal view, `--events` for one JSON line per entry, `--show-prompt` to print the prompt and exit | yes (except `--show-prompt`) |
-| `chat [agent.ts]` | the same app in this terminal's own process, and a written caller against it. `--state file [--case n]` opens the call in a state. This is `rails console`: a breakpoint in a `@tool` is reachable | yes |
+| `chat [agent.ts]` | the same app in this terminal's own process, and a written caller against it. `--state file [--case n]` opens the call in a state, `--as <contact>` says who is calling — the id memory files the call under, without which a written caller is a visitor and is remembered by nobody. This is `rails console`: a breakpoint in a `@tool` is reachable | yes |
 | `ui [agent]` | the console on 127.0.0.1 for the life of the command, opened in this machine's browser | yes |
 | `prompt [agent.ts] --state file` | the exact prompt a state would produce, with the stage and its tools beneath | **no** |
 | `test [paths]` | ring 1: the goldens, through the app in this process, scored by the runtime. `--agent`, `--model` (repeatable), `--grep`, `--watch`, `--json` | yes |

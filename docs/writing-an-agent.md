@@ -142,6 +142,10 @@ write. The facts are recalled on every turn into the `<Memory kinds>` marker, an
 erases them with `pinecall memory <contact>` and `pinecall memory forget <contact>`. `onMemory` still
 hears every op the runtime wrote, so a CRM of your own can keep a copy.
 
+A phone call names its caller; a written one does not, so `pinecall chat --as +34600123456` is how
+you say who is calling from this terminal and the only way to exercise memory before there is a
+token. Without it the caller is a visitor and the agent remembers nothing of them, which is right.
+
 ## Tools
 
 ```ts
@@ -254,6 +258,7 @@ what a browser widget may read; `pii` is masked in the log at write time.
 ```bash
 cp .env.example .env               # PINECALL_URL and PINECALL_API_KEY
 pinecall chat                      # the app in THIS terminal, and a written caller against it
+pinecall chat --as +34600123456    # the same call, from somebody memory can file it under
 pinecall prompt --state test/prompts/states.json    # what the model would read, offline
 pinecall knowledge push            # ./knowledge/docs to the gateway, under the agent's slug
 pinecall run                       # the app registered and answering: the process you deploy

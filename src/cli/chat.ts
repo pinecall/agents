@@ -17,6 +17,15 @@ const PROMPT = `${CALLER} `;
 
 export const group: Group = {
   purpose: "the app in this terminal's own process, and a prompt against it",
+  usage: `usage: pinecall chat [agent.ts] [--as <contact>] [--state file [--case n]] [--events]
+
+  With nothing after it: the agent mounted in this process, and a written caller against it. The
+  tools run here, so a breakpoint in a @tool is reachable.
+
+  --as <contact>  who is calling: the id memory files this call under (a phone number, a customer id)
+  --state file    the state the call opens in — the same goldens file \`pinecall prompt\` reads
+  --case n        which case of that file, when it holds several
+  --events        one JSON line per log entry instead of the lines, for a pipe`,
   run,
 };
 
@@ -35,6 +44,7 @@ export async function run(argv: string[]): Promise<number> {
     options: {
       state: { type: "string" },
       case: { type: "string" },
+      as: { type: "string" },
       events: { type: "boolean", default: false },
     },
   });
@@ -63,14 +73,15 @@ export async function run(argv: string[]): Promise<number> {
     await pc.connect();
     // The id exists only after the register the connect awaited, which is why it is read here
     // and not where the agent was mounted.
-    return await talk(chatUrl(url, mounted.slug, mounted.agent.app), door.apiKey, values.events === true);
+    const address = chatUrl(url, mounted.slug, mounted.agent.app, values.as);
+    return await talk(address, door.apiKey, values.events === true);
   } finally {
     pc.close();
   }
 }
 
 /** The chat socket's address off the gateway's HTTP one: the scheme flips, the path is fixed. */
-export function chatUrl(base: string, agent: string, app?: string): string {
+export function chatUrl(base: string, agent: string, app?: string, contact?: string): string {
   const url = new URL(base);
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
   url.pathname = `${url.pathname.replace(/\/$/, "")}/v1/chat`;
@@ -78,6 +89,11 @@ export function chatUrl(base: string, agent: string, app?: string): string {
   // Which process serves the call this socket opens. Without it the gateway picks the newest
   // socket holding the agent, which in a terminal with a `run` running is the other one.
   if (app !== undefined) url.searchParams.set("app", app);
+  // A number names its caller; a web visitor is nobody until somebody says who they are, and
+  // `--as` is this terminal saying it: memory files the call under that id, so an agent that
+  // declares `memory` can be made to remember somebody from here. It is encoded on the way out,
+  // because a `+34600123456` written raw into a query string arrives at the gateway as a space.
+  if (contact !== undefined) url.searchParams.set("contact", contact);
   return url.toString();
 }
 
