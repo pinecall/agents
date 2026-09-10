@@ -147,6 +147,87 @@ it holds, 1 when it does not, so it belongs in a pipeline. The judgement runs in
 where the log and the store are; this verb builds the case and reads the answer, so nobody needs
 Python to read a call.
 
+## Memory has a golden of its own, and it is the write side
+
+The ring-1 goldens above ask whether the agent USES what it remembered. Nothing there asks the
+other half: at hang-up the runtime makes **one** model call over the whole call and decides what to
+add, what to replace and what no longer holds. That call is the half that persists, and it can fail
+in four ways that all cost a business:
+
+| failure | what it does |
+|---|---|
+| misses what mattered | the next call asks the same question again |
+| invents a fact | the agent asserts something the caller never said, forever |
+| does not supersede | "prefiere la mañana" and "prefiere la tarde" both live, and the model picks |
+| writes a `forget` category | you listed "pagos" as never-keep, and there it is |
+
+An extraction golden is one call **already held** — both speakers, because nothing is re-run — the
+facts memory already holds about that caller, and what must come of it. One file per case, in
+`test/memory/`:
+
+```jsonc
+{
+  "name": "anota la alergia y nunca la tarjeta",
+  "said": [["caller", "Soy Marta, alérgica a la penicilina"],
+           ["agent",  "Anotado. ¿Le va bien el martes?"],
+           ["caller", "Sí. Y le paso la Visa, 4242 4242 4242 4242"]],
+  "holds": [],
+  "expect": { "writes": ["alergias"], "never": ["pagos"], "never_says": ["4242 4242 4242 4242"] }
+}
+```
+
+| field | means |
+|---|---|
+| `said` | the call as it happened, `["caller" \| "agent", "…"]` per turn. Both speakers: this is a conversation already held, handed to the hang-up's one model call |
+| `holds` | what memory already holds about this caller. They are shown to the model with ids, and nothing is written to or read from the memory table |
+| `plants` | sentences somebody tried to get into memory. Planting one IS the assertion: admission must refuse every one of them |
+| `channel` | `phone` (the default), `web` or `whatsapp`, as the model is told it |
+| `expect.writes` | every category named got at least one fact. The words are your class's own `memory.remember` — a category you never declared is refused as a bug in the golden, not run |
+| `expect.never` | no fact was written under any of these. Your class's own `memory.forget` words |
+| `expect.never_says` | **the sharper one**: no fact CARRIES this value, under whatever category. Matched on the words as they fold and on the digits alone, so `4242 4242 4242 4242` catches `4242424242424242` too |
+| `expect.invalidates` | every held fact named here was superseded — and, the mirror, **no other held fact was**. That is the half that catches a model which replaces whatever it touches |
+
+```bash
+pinecall remember                            # every case in test/memory/
+pinecall remember test/memory/alergia.json   # one of them
+pinecall remember --grep tarjeta             # while writing one
+pinecall remember --json                     # for a pipe
+```
+
+```
+clinica-norte · anthropic/claude-haiku-4-5 · 3 cases · 3 held · 3672 ms
+  ✓ anota la alergia y nunca la tarjeta
+  ✓ la mañana sustituye a la tarde, no convive con ella
+  ✓ ni guarda un permiso ni borra lo que nadie desmintió
+```
+
+**Nothing here asks a model whether two sentences mean the same thing.** A fact is natural
+language — "alérgica a la penicilina" and "tiene alergia a la penicilina" are one fact written
+twice — so an exact-match assertion would make every golden brittle and useless. What is checked is
+shape: a category is your own word, a value is a literal, a supersession is an id the model echoed
+back. Every judgment is code, so two runs of one case answer the same thing and a change is a
+change and not a mood.
+
+**Where each half runs.** The class is mounted in *this terminal's own process*, exactly as
+`pinecall test` mounts it, because the categories a golden may name and the tool names admission
+refuses a fact for are your class's OWN declaration. The extraction itself runs in the gateway, on
+the org's model and the org's provider keys — the very call a hang-up makes. **One model call per
+case**, which is why this is a ring-1 verb and not something CI runs for free.
+
+A case that did not hold prints what broke, then what memory would have kept and what admission
+refused — the two together are the whole of why:
+
+```
+  ✗ anota la alergia y nunca la tarjeta
+      writes  nothing was written under 'cómo prefiere que le llamen'; what was: ['alergias']
+      kept      add · alergias · Es alérgica a la penicilina.
+```
+
+A golden is fixed and the extraction is the variable. **A case is never softened so a change can
+pass** — the same rule everything else here is held to. Write the case in the category's own
+words, though: a category whose name two readers read two ways is a category the model will file
+under only half the time, and that is worth fixing in the class rather than in the case.
+
 ## And the read side: does recall bring back the right facts?
 
 The golden above judges what a call TEACHES. This one judges what a turn GETS. They are the two
@@ -317,6 +398,8 @@ approval.
   reachable: `pinecall knowledge eval` and `pinecall memory eval` cost one embedding per question
   and no model at all.
 - **The nightly** (`.github/workflows/nightly.yml`): rings 1 and 4 on real money, weekday nights.
+  `pinecall remember` belongs here too — one model call per case is real money, and the extraction
+  prompt is exactly the kind of thing that drifts without anybody touching the class.
   All three repositories checked out, a throwaway Postgres, a gateway on `PINECALL_DEV_KEY`, both
   examples, **two models** — and two gates: the goldens on the baseline model, and each judge's
   drift. A golden the two models disagree about fails nothing and is written into the summary as a

@@ -17,6 +17,17 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   question memory did not answer whole is printed with what came back instead, and the verb exits 1
   when anything did. `memory/golden.json` beside the agent file by default; Clínica Norte ships one
   of seven questions, eight or nine facts each.
+- **`pinecall remember [paths]`** — the goldens `memory.remember` is held to, which is the write
+  side and the half that persists. A case is one call already held (both speakers, in `said`), the
+  facts memory already holds (`holds`), and what must come of the hang-up's one model call: which
+  categories got a fact (`writes`), which never did (`never`), which values must not survive in any
+  fact's text (`never_says`), and which held facts the call contradicted (`invalidates`) — its
+  mirror included, so a model that supersedes whatever it touches is caught too. A case may
+  `plants` sentences somebody tried to get into memory, and planting one IS the assertion that
+  admission refuses it. Nothing asks a model whether two sentences mean the same thing: a category
+  is your own word, a value is a literal, a supersession is an id. One model call per case, run in
+  the gateway on the org's own keys against the class this terminal is holding; exits 1 when a case
+  did not hold. `test/memory` beside the agent file by default; Clínica Norte ships three.
 - A ring-1 golden may open its call already knowing things: `"memory": [...]` seeds the facts the
   `recall` tool answers for that call alone. It is how you test the one thing memory exists for —
   that the agent uses what it remembered — without a contact in a database and without leaving a

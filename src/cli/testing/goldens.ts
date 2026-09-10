@@ -55,32 +55,37 @@ export const NO_GOLDENS =
 
 /** Every golden under those paths, in the order a person would read the directory. */
 export async function goldensIn(paths: string[]): Promise<Golden[]> {
-  const found: Golden[] = [];
-  for (const path of paths.length > 0 ? paths : [GOLDENS]) {
-    for (const file of await filesUnder(resolve(path))) found.push(...(await goldensOf(file)));
+  return await casesIn<Golden>(paths, GOLDENS);
+}
+
+/**
+ * Every case under those paths, whatever shape of golden the caller reads. A file holds one case
+ * or a list of them, and a case that named itself keeps that name — the file's own basename is
+ * what the rest are called, numbered when there are several, so a report names something a person
+ * can grep for in their own directory. The extraction goldens are read through this too.
+ */
+export async function casesIn<T extends { name?: string }>(paths: string[], fallback: string): Promise<T[]> {
+  const found: T[] = [];
+  for (const path of paths.length > 0 ? paths : [fallback]) {
+    for (const file of await filesUnder(resolve(path))) found.push(...(await casesOf<T>(file)));
   }
   return found;
 }
 
-/** The goldens whose name carries that text, or all of them when nobody narrowed the run. */
-export function matching(goldens: Golden[], grep: string | undefined): Golden[] {
-  if (grep === undefined) return goldens;
+/** The cases whose name carries that text, or all of them when nobody narrowed the run. */
+export function matching<T extends { name: string }>(cases: T[], grep: string | undefined): T[] {
+  if (grep === undefined) return cases;
   const wanted = grep.toLowerCase();
-  return goldens.filter((golden) => golden.name.toLowerCase().includes(wanted));
+  return cases.filter((one) => one.name.toLowerCase().includes(wanted));
 }
 
-/**
- * One file's goldens. A file holds one golden or a list of them, and a golden that named itself
- * keeps that name — the file's own basename is what the rest are called, numbered when there are
- * several, so a report names something a person can grep for in their own directory.
- */
-async function goldensOf(file: string): Promise<Golden[]> {
+async function casesOf<T extends { name?: string }>(file: string): Promise<T[]> {
   const read = JSON.parse(await readFile(file, "utf8")) as unknown;
-  const written = Array.isArray(read) ? (read as Golden[]) : [read as Golden];
+  const written = Array.isArray(read) ? (read as T[]) : [read as T];
   const stem = basename(file, extname(file));
-  return written.map((golden, index) => ({
-    ...golden,
-    name: golden.name ?? (written.length > 1 ? `${stem} #${index + 1}` : stem),
+  return written.map((one, index) => ({
+    ...one,
+    name: one.name ?? (written.length > 1 ? `${stem} #${index + 1}` : stem),
   }));
 }
 
