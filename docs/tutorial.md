@@ -26,12 +26,12 @@ uv run pinecall-runtime gateway                    the control plane, on 8080
 In another terminal, mint a key for your org and keep it. It is printed once and never again:
 
 ```
-uv run pinecall-runtime keys issue default --label laptop
+uv run pinecall-runtime keys issue --org default --label laptop
 ```
 
 ```
 export PINECALL_URL=http://127.0.0.1:8080
-export PINECALL_API_KEY=pk_live_…
+export PINECALL_API_KEY=pk_…
 ```
 
 **On an Apple Silicon laptop TEI cannot run** — its CPU image has no arm64 build — so the embedder
