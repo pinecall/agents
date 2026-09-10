@@ -7,6 +7,10 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- `pinecall knowledge eval [golden.json] [--base <name>] [--k <n>]`: every question of a golden
+  asked of the base, and `recall@k` and `nDCG@10` printed — computed by code with no model, so two
+  runs answer the same numbers. Prints every question it missed with what came back instead and
+  exits 1 when anything did, so a base can be held to its golden in CI. Clínica Norte ships one.
 - **`@render(ThePrompt)` on the class, the other spelling of `render()`.** A prompt that has grown
   gets a function beside the class, and the props ARE the instance —
   `Prompt<T> = (agent: T) => Child`, so `({ stage, customer }: Support) => …` stays typed with no

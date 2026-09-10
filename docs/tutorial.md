@@ -225,6 +225,31 @@ pinecall knowledge drop clinica-norte
 
 A push replaces the base whole. Re-push after every edit; it is one command and always right.
 
+**Hold the base to a golden.** Write `knowledge/golden.json`: the questions people really ask, and
+the chunk each should have found.
+
+```json
+[
+  { "asks": "¿cuánto cuesta una revisión?", "expects": "tarifas.md › Tarifas › Revisión" },
+  { "asks": "¿hay que ir en ayunas?",       "expects": "preparacion-de-pruebas.md" }
+]
+```
+
+```
+pinecall knowledge eval
+```
+
+```
+clinica-norte · pplx-embed-context-v1-0.6b · 3 questions · recall@4 1.00 · nDCG@10 0.87 · 412 ms
+```
+
+`recall@k` is the share of questions whose chunk came back at all — the figure that matters, because
+a chunk the model never sees cannot be used. `nDCG@10` is how high it ranked. Both are computed by
+code, with no model, so two runs answer the same numbers and a change is a change.
+
+It exits non-zero when anything missed, so a golden belongs in CI. And a golden is fixed while the
+index is the variable: never soften a question so a change can pass.
+
 ---
 
 ## 6. Memory: what it keeps between calls

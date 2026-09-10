@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { markdownUnder, pushedLine, run } from "../../src/cli/knowledge.js";
+import { markdownUnder, pushedLine, run , scoreLines } from "../../src/cli/knowledge.js";
 import { written } from "./said.js";
 
 const A_KEY = "pk_the_orgs_own_key";
@@ -173,5 +173,44 @@ describe("listing and dropping", () => {
     expect(code).toBe(2);
     expect(err.text()).toContain("usage: pinecall knowledge push");
     expect(gateway.heard).toEqual([]);
+  });
+});
+
+describe("a golden held against a base", () => {
+  it("prints the two figures on one line, and the base's own embedder", () => {
+    expect(
+      scoreLines({
+        base: "clinica-norte",
+        model: "pplx-embed-context-v1-0.6b",
+        questions: 3,
+        k: 4,
+        recall_at_k: 1,
+        ndcg_at_10: 0.87,
+        took_ms: 412.4,
+        misses: [],
+      }),
+    ).toEqual(["clinica-norte · pplx-embed-context-v1-0.6b · 3 questions · recall@4 1.00 · nDCG@10 0.87 · 412 ms"]);
+  });
+
+  it("prints a line per question it missed, with what came back instead", () => {
+    const lines = scoreLines({
+      base: "clinica-norte",
+      model: "bge-m3",
+      questions: 1,
+      k: 4,
+      recall_at_k: 0,
+      ndcg_at_10: 0,
+      took_ms: 90,
+      misses: [{ asks: "¿cuánto cuesta?", expects: "tarifas.md", found: ["horarios.md › Horario"] }],
+    });
+    expect(lines[1]).toBe("  missed: ¿cuánto cuesta? → wanted tarifas.md, got horarios.md › Horario");
+  });
+
+  it("says nothing came back when the base returned no chunk at all", () => {
+    const lines = scoreLines({
+      base: "b", model: "m", questions: 1, k: 4, recall_at_k: 0, ndcg_at_10: 0, took_ms: 1,
+      misses: [{ asks: "x", expects: "y", found: [] }],
+    });
+    expect(lines[1]).toContain("got nothing");
   });
 });

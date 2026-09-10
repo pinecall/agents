@@ -1,0 +1,8 @@
+[
+  { "asks": "¿cuánto cuesta una revisión?",
+    "expects": "seguros-y-autorizaciones.md" },
+  { "asks": "¿tengo que ir en ayunas a la analítica?",
+    "expects": "preparacion-de-pruebas.md" },
+  { "asks": "¿me hace falta autorización para una resonancia?",
+    "expects": "seguros-y-autorizaciones.md" }
+]
