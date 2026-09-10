@@ -10,11 +10,12 @@ import { modelOf, mount } from "../runtime/connect.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { load, mountOptions } from "./load.js";
-import { aRun, entriesOf, Refused, theRuns, type Door, type EvalRun, type Wanted } from "./testing/gateway.js";
-import { GOLDENS, goldensIn, matching, NO_GOLDENS } from "./testing/goldens.js";
+import { aRun, entriesOf, Refused, theRuns, type Door, type Entry, type EvalRun, type Wanted } from "./testing/gateway.js";
+import { GOLDENS, goldensIn, matching, NO_GOLDENS, type Golden } from "./testing/goldens.js";
 import { mediansOf } from "./testing/latency.js";
 import { reportOf, type Latencies } from "./testing/matrix.js";
 import { followed } from "./testing/progress.js";
+import { whereTheyAre, writtenOut } from "./testing/reproduction.js";
 import { Openings } from "./testing/seeding.js";
 
 export const group: Group = {
@@ -130,7 +131,7 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
       }
       const wrong = openings.mismatched(run);
       if (wrong !== undefined) process.stderr.write(`${wrong}\n`);
-      return await reported(door, run, declaredAs, values.json === true, out);
+      return await reported(door, run, goldens, declaredAs, values.json === true, out);
     };
     const code = await suite();
     if (values.watch !== true) return code;
@@ -144,25 +145,30 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
 async function reported(
   door: Door,
   run: EvalRun,
+  goldens: Golden[],
   declaredAs: string,
   asJson: boolean,
   out: NodeJS.WritableStream,
 ): Promise<number> {
-  const latencies = await latenciesOf(door, run);
-  if (asJson) out.write(`${JSON.stringify({ run, latencies })}\n`);
-  else out.write(`${reportOf(run, latencies, declaredAs).join("\n")}\n`);
+  const logs = await logsOf(door, run);
+  const latencies: Latencies = {};
+  for (const [call, entries] of Object.entries(logs)) latencies[call] = mediansOf(entries);
+  // The logs are already in hand, so a broken golden costs one write and no second round trip.
+  const written = writtenOut(run, goldens, logs);
+  if (asJson) out.write(`${JSON.stringify({ run, latencies, reproductions: written })}\n`);
+  else out.write(`${[...reportOf(run, latencies, declaredAs), ...whereTheyAre(written)].join("\n")}\n`);
   return run.status === "done" && (run.matrix?.failures.length ?? 0) === 0 ? 0 : 1;
 }
 
 /**
- * The three latencies per call, read off each call's own log. The runner's matrix carries what the
- * graphs answered and `call.summary`; the per-turn metrics entries live in the log, so the report
- * reads them from there rather than asking anybody to summarise them a second time.
+ * Each call's own log, by call id. The runner's matrix carries what the graphs answered and
+ * `call.summary`; the per-turn metrics entries and every other thing that happened live in the
+ * log, so the report reads them from there rather than asking anybody to summarise them twice.
  */
-async function latenciesOf(door: Door, run: EvalRun): Promise<Latencies> {
-  const latencies: Latencies = {};
-  for (const opened of run.calls) latencies[opened.call] = mediansOf(await entriesOf(door, opened.call));
-  return latencies;
+async function logsOf(door: Door, run: EvalRun): Promise<Record<string, Entry[]>> {
+  const logs: Record<string, Entry[]> = {};
+  for (const opened of run.calls) logs[opened.call] = await entriesOf(door, opened.call);
+  return logs;
 }
 
 // Which run has the AGENT is read off the door that lists them rather than out of the refusal's
