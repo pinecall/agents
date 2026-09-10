@@ -1,6 +1,7 @@
 /** An outside fact off the wire, dispatched to the instance serving that call — or dropped. */
 
-import { emitEvent, withAuthorAsync, type EventHeard } from "../agent/agent.js";
+import { emitEvent, type EventHeard } from "../agent/agent.js";
+import { withAuthorAsync } from "../agent/authors.js";
 import { accepts, type EventMeta, type EventSource } from "../agent/accepts.js";
 import type { CallWorld } from "../call/call.js";
 

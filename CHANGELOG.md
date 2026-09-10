@@ -7,6 +7,21 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **`@render(ThePrompt)` on the class, the other spelling of `render()`.** A prompt that has grown
+  gets a function beside the class, and the props ARE the instance —
+  `Prompt<T> = (agent: T) => Child`, so `({ stage, customer }: Support) => …` stays typed with no
+  wrapper. It is exactly `render() { return ThePrompt(this); }` and produces the same block, byte
+  for byte. A class that declares both spellings is refused when it is defined: `TiendaSur declares
+  both @render(TiendaPrompt) and a render() method; two ways to answer one question — keep one`.
+  Tienda Sur is written this way; Clínica Norte keeps the method.
+- **`@state` in three spellings**: bare `@state`, `@state({ pii: true })` (sugar for
+  `visibility: "pii"`), and `@state({ visibility })`. `pii: true` beside a `visibility` that says
+  something else is refused by name.
+- **Decorating one field decides them all.** A class that decorates no field has every own field as
+  state, as before; a class that decorates any means *these, and nothing else*, so an undecorated
+  field on it is the tenant's scratch space — out of the snapshot, out of the prompt, out of
+  `state.changed`, and writable with no tool running. It is the first way to keep a helper field
+  out of the log.
 - **The view is a method of the class.** `render(): Child` on `Agent`, returning JSX, with `this`
   as the state — no view file, no props, no block a class declares of its own. A class with no
   `render()` sends an empty view. The file a tenant writes is `agent.tsx` for that reason; the CLI
@@ -44,9 +59,18 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 - Both examples are one `agent.tsx` with a `render()` and no `views/` directory, and they say how
   their chunks come back on the declaration — `docs = { base, k: 4, minScore: 0.5 }` — instead of
   inside the prompt. Their ring-0 suites and their captured prompts were retaken.
-- `render(agent)`, `showPrompt(agent)` and `mount(Class, { pc, … })` no longer take a `views`
+- `promptOf(agent)`, `showPrompt(agent)` and `mount(Class, { pc, … })` no longer take a `views`
   argument, and `load()` no longer resolves a view file. `describe(ctor, source, file)` takes the
   file name, because the parser reads the dialect off the extension.
+- `render(agent)` is now `promptOf(agent)`: `render` is the decorator a class wears, and one name
+  cannot be two things. `layout()` is no longer exported — `promptOf` is that function under the
+  name a tenant reads it by.
+- The class docstring survives a class decorator: the parser puts a decorated statement's start
+  after the decorator, so a docstring read up to there found `@render(…)` in the way and gave up.
+  It is read up to the first decorator now.
+- `withAuthor`, `withAuthorAsync`, `currentAuthor` and `UnauthoredWrite` moved to
+  `agent/authors.ts`. Who is writing the state is one idea, and `agent.ts` was at the 400-line
+  ceiling the tree test holds.
 
 - The framework, from zero: the `Agent` base whose fields are the state and whose every assignment
   is a change with an author; `@tool` with `when` / `stage` / `confirm` / `preview` / `pii` /
@@ -93,6 +117,8 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   written, so the sentence sent a person to a stub.
 
 ### Removed
+- `<Prompt>`, the tag that rendered its children as paragraphs: `<>` already does exactly that,
+  and no example ever wrote one. The name is the type `Prompt<T>` now.
 - The whole marker apparatus: `<Memory>`, `<Retrieved>`, `<Knowledge>`, `marker()`, `Fills`,
   `fills()`, `withFills()` and the `AsyncLocalStorage` that carried them; `ViewProps`, `View`,
   `Views`, `propsFor`, `viewFor`, `checkViews`, `layoutOf`, `declaredBlocksOf`, `PromptDeclaration`

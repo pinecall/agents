@@ -8,7 +8,7 @@ import {
   CallWorld,
   describe as describeClass,
   recalled,
-  render,
+  promptOf,
   runHook,
   runTool,
   seal,
@@ -34,7 +34,7 @@ let sur: TiendaSur;
 
 /** El texto de un bloque del prompt, por nombre, en el estado en que esté la tienda. */
 function block(name: string, agent: TiendaSur = sur): string {
-  const found = render(agent).blocks.find((one) => one.name === name);
+  const found = promptOf(agent).blocks.find((one) => one.name === name);
   if (found === undefined) throw new Error(`no hay bloque ${name}`);
   return found.text;
 }
@@ -43,7 +43,7 @@ beforeEach(() => {
   sur = onA("phone");
 });
 
-/** La tienda atendiendo una llamada por esa puerta: es lo que `render()` lee de `this.call`. */
+/** La tienda atendiendo una llamada por esa puerta: es lo que `promptOf()` lee de `this.call`. */
 function onA(channel: string): TiendaSur {
   const agent = seal(new TiendaSur());
   setCall(agent, new CallWorld({ id: "CA_1", contact: ROSA, from: ROSA, channel }, () => undefined));
@@ -161,7 +161,7 @@ describe("cerrar el pedido", () => {
   it("deja el hecho en el log y colapsa la historia en una frase", async () => {
     await call("proposeOrder");
     await call("confirmOrder");
-    expect(render(sur).history).toContain("cerrado por Rosa Medina");
+    expect(promptOf(sur).history).toContain("cerrado por Rosa Medina");
   });
 
   it("un artículo agotado deja el pedido sin hacer y dice qué hacer con él", async () => {

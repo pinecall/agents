@@ -20,7 +20,7 @@ import { runHook, type Call as HookCall } from "../agent/lifecycle.js";
 import { snapshot, type LastCall, type Snapshot } from "../agent/state.js";
 import { toolNamed } from "../agent/tools.js";
 import { PROMPT_BLOCKS } from "../views/layout.js";
-import { render } from "../views/render.js";
+import { promptOf } from "../views/render.js";
 import { routesOf } from "./channels.js";
 import { inOrder, type Serving } from "./dispatch.js";
 import { groundingOf } from "./grounding.js";
@@ -287,7 +287,7 @@ async function end(live: Map<string, Live>, call: SdkCall): Promise<void> {
 // send only the block whose text is different. Tools are compared as their whole declaration,
 // because a `when` flipping changes the list and nothing else about a spec ever changes mid-call.
 function sync(serving: Live, call: SdkCall): void {
-  const { blocks } = render(serving.agent);
+  const { blocks } = promptOf(serving.agent);
   for (const block of blocks) {
     if (block.text === (serving.sent.blocks.get(block.name) ?? "")) continue;
     serving.sent.blocks.set(block.name, block.text);

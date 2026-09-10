@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 import {
   CallWorld,
   describe as describeClass,
-  render,
+  promptOf,
   seal,
   setCall,
   showPrompt,
@@ -43,7 +43,7 @@ function at(index: number): ClinicaNorte {
 }
 
 // Una instancia con una llamada a la que contestar, que es lo que `pinecall prompt` le da: un
-// `render()` puede leer `this.call`, y una página sobre una llamada que no existe no sería la
+// `promptOf()` puede leer `this.call`, y una página sobre una llamada que no existe no sería la
 // página del prompt. Por escrito, como imprime el CLI cuando nadie dice otra cosa.
 function fresh(): ClinicaNorte {
   const agent = seal(new ClinicaNorte());
@@ -60,7 +60,7 @@ function block(blocks: Blocks, name: string): string {
 
 describe("los bloques del prompt", () => {
   it("mantiene cada bloque estático idéntico en los tres estados", () => {
-    const rendered = STATES.map((_, index) => render(at(index)));
+    const rendered = STATES.map((_, index) => promptOf(at(index)));
 
     for (const name of ["identity", "knowledge", "tools"]) {
       for (const one of rendered) expect(block(one, name)).toBe(block(rendered[0]!, name));
@@ -70,7 +70,7 @@ describe("los bloques del prompt", () => {
   });
 
   it("cambia la view en cada uno de los tres", () => {
-    const dynamics = STATES.map((_, index) => block(render(at(index)), "view"));
+    const dynamics = STATES.map((_, index) => block(promptOf(at(index)), "view"));
 
     expect(new Set(dynamics).size).toBe(STATES.length);
     expect(dynamics[0]).toContain("Saluda y pide nombre");
@@ -114,12 +114,12 @@ describe("los bloques del prompt", () => {
 describe("las horas sobre la mesa", () => {
   it("no están hasta que freeSlots vuelve, y entonces van en la view con qué hacer con ellas", async () => {
     const agent = at(0);
-    expect(block(render(agent), "view")).not.toContain("Horas libres, en orden:");
+    expect(block(promptOf(agent), "view")).not.toContain("Horas libres, en orden:");
 
     agent.startIn({ ...STATES[0]!.state, stage: "choose", patient: { name: "Ana García", phone: "+34 600 000 001" } });
     await agent.freeSlots("martes");
 
-    const dynamic = block(render(agent), "view");
+    const dynamic = block(promptOf(agent), "view");
     expect(agent.slots.length).toBeGreaterThan(0);
     expect(dynamic).toContain("Horas libres, en orden:");
     expect(dynamic).toContain(agent.slots[0]!.when);
@@ -135,7 +135,7 @@ describe("un caso de goldens nombra unos campos y calla los demás", () => {
     const agent = fresh();
     agent.startIn(CASES[0]!.state);
 
-    expect(block(render(agent), "view")).toContain("pregúntale para qué día quiere cambiarla");
+    expect(block(promptOf(agent), "view")).toContain("pregúntale para qué día quiere cambiarla");
   });
 });
 
@@ -146,7 +146,7 @@ describe("la clase y la vista dicen lo mismo sobre el día que nombra el pacient
   it("repite en la vista la regla que freeSlots lleva en su docstring", () => {
     const agent = fresh();
     agent.startIn(CASES[0]!.state);
-    const dynamic = block(render(agent), "view");
+    const dynamic = block(promptOf(agent), "view");
 
     expect(toolNamed(agent, "freeSlots")?.spec.description).toContain("se consulta SIEMPRE");
     expect(dynamic).toContain("consulta SIEMPRE la agenda de ese día");
@@ -164,7 +164,7 @@ describe("la clase y la vista dicen lo mismo sobre el día que nombra el pacient
 describe("con horas sobre la mesa, elegir una no la reserva", () => {
   it("manda repetir la hora entera y esperar el sí, en la vista y en el docstring de book", () => {
     const agent = at(1);
-    const dynamic = block(render(agent), "view");
+    const dynamic = block(promptOf(agent), "view");
 
     expect(dynamic).toContain("todavía no la reserva");
     expect(dynamic).toContain("pregúntale si se la confirmas");
@@ -176,6 +176,6 @@ describe("con horas sobre la mesa, elegir una no la reserva", () => {
     const agent = fresh();
     agent.startIn(CASES[0]!.state);
 
-    expect(block(render(agent), "view")).not.toContain("todavía no la reserva");
+    expect(block(promptOf(agent), "view")).not.toContain("todavía no la reserva");
   });
 });

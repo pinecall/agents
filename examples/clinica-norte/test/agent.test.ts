@@ -8,7 +8,7 @@ import {
   CallWorld,
   describe as describeClass,
   recalled,
-  render,
+  promptOf,
   runHook,
   runTool,
   seal,
@@ -36,7 +36,7 @@ beforeEach(() => {
   clinica = onA("phone");
 });
 
-/** La clínica atendiendo una llamada por esa puerta: es lo que `render()` lee de `this.call`. */
+/** La clínica atendiendo una llamada por esa puerta: es lo que `promptOf()` lee de `this.call`. */
 function onA(channel: string): ClinicaNorte {
   const agent = seal(new ClinicaNorte());
   setCall(agent, new CallWorld({ id: "CA_1", contact: ANA, from: ANA, channel }, () => undefined));
@@ -55,7 +55,7 @@ function names(): string[] {
 
 /** El texto de un bloque del prompt, por nombre, en el estado en que esté la clínica. */
 function block(name: string, agent: ClinicaNorte = clinica): string {
-  const found = render(agent).blocks.find((one) => one.name === name);
+  const found = promptOf(agent).blocks.find((one) => one.name === name);
   if (found === undefined) throw new Error(`no hay bloque ${name}`);
   return found.text;
 }
@@ -152,7 +152,7 @@ describe("reservar", () => {
     await call("book", { chosen: free.when });
     expect(clinica.booking?.when).toBe(free.when);
     expect(clinica.stage).toBe("done");
-    expect(render(clinica).history).toContain("Reservado");
+    expect(promptOf(clinica).history).toContain("Reservado");
     expect(await agendaFor(clinica).free("martes")).not.toContainEqual(free);
   });
 

@@ -23,9 +23,11 @@ class FrontDesk extends Agent {
   @state({ visibility: "public" })
   slot?: string;
 
-  // Undeclared on purpose: the wire's default is tenant, and a framework that says so again would
-  // be inventing a declaration the class never wrote.
-  notes?: string;
+  // Bare `@state`: state like any other, with nothing said about who may see it — the wire's
+  // default is tenant, and a framework that said so again would be inventing a declaration the
+  // class never wrote. It has to be declared: this class decorates a field, so an undecorated one
+  // would be its scratch space and no longer state at all.
+  @state notes?: string;
 
   override async onEvent(name: string, data: Record<string, unknown>, _meta: EventMeta): Promise<void> {
     // A real hook awaits its backend; a tick here is enough to interleave two events.

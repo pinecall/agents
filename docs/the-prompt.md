@@ -138,6 +138,48 @@ render() {
 }
 ```
 
+## The other spelling: `@render(Prompt)`
+
+A prompt that has grown deserves a function of its own, beside the class. `@render` gives it one,
+and passing props to it is ceremony you do not write — **the props ARE the instance**:
+
+```tsx
+/** El prompt como función del agente. */
+const SupportPrompt = ({ stage, customer, hold }: Support) => (
+  <>
+    {stage === "identify" && <p>Pide el número de pedido. Nada más hasta tenerlo.</p>}
+    {customer && <p>Hablas con {customer.name}. {hold && `Tiene una retención: ${hold}.`}</p>}
+  </>
+);
+
+@render(SupportPrompt)
+class Support extends Agent {
+  stage: Stages<"identify" | "resolve"> = "identify";
+  customer?: Customer | undefined;
+  hold?: string | undefined;
+}
+```
+
+`@render(SupportPrompt)` is exactly `render() { return SupportPrompt(this); }` and produces the
+same block, byte for byte. The type is `Prompt<T> = (agent: T) => Child`, and the type of the props
+is the class itself — no wrapper, no generic machinery, and destructuring `{ stage, customer }`
+just works.
+
+Two things follow from the instance being the props. A **getter** is read when you destructure it,
+which is what you want; a **method** is not — `remembers` pulled out of the instance would have
+lost its `this`, so a prompt that asks calls it on the agent:
+
+```tsx
+const TiendaPrompt = (tienda: TiendaSur) => {
+  const { stage, cart } = tienda;
+  return <>{tienda.remembers("marca") && <p>Ofrécele primero la marca que se suele llevar.</p>}</>;
+};
+```
+
+**A class writes one spelling or the other.** Declaring `@render(...)` on a class that also has a
+`render()` method is refused when the class is defined: `TiendaSur declares both
+@render(TiendaPrompt) and a render() method; two ways to answer one question — keep one`.
+
 ## Where a rule belongs
 
 The static blocks are read once and generically; the view is read in the turn it is about. Both

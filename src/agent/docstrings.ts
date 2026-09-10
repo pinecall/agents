@@ -119,11 +119,20 @@ function theClass(body: Statement[]): { node: Class; start: number } | undefined
   for (const statement of body) {
     const declared = declarationOf(statement);
     if (declared.type !== "ClassDeclaration" && declared.type !== "ClassExpression") continue;
-    const found = { node: declared as Class, start: statement.start };
+    const found = { node: declared as Class, start: docstringEnd(declared, statement.start) };
     if (statement.type === "ExportDefaultDeclaration") return found;
     first ??= found;
   }
   return first;
+}
+
+// Where the class's own docstring has to stop. A decorator is written between the JSDoc and the
+// class — `@render(Prompt)` above `export default class` — and the parser puts the statement's
+// start after it, so a docstring read up to the statement would find the decorator in the way and
+// give up. The docstring of a decorated class is the comment above its FIRST decorator.
+function docstringEnd(declared: { decorators?: { start: number }[] }, start: number): number {
+  const decorators = declared.decorators ?? [];
+  return decorators.reduce((earliest, decorator) => Math.min(earliest, decorator.start), start);
 }
 
 /** `undefined` and `null` inside a union: what makes the parameter optional instead of a type. */

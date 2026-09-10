@@ -43,12 +43,13 @@ a directory earns its place there by having a line in that table (§13).
 | file | what it is |
 |---|---|
 | `agent.ts` | the `Agent` base: the Proxy that turns an assignment into an authored change, the internals kept off the instance, `seal`, `collapse`, `restore`, `startIn`, `log`, `say`/`reply`, `this.call`, `render()`, `remembers()`, the four hooks |
-| `decorators.ts` | `@tool({…})`: registers the method and wraps it so every write inside it carries its name |
+| `decorators.ts` | `@tool({…})`, which registers a method and wraps it so every write inside it carries its name, and `@render(Prompt)`, which gives the class a prompt written beside it. `Prompt<T> = (agent: T) => Child` |
+| `authors.ts` | who is writing the state right now: the `AsyncLocalStorage` the author rides, `withAuthor`, `withAuthorAsync`, `currentAuthor`, and `UnauthoredWrite` |
 | `tools.ts` | the tool registry: `ToolOptions`, `ToolDeclaration`, the wire `ToolSpec` built and cached per class, `visibleToolsOf`, `DeclarationRefused` |
 | `docstrings.ts` | a class's own source read with oxc: the JSDoc above the class, above each method, and the parameter names and types |
 | `state.ts` | `snapshot` (fields + getters, never config, never methods), `diff`, `restore`, `collapse`, `Snapshot<T>` |
 | `stages.ts` | `Stages<"a"|"b">`, `StageOf<T>`, and `lowerStage` — `stage:` is sugar over `when(state)` |
-| `visibility.ts` | `@state({ visibility })` and `static visibility = {…}`: who may see a field |
+| `visibility.ts` | `@state` in its three spellings — bare, `{ pii: true }`, `{ visibility }` — which fields are the state (`declaredStateOf`) and who may see them (`visibilityOf`, plus `static visibility = {…}`) |
 | `accepts.ts` | `static events = {…}`: which outside facts this class takes, and from whom |
 | `lifecycle.ts` | the hooks as a type (`onCall`, `onEnd`, `onMemory`, `onEvent`) and `runHook`, which authors their writes |
 
@@ -58,10 +59,10 @@ a directory earns its place there by having a line in that table (§13).
 |---|---|
 | `jsx-runtime.ts` | the element factory and the renderer: a tree of tags becomes TEXT, never DOM. `renderToText`, `renderInline`, `blocks`, `Fragment`, the `JSX` namespace |
 | `jsx-dev-runtime.ts` | the same factory under the name a dev-mode transform imports |
-| `components.ts` | the tags a view is written in: `Prompt`, `Rule`, `Rules`, `Protocols`, `Section`, `Example`, `p`, and `tagged` |
+| `components.ts` | the tags a view is written in: `Rule`, `Rules`, `Protocols`, `Section`, `Example`, `p`, and `tagged` |
 | `layout.ts` | the prompt as named blocks in two regions: `PROMPT_BLOCKS` (the four, in send order) and `layout` → `Blocks` |
 | `lang.ts` | the framework's own words — the standing rules and the protocols, `es` and `en`, chosen by the class's `language` |
-| `render.ts` | `render()`, `headerFor()`, `showPrompt()` (what `--show-prompt` prints) |
+| `render.ts` | `promptOf()`, `headerFor()`, `showPrompt()` (what `--show-prompt` prints) |
 
 ### `src/call/` — the live call as a value
 
@@ -169,6 +170,7 @@ Beside `src/`:
 | `DocsDeclaration` / `MemoryDeclaration` | `agent/agent.ts` | what `docs` and `memory` may hold: `base`, `mode?`, `k?`, `minScore?` · `remember?`, `forget?` |
 | `Grounding` | `runtime/grounding.ts` | the three as the wire carries them: `knowledge {path, text}`, `docs {base, …}`, `memory {remember, forget}` |
 | `Child` | `views/jsx-runtime.ts` | what a `render()` hands back: an element, a string, a number, nothing, or an array of those |
+| `Prompt<T>` | `agent/decorators.ts` | `(agent: T) => Child` — a prompt written beside the class, which `@render` hands the instance |
 
 ### The socket
 
@@ -217,6 +219,11 @@ code:
 - **`render()` and `remembers()` are methods of the base,** so neither is state either. `render()`
   returns nothing by default; `remembers(text)` answers from what the runtime has recalled about
   this caller in this call, and false before anything has.
+- **`@state` decides which fields are state at all.** A class that decorates none has every own
+  field as state, as it always did. A class that decorates any means *these, and nothing else*: an
+  undecorated field on it is the tenant's scratch space — no snapshot, no change, no author asked
+  for, nothing on the wire. `declaredStateOf(ctor)` is that answer, read once per class, and the
+  Proxy, `snapshot()` and `restore()` all ask it. A getter is derived and is always state.
 
 ## 5. From a method to a tool the model may call
 
@@ -248,7 +255,7 @@ array result; the state field keeps every row.
 
 ## 6. The prompt: named blocks in two regions, in one order, always
 
-`layout(agent)` → `Blocks`: every block in send order, each with its name, its region and its
+`promptOf(agent)` → `Blocks`: every block in send order, each with its name, its region and its
 text. Nothing may reorder them; the cut between the regions is where the cache is.
 
 | block | region | what is in it | when it changes |
@@ -261,8 +268,10 @@ text. Nothing may reorder them; the cut between the regions is where the cache i
 
 The layout is the framework's, always: `PROMPT_BLOCKS` is the four in order, it travels once in
 `agent.configure`, and every block is written by name with `prompt.set`. A class contributes one of
-them — the view — and it writes it as a method, so there is no view file to resolve, no props to
-pass and no way for a tenant to declare a block of its own.
+them — the view — as a `render()` method, or as `@render(ThePrompt)` with the prompt written beside
+the class; the decorator is exactly `render() { return ThePrompt(this); }` and a class that
+declares both spellings is refused when it is defined. Either way there is no view file to resolve,
+no props to pass and no way for a tenant to declare a block of its own.
 
 **Nothing this package writes is a hole for somebody else to fill.** There are no markers: what
 memory recalled and what the knowledge base returned reach the model as `tool_result` blocks,

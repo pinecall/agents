@@ -161,3 +161,20 @@ describe("docstrings at runtime", () => {
     expect(parser).toContain("parseSync(");
   });
 });
+
+// A class decorator sits between the JSDoc and the class, and the parser puts the statement's
+// start after it: read up to there, the docstring would be "the decorator is in the way" and the
+// identity block would open without its first line.
+describe("a class that wears a decorator", () => {
+  it("keeps the docstring written above the decorator", () => {
+    const docs = parseClassSource(`
+      const P = () => null;
+
+      /** Eres el mostrador de Tienda Sur. */
+      @render(P)
+      export default class TiendaSur {}
+    `);
+
+    expect(docs.doc).toBe("Eres el mostrador de Tienda Sur.");
+  });
+});

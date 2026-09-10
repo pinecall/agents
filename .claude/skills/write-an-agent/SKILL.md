@@ -73,6 +73,10 @@ Read in this order. Each line is a real diagnosis from these two examples:
 - The view is a **method of the class**, `render()`, returning JSX; the file is `agent.tsx` for
   that reason and for no other. There is no `views/` directory, no props and no second file: `this`
   is the state. A class that renders nothing sends an empty view, which is a fine agent.
+- A prompt that has grown gets a function beside the class and `@render(ThePrompt)` on it — exactly
+  `render() { return ThePrompt(this); }`. The props ARE the instance (`Prompt<T> = (agent: T) =>
+  Child`), so destructure the fields and call the methods on the agent: `remembers` destructured
+  loses its `this`. **Never both spellings on one class**; it is refused when the class is defined.
 - It is the whole **dynamic** region, the last block, and the only one that may change between two
   turns. Never write into the class docstring per call; never reorder the blocks.
 - `{condition && <p>…</p>}` is the whole control flow: `false`, `null` and `undefined` render
@@ -88,6 +92,16 @@ Read in this order. Each line is a real diagnosis from these two examples:
   `setCall(agent, new CallWorld({ id, contact, channel }, () => {}))`.
 - Say what to do **in this turn**, not in general. A rule that is true of the whole call belongs
   in `<Rules>`; a rule about the turn the state is in belongs in a branch.
+
+## `@state`, and what it turns off
+
+- Three spellings, one declaration: `@state`, `@state({ pii: true })`, `@state({ visibility })`.
+  `pii: true` beside a different `visibility` is refused by name.
+- **Decorating one field decides them all.** No `@state` anywhere: every own field is state, as
+  both examples have it. `@state` on any field: *these and nothing else*, and an undecorated field
+  is scratch — out of the snapshot, the prompt, `state.changed` and the console, and writable with
+  no tool running. It is the only way to keep a helper field out of the log; reach for it on
+  purpose, never by forgetting a decorator on a field that IS state.
 
 ## Before you call it done
 

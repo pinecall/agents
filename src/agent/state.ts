@@ -1,6 +1,8 @@
 /** The state: what the agent remembers, read as a plain object, diffed, restored and collapsed. */
 
-import { Agent, CONFIG_FIELDS, changes, currentAuthor, internalsOf, isConfigField, withAuthor } from "./agent.js";
+import { Agent, CONFIG_FIELDS, changes, internalsOf, isConfigField } from "./agent.js";
+import { currentAuthor, withAuthor } from "./authors.js";
+import { declaredStateOf } from "./visibility.js";
 
 // The config names as a type, read off the one list agent.ts declares them in: a name added
 // there is dropped from the snapshot here without anybody remembering to write it twice.
@@ -28,9 +30,16 @@ export interface FieldDiff {
 }
 
 // The state is whatever the app put on the instance: own, enumerable, not a method, not one of the
-// config names. Nothing has to be declared twice.
-function isStateField(value: unknown, key: string): boolean {
-  return !isConfigField(key) && typeof value !== "function";
+// config names — and, when the class decorated any field with `@state`, one of the fields it named.
+// A class that decorated none declares nothing twice, as it always did.
+function isStateField(key: string, value: unknown, declared: ReadonlySet<string> | null): boolean {
+  if (isConfigField(key) || typeof value === "function") return false;
+  return declared === null || declared.has(key);
+}
+
+/** The fields this instance's class said are its state, or null when it said nothing. */
+function stateOf(agent: object): ReadonlySet<string> | null {
+  return declaredStateOf((internalsOf(agent).target as { constructor: Function }).constructor);
 }
 
 // A getter is state too — `get identified() { return !!this.patient }` is exactly what a `when`
@@ -55,10 +64,11 @@ function gettersOf(agent: object): string[] {
 export function snapshot(agent: object): Snapshot {
   const own = internalsOf(agent);
   const readable = agent as Record<string, unknown>;
+  const declared = stateOf(agent);
   const state: Snapshot = {};
   for (const key of Object.keys(own.target)) {
     const value = (own.target as Record<string, unknown>)[key];
-    if (isStateField(value, key)) state[key] = value;
+    if (isStateField(key, value, declared)) state[key] = value;
   }
   // Read the getters through the agent itself: they are written against `this`, not against target.
   for (const name of gettersOf(agent)) state[name] = readable[name];
@@ -84,11 +94,15 @@ export function diff(before: Snapshot, after: Snapshot): FieldDiff[] {
 export function restore(agent: object, state: Snapshot): void {
   const author = currentAuthor() ?? "restore";
   const derived = new Set(gettersOf(agent));
+  const declared = stateOf(agent);
+  const target = internalsOf(agent).target as Record<string, unknown>;
   withAuthor(author, () => {
     const writable = agent as Record<string, unknown>;
-    const fields = new Set(Object.keys(internalsOf(agent).target));
+    const fields = new Set(Object.keys(target));
+    // A whole state goes in, so a field the snapshot leaves out is emptied — but only if it is
+    // state at all: a scratch field is nobody's business here.
     for (const key of fields) {
-      if (!isConfigField(key) && !(key in state)) writable[key] = undefined;
+      if (isStateField(key, target[key], declared) && !(key in state)) writable[key] = undefined;
     }
     // Getters are derived, so a snapshot restores the fields they are derived from and no more.
     for (const [key, value] of Object.entries(state)) {

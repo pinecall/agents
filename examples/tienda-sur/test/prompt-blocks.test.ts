@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 import {
   CallWorld,
   describe as describeClass,
-  render,
+  promptOf,
   seal,
   setCall,
   showPrompt,
@@ -39,7 +39,7 @@ function at(index: number): TiendaSur {
 }
 
 // Una instancia con una llamada a la que contestar, que es lo que `pinecall prompt` le da: un
-// `render()` puede leer `this.call`, y una página sobre una llamada que no existe no sería la
+// `promptOf()` puede leer `this.call`, y una página sobre una llamada que no existe no sería la
 // página del prompt. Por escrito, como imprime el CLI cuando nadie dice otra cosa.
 function fresh(): TiendaSur {
   const agent = seal(new TiendaSur());
@@ -56,7 +56,7 @@ function block(blocks: Blocks, name: string): string {
 
 describe("los bloques del prompt", () => {
   it("mantiene cada bloque estático idéntico en los tres estados", () => {
-    const rendered = STATES.map((_, index) => render(at(index)));
+    const rendered = STATES.map((_, index) => promptOf(at(index)));
 
     for (const name of ["identity", "knowledge", "tools"]) {
       for (const one of rendered) expect(block(one, name)).toBe(block(rendered[0]!, name));
@@ -66,7 +66,7 @@ describe("los bloques del prompt", () => {
   });
 
   it("cambia la view en cada uno de los tres", () => {
-    const dynamics = STATES.map((_, index) => block(render(at(index)), "view"));
+    const dynamics = STATES.map((_, index) => block(promptOf(at(index)), "view"));
 
     expect(new Set(dynamics).size).toBe(STATES.length);
     expect(dynamics[0]).toContain("El carrito está vacío");
@@ -114,7 +114,7 @@ describe("un caso que nombra unos campos y calla los demás", () => {
     const agent = fresh();
     agent.startIn({ stage: "browse" });
 
-    expect(block(render(agent), "view")).toContain("El carrito está vacío");
+    expect(block(promptOf(agent), "view")).toContain("El carrito está vacío");
   });
 });
 
@@ -124,7 +124,7 @@ describe("un caso que nombra unos campos y calla los demás", () => {
 describe("la clase y la vista dicen lo mismo sobre buscar antes de decir un precio", () => {
   it("repite en la vista la regla que findProduct lleva en su docstring", () => {
     const agent = at(0);
-    const dynamic = block(render(agent), "view");
+    const dynamic = block(promptOf(agent), "view");
 
     expect(toolNamed(agent, "findProduct")?.spec.description).toContain("Llámala SIEMPRE");
     expect(dynamic).toContain("búscalo SIEMPRE con findProduct");
@@ -141,7 +141,7 @@ describe("con el carrito lleno, terminar la compra no cierra el pedido", () => {
       stage: "cart",
       cart: [{ ref: "TS-202", product: "brocha de cuatro pulgadas", qty: 1, price: 4 }],
     });
-    const dynamic = block(render(agent), "view");
+    const dynamic = block(promptOf(agent), "view");
 
     expect(dynamic).toContain("todavía no es un pedido");
     expect(dynamic).toContain("pregúntale si se lo cierras");
@@ -150,7 +150,7 @@ describe("con el carrito lleno, terminar la compra no cierra el pedido", () => {
   });
 
   it("y una vez leído dice lo contrario, que es la otra mitad de la regla", () => {
-    const dynamic = block(render(at(1)), "view");
+    const dynamic = block(promptOf(at(1)), "view");
 
     expect(dynamic).toContain("llama a confirmOrder en ese mismo turno");
     expect(dynamic).not.toContain("todavía no es un pedido");

@@ -2,9 +2,6 @@
 
 import { blocks, renderInline, renderToText, type Child, type Component, type Props } from "./jsx-runtime.js";
 
-/** The whole prompt of a view, its children one paragraph apart. */
-export const Prompt: Component = (props) => renderToText(children(props));
-
 /** One standing rule, on its own line, as a bullet. */
 export const Rule: Component = (props) => `- ${renderInline(children(props)).trim()}`;
 Rule.inline = true;
