@@ -14,4 +14,12 @@ export default class ClinicaNorte extends Agent {
   get identified(): boolean {
     return !!this.patient;
   }
+
+  // No JSX in this one: it is loaded through tsx before the package has a dist of its own, and a
+  // plain string is a render like any other — a `Child` is a tree, a string, or nothing at all.
+  override render(): string {
+    return this.identified
+      ? `Ofrece ${this.slots.length} horas y pregunta cuál prefiere.`
+      : "Saluda y pide nombre y teléfono.";
+  }
 }

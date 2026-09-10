@@ -1,9 +1,9 @@
 # pinecall
 
 Write an agent as a class. Its fields are what it remembers, its `@tool` methods are what the
-model may do, its docstrings are the prompt, and its `.tsx` view is what it knows right now.
+model may do, its docstrings are the prompt, and its `render()` is what it says about right now.
 
-```ts
+```tsx
 export default class ClinicaNorte extends Agent {
   phone = "+34910000000";
   language = "es";
@@ -18,6 +18,16 @@ export default class ClinicaNorte extends Agent {
     this.patient = await agenda.find(name, phone);
     if (this.patient) this.stage = "choose";
     return this.patient;
+  }
+
+  /** El prompt como función del estado: lo único que cambia entre dos turnos. */
+  render() {
+    return (
+      <>
+        {this.stage === "identify" && <p>Saluda y pide nombre y teléfono.</p>}
+        {this.patient && <p>Hablas con {this.patient.name}, ya en la ficha.</p>}
+      </>
+    );
   }
 }
 ```
@@ -69,7 +79,7 @@ file by file, is [ARCHITECTURE.md](ARCHITECTURE.md).
 | directory | what it is |
 |---|---|
 | `agent/` | the class a tenant extends: the Proxy, `@tool`, the state, the stages, the hooks |
-| `views/` | the JSX-to-text runtime: the prompt as named blocks in two regions, the markers the runtime fills |
+| `views/` | the JSX-to-text runtime, and the prompt as named blocks in two regions |
 | `call/` | the live call as a value: the room, the turns, the verbs. Reduced from entries |
 | `client/` | `pinecall/client` — the socket, and nothing above it. Knows only the wire |
 | `runtime/` | the bridge: what the class does, become what the wire sees |
@@ -84,7 +94,7 @@ Beside it:
 
 ## The three doors out of this package
 
-- `pinecall` — the framework: the class, the views, the call, and `mount()`.
+- `pinecall` — the framework: the class, the JSX-to-text runtime, the call, and `mount()`.
 - `pinecall/client` — the socket alone, for an app that decides for itself what to answer.
 - `pinecall/tsconfig.tenant.json` — the compiler flags an agent needs, so a tenant writes none.
 
@@ -97,7 +107,7 @@ means editing a list on purpose, which is the point.
 |---|---|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | what this package is, file by file: the entities, the bridge, the CLI, the console, the import table, and where LiveKit is and is not |
 | [docs/writing-an-agent.md](docs/writing-an-agent.md) | the class: state, tools, stages, channels, knowledge · docs · memory, hooks, events |
-| [docs/the-prompt.md](docs/the-prompt.md) | the prompt: named blocks in two regions, the view, the markers and what fills them, and where a rule belongs |
+| [docs/the-prompt.md](docs/the-prompt.md) | the prompt: named blocks in two regions, `render()`, where what a lookup found lands, and where a rule belongs |
 | [docs/testing-an-agent.md](docs/testing-an-agent.md) | the four rings: unit tests, goldens, personas, the score every call gets |
 | [docs/the-cli.md](docs/the-cli.md) | every verb, what it needs, and where its key comes from |
 | [CHANGELOG.md](CHANGELOG.md) · [CLAUDE.md](CLAUDE.md) | what changed · the working agreement |

@@ -1,8 +1,8 @@
 // pinecall: the tenant's side — a class whose fields are the state and whose @tool methods are
 // the model's verbs. One export line per module.
 //
-// What a stranger who types `import { … } from "pinecall"` may reach: the agent, the views, the
-// call, and the bridge that mounts one on a client. Never a CLI module, never a bridge internal —
+// What a stranger who types `import { … } from "pinecall"` may reach: the agent, the JSX-to-text
+// runtime its `render()` is written in, the call, and the bridge that mounts one on a client. Never a CLI module, never a bridge internal —
 // test/index.test.ts pins the list, so adding an export means editing that test.
 //
 // The socket underneath is a door of its own, `pinecall/client`, because an app that has its own

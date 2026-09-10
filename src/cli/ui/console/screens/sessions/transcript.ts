@@ -2,7 +2,7 @@
 
 import type { DocsSources, Entry, MemoryOps } from "@pinecall/protocol";
 
-import { factLines, memoryLine, sourceLines, sourcesLine } from "../../lib/fills";
+import { factLines, memoryLine, sourceLines, sourcesLine } from "../../lib/lookups";
 import { compact, said, shapesFor, type Shape } from "../../lib/wire";
 
 // the runtime's cli/sessions/render.py draws these same four columns and the same field
@@ -10,7 +10,7 @@ import { compact, said, shapesFor, type Shape } from "../../lib/wire";
 // console prints the SAME numbers off the SAME fields; when the two disagree one of them is wrong.
 const TURN_TYPES = ["turn.user", "turn.agent"];
 const METRICS_PREFIX = "metrics.";
-// What a fill put in front of the model: the entry sits under the caller's turn it answered, its
+// What a lookup put in front of the model: the entry sits under the caller's turn it answered, its
 // line says how much and how long, and what was found hangs under it like a metric's fields.
 const MEMORY = "memory.ops";
 const SOURCES = "docs.sources";

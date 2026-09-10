@@ -19,8 +19,10 @@ const SRC = fileURLToPath(new URL("../src", import.meta.url));
 const MAY_IMPORT: Record<string, string[]> = {
   // The socket, and nothing above it. It knows the wire and how to hold one open.
   "client": ["@pinecall/protocol", "ws"],
-  // The class a tenant extends. It reads its own source with oxc and describes its tools with zod.
-  "agent": ["call", "@pinecall/protocol", "oxc-parser", "zod"],
+  // The class a tenant extends. It reads its own source with oxc, describes its tools with zod,
+  // and names one type of the JSX runtime: what its `render()` hands back. That runtime imports
+  // nothing of ours, so naming it here is a leaf and not a knot.
+  "agent": ["call", "views", "@pinecall/protocol", "oxc-parser", "zod"],
   // The live call as a value: the room, the turns, the six verbs. Reduced from entries it is given.
   "call": ["agent", "@pinecall/protocol"],
   // The JSX-to-text runtime. It reads the class to lay the prompt out, and the wire for the shape
@@ -29,7 +31,8 @@ const MAY_IMPORT: Record<string, string[]> = {
   // The bridge: what the class does, become what the wire sees.
   "runtime": ["agent", "call", "views", "client", "@pinecall/protocol"],
   // The verbs. Anything of ours except the page the console is — that one is served, not imported.
-  "cli": ["agent", "views", "runtime", "client", "@pinecall/protocol", "ws"],
+  // It names `call` because a page that prints a prompt gives its instance a line to answer on.
+  "cli": ["agent", "call", "views", "runtime", "client", "@pinecall/protocol", "ws"],
   // A browser page. It must never reach the framework: none of it would run in a browser, and a
   // build that pulled a TypeScript parser into the bundle is a build nobody would notice.
   "cli/ui/console": ["@pinecall/protocol", "react", "react-dom", "react-router", "livekit-client", "vite", "@vitejs/plugin-react", "zod"],

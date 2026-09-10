@@ -26,7 +26,7 @@ export const group: Group = {
 
 const USAGE =
   "usage: pinecall simulate --persona <name> [--judge] [--turns n] [--voice]\n" +
-  "       [--background-noise <dB under the caller>] [--packet-loss <percent>] [--agent agent.ts]\n";
+  "       [--background-noise <dB under the caller>] [--packet-loss <percent>] [--agent agent.tsx]\n";
 
 // The speakers need the room, and the only door into a room from this machine is the console's
 // Talk screen, which is a browser page and not a terminal.

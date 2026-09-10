@@ -1,20 +1,27 @@
 // Criterio 2 del hito, clavado por un test: cada bloque estático es byte a byte el mismo en los tres
 // estados capturados, y la view cambia en los tres. El orden nunca se reordena: los bloques
-// estáticos · la historia · los dinámicos, la view al final — el orden que el KV-cache del
-// proveedor premia (docs/decisions/prompt-blocks.md). La tienda no declara bloques propios: este
-// es el layout por defecto, tal cual.
+// estáticos · la historia · la view, que es toda la región dinámica y lo último que lee el modelo
+// — el orden que el KV-cache del proveedor premia (docs/decisions/prompt-blocks.md).
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
-import { describe as describeClass, render, seal, showPrompt, toolNamed, type Blocks } from "pinecall";
+import {
+  CallWorld,
+  describe as describeClass,
+  render,
+  seal,
+  setCall,
+  showPrompt,
+  toolNamed,
+  type Blocks,
+} from "pinecall";
 
 import TiendaSur from "../agent.js";
-import view from "../views/agent.js";
 
 const here = (path: string) => fileURLToPath(new URL(path, import.meta.url));
-const SOURCE = readFileSync(here("../agent.ts"), "utf8");
+const SOURCE = readFileSync(here("../agent.tsx"), "utf8");
 const STATES = JSON.parse(readFileSync(here("./prompts/states.json"), "utf8")) as {
   state: Record<string, unknown>;
 }[];
@@ -23,11 +30,20 @@ describeClass(TiendaSur, SOURCE);
 
 /** El agente en el estado N del fichero, como lo pone `pinecall prompt --case N`. */
 function at(index: number): TiendaSur {
-  const agent = seal(new TiendaSur());
+  const agent = fresh();
   // `startIn` y no `restore`, que es lo que hace el CLI: un caso nombra los campos de los que
   // trata y ninguno más, así que el primero —que no habla del carrito— conserva el `cart = []` de
   // la clase en vez de quedarse sin él.
   agent.startIn(STATES[index]!.state);
+  return agent;
+}
+
+// Una instancia con una llamada a la que contestar, que es lo que `pinecall prompt` le da: un
+// `render()` puede leer `this.call`, y una página sobre una llamada que no existe no sería la
+// página del prompt. Por escrito, como imprime el CLI cuando nadie dice otra cosa.
+function fresh(): TiendaSur {
+  const agent = seal(new TiendaSur());
+  setCall(agent, new CallWorld({ id: "", contact: "", channel: "web" }, () => undefined));
   return agent;
 }
 
@@ -40,7 +56,7 @@ function block(blocks: Blocks, name: string): string {
 
 describe("los bloques del prompt", () => {
   it("mantiene cada bloque estático idéntico en los tres estados", () => {
-    const rendered = STATES.map((_, index) => render(at(index), { view }));
+    const rendered = STATES.map((_, index) => render(at(index)));
 
     for (const name of ["identity", "knowledge", "tools"]) {
       for (const one of rendered) expect(block(one, name)).toBe(block(rendered[0]!, name));
@@ -50,7 +66,7 @@ describe("los bloques del prompt", () => {
   });
 
   it("cambia la view en cada uno de los tres", () => {
-    const dynamics = STATES.map((_, index) => block(render(at(index), { view }), "view"));
+    const dynamics = STATES.map((_, index) => block(render(at(index)), "view"));
 
     expect(new Set(dynamics).size).toBe(STATES.length);
     expect(dynamics[0]).toContain("El carrito está vacío");
@@ -59,7 +75,7 @@ describe("los bloques del prompt", () => {
   });
 
   it("imprime los cuatro bloques por defecto en su único orden, con la historia en medio", () => {
-    const headers = showPrompt(at(1), { view })
+    const headers = showPrompt(at(1))
       .split("\n")
       .filter((line) => line.startsWith("── "));
 
@@ -75,7 +91,7 @@ describe("los bloques del prompt", () => {
   it("coincide con lo capturado, para que las capturas no se pudran", () => {
     for (const [index] of STATES.entries()) {
       const captured = readFileSync(here(`./prompts/state-${index}.txt`), "utf8");
-      expect(`${showPrompt(at(index), { view })}\n`).toBe(captured);
+      expect(`${showPrompt(at(index))}\n`).toBe(captured);
     }
   });
 
@@ -95,10 +111,10 @@ describe("los bloques del prompt", () => {
 // terminal.
 describe("un caso que nombra unos campos y calla los demás", () => {
   it("rinde un estado que solo dice la fase", () => {
-    const agent = seal(new TiendaSur());
+    const agent = fresh();
     agent.startIn({ stage: "browse" });
 
-    expect(block(render(agent, { view }), "view")).toContain("El carrito está vacío");
+    expect(block(render(agent), "view")).toContain("El carrito está vacío");
   });
 });
 
@@ -108,7 +124,7 @@ describe("un caso que nombra unos campos y calla los demás", () => {
 describe("la clase y la vista dicen lo mismo sobre buscar antes de decir un precio", () => {
   it("repite en la vista la regla que findProduct lleva en su docstring", () => {
     const agent = at(0);
-    const dynamic = block(render(agent, { view }), "view");
+    const dynamic = block(render(agent), "view");
 
     expect(toolNamed(agent, "findProduct")?.spec.description).toContain("Llámala SIEMPRE");
     expect(dynamic).toContain("búscalo SIEMPRE con findProduct");
@@ -120,12 +136,12 @@ describe("la clase y la vista dicen lo mismo sobre buscar antes de decir un prec
 // coincidir nunca, y aquí lo que las separa es la fase: `cart` dice una y `confirm` dice la otra.
 describe("con el carrito lleno, terminar la compra no cierra el pedido", () => {
   it("manda repasarlo y esperar el sí, en la vista y en el docstring de confirmOrder", () => {
-    const agent = seal(new TiendaSur());
+    const agent = fresh();
     agent.startIn({
       stage: "cart",
       cart: [{ ref: "TS-202", product: "brocha de cuatro pulgadas", qty: 1, price: 4 }],
     });
-    const dynamic = block(render(agent, { view }), "view");
+    const dynamic = block(render(agent), "view");
 
     expect(dynamic).toContain("todavía no es un pedido");
     expect(dynamic).toContain("pregúntale si se lo cierras");
@@ -134,7 +150,7 @@ describe("con el carrito lleno, terminar la compra no cierra el pedido", () => {
   });
 
   it("y una vez leído dice lo contrario, que es la otra mitad de la regla", () => {
-    const dynamic = block(render(at(1), { view }), "view");
+    const dynamic = block(render(at(1)), "view");
 
     expect(dynamic).toContain("llama a confirmOrder en ese mismo turno");
     expect(dynamic).not.toContain("todavía no es un pedido");

@@ -1,4 +1,4 @@
-/** `pinecall run [agent.ts]`: the app registered and answering — the process you deploy. */
+/** `pinecall run [agent.tsx]`: the app registered and answering — the process you deploy. */
 
 import { parseArgs } from "node:util";
 
@@ -10,7 +10,7 @@ import type { Agent as AgentClass } from "../agent/agent.js";
 import { showMachine } from "./machine.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
-import { load, mountOptions } from "./load.js";
+import { instanceFor, load, mountOptions } from "./load.js";
 import { absorb, draw, screenFor, type Screen } from "./view.js";
 
 // Ten frames a second. The terminal view is a person watching a conversation, and a person cannot read
@@ -23,7 +23,7 @@ const KEYS = "keys: p pause · c clear · e events · s prompt · q quit";
 
 export const group: Group = {
   purpose: "the app and its doors: the process you deploy",
-  usage: `usage: pinecall run [agent.ts] [--ui] [--events] [--show-prompt]
+  usage: `usage: pinecall run [agent.tsx] [--ui] [--events] [--show-prompt]
 
   With nothing after it: the agent registered on the gateway, one line per log entry on stdout,
   no port bound and no page served: the gateway is an API and nothing here answers a browser.
@@ -55,12 +55,12 @@ export async function run(argv: string[]): Promise<number> {
   const loaded = await load(positionals[0]);
   // What the `s` key and --show-prompt both print: the prompt the model would read, and under it
   // the stage this instance is in with the tools that stage shows.
-  const promptPage = (agent: AgentClass): string => `${showPrompt(agent, loaded.views)}\n\n${showMachine(agent)}`;
+  const promptPage = (agent: AgentClass): string => `${showPrompt(agent)}\n\n${showMachine(agent)}`;
 
   // --show-prompt never connects: it is the question "what would the model read at the start of a
   // call", and answering it must not need a gateway, a key or a network.
   if (values["show-prompt"] === true) {
-    process.stdout.write(`${promptPage(new loaded.ctor())}\n`);
+    process.stdout.write(`${promptPage(instanceFor(loaded))}\n`);
     return 0;
   }
 
@@ -95,7 +95,7 @@ export async function run(argv: string[]): Promise<number> {
     const watching: Watching = {
       slug: mounted.slug,
       url,
-      prompt: () => promptPage(instanceOf(mounted, newest) ?? new loaded.ctor()),
+      prompt: () => promptPage(instanceOf(mounted, newest) ?? instanceFor(loaded)),
     };
     return await live(pc, mounted.agent.onAny.bind(mounted.agent), watching);
   } finally {

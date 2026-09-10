@@ -5,8 +5,8 @@ teléfono, por WhatsApp y por la web, los reparte a pie por el barrio y tutea a 
 segundo tenant del repositorio: la misma forma que la Clínica Norte, otro negocio y otras palabras.
 
 ```
-agent.ts          la clase: el estado son campos, las tools son métodos con docstring
-views/agent.tsx   el prompt como función del estado
+agent.tsx         la clase: el estado son campos, las tools son métodos con docstring, y
+                  render() es el prompt como función del estado
 knowledge/        tienda.md cacheado delante de todo · docs/ se sube con `pinecall knowledge push` y se recupera por turno
 lib/catalog.ts    los doce artículos y cómo se busca uno hablando
 lib/shop.ts       el mostrador: fichas, pedidos, almacén y lo que la tienda anota

@@ -1,14 +1,13 @@
 /** Rendering the prompt: the blocks for the runtime, and the same blocks as a page a human reads. */
 
-import { dirname, join } from "node:path";
-
 import type { PromptRegion } from "@pinecall/protocol";
 
-import { layout, type Blocks, type ViewContext, type Views } from "./layout.js";
+import type { Agent } from "../agent/agent.js";
+import { layout, type Blocks } from "./layout.js";
 
 /** The prompt of this agent right now, block by block, in the order the runtime sends them. */
-export function render(agent: object, views: Views = {}, context: ViewContext = {}): Blocks {
-  return layout(agent, views, context);
+export function render(agent: Agent): Blocks {
+  return layout(agent);
 }
 
 /**
@@ -21,24 +20,15 @@ export function headerFor(name: string, region?: PromptRegion): string {
 }
 
 /**
- * The whole prompt as one page: every static block under its header, then the history, then every
- * dynamic block, in send order. What `pinecall run --show-prompt` prints: the headers make it
- * obvious at a glance which blocks are cached and which are rewritten every turn.
+ * The whole prompt as one page: every static block under its header, then the history, then the
+ * view. What `pinecall run --show-prompt` prints: the headers make it obvious at a glance which
+ * blocks are cached and which one is rewritten every turn.
  */
-export function showPrompt(agent: object, views: Views = {}, context: ViewContext = {}): string {
-  const { blocks, history } = render(agent, views, context);
+export function showPrompt(agent: Agent): string {
+  const { blocks, history } = render(agent);
   const section = (name: string, text: string, region?: PromptRegion): string =>
     `${headerFor(name, region)}\n${text}`.trimEnd();
   const of = (region: PromptRegion): string[] =>
     blocks.filter((block) => block.region === region).map((block) => section(block.name, block.text, region));
   return [...of("static"), section("history", history), ...of("dynamic")].join("\n\n");
-}
-
-/**
- * Where a block's function lives: `views/agent.tsx` beside the agent file for the view, and
- * `views/<name>.tsx` for a block the class declared. Resolving the path is the framework's job;
- * importing it is the runtime's, which is the half that knows the loader.
- */
-export function viewFor(agentFile: string, block = "view"): string {
-  return join(dirname(agentFile), "views", `${block === "view" ? "agent" : block}.tsx`);
 }

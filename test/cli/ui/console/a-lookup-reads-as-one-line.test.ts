@@ -1,8 +1,8 @@
-/** What memory and retrieval put in front of the model reads as one line each, and what was found under it. */
+/** What a lookup put in front of the model reads as one line each, and what it found under it. */
 
 import { expect, test } from "vitest";
 
-import { factLines, memoryLine, sourceLines, sourcesLine } from "../../../../src/cli/ui/console/lib/fills";
+import { factLines, memoryLine, sourceLines, sourcesLine } from "../../../../src/cli/ui/console/lib/lookups";
 
 const RECALLED = {
   ops: [

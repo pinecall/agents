@@ -8,9 +8,7 @@ import { Pinecall } from "../../src/client/index.js";
 import { FakeGateway } from "../../src/client/testing/index.js";
 
 import ClinicaNorte from "../agent/clinica-norte.js";
-import view from "../views/clinica-norte.view.js";
 import { modelOf, mount, optionsFor, slugOf, type Mounted } from "../../src/runtime/connect.js";
-import type { Views } from "../../src/views/layout.js";
 
 const KEY = "pk_test";
 const SLUG = "clinica-norte";
@@ -19,7 +17,7 @@ const KNOWN = "+34 600 000 001";
 // The class's own .ts, so the parameter types survive a transpiler that strips them: without it
 // `day: string` is an untyped argument and the schema can say nothing about it. Its path is what
 // the knowledge file is found beside.
-const FILE = fileURLToPath(new URL("../agent/clinica-norte.ts", import.meta.url));
+const FILE = fileURLToPath(new URL("../agent/clinica-norte.tsx", import.meta.url));
 const SOURCE = readFileSync(FILE, "utf8");
 
 let gateway: FakeGateway;
@@ -44,8 +42,8 @@ async function settled(): Promise<void> {
   for (let turn = 0; turn < 20; turn++) await new Promise((resolve) => setTimeout(resolve, 1));
 }
 
-async function connected(views: Views = { view }, ctor: typeof ClinicaNorte = ClinicaNorte): Promise<void> {
-  mounted = mount(ctor, { pc, views, source: SOURCE, file: FILE, slug: SLUG });
+async function connected(ctor: typeof ClinicaNorte = ClinicaNorte): Promise<void> {
+  mounted = mount(ctor, { pc, source: SOURCE, file: FILE, slug: SLUG });
   await pc.connect();
   await settled();
 }
@@ -94,11 +92,13 @@ it("registers the class under its name in kebab-case, with its four tools and it
   ]);
 });
 
+// The knowledge file travels whole in the declaration and the runtime writes it into its own
+// block: the app sends nothing for it, so a block with nothing to say is never on the wire.
 it("sends every block that has text, in send order, and the visible tools when a call starts", async () => {
   await connected();
   started();
   await settled();
-  expect(commands("prompt.set").map((data) => data["name"])).toEqual(["identity", "knowledge", "tools", "view"]);
+  expect(commands("prompt.set").map((data) => data["name"])).toEqual(["identity", "tools", "view"]);
   const [tools] = commands("tools.set");
   expect((tools?.["tools"] as { name: string }[]).map((tool) => tool.name)).toEqual([
     "freeSlots",
@@ -106,13 +106,15 @@ it("sends every block that has text, in send order, and the visible tools when a
   ]);
 });
 
+/** The same clinic, rendering two getters and nothing else: `slots` cannot change its text. */
+class SoloDosCosas extends ClinicaNorte {
+  override render() {
+    return <p>{this.identified ? "identificado" : "sin identificar"} {this.done ? "cerrado" : "abierto"}</p>;
+  }
+}
+
 it("sends state.set and no prompt.set when the tool wrote a field the view never reads", async () => {
-  // A view that reads two getters and nothing else: `slots` changing cannot change its text.
-  await connected({
-    view: ({ identified, done }: Record<string, any>) => (
-      <p>{identified ? "identificado" : "sin identificar"} {done ? "cerrado" : "abierto"}</p>
-    ),
-  });
+  await connected(SoloDosCosas);
   started();
   await settled();
   const before = commands("prompt.set").length;
@@ -135,35 +137,31 @@ it("sends one prompt.set when the tool wrote a field the view does read", async 
   expect(String(sent[0]?.["text"])).toContain("Ana");
 });
 
-/** The clinic with a dynamic block of its own, fed by freeSlots and sent only when it changes. */
-class ConDisponibilidad extends ClinicaNorte {
-  static override prompt = { dynamic: ["availability"] };
-}
-
-const availability = ({ slots }: Record<string, any>) => (
-  <>{slots.length > 0 && <p>Horas libres: {slots.map((slot: { when: string }) => slot.when).join(", ")}</p>}</>
-);
-
-it("sends a declared block by its name, before the view, and only when its text changed", async () => {
-  await connected({ view, availability }, ConDisponibilidad);
-  const config = commands("agent.configure")[0]?.["config"] as { prompt: { name: string }[] };
-  expect(config.prompt.map((block) => block.name)).toEqual(["identity", "knowledge", "tools", "availability", "view"]);
+// What memory found moves no field, so nothing else would re-render — and a render that asks what
+// the agent remembers is a different prompt once the runtime has an answer for it.
+it("renders again when memory recalls something about the caller", async () => {
+  await connected();
   started();
   await settled();
-  // Empty at the start: a block with nothing to say is not sent at all.
-  expect(commands("prompt.set").map((data) => data["name"])).toEqual(["identity", "knowledge", "tools", "view"]);
+  const before = commands("prompt.set").length;
 
-  calls("freeSlots", { day: "2026-03-02" });
+  gateway.emit(SLUG, CALL, "memory.ops", {
+    ops: [
+      {
+        op: "recall",
+        contact: KNOWN,
+        query: "quiero cita con la doctora Vidal",
+        facts: [{ id: "f1", text: "su médico habitual es la doctora Vidal", category: "médico habitual", score: 0.9 }],
+        took_ms: 12,
+      },
+    ],
+    speech_id: "s1",
+  });
   await settled();
-  const sent = commands("prompt.set").slice(4);
-  expect(sent.map((data) => data["name"])).toEqual(["availability", "view"]);
-  expect(String(sent[0]?.["text"])).toContain("2026-03-02 10:00");
-});
 
-it("refuses at mount a declared block nobody wrote a view for", () => {
-  expect(() => mount(ConDisponibilidad, { pc, views: { view }, source: SOURCE, slug: SLUG })).toThrow(
-    "prompt block availability: ConDisponibilidad declares it and no view was given for it",
-  );
+  const sent = commands("prompt.set").slice(before);
+  expect(sent.map((data) => data["name"])).toEqual(["view"]);
+  expect(String(sent[0]?.["text"])).toContain("Ofrece primero las horas de su médico habitual");
 });
 
 it("sends tools.set with the new visible set when a `when` flips", async () => {
@@ -219,7 +217,7 @@ class Despedida extends ClinicaNorte {
 }
 
 it("runs onEnd and forgets the instance when the call ends", async () => {
-  await connected({ view }, Despedida);
+  await connected(Despedida);
   started();
   await settled();
   expect(mounted.instanceOf(CALL)).toBeInstanceOf(Despedida);
@@ -264,8 +262,8 @@ it("sends the words the ears must know in the order the class wrote them", async
 });
 
 // What the class knows, reads and remembers travels in the declaration: the knowledge file whole,
-// so the runtime can put its text where the marker is once per call; the base by the name it was
-// pushed under; the memory policy in the tenant's own words.
+// so the runtime writes its text into the knowledge block once per call; the base by the name it
+// was pushed under; the memory policy in the tenant's own words.
 it("sends the knowledge file whole, the docs base by name and the memory policy in the configure", async () => {
   await connected();
   const config = commands("agent.configure")[0]?.["config"] as Record<string, unknown>;
@@ -283,7 +281,7 @@ class ConAjustes extends ClinicaNorte {
 }
 
 it("writes a docs object out in the wire's own keys: minScore on the class, min_score on the wire", async () => {
-  await connected({ view }, ConAjustes);
+  await connected(ConAjustes);
   const config = commands("agent.configure")[0]?.["config"] as Record<string, unknown>;
   expect(config["docs"]).toEqual({ base: "clinica-norte", k: 4, min_score: 0.5 });
 });

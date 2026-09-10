@@ -26,16 +26,25 @@ expect(agent.stage).toBe("choose");
 // the same walk against the gateway that is not there: the same tool.result a model would see
 const gateway = await FakeGateway.start({ apiKey: KEY });
 const pc = new Pinecall({ url: gateway.url, apiKey: KEY });
-const mounted = mount(ClinicaNorte, { pc, views: { view }, source: SOURCE });
+const mounted = mount(ClinicaNorte, { pc, source: SOURCE });
 ```
 
 `pinecall/client/testing` is that fake: a gateway that answers the app socket, and a log nobody
 stored. An app's own suite needs neither a network nor a key.
 
-The third one worth writing is a **prompt-blocks** test: render the class in three captured
+**Rendering in a test.** `render(agent)` gives the blocks and `showPrompt(agent)` the printed page.
+A `render()` that reads `this.call` needs a call, and a `remembers()` branch needs something to
+have been recalled — both are one line, and both are the same doors the runtime uses:
+
+```ts
+setCall(agent, new CallWorld({ id: "CA_1", contact: ANA, from: ANA, channel: "phone" }, () => {}));
+recalled(agent, ["su médico habitual es la doctora Vidal", "médico habitual"]);
+```
+
+The third test worth writing is a **prompt-blocks** test: render the class in three captured
 states and assert every static block is byte-for-byte identical in all three and the view
 changed in all three. That is the invariant the whole prompt cache rests on, and nothing else
-notices when a view starts writing into the cached half.
+notices when a render starts writing into the cached half.
 
 ## Ring 1 — the goldens
 

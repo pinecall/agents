@@ -6,12 +6,10 @@ import { describe, expect, it } from "vitest";
 
 import { docOf } from "../../src/agent/tools.js";
 import { showPrompt } from "../../src/views/render.js";
-import { load } from "../../src/cli/load.js";
+import { instanceFor, load } from "../../src/cli/load.js";
 import { firstState, run } from "../../src/cli/prompt.js";
-import ClinicaNorte from "../agent/clinica-norte.js";
-import view from "../views/clinica-norte.view.js";
 
-const AGENT = fileURLToPath(new URL("./clinic/agent.ts", import.meta.url));
+const AGENT = fileURLToPath(new URL("./clinic/agent.tsx", import.meta.url));
 const GOLDENS = fileURLToPath(new URL("./choose.json", import.meta.url));
 
 function collected(): { stream: NodeJS.WritableStream; text(): string } {
@@ -28,20 +26,31 @@ describe("loading an agent from disk", () => {
     expect(docOf(new loaded.ctor())).toContain("recepción de Clínica Norte");
   });
 
-  it("brings the view that sits beside the agent, and calls it with the state", async () => {
+  it("hands back an instance with a line to answer on, so a render may read this.call", async () => {
     const loaded = await load(AGENT);
+    const agent = instanceFor(loaded);
 
-    expect(loaded.views["view"]?.({
-        identified: false,
-        slots: [],
-        memory: { has: () => false },
-        resumed: false,
-        call: { channel: "web" },
-      })).toContain("Saluda y pide nombre");
+    expect(agent.call.channel).toBe("web");
+    expect(agent.render()).toContain("Saluda y pide nombre");
   });
 
   it("says where it looked when there is no agent there", async () => {
     await expect(load("does/not/exist.ts")).rejects.toThrow(/no agent at/);
+  });
+
+  // Nobody named a file: a class with a render() lives in agent.tsx, and agent.ts still loads for
+  // one that has none. Both names are looked for, and the refusal says so rather than naming one.
+  it("finds the agent of this directory by name, and names both when there is neither", async () => {
+    const was = process.cwd();
+    try {
+      process.chdir(fileURLToPath(new URL("./clinic", import.meta.url)));
+      expect((await load()).file).toBe(AGENT);
+
+      process.chdir(fileURLToPath(new URL(".", import.meta.url)));
+      await expect(load()).rejects.toThrow(/no agent here: looked for agent.tsx and agent.ts in /);
+    } finally {
+      process.chdir(was);
+    }
   });
 });
 
@@ -86,14 +95,14 @@ describe("the prompt a state would produce", () => {
   });
 });
 
-describe("the same blocks on the example the design is written around", () => {
-  it("puts the clinic's own state into Clínica Norte and renders its view at the end", () => {
-    const agent = new ClinicaNorte();
-    agent.restore(firstState(GOLDENS, "1"));
+describe("the same blocks on the class the loader brought", () => {
+  it("puts a goldens case into the instance and renders its view at the end", async () => {
+    const agent = instanceFor(await load(AGENT));
+    agent.startIn(firstState(GOLDENS, "1"));
 
-    const page = showPrompt(agent, { view }, { call: { channel: "web" } });
+    const page = showPrompt(agent);
 
     expect(page.indexOf("── identity (static) ──")).toBeLessThan(page.indexOf("── view (dynamic) ──"));
-    expect(page).toContain("Ana García");
+    expect(page).toContain("Ofrece 1 horas");
   });
 });

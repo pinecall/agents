@@ -1,4 +1,4 @@
-/** What memory and retrieval put in front of the model this turn, as the sentences both timelines print. */
+/** What a lookup — recall, search — put in front of the model this turn, as both timelines print it. */
 
 import type { DocsSources, MemoryOp, MemoryOps } from "@pinecall/protocol";
 

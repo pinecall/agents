@@ -3,7 +3,7 @@
 import type { Entry, State } from "@pinecall/protocol";
 import type { ReactNode } from "react";
 
-import { MemoryRow, SourcesRow } from "./fill-rows";
+import { MemoryRow, SourcesRow } from "./lookup-rows";
 import { ConfirmRow, EventRow, QuietRow, StateRow, SupervisorRow } from "./marks";
 import { rowsOf, type Row } from "./timeline-rows";
 import { ToolRow } from "./tool-run";

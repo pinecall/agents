@@ -92,7 +92,7 @@ function rowOf(entry: Entry, state: State): Row | null {
         source: event.data.source,
         data: event.data.data,
       };
-    // What a fill put in front of the model before it answered: read by the turn it sits under.
+    // What a lookup put in front of the model before it answered: read by the turn it sits under.
     case "memory.ops":
       return { kind: "memory", seq, ops: event.data };
     case "docs.sources":

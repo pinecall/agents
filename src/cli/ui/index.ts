@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { slugOf } from "../../runtime/connect.js";
 import { doorLine, theDoor } from "../env.js";
 import type { Group } from "../groups.js";
-import { DEFAULT_AGENT, load } from "../load.js";
+import { DEFAULT_AGENTS, load } from "../load.js";
 import { headless, openInBrowser } from "./browser.js";
 import { LocalConsole } from "./server.js";
 
@@ -21,7 +21,7 @@ export const group: Group = {
   usage: `${USAGE}
 
   Opens the console on this gateway, landing on the agent of this directory — the class in
-  ${DEFAULT_AGENT} — or on the agent named, or on the list of every agent the gateway holds when
+  ${DEFAULT_AGENTS[0]} — or on the agent named, or on the list of every agent the gateway holds when
   there is neither. The console is served on 127.0.0.1 for as long as the command runs and opened
   in this machine's browser: Talk joins the agent's room with the browser's microphone, Calls
   follows every call as it happens, Sessions reads the finished ones, Evals and Pipeline read

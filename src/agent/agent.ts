@@ -7,6 +7,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import type { DocsMode } from "@pinecall/protocol";
 
 import { docOf, toolsOf, visibleToolsOf, type ToolSpec } from "./tools.js";
+import type { Child } from "../views/jsx-runtime.js";
 import type { CallWorld } from "../call/call.js";
 import type { EventDeclarations, EventMeta } from "./accepts.js";
 import type { Visibility } from "./visibility.js";
@@ -15,7 +16,7 @@ import { collapse, restore, snapshot, type LastCall, type Snapshot } from "./sta
 
 // The eleven names an app uses to configure the agent rather than to remember something about the
 // caller. They live on the instance like any other field, but they are never state: they do not
-// change during a call, they are not diffed, and no view renders them.
+// change during a call, they are not diffed, and no snapshot carries them.
 export const CONFIG_FIELDS = [
   "phone",
   "whatsapp",
@@ -66,16 +67,6 @@ export interface EventHeard {
 export type EventListener = (heard: EventHeard) => void;
 
 /**
- * What a class declares under `static prompt`: the blocks of its own around the framework's four,
- * by region. A `static` block is cached and reads no state; a `dynamic` one is rewritten every turn.
- * Each is `views/<name>.tsx` beside the class, a function like the view.
- */
-export interface PromptDeclaration {
-  static?: string[];
-  dynamic?: string[];
-}
-
-/**
  * What `docs` says: the knowledge base the agent answers from, by the name it was pushed under
  * (`pinecall knowledge push --base <name>`), and how its chunks reach the model. The bare string
  * form `docs = "clinica-norte"` is the base alone, with every other setting the runtime's.
@@ -107,6 +98,8 @@ export interface Internals {
   call: CallWorld | null;
   /** Where `last(contact)` reads from: `mount({ last })`, per mounted agent and never a global. */
   last: LastCall | null;
+  /** What memory has recalled about this caller so far, as `remembers(text)` reads it. Per call. */
+  recalled: string[];
 }
 
 const internals = new WeakMap<object, Internals>();
@@ -160,6 +153,7 @@ export class Agent {
       target: this,
       call: null,
       last: null,
+      recalled: [],
     };
     const proxy = new Proxy(this, {
       set(target, key, next, receiver) {
@@ -191,15 +185,32 @@ export class Agent {
   /** The outside facts this class accepts, and from whom: `static events = {...}`. */
   static events?: EventDeclarations;
 
-  /** The prompt blocks of this class's own: `static prompt = { static: ["faq"], dynamic: ["availability"] }`. */
-  static prompt?: PromptDeclaration;
-
   /** Who may see a field, for a class that would rather write a map than a `@state`. */
   static visibility?: Record<string, Visibility>;
 
   /** What this agent is, as the model reads it: the class's own docstring. */
   doc(): string | undefined {
     return docOf(this);
+  }
+
+  /**
+   * The prompt as a function of the state: what to do about THIS turn, in the class's own words.
+   * It is the whole dynamic region and the last thing the model reads. The base renders nothing,
+   * so a class that says nothing about the turn sends an empty block.
+   */
+  render(): Child {
+    return null;
+  }
+
+  /**
+   * Whether memory has already told this call something about the caller under those words — the
+   * word a fact was filed under, or the fact itself. The runtime supplies the facts; before it has
+   * recalled anything this answers false, which is exactly what a caller nobody has met looks like.
+   */
+  remembers(text: string): boolean {
+    const wanted = text.trim().toLowerCase();
+    if (wanted === "") return false;
+    return internalsOf(this).recalled.some((known) => known.includes(wanted));
   }
 
   /** Every tool this agent declares, whether or not the current state shows it. */
@@ -254,13 +265,16 @@ export class Agent {
 
   /**
    * The call being served right now. It is a getter on the base class, not a field, so it never
-   * looks like state and never reaches a view; a class that declares its own `call` field is
+   * looks like state and never reaches a snapshot; a class that declares its own `call` field is
    * refused at the first write, because there is only one thing that name can mean here.
    */
   get call(): CallWorld {
     const serving = internalsOf(this).call;
     if (serving === null) {
-      throw new Error("this.call is only there while a call is being served; the bridge sets it at start()");
+      throw new Error(
+        "this.call is only there while a call is being served: the bridge sets it at start(), " +
+          "and a test that renders gives one with setCall(agent, new CallWorld(line, () => {}))",
+      );
     }
     return serving;
   }
@@ -359,6 +373,19 @@ export function setLast(agent: object, source: LastCall | null): void {
 /** Hand this instance the call it is serving. The bridge does this once, at start(). */
 export function setCall(agent: object, call: CallWorld | null): void {
   internalsOf(agent).call = call;
+}
+
+/**
+ * Hand this instance what memory has recalled about the caller: every fact, and the word it was
+ * filed under. The bridge does this from the call's own `memory.ops` entries, so `remembers(text)`
+ * answers with what the runtime actually found and never with a guess.
+ */
+export function recalled(agent: object, words: readonly string[]): void {
+  const own = internalsOf(agent);
+  for (const word of words) {
+    const known = word.trim().toLowerCase();
+    if (known !== "" && !own.recalled.includes(known)) own.recalled.push(known);
+  }
 }
 
 /** Tell the in-process observers about an event the hook has just been given. */
