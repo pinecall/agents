@@ -307,3 +307,30 @@ it("refuses a knowledge file that is not there, with the path it looked at", () 
     /^knowledge \.\/knowledge\/nadie\.md: no such file at .*test\/agent\/knowledge\/nadie\.md$/,
   );
 });
+
+/** The clinic that may not hang up: the field the class never wrote. */
+class SinColgar extends ClinicaNorte {
+  hangup = undefined as unknown as { when?: string };
+}
+
+it("sends no hangup for a class that declares none, so nobody but the caller ends the call", () => {
+  expect(optionsFor(SinColgar, [], new SinColgar(), FILE).hangup).toBeUndefined();
+});
+
+/** The clinic that may hang up, and says in its own words when. */
+class Cuelga extends ClinicaNorte {
+  hangup = { when: "cuando el paciente se despide" };
+}
+
+it("sends the tenant's own words for when the model may end the call", () => {
+  expect(optionsFor(Cuelga, [], new Cuelga(), FILE).hangup).toEqual({ when: "cuando el paciente se despide" });
+});
+
+/** `hangup = {}`: the model may end the call, and the wording is livekit's own. */
+class CuelgaSinPalabras extends ClinicaNorte {
+  hangup = {};
+}
+
+it("an empty declaration is still a declaration: the tool is there with no words of ours", () => {
+  expect(optionsFor(CuelgaSinPalabras, [], new CuelgaSinPalabras(), FILE).hangup).toEqual({ when: "" });
+});

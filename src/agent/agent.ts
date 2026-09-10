@@ -28,6 +28,7 @@ export const CONFIG_FIELDS = [
   "knowledge",
   "docs",
   "memory",
+  "hangup",
 ] as const;
 
 // The list is the array; the Set is how this module asks about it on every assignment. state.ts
@@ -75,6 +76,15 @@ export interface DocsDeclaration {
   mode?: DocsMode;
   k?: number;
   minScore?: number;
+}
+
+/**
+ * What `hangup` says: that the model may end the call itself, and when, in your own words. A class
+ * that declares nothing cannot hang up — only the caller and a supervisor end a call. The tool is
+ * livekit's own `end_call`, and it is hidden while the agent is greeting.
+ */
+export interface HangupDeclaration {
+  when?: string;
 }
 
 /** What `memory` says: what to keep about a contact across calls, in the tenant's words, and what never to. */

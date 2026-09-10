@@ -68,12 +68,12 @@ it("recorre identificar, ofrecer y reservar, y dice que no cuando la agenda dice
   });
   await settled();
   // Fase uno: nadie identificado, así que la única puerta abierta es preguntar quién llama.
-  expect(offered()).toEqual(["findPatient", "registerPatient", "transfer"]);
+  expect(offered()).toEqual(["findPatient", "registerPatient"]);
 
   calls("findPatient", { name: "Ana García", phone: ANA });
   await expect.poll(results).toHaveLength(1);
   await settled();
-  expect(offered()).toEqual(["freeSlots", "transfer"]);
+  expect(offered()).toEqual(["freeSlots"]);
 
   calls("freeSlots", { day: "martes" });
   await expect.poll(results).toHaveLength(2);
@@ -82,7 +82,7 @@ it("recorre identificar, ofrecer y reservar, y dice que no cuando la agenda dice
   expect((results()[1]?.["output"] as Slot[]).length).toBe(2);
   const instance = mounted.instanceOf(CALL) as unknown as ClinicaNorte;
   expect(instance.slots.length).toBeGreaterThan(2);
-  expect(offered()).toEqual(["freeSlots", "propose", "book", "transfer"]);
+  expect(offered()).toEqual(["freeSlots", "propose", "book"]);
 
   const taken = instance.slots.find((slot) => slot.when.includes(REFUSED_HOUR));
   calls("book", { chosen: taken!.when });
@@ -91,13 +91,13 @@ it("recorre identificar, ofrecer y reservar, y dice que no cuando la agenda dice
   // El "no" llega al modelo como texto, no como una excepción, y el estado sigue sin reserva.
   expect(String(results()[2]?.["error"])).toContain("ese hueco acaba de ocuparse");
   expect(instance.booking).toBeUndefined();
-  expect(offered()).toEqual(["freeSlots", "propose", "book", "transfer"]);
+  expect(offered()).toEqual(["freeSlots", "propose", "book"]);
 
   calls("book", { chosen: instance.slots[0]!.when });
   await expect.poll(results).toHaveLength(4);
   await settled();
   expect(instance.stage).toBe("done");
-  expect(offered()).toEqual(["transfer"]);
+  expect(offered()).toEqual([]);
   expect(gateway.commandsOf("call.log")[0]?.data["name"]).toBe("appointment.booked");
 
   // La view es el último bloque que se manda: lo que el modelo lee en último lugar es el turno.
