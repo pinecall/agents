@@ -6,7 +6,7 @@ import { classDoc, describe as describeClass, methodParams, parametersOf, seal, 
 import { parseClassSource } from "../../src/agent/docstrings.js";
 import ClinicaNorte from "./clinica-norte.js";
 
-const source = readFileSync(new URL("./clinica-norte.ts", import.meta.url), "utf8");
+const source = readFileSync(new URL("./clinica-norte.tsx", import.meta.url), "utf8");
 
 describe("docstrings at runtime", () => {
   it("reads the tool docstrings off the class with no build step at all", () => {

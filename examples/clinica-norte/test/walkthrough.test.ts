@@ -11,15 +11,13 @@ import { FakeGateway } from "pinecall/client/testing";
 import { mount, type Mounted } from "pinecall";
 
 import ClinicaNorte from "../agent.js";
-import view from "../views/agent.js";
-import availability from "../views/availability.js";
 import { REFUSED_HOUR, type Slot } from "../lib/agenda.js";
 
 const KEY = "pk_test";
 const SLUG = "clinica-norte";
 const CALL = "CA_chat_1";
 const ANA = "+34 600 000 001";
-const SOURCE = readFileSync(fileURLToPath(new URL("../agent.ts", import.meta.url)), "utf8");
+const SOURCE = readFileSync(fileURLToPath(new URL("../agent.tsx", import.meta.url)), "utf8");
 
 let gateway: FakeGateway;
 let pc: Pinecall;
@@ -31,7 +29,7 @@ beforeEach(async () => {
   // Una tool que falla llega al modelo como tool.result y a la app como error; aquí se lee el cable,
   // así que el lado de la app se calla en vez de imprimirse.
   pc.onErrors(() => {});
-  mounted = mount(ClinicaNorte, { pc, views: { view, availability }, source: SOURCE, slug: SLUG });
+  mounted = mount(ClinicaNorte, { pc, source: SOURCE, slug: SLUG });
   await pc.connect();
   await settled();
 });

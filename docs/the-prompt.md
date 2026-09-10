@@ -5,38 +5,46 @@ order, and the cut between the regions is where the cache is cut:
 
 ```
 ── identity (static) ──      the class docstring · <rules> · <protocols>
-── knowledge (static) ──     <!-- knowledge: … -->, the file the class named — its text, once per call
+── knowledge (static) ──     the file the class named, whole, once per call
 ── tools (static) ──         every tool the class declares, name and docstring, visible or not
-── history ──                the runtime's turns, and the sentences a collapse() left in them
-── view (dynamic) ──         the memory marker, the retrieval marker — filled per turn — and what the view says about NOW
+── history ──                the runtime's turns, what a lookup answered, and the sentences a collapse() left
+── view (dynamic) ──         what your `render()` says about NOW
 ```
 
 A **static** block sits before the history and is cached by the provider; it never reads the
-state. A **dynamic** block sits after the history and is rewritten every turn. The history in
-between is append-only and never written by the app. Only a dynamic block may differ between two
-turns of one call: everything above the history is a cached prefix, and reordering the blocks or
-rewriting a static one mid-call throws that cache away.
+state. The **view** sits after the history and is rewritten every turn. The history in between is
+append-only and never written by the app. Only the view may differ between two turns of one call:
+everything above the history is a cached prefix, and rewriting one of those mid-call throws that
+cache away.
 
-The four above are the framework's, and they are the whole prompt when the class declares nothing.
-A class adds blocks of its own:
+Those four are the whole prompt. A class contributes exactly one of them — the view — and it
+writes it as a method:
 
-```ts
+```tsx
 export default class ClinicaNorte extends Agent {
-  static override prompt = { static: ["faq"], dynamic: ["availability"] };
-  …
+  stage: Stages<"identify" | "choose" | "book"> = "identify";
+  patient?: Patient | undefined;
+
+  /** El prompt como función del estado: lo único que cambia entre dos turnos. */
+  render() {
+    return (
+      <>
+        {this.stage === "identify" && <p>Saluda y pide nombre y teléfono.</p>}
+        {this.patient && <p>Hablas con {this.patient.name}, ya en la ficha.</p>}
+        {this.remembers("médico habitual") && <p>Ofrece primero las horas de su médico habitual.</p>}
+      </>
+    );
+  }
 }
 ```
 
-Each one is `views/<name>.tsx` beside the class, a default-exported function like the view. The
-send order is the framework's, not the tenant's: the framework's static blocks, then the tenant's
-static blocks, the history, the tenant's dynamic blocks, and the view **last** — the view is always
-the last thing the model reads. A name that is one of the framework's four is refused at load; a
-declared block whose file is not there is refused too, because a block nobody wrote is a typo,
-not an empty block.
+`render()` is JSX and renders to **text, never to DOM**. `this` is the state: the fields, the
+getters, `this.call` and `this.remembers(…)`. A class that writes no `render()` sends an empty
+view, which is a fine agent — its prompt is its docstring and its tools.
 
-A static block of the tenant's is prose: it is called against props that throw on the first
-property read — `a static block cannot read the state: faq.tsx reads slots` — so the law "nothing
-static reads the state" is an exception and not a review comment.
+Because the class carries JSX, the file is **`agent.tsx`**. Nothing else changes: the same
+`tsconfig.json`, the same decorators, the same imports. `agent.ts` still loads, for a class that
+renders nothing.
 
 Print any of it with no gateway, no key and no network:
 
@@ -54,111 +62,81 @@ is in with the tools that stage shows.
 (`views/lang.ts` — invent nothing, one question per turn, talk like a person on the phone; to act
 call a tool, read back an irreversible action, offer a person when you cannot help).
 
-**`knowledge`** is one marker, `<!-- knowledge: ./knowledge/clinica.md -->`, when the class named a
-file; empty otherwise. The file itself travels in the declaration — the bridge reads it beside
-`agent.ts` and sends `{ path, text }` — and the runtime puts the text where the marker is, once per
-call, so the cached prefix never moves. A file that is not there is refused when the class is
-loaded, with the path that was looked at.
+**`knowledge`** is the file the class named, once per call, in the cached prefix. The file travels
+in the declaration — the CLI reads it beside `agent.tsx` and sends `{ path, text }` — and the
+runtime writes its text into this block. The app sends nothing for it: the file is already on the
+wire, and the same file twice would be a worse bug than an empty block. A file that is not there is
+refused when the class is loaded, with the path that was looked at.
 
 **`tools`** is every tool the class declares, name and docstring, **visible right now or not**. The
 model reads a tool's docstring, never its JSON schema. Visibility is the wire's business
 (`tools.set`), so a `when` flipping never touches this block.
 
-**`history`** is the runtime's, not yours: it owns the turns. What this package contributes is the
-summaries `collapse()` left behind, and they show on the printed page only — the history is never
-sent by the app.
+**`history`** is the runtime's, not yours: it owns the turns, and it is where a lookup's answer
+lives too (below). What this package contributes is the summaries `collapse()` left behind, and
+they show on the printed page only — the history is never sent by the app.
 
-**`view`** is your view, plus a memory marker when the class configured `memory` and the view did
-not place one itself. Both markers in it are filled again on every turn.
+**`view`** is your `render()`, and nothing else is ever mixed into it.
 
-## The view
+## What memory and the knowledge base are, and where they land
 
-A view is a function from the state to text. It is JSX, and it renders to **text, never to DOM**.
+They are **tools the platform runs on your behalf** — `recall` and `search` — and their answers
+reach the model as `tool_result` blocks, JSON-encoded, in the history where a lookup belongs. They
+are never spliced into the view.
 
-```tsx
-export default ({ stage, patient, slots, proposed, memory, call }: ViewProps<ClinicaNorte>) => (
-  <>
-    <p>Lo que recordamos de este paciente:</p>
-    <Memory />
-    <p>De la base de conocimiento:</p>
-    <Retrieved k={4} minScore={0.5} />
+That is not a style choice. The view is the operator's words and carries the operator's authority;
+a fact a model wrote down from an earlier caller, or a chunk of a document somebody else edited,
+came from outside the conversation and carries none. Mixing them into one paragraph gives all of
+them the same authority, which is exactly what both vendors tell you not to do. The rule, the
+guidance it follows from and the tests that hold it are one page, and it is a public contract:
+`runtime/docs/security/prompt-injection.md`.
 
-    {stage === "identify" && <p>Saluda y pide nombre y teléfono.</p>}
+What the class writes is the declaration:
 
-    {slots.length > 0 && (call.channel === "phone"
-      ? <p>Ofrece como máximo dos de estas horas.</p>
-      : <p>Muestra hasta cinco horas, una por línea.</p>)}
-  </>
-);
+```ts
+docs = { base: "clinica-norte", k: 4, minScore: 0.5 };   // or just docs = "clinica-norte"
+memory = { remember: ["alergias", "su médico habitual"], forget: ["pagos"] };
 ```
 
-`ViewProps<YourClass>` is the state and its getters, typed, plus three things the state never
-stores: `call` (`{ channel, from? }`), `resumed`, and `memory` (`memory.has("médico habitual")`).
-A dynamic block of the tenant's is called with exactly the same props.
+`docs` names the base the agent answers from, by the name it was pushed under, with how many
+chunks and how good they must be. `mode` says who calls `search`: `retrieved` (the default) is the
+platform, before the turn; `tool` is the model, when it decides to. `memory` is what may be
+remembered about a caller and what never may be.
 
-The tags: `<p>` is a paragraph; siblings are separated by a blank line; `null`, `false` and
-`undefined` render nothing, which is what makes `{condition && <p>…</p>}` the whole control flow.
-`<Rules>`, `<Protocols>`, `<Rule>`, `<Section title>` and `<Example>` wrap prose the way the model
-should read it.
-
-### A block of your own
-
-Clínica Norte keeps the hours on the table in a block of their own, `views/availability.tsx`:
+What the class reads back is one question:
 
 ```tsx
-export default ({ stage, slots }: ViewProps<ClinicaNorte>) => (
-  <>
-    {(stage === "choose" || stage === "book") && slots.length > 0 && (
-      <>
-        <p>Horas libres, en orden:</p>
-        {slots.map((slot) => <p>{slot.when} con {slot.doctor}</p>)}
-      </>
-    )}
-  </>
-);
+{this.remembers("médico habitual") && <p>Ofrece primero las horas de su médico habitual.</p>}
 ```
 
-The list is data and changes when `freeSlots` runs; what to do with it is the view's, which comes
-after and changes on every turn. A block that has nothing to say renders empty and is not sent.
+`remembers(text)` answers whether memory has already told this call something under that word —
+the word a fact was filed under, or the fact itself. The runtime supplies the facts; before it has
+recalled anything it answers false, which is exactly what a caller nobody has met looks like. It is
+a **question about the state of this call**, not a way to get the fact's text into the prompt: the
+text is in the tool result, where the model can weigh it.
 
-### Markers: what the view asks for and never resolves
+## The tags
 
-`<Memory>`, `<Retrieved>` and `<Knowledge>` render one line of the form
-`<!-- memory: {"kinds":["alergias"],"limit":6} -->`. This package never opens a file, never
-searches a memory, never retrieves a passage: the runtime reads the marker, does the work, and
-replaces the line with text. What it puts there, and when:
+`<p>` is a paragraph; siblings are separated by a blank line; `null`, `false` and `undefined`
+render nothing, which is what makes `{condition && <p>…</p>}` the whole control flow. `<Rules>`,
+`<Protocols>`, `<Rule>`, `<Section title>` and `<Example>` wrap prose the way the model should read
+it. A `render()` may also return a plain string, which is a whole view for a class that has one
+sentence to say.
 
-| marker | the view writes | the runtime puts in its place |
-|---|---|---|
-| `<Memory kinds limit>` | `<!-- memory: {"kinds":[…],"limit":n} -->` | the contact's facts, one `- fact` per line, found by what the caller just said — per turn, in the dynamic region |
-| `<Retrieved k minScore>` | `<!-- retrieved: {"k":n,"min_score":x} -->` | the chunks of the base `docs` names: `### path › heading` and the text, one blank line between them — per turn, in the dynamic region |
-| `<Knowledge file>` / the `knowledge` field | `<!-- knowledge: ./knowledge/clinica.md -->` | the whole file the declaration carried — once per call, in the static region |
-
-A fact is filed under the word the class named it with, so `<Memory kinds>` asks for some of what
-was kept **in the class's own words** — the ones under `memory.remember` — and any other word is
-refused as the marker is written: `memory kinds: "preference" is not one of the words this class
-remembers (cómo prefiere que le llamen, alergias, su médico habitual)`. It would have matched
-nothing, for ever, and an empty recall reads exactly like a caller nobody has met. A `<Memory />`
-with no `kinds` at all asks for everything the class keeps, which is what both examples write; a
-class that declares no `memory.remember` keeps whatever the model finds worth keeping and puts no
-constraint on `kinds`.
-
-The payload is read by the runtime and never by JavaScript, so its keys are the wire's: the view
-writes `minScore` and the marker carries `min_score`. A fill that finds nothing removes the marker
-line; a fill that runs out of its budget leaves the turn to go on without it and writes an `error`
-entry saying so. The runtime renders bare lines, which is why both examples put a heading of their
-own above each marker (`Lo que recordamos de este paciente:`).
-
-A view may also leave a render prop to shape what comes back:
+A render that has grown past one screen is a render with two ideas in it. Give one of them a
+private method and call it from the JSX — it is a method like any other, and the state is still
+`this`:
 
 ```tsx
-<Memory>{(facts) => <p>Recuerda: {facts.join(", ")}</p>}</Memory>
+render() {
+  return (
+    <>
+      {this.stage === "identify" && <p>Saluda y pide nombre y teléfono.</p>}
+      {this.slots.length > 0 && this.hoursOnTheTable()}
+    </>
+  );
+}
 ```
-
-The function cannot travel inside a comment, so it stays in this render's registry under an id the
-marker carries (`"fill":"fill-1"`). **This release the runtime renders its own shape and ignores the
-id**: the render props still travel, and the registry is still handed back with the blocks, so a
-later runtime can ask for them by id without a view changing.
 
 ## Where a rule belongs
 
@@ -183,6 +161,5 @@ this turn.**
 
 `sync()` in the bridge renders after every state change and compares each block with what this
 call was last sent: one `prompt.set <name>` per block whose text differs, then `tools.set` only when
-the visible list differs. So a view that produces the same text twice costs nothing, a tenant
-block its tool did not touch costs nothing — and a static block that changes mid-call is a cache
-miss for every turn after it.
+the visible list differs. So a render that produces the same text twice costs nothing — and a
+static block that changes mid-call is a cache miss for every turn after it.

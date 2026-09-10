@@ -238,12 +238,17 @@ function paramsOf(member: ClassElement, source: Source, types: Declared): ParamD
 }
 
 /**
- * Read a class's JSDoc and method signatures out of source text. Works on the real .ts file (types
- * and the class's own docstring included) and on `Ctor.toString()` (the class body alone).
+ * Read a class's JSDoc and method signatures out of source text. Works on the real file (types and
+ * the class's own docstring included) and on `Ctor.toString()` (the class body alone).
+ *
+ * `file` is the name that source came from, and it is not decoration: the parser reads the dialect
+ * off the extension. A class with a `render()` lives in `agent.tsx` and its JSX is a syntax error
+ * as .ts, while a class that writes `<Slot>row` as a cast is a syntax error as .tsx — so the name
+ * of the file is the one thing that can tell the two apart, and it travels from whoever read it.
  */
-export function parseClassSource(text: string): ClassDocs {
+export function parseClassSource(text: string, file = "agent.tsx"): ClassDocs {
   const docs: ClassDocs = { methods: new Map() };
-  const parsed = parseSync("agent.ts", text, { sourceType: "module", lang: "ts" });
+  const parsed = parseSync(file, text, { sourceType: "module" });
   const source: Source = {
     text,
     jsdoc: parsed.comments.filter((one) => one.type === "Block" && one.value.startsWith("*")),
@@ -278,8 +283,8 @@ export function docsVersion(): number {
 }
 
 /** Hand a class its own source, so its docstrings and parameter types are readable at runtime. */
-export function describe(ctor: Function, source: string): ClassDocs {
-  const docs = parseClassSource(source);
+export function describe(ctor: Function, source: string, file?: string): ClassDocs {
+  const docs = parseClassSource(source, file);
   registered.set(ctor, docs);
   version++;
   return docs;

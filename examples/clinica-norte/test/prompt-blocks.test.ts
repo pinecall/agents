@@ -1,22 +1,27 @@
 // Criterio 2 del hito, clavado por un test: cada bloque estático es byte a byte el mismo en los tres
 // estados capturados, y la view cambia en los tres. El orden nunca se reordena: los bloques
-// estáticos · la historia · los dinámicos, la view al final — el orden que el KV-cache del
-// proveedor premia (docs/decisions/prompt-blocks.md).
+// estáticos · la historia · la view, que es toda la región dinámica y lo último que lee el modelo
+// — el orden que el KV-cache del proveedor premia (docs/decisions/prompt-blocks.md).
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
-import { describe as describeClass, render, seal, showPrompt, toolNamed, type Blocks } from "pinecall";
+import {
+  CallWorld,
+  describe as describeClass,
+  render,
+  seal,
+  setCall,
+  showPrompt,
+  toolNamed,
+  type Blocks,
+} from "pinecall";
 
 import ClinicaNorte from "../agent.js";
-import view from "../views/agent.js";
-import availability from "../views/availability.js";
-
-const views = { view, availability };
 
 const here = (path: string) => fileURLToPath(new URL(path, import.meta.url));
-const SOURCE = readFileSync(here("../agent.ts"), "utf8");
+const SOURCE = readFileSync(here("../agent.tsx"), "utf8");
 const STATES = JSON.parse(readFileSync(here("./prompts/states.json"), "utf8")) as {
   state: Record<string, unknown>;
 }[];
@@ -29,11 +34,20 @@ describeClass(ClinicaNorte, SOURCE);
 
 /** El agente en el estado N del fichero, como lo pone `pinecall prompt --case N`. */
 function at(index: number): ClinicaNorte {
-  const agent = seal(new ClinicaNorte());
+  const agent = fresh();
   // `startIn` y no `restore`, que es lo que hace el CLI: un caso nombra los campos de los que
   // trata y ninguno más, así que el primero —que no habla de horas— conserva el `slots = []` de
   // la clase en vez de quedarse sin él.
   agent.startIn(STATES[index]!.state);
+  return agent;
+}
+
+// Una instancia con una llamada a la que contestar, que es lo que `pinecall prompt` le da: un
+// `render()` puede leer `this.call`, y una página sobre una llamada que no existe no sería la
+// página del prompt. Por escrito, como imprime el CLI cuando nadie dice otra cosa.
+function fresh(): ClinicaNorte {
+  const agent = seal(new ClinicaNorte());
+  setCall(agent, new CallWorld({ id: "", contact: "", channel: "web" }, () => undefined));
   return agent;
 }
 
@@ -46,7 +60,7 @@ function block(blocks: Blocks, name: string): string {
 
 describe("los bloques del prompt", () => {
   it("mantiene cada bloque estático idéntico en los tres estados", () => {
-    const rendered = STATES.map((_, index) => render(at(index), views));
+    const rendered = STATES.map((_, index) => render(at(index)));
 
     for (const name of ["identity", "knowledge", "tools"]) {
       for (const one of rendered) expect(block(one, name)).toBe(block(rendered[0]!, name));
@@ -56,7 +70,7 @@ describe("los bloques del prompt", () => {
   });
 
   it("cambia la view en cada uno de los tres", () => {
-    const dynamics = STATES.map((_, index) => block(render(at(index), views), "view"));
+    const dynamics = STATES.map((_, index) => block(render(at(index)), "view"));
 
     expect(new Set(dynamics).size).toBe(STATES.length);
     expect(dynamics[0]).toContain("Saluda y pide nombre");
@@ -64,8 +78,8 @@ describe("los bloques del prompt", () => {
     expect(dynamics[2]).toContain("SMS");
   });
 
-  it("imprime los bloques en su único orden: los estáticos, la historia, los dinámicos y la view al final", () => {
-    const headers = showPrompt(at(1), views)
+  it("imprime los bloques en su único orden: los estáticos, la historia y la view al final", () => {
+    const headers = showPrompt(at(1))
       .split("\n")
       .filter((line) => line.startsWith("── "));
 
@@ -74,7 +88,6 @@ describe("los bloques del prompt", () => {
       "── knowledge (static) ──",
       "── tools (static) ──",
       "── history ──",
-      "── availability (dynamic) ──",
       "── view (dynamic) ──",
     ]);
   });
@@ -82,7 +95,7 @@ describe("los bloques del prompt", () => {
   it("coincide con lo capturado, para que las capturas no se pudran", () => {
     for (const [index] of STATES.entries()) {
       const captured = readFileSync(here(`./prompts/state-${index}.txt`), "utf8");
-      expect(`${showPrompt(at(index), views)}\n`).toBe(captured);
+      expect(`${showPrompt(at(index))}\n`).toBe(captured);
     }
   });
 
@@ -96,22 +109,21 @@ describe("los bloques del prompt", () => {
   });
 });
 
-// El bloque propio: las horas viven en `availability`, que se reescribe solo cuando freeSlots vuelve
-// con otras, y la view —que va después— queda para decir qué hacer con ellas en este turno.
-describe("el bloque availability", () => {
-  it("está vacío hasta que freeSlots vuelve, y entonces lleva las horas y la view no", async () => {
+// Las horas sobre la mesa las pone la misma view, en cuanto freeSlots vuelve con ellas: son parte
+// de lo que hay que decir en este turno y no un bloque aparte que el modelo lea antes.
+describe("las horas sobre la mesa", () => {
+  it("no están hasta que freeSlots vuelve, y entonces van en la view con qué hacer con ellas", async () => {
     const agent = at(0);
-    expect(block(render(agent, views), "availability")).toBe("");
+    expect(block(render(agent), "view")).not.toContain("Horas libres, en orden:");
 
     agent.startIn({ ...STATES[0]!.state, stage: "choose", patient: { name: "Ana García", phone: "+34 600 000 001" } });
     await agent.freeSlots("martes");
 
-    const rendered = render(agent, views);
+    const dynamic = block(render(agent), "view");
     expect(agent.slots.length).toBeGreaterThan(0);
-    expect(block(rendered, "availability")).toContain("Horas libres, en orden:");
-    expect(block(rendered, "availability")).toContain(agent.slots[0]!.when);
-    expect(block(rendered, "view")).not.toContain("Horas libres");
-    expect(block(rendered, "view")).toContain("de estas horas");
+    expect(dynamic).toContain("Horas libres, en orden:");
+    expect(dynamic).toContain(agent.slots[0]!.when);
+    expect(dynamic).toContain("de estas horas");
   });
 });
 
@@ -120,10 +132,10 @@ describe("un caso de goldens nombra unos campos y calla los demás", () => {
     // El caso está en `choose` y no menciona `slots`: la clase le dio `[]` y la vista lee
     // `slots.length`. Con `restore` ese campo llegaba borrado y la vista moría en el CLI antes de
     // imprimir nada — este test es esa llamada, sin terminal.
-    const agent = seal(new ClinicaNorte());
+    const agent = fresh();
     agent.startIn(CASES[0]!.state);
 
-    expect(block(render(agent, views), "view")).toContain("pregúntale para qué día quiere cambiarla");
+    expect(block(render(agent), "view")).toContain("pregúntale para qué día quiere cambiarla");
   });
 });
 
@@ -132,9 +144,9 @@ describe("un caso de goldens nombra unos campos y calla los demás", () => {
 // sobre la mesa, mandaba preguntar por el día — y Haiku sigue a la vista. Este test es el clavo.
 describe("la clase y la vista dicen lo mismo sobre el día que nombra el paciente", () => {
   it("repite en la vista la regla que freeSlots lleva en su docstring", () => {
-    const agent = seal(new ClinicaNorte());
+    const agent = fresh();
     agent.startIn(CASES[0]!.state);
-    const dynamic = block(render(agent, views), "view");
+    const dynamic = block(render(agent), "view");
 
     expect(toolNamed(agent, "freeSlots")?.spec.description).toContain("se consulta SIEMPRE");
     expect(dynamic).toContain("consulta SIEMPRE la agenda de ese día");
@@ -152,7 +164,7 @@ describe("la clase y la vista dicen lo mismo sobre el día que nombra el pacient
 describe("con horas sobre la mesa, elegir una no la reserva", () => {
   it("manda repetir la hora entera y esperar el sí, en la vista y en el docstring de book", () => {
     const agent = at(1);
-    const dynamic = block(render(agent, views), "view");
+    const dynamic = block(render(agent), "view");
 
     expect(dynamic).toContain("todavía no la reserva");
     expect(dynamic).toContain("pregúntale si se la confirmas");
@@ -161,9 +173,9 @@ describe("con horas sobre la mesa, elegir una no la reserva", () => {
   });
 
   it("calla la regla cuando no hay ninguna hora sobre la mesa", () => {
-    const agent = seal(new ClinicaNorte());
+    const agent = fresh();
     agent.startIn(CASES[0]!.state);
 
-    expect(block(render(agent, views), "view")).not.toContain("todavía no la reserva");
+    expect(block(render(agent), "view")).not.toContain("todavía no la reserva");
   });
 });

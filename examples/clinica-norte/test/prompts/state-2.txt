@@ -14,7 +14,6 @@ Eres la recepción de Clínica Norte. Hablas de usted, con frases cortas. Todo l
 </protocols>
 
 ── knowledge (static) ──
-<!-- knowledge: ./knowledge/clinica.md -->
 
 ── tools (static) ──
 <tools>
@@ -28,15 +27,5 @@ Eres la recepción de Clínica Norte. Hablas de usted, con frases cortas. Todo l
 
 ── history ──
 
-── availability (dynamic) ──
-
 ── view (dynamic) ──
-Lo que recordamos de este paciente:
-
-<!-- memory: {} -->
-
-De la base de conocimiento:
-
-<!-- retrieved: {"k":4,"min_score":0.5} -->
-
 Confirma que le llega un SMS con la cita del martes a las cuatro de la tarde. Despídete y cuelga.

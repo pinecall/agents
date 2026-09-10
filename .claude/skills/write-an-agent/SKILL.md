@@ -1,6 +1,6 @@
 ---
 name: write-an-agent
-description: Write or change a tenant's agent — the class, its tools, its view — in examples/ or in a customer's app. Use when adding a @tool, a stage, a channel, an event or a view branch, or when a model is doing the wrong thing in a call.
+description: Write or change a tenant's agent — the class, its tools, its render() — in examples/ or in a customer's app. Use when adding a @tool, a stage, a channel, an event or a branch of the view, or when a model is doing the wrong thing in a call.
 ---
 
 # Writing a tenant's agent
@@ -64,21 +64,28 @@ Read in this order. Each line is a real diagnosis from these two examples:
 |---|---|
 | asks again for something it already has | the tool's docstring is in the static `tools` block whether or not the tool is visible. The view has to say "you already know who you are talking to" |
 | does the irreversible thing without the yes | the standing rule lives in `identity`, static and generic. `side_effect` and `confirm` travel in the declaration, not in the text: the **view** has to say that *this* is the turn to wait in |
-| reads the same option back forever | one view branch is covering two different turns. Add the state field that tells them apart (`proposed`) and write a branch for each |
+| reads the same option back forever | one branch of `render()` is covering two different turns. Add the state field that tells them apart (`proposed`) and write a branch for each |
 | invents an option | the state that was on the table moved and the view did not clear it, or the tool resolved a free-text argument loosely |
 | never leaves the first stage | a stage with no way out. Every stage needs a tool that can move it — including the "not on file" path |
 
-## Views
+## The view — `render()` on the class
 
-- The view is a **dynamic** block, the last one, and only a dynamic block may change between two
-  turns. Never write into the class docstring per call; never reorder the blocks. Data a tool
-  feeds that the view only reads back — a slot list, a cart — can be a dynamic block of its own
-  (`static prompt = { dynamic: ["availability"] }`, `views/availability.tsx`); prose the model
-  should read once and cached is a static one, and it may read no state.
+- The view is a **method of the class**, `render()`, returning JSX; the file is `agent.tsx` for
+  that reason and for no other. There is no `views/` directory, no props and no second file: `this`
+  is the state. A class that renders nothing sends an empty view, which is a fine agent.
+- It is the whole **dynamic** region, the last block, and the only one that may change between two
+  turns. Never write into the class docstring per call; never reorder the blocks.
 - `{condition && <p>…</p>}` is the whole control flow: `false`, `null` and `undefined` render
-  nothing. `<p>` is a paragraph; siblings are one blank line apart.
-- `<Memory>`, `<Retrieved>` and `<Knowledge>` render markers the **gateway** fills. This package
-  opens no file and retrieves nothing.
+  nothing. `<p>` is a paragraph; siblings are one blank line apart. A render past one screen has
+  two ideas in it: give one a `private method()` that returns JSX and call it.
+- **Never splice a lookup into the view.** What memory recalled and what the knowledge base
+  returned reach the model as `tool_result` blocks, JSON-encoded, because they came from outside
+  the conversation and the view carries the operator's authority
+  (`runtime/docs/security/prompt-injection.md`). What the class may ask is
+  `this.remembers("médico habitual")` — a question about this call, never the fact's text.
+- `this.call.channel` is how one class says two hours out loud and five in writing. It throws
+  outside a call, so a ring-0 test gives one:
+  `setCall(agent, new CallWorld({ id, contact, channel }, () => {}))`.
 - Say what to do **in this turn**, not in general. A rule that is true of the whole call belongs
   in `<Rules>`; a rule about the turn the state is in belongs in a branch.
 

@@ -11,7 +11,7 @@ import type {
 } from "@pinecall/protocol";
 import type { Agent as SdkAgent, AgentOptions, Call as SdkCall, Pinecall, Tool } from "../client/index.js";
 
-import { Agent, onChange, onLog, seal, setCall, setLast } from "../agent/agent.js";
+import { Agent, onChange, onLog, recalled, seal, setCall, setLast } from "../agent/agent.js";
 import { eventsOf } from "../agent/accepts.js";
 import { visibilityOf } from "../agent/visibility.js";
 import { CallWorld } from "../call/call.js";
@@ -19,21 +19,20 @@ import { describe } from "../agent/docstrings.js";
 import { runHook, type Call as HookCall } from "../agent/lifecycle.js";
 import { snapshot, type LastCall, type Snapshot } from "../agent/state.js";
 import { toolNamed } from "../agent/tools.js";
-import { checkViews, layoutOf, type Views } from "../views/layout.js";
+import { PROMPT_BLOCKS } from "../views/layout.js";
 import { render } from "../views/render.js";
 import { routesOf } from "./channels.js";
 import { inOrder, type Serving } from "./dispatch.js";
 import { groundingOf } from "./grounding.js";
+import { wordsRecalled } from "./recall.js";
 import { runTool, ToolFailed } from "./run-tool.js";
 
-/** What mount needs beyond the class: where to send, what to render, and the class's own source. */
+/** What mount needs beyond the class: where to send, and the class's own source. */
 export interface MountOptions {
   pc: Pinecall;
-  /** The functions in `views/`, by block name: `view` for `views/agent.tsx`, one per declared block. */
-  views?: Views;
-  /** The class's .ts source, so docstrings and parameter types survive compilation. */
+  /** The class's own source, so docstrings and parameter types survive compilation. */
   source?: string;
-  /** The agent file's own path, so the knowledge file the class names is read beside it. */
+  /** The agent file's own path: the dialect its source is parsed as, and where its knowledge file is read. */
   file?: string;
   /** Override the slug the class name would give. */
   slug?: string;
@@ -161,7 +160,7 @@ export function optionsFor(ctor: Ctor, tools: Tool[], instance: Agent = new ctor
   if (hears) options.hears = hears;
   // The layout is always sent whole: the send order is the framework's contract, and the wire
   // carrying it is what lets the runtime and the console name every block the same way.
-  options.prompt = layoutOf(ctor);
+  options.prompt = [...PROMPT_BLOCKS];
   const stateFields = stateFieldsOf(ctor);
   if (stateFields) options.stateFields = stateFields;
   const events = eventsOf(ctor);
@@ -175,12 +174,9 @@ export function optionsFor(ctor: Ctor, tools: Tool[], instance: Agent = new ctor
  */
 export function mount(
   ctor: Ctor,
-  { pc, views = {}, source, file, slug, last, opening, takesUnclaimed = true }: MountOptions,
+  { pc, source, file, slug, last, opening, takesUnclaimed = true }: MountOptions,
 ): Mounted {
-  if (source !== undefined) describe(ctor, source);
-  // A declared block with no function is refused here, at mount, and not at the first call's
-  // render — which would land inside start() with nobody awaiting it.
-  checkViews(ctor, views);
+  if (source !== undefined) describe(ctor, source, file);
   const name = slug ?? slugOf(ctor);
   const live = new Map<string, Live>();
   // One instance to read the class with: its tools and everything it declares about itself are
@@ -195,7 +191,7 @@ export function mount(
 
   agent.on("call.started", (_payload, call) => {
     if (call !== null) {
-      void start(ctor, views, live, call, (type, id, data) => agent.command(type, id, data), last, opening);
+      void start(ctor, live, call, (type, id, data) => agent.command(type, id, data), last, opening);
     }
   });
   agent.on("call.ended", (_payload, call) => {
@@ -223,7 +219,6 @@ async function call_(
 // only then start listening — so the opening send is one prompt and not one per field onCall set.
 async function start(
   ctor: Ctor,
-  views: Views,
   live: Map<string, Live>,
   call: SdkCall,
   send: Send,
@@ -241,7 +236,7 @@ async function start(
   const wanted = opening?.(call);
   if (wanted !== undefined) agent.startIn(wanted);
   call.setState(snapshot(agent));
-  sync(link, views, call);
+  sync(link, call);
   link.stop.push(
     onChange(agent, (change) => {
       call.setState(snapshot(agent), [change.field]);
@@ -249,12 +244,18 @@ async function start(
       // to it: one line naming the event, the field and the event's place in this call's stream.
       const cause = world.cause;
       if (cause !== null) call.log("state.cause", { field: change.field, kind: "event", ...cause });
-      sync(link, views, call);
+      sync(link, call);
     }),
     onLog(agent, (entry) => call.log(entry.name, dataOf(entry.data))),
     call.onAny((event) => {
       world.take(event.type, event.data as Record<string, unknown>, Date.now());
       if (event.type === "event.received") void received(serving, event.data);
+      // What memory found is not state and moves no field, so nothing else would re-render — and a
+      // `render()` that asks what the agent remembers is a different prompt once it has an answer.
+      if (event.type === "memory.ops") {
+        recalled(agent, wordsRecalled(event.data));
+        sync(link, call);
+      }
     }),
   );
 }
@@ -285,8 +286,8 @@ async function end(live: Map<string, Live>, call: SdkCall): Promise<void> {
 // The one rule this card exists for: render, then compare with what this call was last sent, and
 // send only the block whose text is different. Tools are compared as their whole declaration,
 // because a `when` flipping changes the list and nothing else about a spec ever changes mid-call.
-function sync(serving: Live, views: Views, call: SdkCall): void {
-  const { blocks } = render(serving.agent, views, { call: lineOf(call) });
+function sync(serving: Live, call: SdkCall): void {
+  const { blocks } = render(serving.agent);
   for (const block of blocks) {
     if (block.text === (serving.sent.blocks.get(block.name) ?? "")) continue;
     serving.sent.blocks.set(block.name, block.text);
@@ -298,12 +299,6 @@ function sync(serving: Live, views: Views, call: SdkCall): void {
     serving.sent.tools = key;
     call.setTools(visible as unknown as Camel<ToolSpec>[]);
   }
-}
-
-function lineOf(call: SdkCall): { channel: string; from?: string } {
-  const line: { channel: string; from?: string } = { channel: call.channel ?? "web" };
-  if (call.from !== null) line.from = call.from;
-  return line;
 }
 
 function hookCall(call: SdkCall): HookCall {

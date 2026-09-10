@@ -1,13 +1,13 @@
 # Clínica Norte
 
-El tenant completo: una clase, una view, un fichero de conocimiento y la agenda de la clínica.
+El tenant completo: una clase que se rinde a sí misma, un fichero de conocimiento y la agenda de
+la clínica.
 Todo lo demás — la máquina de estados, el gate de confirmación, la memoria, el retrieval, el log y
 la consola — lo pone la plataforma.
 
 ```
-agent.ts          la clase: el estado son campos, las tools son métodos con docstring
-views/agent.tsx   el prompt como función del estado: la view, lo último que lee el modelo
-views/availability.tsx   un bloque propio del prompt, `static prompt = { dynamic: ["availability"] }` en la clase
+agent.tsx         la clase: el estado son campos, las tools son métodos con docstring, y
+                  render() es el prompt como función del estado — lo último que lee el modelo
 knowledge/        clinica.md cacheado delante de todo · docs/ se sube con `pinecall knowledge push` y se recupera por turno
 lib/agenda.ts     el sistema de la clínica; aquí es un doble determinista
 test/             la clase como software, y los goldens que `pinecall test` ejecuta
@@ -19,7 +19,7 @@ test/             la clase como software, y los goldens que `pinecall test` ejec
 { "extends": "pinecall/tsconfig.tenant.json" }
 ```
 
-Eso es todo lo que el tenant escribe. El preset trae el runtime JSX de las views y
+Eso es todo lo que el tenant escribe. El preset trae el runtime JSX del `render()` y
 `experimentalDecorators`, que `@tool` y `@state` todavía necesitan porque el transform de vite 8
 (oxc) solo implementa los decoradores legacy — medido, con versiones, en
 `docs/decisions/agent.md`. El día que oxc traiga los del TC39, el flag desaparece del preset y
@@ -40,7 +40,7 @@ modelo, incluido el "no" de la hora de las 13:00, que la agenda rechaza siempre.
 
 ```bash
 cp .env.example .env        # PINECALL_URL y PINECALL_API_KEY
-pinecall run agent.ts       # la app: registra el agente y responde sus tools
+pinecall run agent.tsx      # la app: registra el agente y responde sus tools
 pinecall chat               # la app en ESTA terminal, y una llamada escrita contra ella
 pinecall test               # los goldens de test/goldens/, puntuados por el runtime
 pinecall simulate --persona apurado --judge   # una persona improvisada por un modelo, y su call.score

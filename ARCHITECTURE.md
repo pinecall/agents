@@ -30,7 +30,7 @@ one the person typed. It sends **commands** and it reads **entries**; both shape
    class ClinicaNorte      ──mount()──▶  src/runtime/  ──WS /v1/apps──▶  gateway ──▶ LiveKit
      fields = state                      src/client/   ◀──entries─────   worker  ──▶ STT·LLM·TTS
      @tool  = verbs                                                      log     ──▶ Postgres
-     views/agent.tsx       ──render()─▶  prompt.set                       judges
+     render() = the view   ──render()─▶  prompt.set                       judges
 ```
 
 ## 2. The tree
@@ -42,7 +42,7 @@ a directory earns its place there by having a line in that table (§13).
 
 | file | what it is |
 |---|---|
-| `agent.ts` | the `Agent` base: the Proxy that turns an assignment into an authored change, the internals kept off the instance, `seal`, `collapse`, `restore`, `startIn`, `log`, `say`/`reply`, `this.call`, the four hooks |
+| `agent.ts` | the `Agent` base: the Proxy that turns an assignment into an authored change, the internals kept off the instance, `seal`, `collapse`, `restore`, `startIn`, `log`, `say`/`reply`, `this.call`, `render()`, `remembers()`, the four hooks |
 | `decorators.ts` | `@tool({…})`: registers the method and wraps it so every write inside it carries its name |
 | `tools.ts` | the tool registry: `ToolOptions`, `ToolDeclaration`, the wire `ToolSpec` built and cached per class, `visibleToolsOf`, `DeclarationRefused` |
 | `docstrings.ts` | a class's own source read with oxc: the JSDoc above the class, above each method, and the parameter names and types |
@@ -58,10 +58,10 @@ a directory earns its place there by having a line in that table (§13).
 |---|---|
 | `jsx-runtime.ts` | the element factory and the renderer: a tree of tags becomes TEXT, never DOM. `renderToText`, `renderInline`, `blocks`, `Fragment`, the `JSX` namespace |
 | `jsx-dev-runtime.ts` | the same factory under the name a dev-mode transform imports |
-| `components.ts` | the tags a view is written in: `Prompt`, `Rule`, `Rules`, `Protocols`, `Section`, `Example`, `p`, `Knowledge`, `Memory`, `Retrieved`, the `marker()` syntax, and `Fills` — the render props one render leaves behind |
-| `layout.ts` | the prompt as named blocks in two regions: `layout` → `Blocks`, `layoutOf` (the send order a class declares), `declaredBlocksOf`, `checkViews`, `ViewProps`, `View`, `Views`, `propsFor` |
+| `components.ts` | the tags a view is written in: `Prompt`, `Rule`, `Rules`, `Protocols`, `Section`, `Example`, `p`, and `tagged` |
+| `layout.ts` | the prompt as named blocks in two regions: `PROMPT_BLOCKS` (the four, in send order) and `layout` → `Blocks` |
 | `lang.ts` | the framework's own words — the standing rules and the protocols, `es` and `en`, chosen by the class's `language` |
-| `render.ts` | `render()`, `headerFor()`, `showPrompt()` (what `--show-prompt` prints), `viewFor()` (where the view and a declared block live) |
+| `render.ts` | `render()`, `headerFor()`, `showPrompt()` (what `--show-prompt` prints) |
 
 ### `src/call/` — the live call as a value
 
@@ -90,6 +90,7 @@ a directory earns its place there by having a line in that table (§13).
 | file | what it is |
 |---|---|
 | `connect.ts` | `mount()`: the class registered once, one live instance per call, and the sync that sends only what changed. Also `slugOf`, `modelOf`, `optionsFor` |
+| `recall.ts` | a `memory.ops` entry → the words this call has been told about the caller, which is what `remembers()` answers from |
 | `channels.ts` | `phone` / `whatsapp` / `web` fields → the routes the agent registers |
 | `grounding.ts` | `knowledge` / `docs` / `memory` fields → what the declaration carries: the file read beside the agent, the base by name (the old glob refused), the policy |
 | `dispatch.ts` | an outside fact off the wire, gated by the declaration and handed to `onEvent` — one at a time, in order |
@@ -103,7 +104,7 @@ a directory earns its place there by having a line in that table (§13).
 | `groups.ts` | the `Group` contract, and `PLANNED` — every verb the design declares that this tree has not written |
 | `env.ts` | where the CLI is pointed and what opens the door: the one resolution order, for every verb |
 | `credentials.ts` | `~/.pinecall/`: the `credentials` file (0600) and the local gateway's `dev` file |
-| `load.ts` | a tenant's `agent.ts` loaded with tsx, handed its own source, with its view beside it |
+| `load.ts` | a tenant's `agent.tsx` (or `agent.ts`) loaded with tsx, handed its own source, and `instanceFor` — one instance with a line to answer on, for the pages that print a prompt |
 | `run.ts` · `chat.ts` · `prompt.ts` | the app, the app in this terminal, the prompt offline |
 | `test.ts` · `simulate.ts` · `eval.ts` · `runs/` | ring 1, a live persona, ring 3, and what the gateway has run |
 | `knowledge.ts` · `memory.ts` | the folder pushed whole under a name, listed, dropped · one contact's facts, and the right to be forgotten |
@@ -129,8 +130,8 @@ Beside `src/`:
 
 | entity | where | fields |
 |---|---|---|
-| `Agent` | `agent/agent.ts` | the tenant's own fields, plus `doc()`, `tools()`, `visibleTools()`, `collapse()`, `restore()`, `startIn()`, `last()`, `log()`, `call`, `say()`, `reply()`, `on()`, and the four hooks |
-| `Internals` | `agent/agent.ts` | `changes`, `log`, `listeners`, `logListeners`, `eventListeners`, `seq`, `sealed`, `target`, `call`, `last` — kept in a `WeakMap`, never on the instance, so they are not state |
+| `Agent` | `agent/agent.ts` | the tenant's own fields, plus `doc()`, `tools()`, `visibleTools()`, `render()`, `remembers()`, `collapse()`, `restore()`, `startIn()`, `last()`, `log()`, `call`, `say()`, `reply()`, `on()`, and the four hooks |
+| `Internals` | `agent/agent.ts` | `changes`, `log`, `listeners`, `logListeners`, `eventListeners`, `seq`, `sealed`, `target`, `call`, `last`, `recalled` — kept in a `WeakMap`, never on the instance, so they are not state |
 | `Change` | `agent/agent.ts` | `seq`, `field`, `prev`, `next`, `author`, `at` |
 | `LogEntry` | `agent/agent.ts` | `seq`, `name`, `data?`, `at` — what `this.log(name, data)` writes |
 | `Snapshot<T>` | `agent/state.ts` | the state as a plain object: own enumerable fields **and getters**, minus the config names, minus methods |
@@ -163,12 +164,11 @@ Beside `src/`:
 
 | entity | where | fields |
 |---|---|---|
-| `Blocks` / `Block` | `views/layout.ts` | `blocks` in send order, each `name`, `region` (`static` · `dynamic`), `text`; `history`; `fills` |
-| `PromptDeclaration` | `agent/agent.ts` | what `static prompt` says: `static?: string[]`, `dynamic?: string[]` |
+| `Blocks` / `Block` | `views/layout.ts` | `blocks` in send order, each `name`, `region` (`static` · `dynamic`), `text`; `history` |
+| `PROMPT_BLOCKS` | `views/layout.ts` | the four, in the one order they are sent: `identity` · `knowledge` · `tools` static, then `view` dynamic |
 | `DocsDeclaration` / `MemoryDeclaration` | `agent/agent.ts` | what `docs` and `memory` may hold: `base`, `mode?`, `k?`, `minScore?` · `remember?`, `forget?` |
 | `Grounding` | `runtime/grounding.ts` | the three as the wire carries them: `knowledge {path, text}`, `docs {base, …}`, `memory {remember, forget}` |
-| `ViewProps<T>` | `views/layout.ts` | the snapshot, plus `memory`, `resumed`, `call: { channel, from? }` |
-| `Fills` | `views/components.ts` | `keep(render)` → an id, `fill(id, data)`, `has(id)` — one registry per render, on the async context |
+| `Child` | `views/jsx-runtime.ts` | what a `render()` hands back: an element, a string, a number, nothing, or an array of those |
 
 ### The socket
 
@@ -195,9 +195,9 @@ one does not go through the change recorder.
 | `says` | `Pronunciation[]` — `{ Vidal: "bidál" }` written as a map, carried as a list |
 | `hears` | the words the ears must know |
 | `language` | which of `views/lang.ts`'s two word-sets the `identity` block carries |
-| `knowledge` | one file, relative to `agent.ts`: read there by `runtime/grounding.ts`, sent whole as `{path, text}`, and the whole `knowledge` block — a `<!-- knowledge: … -->` marker the runtime replaces once per call. A missing file is refused at load |
+| `knowledge` | one file, relative to `agent.tsx`: read there by `runtime/grounding.ts` and sent whole as `{path, text}`. The runtime writes its text into the `knowledge` block, once per call; the app sends nothing for that block. A missing file is refused at load |
 | `docs` | the knowledge base **by the name it was pushed under** (`pinecall knowledge push --base`): `"clinica-norte"` or `{ base, mode?, k?, minScore? }`. The old glob form is refused with the verb that replaces it |
-| `memory` | `{ remember, forget }`, in the tenant's words: what the runtime extracts at hang-up and what it never writes. Each fact is filed under the word it was remembered by, so those words are the only ones a `<Memory kinds>` may name |
+| `memory` | `{ remember, forget }`, in the tenant's words: what the runtime extracts at hang-up and what it never writes. Each fact is filed under the word it was remembered by, and `this.remembers(word)` is how a `render()` asks whether this call has been told one |
 
 **State** — everything else the app puts on the instance, plus its getters. The rules, enforced in
 code:
@@ -211,7 +211,12 @@ code:
   about, so `snapshot()` walks the prototype chain — stopping at `Agent`, so the framework's own
   accessors never leak into the tenant's state.
 - **`this.call` is a getter on the base class,** not a field: it never looks like state and never
-  reaches a view, and it throws outside a call.
+  reaches a snapshot. A `render()` may read it — `this.call.channel` is how one class answers a
+  phone call and a chat differently — and it throws outside a call, so the pages that print a
+  prompt give their instance a line of its own (`cli/load.ts:instanceFor`).
+- **`render()` and `remembers()` are methods of the base,** so neither is state either. `render()`
+  returns nothing by default; `remembers(text)` answers from what the runtime has recalled about
+  this caller in this call, and false before anything has.
 
 ## 5. From a method to a tool the model may call
 
@@ -243,35 +248,29 @@ array result; the state field keeps every row.
 
 ## 6. The prompt: named blocks in two regions, in one order, always
 
-`layout(agent, views, context)` → `Blocks`: every block in send order, each with its name, its
-region and its text. Nothing may reorder them; the cut between the regions is where the cache is.
+`layout(agent)` → `Blocks`: every block in send order, each with its name, its region and its
+text. Nothing may reorder them; the cut between the regions is where the cache is.
 
 | block | region | what is in it | when it changes |
 |---|---|---|---|
 | `identity` | static | the class docstring · `<rules>` and `<protocols>` from `views/lang.ts` | never during a call — it is the cached prefix |
-| `knowledge` | static | the `<!-- knowledge: … -->` marker, or nothing | never |
+| `knowledge` | static | nothing from the app: the runtime writes the file the declaration carried | never |
 | `tools` | static | every tool's name and docstring, visible or not | never |
-| the class's own static blocks | static | `views/<name>.tsx`, called against props that throw on the first read | never |
-| — | the history | the runtime's turns; on the printed page, the `<!-- collapsed: … -->` summaries a `collapse()` left. Never sent by the app | when the app collapses |
-| the class's own dynamic blocks | dynamic | `views/<name>.tsx`, called with the view's props | on every state change |
-| `view` | dynamic, LAST | what the view rendered: the memory marker, the retrieval marker, and everything the state says right now | on every state change |
+| — | the history | the runtime's turns and what a lookup answered; on the printed page, the summaries a `collapse()` left. Never sent by the app | when the app collapses |
+| `view` | dynamic, LAST | what the class's `render()` said about this turn, and nothing else | on every state change |
 
-A class declares its own with `static prompt = { static: ["faq"], dynamic: ["availability"] }`
-(`layoutOf` puts them in send order; a framework name is refused). The whole layout travels once,
-in `agent.configure`, and every block is written by name with `prompt.set`.
+The layout is the framework's, always: `PROMPT_BLOCKS` is the four in order, it travels once in
+`agent.configure`, and every block is written by name with `prompt.set`. A class contributes one of
+them — the view — and it writes it as a method, so there is no view file to resolve, no props to
+pass and no way for a tenant to declare a block of its own.
 
-A **marker** is a placeholder this package writes and never resolves — `<!-- memory: {"kinds":…} -->`,
-`<!-- retrieved: {"k":…,"min_score":…} -->`, `<!-- knowledge: ./file.md -->`. The runtime reads the
-line, does the work, and replaces it: the knowledge file's text once per call in the static region;
-the contact's facts and the base's chunks on every turn in the dynamic region, found by what the
-caller just said, under a budget. The payload's keys are the wire's (`min_score`), because the
-runtime reads it and JavaScript never does. A view that wrote `{facts => …}` left a **render prop**
-behind: the function cannot travel inside a marker, so it stays in that render's `Fills` registry
-under an id the marker carries. This release the runtime renders its own shape and ignores the id;
-the registry still rides the async context and is still handed back with the blocks, so two renders
-in one process never share one and a later runtime can ask by id. The words the class remembers ride
-that same context, because `<Memory kinds>` may only name one of them and the render is where the
-marker is written: any other word is refused there, by name.
+**Nothing this package writes is a hole for somebody else to fill.** There are no markers: what
+memory recalled and what the knowledge base returned reach the model as `tool_result` blocks,
+JSON-encoded, in the history where a lookup belongs — never spliced into the tenant's own words,
+which carry operator authority. That rule, the vendor guidance it follows from and the tests that
+hold it are a public contract, `runtime/docs/security/prompt-injection.md`. What a class reads back
+is one question, `this.remembers(word)`, answered from the `memory.ops` entries this call has
+already seen (`runtime/recall.ts`) — a fact of the call's state, never the fact's text.
 
 `pinecall prompt` and `pinecall run --show-prompt` print exactly these blocks, each under
 `── <name> (<region>) ──` with `── history ──` between the two regions, and the stage and the
@@ -298,12 +297,12 @@ waiting on a `say`.
 
 ## 8. The bridge, step by step
 
-`mount(Class, { pc, views, source, file, slug, last, opening, takesUnclaimed })` is the only place
+`mount(Class, { pc, source, file, slug, last, opening, takesUnclaimed })` is the only place
 the class and the socket know about each other.
 
-1. **At mount** — `describe(ctor, source)` gives the class its own text back (a docstring sits
+1. **At mount** — `describe(ctor, source, file)` gives the class its own text back (a docstring sits
    *above* the class, where `toString()` cannot see it, and parameter types are gone after
-   compilation). One **probe** instance is built, read for its tools and its config, and thrown
+   compilation; the file name is what says whether that text is `.ts` or `.tsx`). One **probe** instance is built, read for its tools and its config, and thrown
    away; `file` is where the class came from, so the knowledge file it names is read beside it.
    `pc.agent(slug, options)` declares it. Nothing is sent until `pc.connect()`.
 2. **`call.started`** → `start()`: a fresh instance, `seal`ed; `setLast` and `setCall` hand it the
@@ -402,7 +401,7 @@ decision:
 |---|---|
 | `agents/` | which agents this gateway holds — so `/` offers a list and not a URL shape |
 | `calls/` + `live/` | the calls happening now; one watched call: transcript, marks — a `memory.ops` and a `docs.sources` each one row, `op · n facts · ms` and `n sources · ms`, what was found under it — `STATE`, `PROMPT` (every block by name, hash and length), `ROOM`, `METRICS`, and the supervisor's six verbs |
-| `sessions/` | every finished call; one of them read whole — envelope, latency, consent join, score, the prompt block by block, then every entry in `seq`, a fill's sources one click under the turn it answered |
+| `sessions/` | every finished call; one of them read whole — envelope, latency, consent join, score, the prompt block by block, then every entry in `seq`, a lookup's sources one click under the turn it answered |
 | `evals/` | every run this agent's suites scored, the diff between two runs, and what each finished call was sealed with |
 | `pipeline/` | the three providers of a voice turn, the anatomy of a turn as a waterfall, and the overrides an operator may change between two calls |
 | `talk/` | a person reaches the agent from this tab, with this browser's microphone |
@@ -411,8 +410,8 @@ Its own laws. Three are held by a test of their own: vite bundles every screen's
 one file, so **a class name is global** whatever directory it was written in
 (`one-stylesheet-one-class`); the desk sends **one** verb per gesture and one seat request
 (`the-desk-sends-one-verb`); a supervisor's six entries each read back as **one sentence**
-(`a-supervisor-reads-as-one-line`), and so do a fill's two (`a-fill-reads-as-one-line`, off
-`lib/fills.ts`, which both timelines print from). Two more are conventions the reader enforces:
+(`a-supervisor-reads-as-one-line`), and so do a lookup's two (`a-lookup-reads-as-one-line`, off
+`lib/lookups.ts`, which both timelines print from). Two more are conventions the reader enforces:
 `lib/api.ts` is the only place a request to the gateway is built, and `lib/metrics.ts` the only
 file that names a metric — Sessions must print the same digits as `pinecall-runtime sessions show`.
 
@@ -441,11 +440,11 @@ line the test deletes.
 | part of `src/` | may import |
 |---|---|
 | `client/` | `@pinecall/protocol`, `ws` |
-| `agent/` | `call`, `@pinecall/protocol`, `oxc-parser`, `zod` |
+| `agent/` | `call`, `views`, `@pinecall/protocol`, `oxc-parser`, `zod` |
 | `call/` | `agent`, `@pinecall/protocol` |
 | `views/` | `agent` |
 | `runtime/` | `agent`, `call`, `views`, `client`, `@pinecall/protocol` |
-| `cli/` | `agent`, `views`, `runtime`, `client`, `@pinecall/protocol`, `ws` |
+| `cli/` | `agent`, `call`, `views`, `runtime`, `client`, `@pinecall/protocol`, `ws` |
 | `cli/ui/console/` | `@pinecall/protocol`, `react`, `react-dom`, `react-router`, `livekit-client`, `vite`, `@vitejs/plugin-react`, `zod` |
 | `src/index.ts` | `agent`, `call`, `views`, `runtime` |
 
@@ -497,7 +496,10 @@ two models, all three repositories checked out, a throwaway Postgres, a gateway 
   `tsconfig.console.json` checks the browser page against the DOM; `tsconfig.tenant.json` is the
   preset a tenant extends (it carries `experimentalDecorators`, because oxc implements only the
   legacy decorators today — the day it ships the TC39 ones the flag leaves the preset and no
-  tenant file changes).
+  tenant file changes — and `jsx: react-jsx` with `jsxImportSource: pinecall/views`). Those two
+  facts are what let one `agent.tsx` carry `@tool` methods and a JSX `render()` at once: tsc, oxc
+  and tsx each take both from the preset, and a tenant adds nothing. The one thing `.tsx` costs is
+  the angle-bracket cast — `<Slot>row` is JSX there, so a class that wants one writes `row as Slot`.
 - **The console is the one thing that must be built**: a browser reads no TypeScript, so
   `scripts/build` runs `vite build` into `dist/cli/ui/console`, the path `pinecall ui` serves.
 - `scripts/check` is build → lint → test, in that order, for the package and for every workspace

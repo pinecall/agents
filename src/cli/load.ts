@@ -1,27 +1,28 @@
-/** Loading a tenant's agent.ts from the CLI: the TypeScript loader, the class, its source, its view. */
+/** Loading a tenant's agent file from the CLI: the TypeScript loader, the class, and its own source. */
 
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import type { Agent } from "../agent/agent.js";
+import { Agent, setCall } from "../agent/agent.js";
 import { describe } from "../agent/docstrings.js";
-import { viewFor } from "../views/render.js";
-import { declaredBlocksOf, type View, type Views } from "../views/layout.js";
+import { CallWorld } from "../call/call.js";
 import type { MountOptions } from "../runtime/connect.js";
 import { groundingOf } from "../runtime/grounding.js";
 
-/** What the CLI needs to mount or render an agent: the class, the file it came from, its views. */
+/** What the CLI needs to mount or render an agent: the class, and the file it came from. */
 export interface Loaded {
   ctor: new () => Agent;
   file: string;
   source: string;
-  /** `view` when `views/agent.tsx` is there, and one function per block the class declared. */
-  views: Views;
 }
 
-/** Where an agent lives when nobody said: `agent.ts` in the current directory, as every example has it. */
-export const DEFAULT_AGENT = "agent.ts";
+/**
+ * Where an agent lives when nobody said. A class whose `render()` returns JSX is written in
+ * `agent.tsx`, which is what every example and every generator writes; `agent.ts` still loads, for
+ * a class that renders nothing. The first that is there wins, and a usage line names the first.
+ */
+export const DEFAULT_AGENTS = ["agent.tsx", "agent.ts"] as const;
 
 let registered = false;
 
@@ -37,53 +38,50 @@ export async function useTypeScript(): Promise<void> {
 }
 
 /**
- * Load an agent file: import its default export, hand the class its own source, and bring the
- * views next to it — the view if there is one, and every block the class declared.
+ * Load an agent file: import its default export and hand the class its own source.
  *
  * The source is not a nicety. A class docstring sits ABOVE the class, where `Ctor.toString()`
  * cannot see it, and the parameter types are gone by the time the file is a module — so the identity
  * block would open without its first line and the tools would carry untyped arguments. `describe`
  * is the one call that puts both back, and this is the only place that has the text to give it.
  */
-export async function load(file: string = DEFAULT_AGENT): Promise<Loaded> {
-  const path = resolve(file);
+export async function load(file?: string): Promise<Loaded> {
+  const path = file === undefined ? theAgentHere() : resolve(file);
   if (!existsSync(path)) throw new Error(`no agent at ${path}`);
   await useTypeScript();
   const module_ = (await import(pathToFileURL(path).href)) as { default?: unknown };
   const ctor = module_.default;
-  if (typeof ctor !== "function") throw new Error(`${file} has no default-exported Agent class`);
+  if (typeof ctor !== "function") throw new Error(`${path} has no default-exported Agent class`);
   const source = readFileSync(path, "utf8");
-  describe(ctor, source);
+  describe(ctor, source, path);
   // What the class says it knows is checked here, where its path is in hand: a knowledge file that
   // is not there, or `docs` still written as a glob, is refused before a prompt is printed or a
   // gateway is knocked at — `pinecall prompt` never mounts, and it must say so too.
   groundingOf(new (ctor as new () => Agent)(), path);
-  return { ctor: ctor as new () => Agent, file: path, source, views: await loadViews(path, ctor) };
+  return { ctor: ctor as new () => Agent, file: path, source };
 }
 
-// The view is optional: an agent whose prompt is only its docstring and its tools renders fine. A
-// declared block is not: the class named it, so a file that is not there is a typo to say out loud.
-async function loadViews(agentFile: string, ctor: Function): Promise<Views> {
-  const views: Views = {};
-  const view = await loadView(viewFor(agentFile));
-  if (view !== undefined) views["view"] = view;
-  for (const block of declaredBlocksOf(ctor)) {
-    const path = viewFor(agentFile, block.name);
-    const rendered = await loadView(path);
-    if (rendered === undefined) throw new Error(`prompt block ${block.name}: ${ctor.name} declares it and ${path} is not there`);
-    views[block.name] = rendered;
-  }
-  return views;
+/**
+ * One instance of the loaded class with a line to answer on: what the pages that print a prompt
+ * render. A `render()` may read `this.call`, and a page that could not answer that question would
+ * be a page about a call that cannot happen.
+ */
+export function instanceFor(loaded: Loaded, channel = "web"): Agent {
+  const agent = new loaded.ctor();
+  setCall(agent, new CallWorld({ id: "", contact: "", channel }, () => undefined));
+  return agent;
 }
 
-async function loadView(path: string): Promise<View | undefined> {
-  if (!existsSync(path)) return undefined;
-  await useTypeScript();
-  const module_ = (await import(pathToFileURL(path).href)) as { default?: unknown };
-  return typeof module_.default === "function" ? (module_.default as View) : undefined;
-}
-
-/** What `mount` is given for a loaded agent: the client, the source, its file, and the views by block name. */
+/** What `mount` is given for a loaded agent: the client, the source and the file it came from. */
 export function mountOptions(loaded: Loaded, pc: MountOptions["pc"]): MountOptions {
-  return { pc, source: loaded.source, file: loaded.file, views: loaded.views };
+  return { pc, source: loaded.source, file: loaded.file };
+}
+
+// Nobody named a file. Looking for both names and saying so is the whole of it: a directory with
+// neither is a directory somebody typed the verb in by mistake, and the refusal has to say where
+// it looked rather than "no agent at /…/agent.tsx" for a project written in .ts.
+function theAgentHere(): string {
+  const found = DEFAULT_AGENTS.map((name) => resolve(name)).find((path) => existsSync(path));
+  if (found !== undefined) return found;
+  throw new Error(`no agent here: looked for ${DEFAULT_AGENTS.join(" and ")} in ${process.cwd()}`);
 }

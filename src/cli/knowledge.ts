@@ -9,11 +9,11 @@ import type { KnowledgeFile, KnowledgeList, KnowledgePushed } from "@pinecall/pr
 import { slugOf } from "../runtime/connect.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
-import { DEFAULT_AGENT, load } from "./load.js";
+import { load } from "./load.js";
 import { asked, type Door } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
 
-const USAGE = `usage: pinecall knowledge push [dir] [--base <name>] [--agent agent.ts]
+const USAGE = `usage: pinecall knowledge push [dir] [--base <name>] [--agent agent.tsx]
        pinecall knowledge list
        pinecall knowledge drop <base>`;
 
@@ -46,7 +46,7 @@ export async function run(argv: string[], how: Pushing = {}): Promise<number> {
   const { values, positionals } = parseArgs({
     args: argv,
     allowPositionals: true,
-    options: { base: { type: "string" }, agent: { type: "string", default: DEFAULT_AGENT } },
+    options: { base: { type: "string" }, agent: { type: "string" } },
   });
   const [verb, ...rest] = positionals;
   const door = theDoor(how.env ?? process.env, err);
@@ -72,7 +72,7 @@ async function push(
   door: Door,
   dir: string | undefined,
   base: string | undefined,
-  agent: string,
+  agent: string | undefined,
   out: NodeJS.WritableStream,
   err: NodeJS.WritableStream,
 ): Promise<number> {

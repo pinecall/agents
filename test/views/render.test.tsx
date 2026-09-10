@@ -4,21 +4,23 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { Agent, describe as describeClass, Memory, seal, tool } from "../../src/index.js";
-import { declaredBlocksOf, layoutOf, type Block, type Blocks, type View, type ViewProps } from "../../src/views/layout.js";
-import { render, showPrompt, viewFor } from "../../src/views/render.js";
+import { Agent, CallWorld, describe as describeClass, recalled, seal, setCall, tool } from "../../src/index.js";
+import { PROMPT_BLOCKS, type Block, type Blocks } from "../../src/views/layout.js";
+import { render, showPrompt } from "../../src/views/render.js";
 import ClinicaNorte from "../agent/clinica-norte.js";
-import view from "./clinica-norte.view.js";
+
+const KNOWN = "+34 600 000 001";
 
 // The class docstring lives above the class, where `Ctor.toString()` cannot see it, so whoever
 // loaded the file hands it over. Here that is the test; in production it is `pinecall run`.
-describeClass(ClinicaNorte, readFileSync(new URL("../agent/clinica-norte.ts", import.meta.url), "utf8"));
+describeClass(ClinicaNorte, readFileSync(new URL("../agent/clinica-norte.tsx", import.meta.url), "utf8"));
 
-function clinica(): ClinicaNorte {
-  return seal(new ClinicaNorte());
+/** The clinic answering a call on that door, which is what a `render()` reads off `this.call`. */
+function clinica(channel = "phone"): ClinicaNorte {
+  const agent = seal(new ClinicaNorte());
+  setCall(agent, new CallWorld({ id: "CA_1", contact: KNOWN, from: KNOWN, channel }, () => undefined));
+  return agent;
 }
-
-const onThePhone = { call: { channel: "phone", from: "+34 600 000 001" } };
 
 /** The text of one block of a render, by name. */
 function block(blocks: Blocks, name: string): string {
@@ -31,243 +33,178 @@ function names(blocks: Blocks, region?: Block["region"]): string[] {
   return blocks.blocks.filter((one) => region === undefined || one.region === region).map((one) => one.name);
 }
 
-describe("the default layout", () => {
+describe("the layout", () => {
   it("is the framework's four blocks, static then dynamic, with the view last", () => {
-    expect(layoutOf(ClinicaNorte)).toEqual([
+    expect(PROMPT_BLOCKS).toEqual([
       { name: "identity", region: "static" },
       { name: "knowledge", region: "static" },
       { name: "tools", region: "static" },
       { name: "view", region: "dynamic" },
     ]);
-    expect(names(render(clinica(), { view }, onThePhone))).toEqual(["identity", "knowledge", "tools", "view"]);
+    expect(names(render(clinica()))).toEqual(["identity", "knowledge", "tools", "view"]);
   });
 
   it("keeps every static block byte-identical across state changes", async () => {
     const agent = clinica();
-    const before = render(agent, { view }, onThePhone);
+    const before = render(agent);
 
-    await agent.findPatient("Ana", "+34 600 000 001");
+    await agent.findPatient("Ana", KNOWN);
     await agent.freeSlots("lunes");
     await agent.book({ when: "lunes 10:00", doctor: "Ruiz" });
 
-    const after = render(agent, { view }, onThePhone);
+    const after = render(agent);
     for (const name of names(before, "static")) expect(block(after, name)).toBe(block(before, name));
   });
 
   it("opens identity with the class docstring, then the rules and the protocols", () => {
-    const identity = block(render(clinica(), { view }, onThePhone), "identity");
+    const identity = block(render(clinica()), "identity");
     expect(identity.startsWith("Agenda de la Clínica Norte.")).toBe(true);
     expect(identity.indexOf("<rules>")).toBeLessThan(identity.indexOf("<protocols>"));
     expect(identity).not.toContain("<tools>");
   });
 
-  it("puts the knowledge marker in a block of its own, and every declared tool in tools", () => {
-    const blocks = render(clinica(), { view }, onThePhone);
-    expect(block(blocks, "knowledge")).toBe("<!-- knowledge: ./knowledge/clinica.md -->");
+  // The file the class named travels whole in the declaration and the runtime writes it into this
+  // block, once per call, where it is the operator's own words in the cached prefix. The app sends
+  // nothing for it: two copies of one file is a bigger bug than an empty block.
+  it("leaves the knowledge block to the runtime, and every declared tool in tools", () => {
+    const blocks = render(clinica());
+    expect(block(blocks, "knowledge")).toBe("");
     const tools = block(blocks, "tools");
     for (const name of ["findPatient", "freeSlots", "book", "transfer"]) {
       expect(tools).toContain(`- ${name}: `);
     }
   });
-
-  it("leaves knowledge empty for a class that named no file", () => {
-    const quiet = seal(
-      new (class extends ClinicaNorte {
-        override knowledge = "";
-      })(),
-    );
-    expect(block(render(quiet, { view }), "knowledge")).toBe("");
-  });
 });
 
 describe("the view", () => {
   it("flips a conditional when the state changes", async () => {
+    expect(block(render(clinica()), "view")).toContain("Saluda y pide nombre y teléfono");
+
     const agent = clinica();
-    expect(block(render(agent, { view }, onThePhone), "view")).toContain("Saluda y pide nombre y teléfono");
+    await agent.findPatient("Ana", KNOWN);
 
-    await agent.findPatient("Ana", "+34 600 000 001");
-
-    const identified = block(render(agent, { view }, onThePhone), "view");
+    const identified = block(render(agent), "view");
     expect(identified).not.toContain("Saluda y pide nombre y teléfono");
-    expect(identified).toContain("Ana tiene cita el");
-    expect(identified).toContain("Pregunta para qué día quiere cambiarla.");
+    expect(identified).toContain("Hablas con Ana, ya en la ficha.");
+    expect(identified).toContain("Pregunta para qué día quiere la cita.");
   });
 
   it("answers a phone call differently from a web chat once there are slots", async () => {
+    const byPhone = clinica("phone");
+    await byPhone.findPatient("Ana", KNOWN);
+    await byPhone.freeSlots("lunes");
+    expect(block(render(byPhone), "view")).toContain("Ofrece como máximo dos de estas horas");
+
+    const written = clinica("web");
+    await written.findPatient("Ana", KNOWN);
+    await written.freeSlots("lunes");
+    expect(block(render(written), "view")).toContain("Muestra hasta cinco horas");
+  });
+
+  it("is empty for a class that renders nothing at all", () => {
+    /** Agenda que no dice nada de este turno. */
+    class Callada extends Agent {
+      language = "es";
+    }
+
+    expect(block(render(seal(new Callada())), "view")).toBe("");
+  });
+
+  it("puts a collapsed stretch of the call in the history, and no marker line with it", async () => {
     const agent = clinica();
-    await agent.findPatient("Ana", "+34 600 000 001");
-    await agent.freeSlots("lunes");
-
-    expect(block(render(agent, { view }, onThePhone), "view")).toContain("Ofrece como máximo dos de estas horas");
-    expect(block(render(agent, { view }, { call: { channel: "web" } }), "view")).toContain("Muestra hasta cinco horas");
-  });
-
-  it("opens with the memory and retrieval markers, in that order", () => {
-    const text = block(render(clinica(), { view }, onThePhone), "view");
-    expect(text.indexOf('<!-- memory: {} -->')).toBe(0);
-    expect(text).toContain('<!-- retrieved: {"min_score":0.4} -->');
-  });
-
-  it("is told it is resuming a call that was cut", () => {
-    const text = block(render(clinica(), { view }, { ...onThePhone, resumed: true }), "view");
-    expect(text).toContain("Se cortó su llamada anterior.");
-  });
-
-  it("puts a collapsed stretch of the call in the history", async () => {
-    const agent = clinica();
-    await agent.findPatient("Ana", "+34 600 000 001");
+    await agent.findPatient("Ana", KNOWN);
     await agent.freeSlots("lunes");
     await agent.book({ when: "lunes 10:00", doctor: "Ruiz" });
 
-    const { history } = render(agent, { view }, onThePhone);
-    expect(history).toContain("<!-- collapsed:");
-    expect(history).toContain("Reservado lunes 10:00 con Ruiz.");
+    const { history } = render(agent);
+    expect(history).toBe("Reservado lunes 10:00 con Ruiz.");
   });
 
-  it("looks for the default view next to the agent file, and a declared block by its name", () => {
-    expect(viewFor("/app/clinica/agent.ts")).toBe("/app/clinica/views/agent.tsx");
-    expect(viewFor("/app/clinica/agent.ts", "availability")).toBe("/app/clinica/views/availability.tsx");
+  // The whole page is the tenant's own words and the runtime's blocks: nothing this package writes
+  // is a placeholder for somebody else to replace. See docs/security/prompt-injection.md.
+  it("writes no marker line anywhere on the printed page", async () => {
+    const agent = clinica();
+    await agent.findPatient("Ana", KNOWN);
+    await agent.freeSlots("lunes");
+
+    expect(showPrompt(agent)).not.toContain("<!--");
   });
 });
 
-// A tenant with blocks of its own: a cached FAQ it writes as prose, and a dynamic block its
-// free-slots tool feeds. Written inline, so the test is the whole fixture.
-/** Agenda con preguntas frecuentes. */
-class ConBloques extends Agent {
-  static override prompt = { static: ["faq"], dynamic: ["availability"] };
-  language = "es";
-  slots: string[] = [];
+// What memory found is the runtime's to supply, and it reaches the class as words and never as a
+// sentence spliced into the view: `remembers()` is how a render asks, and it answers false until
+// a recall has actually come back, which is exactly what a caller nobody has met looks like.
+describe("what the agent remembers about this caller", () => {
+  it("is false until the runtime has recalled something", () => {
+    const agent = clinica();
 
-  /** Horas libres. */
-  @tool()
-  freeSlots(): string[] {
-    return (this.slots = ["lunes 10:00", "lunes 11:00"]);
-  }
-}
-
-const faq: View = () => <p>¿Aparcamiento? Sí, gratuito, en la puerta.</p>;
-const availability = ({ slots }: ViewProps<ConBloques>) => (
-  <>{slots.length > 0 && <p>Horas libres: {slots.join(", ")}</p>}</>
-);
-
-describe("the blocks a class declares", () => {
-  it("are sent after the framework's static blocks and before the view, which is last", () => {
-    const blocks = render(seal(new ConBloques()), { faq, availability });
-    expect(names(blocks)).toEqual(["identity", "knowledge", "tools", "faq", "availability", "view"]);
-    expect(names(blocks, "static")).toEqual(["identity", "knowledge", "tools", "faq"]);
-    expect(names(blocks, "dynamic")).toEqual(["availability", "view"]);
+    expect(agent.remembers("médico habitual")).toBe(false);
   });
 
-  it("render a dynamic block against the state, and a static one as prose", async () => {
-    const agent = seal(new ConBloques());
-    expect(block(render(agent, { faq, availability }), "availability")).toBe("");
+  it("answers on the word a fact was filed under, and on the fact itself", async () => {
+    const agent = clinica();
+    await agent.findPatient("Ana", KNOWN);
+    recalled(agent, ["su médico habitual es la doctora Vidal", "médico habitual"]);
 
-    await agent.freeSlots();
-
-    const blocks = render(agent, { faq, availability });
-    expect(block(blocks, "availability")).toBe("Horas libres: lunes 10:00, lunes 11:00");
-    expect(block(blocks, "faq")).toBe("¿Aparcamiento? Sí, gratuito, en la puerta.");
-  });
-
-  it("refuse a static block that reads the state, naming the block and the field", () => {
-    const reads = ({ slots }: ViewProps<ConBloques>) => <p>{slots.length}</p>;
-    expect(() => render(seal(new ConBloques()), { faq: reads, availability })).toThrow(
-      "a static block cannot read the state: faq.tsx reads slots",
-    );
-  });
-
-  it("refuse a declared block nobody wrote a view for", () => {
-    expect(() => render(seal(new ConBloques()), { faq })).toThrow("prompt block availability: ConBloques declares it");
-  });
-
-  it("refuse a name that is the framework's, and one the wire would refuse", () => {
-    class Choca extends Agent {
-      static override prompt = { static: ["tools"] };
-    }
-    expect(() => declaredBlocksOf(Choca)).toThrow("prompt block tools: that name is the framework's");
-    class Mayuscula extends Agent {
-      static override prompt = { dynamic: ["Availability"] };
-    }
-    expect(() => declaredBlocksOf(Mayuscula)).toThrow("prompt block Availability: a name is lowercase words");
-    class Doble extends Agent {
-      static override prompt = { static: ["faq"], dynamic: ["faq"] };
-    }
-    expect(() => declaredBlocksOf(Doble)).toThrow("prompt block faq: declared twice");
+    expect(agent.remembers("médico habitual")).toBe(true);
+    expect(agent.remembers("la doctora Vidal")).toBe(true);
+    expect(agent.remembers("alergias")).toBe(false);
+    expect(block(render(agent), "view")).toContain("Ofrece primero las horas de su médico habitual");
   });
 });
 
 describe("the printed page", () => {
   it("rules every block under its name and region, the history between the two regions", () => {
-    const page = showPrompt(seal(new ConBloques()), { faq, availability });
-    const headers = page.split("\n").filter((line) => line.startsWith("── "));
+    const headers = showPrompt(clinica())
+      .split("\n")
+      .filter((line) => line.startsWith("── "));
     expect(headers).toEqual([
       "── identity (static) ──",
       "── knowledge (static) ──",
       "── tools (static) ──",
-      "── faq (static) ──",
       "── history ──",
-      "── availability (dynamic) ──",
       "── view (dynamic) ──",
     ]);
   });
 });
 
-// A fact is filed under the words the class declared, so those words are the only ones a view may
-// ask for by name. A live call filed `cómo prefiere que le llamen` while the view asked for
-// `preference`, and every recall came back empty for ever, looking exactly like a caller nobody had
-// met (2026-09-10). The render is where the marker is written, so the render is where it is refused.
-describe("a memory kind the class never said it remembers", () => {
-  /** Agenda que dice con qué palabras recuerda. */
-  class ConMemoria extends Agent {
-    language = "es";
-    memory = { remember: ["cómo prefiere que le llamen", "alergias"], forget: ["pagos"] };
-  }
-
-  it("is refused, naming the kind and the words the class remembers", () => {
-    const view: View = () => <Memory kinds={["preference"]} />;
-
-    expect(() => render(seal(new ConMemoria()), { view })).toThrow(
-      'memory kinds: "preference" is not one of the words this class remembers ' +
-        "(cómo prefiere que le llamen, alergias)",
-    );
-  });
-
-  it("renders when every kind is one of those words", () => {
-    const view: View = () => <Memory kinds={["alergias"]} limit={3} />;
-
-    expect(block(render(seal(new ConMemoria()), { view }), "view")).toBe(
-      '<!-- memory: {"kinds":["alergias"],"limit":3} -->',
-    );
-  });
-
-  it("takes any kind at all from a class that says nothing about what it remembers", () => {
-    /** Agenda que recuerda lo que al modelo le parezca. */
-    class SinMemoria extends Agent {
-      language = "es";
+describe("the framework's own words", () => {
+  it("speaks the language the agent declares, and falls back to Spanish", () => {
+    /** Agenda que habla en inglés. */
+    class InEnglish extends Agent {
+      language = "en";
     }
-    const view: View = () => <Memory kinds={["preference"]} />;
+    /** Agenda que habla marciano. */
+    class OnMars extends Agent {
+      language = "mar";
+    }
 
-    expect(block(render(seal(new SinMemoria()), { view }), "view")).toBe('<!-- memory: {"kinds":["preference"]} -->');
+    expect(block(render(clinica()), "identity")).toContain("Una sola pregunta por turno");
+    expect(block(render(seal(new InEnglish())), "identity")).toContain("One question per turn");
+    expect(block(render(seal(new InEnglish())), "identity")).not.toContain("Una sola pregunta");
+    expect(block(render(seal(new OnMars())), "identity")).toContain("Una sola pregunta por turno");
   });
 });
 
-describe("the framework's own words", () => {
-  it("speaks the language the agent declares, and falls back to Spanish", () => {
-    const spanish = clinica();
-    const english = seal(
-      new (class extends ClinicaNorte {
-        override language = "en";
-      })(),
-    );
-    const martian = seal(
-      new (class extends ClinicaNorte {
-        override language = "mar";
-      })(),
-    );
+// A tool is in the `tools` block whether or not it is visible right now, because the model reads
+// the docstring and the wire decides what may be called.
+describe("a class with one tool and no view", () => {
+  /** Agenda con preguntas frecuentes. */
+  class ConUnaTool extends Agent {
+    language = "es";
+    slots: string[] = [];
 
-    expect(block(render(spanish), "identity")).toContain("Una sola pregunta por turno");
-    expect(block(render(english), "identity")).toContain("One question per turn");
-    expect(block(render(english), "identity")).not.toContain("Una sola pregunta");
-    expect(block(render(martian), "identity")).toContain("Una sola pregunta por turno");
+    /** Horas libres. */
+    @tool()
+    freeSlots(): string[] {
+      return (this.slots = ["lunes 10:00", "lunes 11:00"]);
+    }
+  }
+
+  it("declares it in the static tools block and renders an empty view", () => {
+    const blocks = render(seal(new ConUnaTool()));
+
+    expect(block(blocks, "tools")).toBe("<tools>\n- freeSlots: Horas libres.\n</tools>");
+    expect(block(blocks, "view")).toBe("");
   });
 });

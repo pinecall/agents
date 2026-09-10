@@ -1,4 +1,4 @@
-// The design's own class, as the tenant writes it: the shape this seam exists to make possible.
+// The design's own class, as the tenant writes it: state, tools and a render(), in one file.
 
 import { Agent, tool, type Call, type DocsDeclaration } from "../../src/index.js";
 
@@ -99,5 +99,28 @@ export default class ClinicaNorte extends Agent {
   @tool()
   transfer(): string {
     return "Le paso con recepción.";
+  }
+
+  /** El prompt como función del estado: lo único que cambia entre dos turnos de una llamada. */
+  override render() {
+    return (
+      <>
+        {!this.identified && <p>Saluda y pide nombre y teléfono. Nada más hasta identificar al paciente.</p>}
+        {this.identified && !this.done && (
+          <>
+            <p>Hablas con {this.patient!.name}, ya en la ficha.</p>
+            {this.remembers("médico habitual") && <p>Ofrece primero las horas de su médico habitual.</p>}
+            {this.slots.length === 0 && <p>Pregunta para qué día quiere la cita.</p>}
+            {this.slots.length > 0 &&
+              (this.call.channel === "phone" ? (
+                <p>Ofrece como máximo dos de estas horas y pregunta cuál prefiere.</p>
+              ) : (
+                <p>Muestra hasta cinco horas, una por línea.</p>
+              ))}
+          </>
+        )}
+        {this.done && <p>Confirma que le llega un SMS con la cita del {this.booking!.slot.when}. Despídete y cuelga.</p>}
+      </>
+    );
   }
 }

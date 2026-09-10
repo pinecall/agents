@@ -12,16 +12,16 @@ on the PATH: `pinecall run`. In this workspace: `pnpm exec pinecall run`.
 
 | verb | what it does | gateway |
 |---|---|---|
-| `run [agent.ts]` | the app registered and answering — **the process you deploy**. Binds no port, serves no page. `--ui` for the full-screen terminal view, `--events` for one JSON line per entry, `--show-prompt` to print the prompt and exit | yes (except `--show-prompt`) |
-| `chat [agent.ts]` | the same app in this terminal's own process, and a written caller against it. `--state file [--case n]` opens the call in a state, `--as <contact>` says who is calling — the id memory files the call under, without which a written caller is a visitor and is remembered by nobody. This is `rails console`: a breakpoint in a `@tool` is reachable | yes |
+| `run [agent.tsx]` | the app registered and answering — **the process you deploy**. Binds no port, serves no page. `--ui` for the full-screen terminal view, `--events` for one JSON line per entry, `--show-prompt` to print the prompt and exit | yes (except `--show-prompt`) |
+| `chat [agent.tsx]` | the same app in this terminal's own process, and a written caller against it. `--state file [--case n]` opens the call in a state, `--as <contact>` says who is calling — the id memory files the call under, without which a written caller is a visitor and is remembered by nobody. This is `rails console`: a breakpoint in a `@tool` is reachable | yes |
 | `ui [agent]` | the console on 127.0.0.1 for the life of the command, opened in this machine's browser | yes |
-| `prompt [agent.ts] --state file` | the exact prompt a state would produce, with the stage and its tools beneath | **no** |
+| `prompt [agent.tsx] --state file` | the exact prompt a state would produce, with the stage and its tools beneath | **no** |
 | `test [paths]` | ring 1: the goldens, through the app in this process, scored by the runtime. `--agent`, `--model` (repeatable), `--grep`, `--watch`, `--json` | yes |
 | `simulate --persona <name>` | a model plays one caller, live. `--judge`, `--turns n`, `--voice`, `--background-noise`, `--packet-loss` | yes |
 | `eval <call-id>` | ring 3: one real call re-evaluated by the runtime's code checks. `--policy`, `--json`. Exits 1 when a check does not hold | yes |
 | `runs list \| show \| diff \| promote \| drift` | what this gateway ran, and what moved between two windows | yes |
 | `personas list \| show \| try` | the synthetic callers in `test/personas` | for `try` |
-| `knowledge push [dir] [--base <name>] [--agent agent.ts]` | every `*.md` under the directory (`./knowledge/docs` beside the agent file by default), sent whole to `PUT /v1/knowledge/<base>`; the base is the agent's slug unless named. Prints `base · files · chunks · ms`. `list` and `drop <base>` beside it | yes |
+| `knowledge push [dir] [--base <name>] [--agent agent.tsx]` | every `*.md` under the directory (`./knowledge/docs` beside the agent file by default), sent whole to `PUT /v1/knowledge/<base>`; the base is the agent's slug unless named. Prints `base · files · chunks · ms`. `list` and `drop <base>` beside it | yes |
 | `memory <contact>` | everything memory kept about one contact: the current facts first, the superseded ones dimmed with the date they stopped holding. `memory forget <contact>` asks once on a terminal, erases all of it, and prints `forgotten: n` | yes |
 | `keys add <vendor>` | the org's own key for that vendor, read from **stdin** and never from a flag — typed with nothing echoed on a terminal, one piped line off one — sent to `PUT /v1/provider-keys/<vendor>`. Every call of this org then runs on that account; every vendor nobody brought runs on the box's own key. `keys rm <vendor>` gives one back, `keys list` prints the vendors and **never a value**: no door of the runtime answers with a provider key | yes |
 | `login <gateway>` | the key typed once (never echoed), proved at `/v1/whoami`, kept in `~/.pinecall/credentials`. `--key-stdin` for a script | yes |

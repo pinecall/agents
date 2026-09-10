@@ -5,24 +5,26 @@ import { fileURLToPath } from "node:url";
 
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  CallWorld,
   describe as describeClass,
+  recalled,
   render,
   runHook,
   runTool,
   seal,
+  setCall,
   tool,
   toolNamed,
   type ToolDeclaration,
 } from "pinecall";
 
 import TiendaSur from "../agent.js";
-import view from "../views/agent.js";
 import { SOLD_OUT, type Product } from "../lib/catalog.js";
 import { tienda, type Line } from "../lib/shop.js";
 
-// El .ts de la clase, para que los tipos de los parámetros sobrevivan al transpilador: sin él,
+// El fuente de la clase, para que los tipos de los parámetros sobrevivan al transpilador: sin él,
 // `query: string` es un argumento sin tipo y el esquema no puede decir nada de él.
-const SOURCE = readFileSync(fileURLToPath(new URL("../agent.ts", import.meta.url)), "utf8");
+const SOURCE = readFileSync(fileURLToPath(new URL("../agent.tsx", import.meta.url)), "utf8");
 const ROSA = "+34 600 000 011";
 
 // La clase recibe su propio fuente una vez, como se lo dará el runner.
@@ -31,15 +33,22 @@ describeClass(TiendaSur, SOURCE);
 let sur: TiendaSur;
 
 /** El texto de un bloque del prompt, por nombre, en el estado en que esté la tienda. */
-function block(name: string, context = {}): string {
-  const found = render(sur, { view }, context).blocks.find((one) => one.name === name);
+function block(name: string, agent: TiendaSur = sur): string {
+  const found = render(agent).blocks.find((one) => one.name === name);
   if (found === undefined) throw new Error(`no hay bloque ${name}`);
   return found.text;
 }
 
 beforeEach(() => {
-  sur = seal(new TiendaSur());
+  sur = onA("phone");
 });
+
+/** La tienda atendiendo una llamada por esa puerta: es lo que `render()` lee de `this.call`. */
+function onA(channel: string): TiendaSur {
+  const agent = seal(new TiendaSur());
+  setCall(agent, new CallWorld({ id: "CA_1", contact: ROSA, from: ROSA, channel }, () => undefined));
+  return agent;
+}
 
 /** Llamar una tool como la llama el runtime: por su nombre, con el objeto que manda el modelo. */
 function call(name: string, args: Record<string, unknown> = {}): Promise<unknown> {
@@ -152,7 +161,7 @@ describe("cerrar el pedido", () => {
   it("deja el hecho en el log y colapsa la historia en una frase", async () => {
     await call("proposeOrder");
     await call("confirmOrder");
-    expect(render(sur, { view }).history).toContain("cerrado por Rosa Medina");
+    expect(render(sur).history).toContain("cerrado por Rosa Medina");
   });
 
   it("un artículo agotado deja el pedido sin hacer y dice qué hacer con él", async () => {
@@ -253,7 +262,7 @@ describe("las cuatro fases", () => {
 });
 
 describe("la view", () => {
-  const dynamic = (context = {}): string => block("view", context);
+  const dynamic = (agent: TiendaSur = sur): string => block("view", agent);
 
   it("dice que no sabe quién llama mientras no haya ficha", () => {
     expect(dynamic()).toContain("Todavía no sabes quién llama");
@@ -270,14 +279,22 @@ describe("la view", () => {
 
   it("ofrece tres artículos por teléfono y cinco por escrito, con los mismos en el estado", async () => {
     await call("findProduct", { query: "pintura" });
-    expect(dynamic({ call: { channel: "phone" } })).toContain("como mucho tres");
-    expect(dynamic({ call: { channel: "web" } })).toContain("hasta cinco");
+    expect(dynamic()).toContain("como mucho tres");
+
+    // La misma clase por la otra puerta: la llamada que atiende es lo único que cambia.
+    const escrita = onA("web");
+    await runTool(escrita, toolNamed(escrita, "findProduct") as ToolDeclaration, { query: "pintura" });
+    expect(dynamic(escrita)).toContain("hasta cinco");
   });
 
+  // Lo que la memoria sabe de este cliente lo pone el runtime, y llega como palabras: `remembers`
+  // es cómo lo pregunta la clase, y contesta que no mientras nadie haya recordado nada.
   it("prioriza la marca de siempre solo cuando la memoria la sabe", () => {
-    const knows = { memory: { has: (text: string) => text === "marca" } };
-    expect(dynamic(knows)).toContain("la marca que se suele llevar");
     expect(dynamic()).not.toContain("la marca que se suele llevar");
+
+    recalled(sur, ["la marca que suele llevarse es Bosch", "la marca que suele llevarse"]);
+
+    expect(dynamic()).toContain("la marca que se suele llevar");
   });
 
   it("con el carrito lleno lo canta, lo suma y manda repasarlo antes de cerrar", async () => {
@@ -314,8 +331,10 @@ describe("la view", () => {
 });
 
 describe("los bloques estáticos", () => {
-  it("apuntan al fichero de conocimiento y listan las seis tools", () => {
-    expect(block("knowledge")).toBe("<!-- knowledge: ./knowledge/tienda.md -->");
+  // El bloque `knowledge` lo escribe el runtime con el fichero que viaja en la declaración: la app
+  // no manda nada en él, porque el mismo fichero dos veces es peor bug que un bloque vacío.
+  it("dejan el conocimiento al runtime y listan las seis tools", () => {
+    expect(block("knowledge")).toBe("");
     expect(block("identity")).toContain("Un precio sale del catálogo");
     for (const name of ["findProduct", "addToCart", "proposeOrder", "confirmOrder", "registerCustomer", "orderStatus"]) {
       expect(block("tools")).toContain(`- ${name}:`);

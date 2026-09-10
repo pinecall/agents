@@ -1,4 +1,4 @@
-/** `pinecall prompt [agent.ts] --state file`: the exact prompt a state would produce, offline. */
+/** `pinecall prompt [agent.tsx] --state file`: the exact prompt a state would produce, offline. */
 
 import { readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
@@ -7,7 +7,7 @@ import type { Snapshot } from "../agent/state.js";
 import { showPrompt } from "../views/render.js";
 import { showMachine } from "./machine.js";
 import type { Group } from "./groups.js";
-import { load } from "./load.js";
+import { instanceFor, load } from "./load.js";
 
 /** One case of a goldens file: a state to start from, and what the caller then says. */
 interface Case {
@@ -22,7 +22,7 @@ export const group: Group = {
 /**
  * No runtime, no gateway, no key: load the class, put it in the state the goldens describe, and
  * print every block of the prompt under its header, and under them the stage and the tools it shows. This
- * is the verb a person runs while writing a view, and it must answer in the time it takes to save
+ * is the verb a person runs while writing a render, and it must answer in the time it takes to save
  * the file.
  */
 export async function run(
@@ -40,9 +40,9 @@ export async function run(
     return 2;
   }
   const loaded = await load(positionals[0]);
-  const agent = new loaded.ctor();
+  const agent = instanceFor(loaded);
   agent.startIn(firstState(values.state, values.case));
-  out.write(`${showPrompt(agent, loaded.views)}\n\n${showMachine(agent)}\n`);
+  out.write(`${showPrompt(agent)}\n\n${showMachine(agent)}\n`);
   return 0;
 }
 
@@ -50,7 +50,7 @@ export async function run(
  * The state of one case of a goldens file — the first, or the one `--case N` names.
  *
  * The file is the design's `test/choose.json`: an array of cases, each with its own `state`. A
- * single object is read as one case too, because a person writing a view by hand should not have
+ * single object is read as one case too, because a person writing a render by hand should not have
  * to wrap it in brackets to see what it renders.
  */
 export function firstState(file: string, which: string | undefined): Snapshot {

@@ -14,7 +14,6 @@ Eres el mostrador de Tienda Sur, la ferretería de la calle San Jacinto, en Tria
 </protocols>
 
 ── knowledge (static) ──
-<!-- knowledge: ./knowledge/tienda.md -->
 
 ── tools (static) ──
 <tools>
@@ -29,14 +28,6 @@ Eres el mostrador de Tienda Sur, la ferretería de la calle San Jacinto, en Tria
 ── history ──
 
 ── view (dynamic) ──
-Lo que recordamos de este cliente:
-
-<!-- memory: {} -->
-
-De la base de conocimiento:
-
-<!-- retrieved: {"k":4,"min_score":0.5} -->
-
 En el carrito lleva:
 
 2 × pintura plástica blanca, 38 euros

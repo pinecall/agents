@@ -5,7 +5,7 @@ How to build an agent with this package. Four pages, in the order a person meets
 | page | about |
 |---|---|
 | [writing-an-agent.md](writing-an-agent.md) | the class: state, tools, stages, channels, hooks, events — and the shape of an app on disk |
-| [the-prompt.md](the-prompt.md) | the prompt: named blocks in two regions, the view and the blocks a class adds, the markers the runtime fills |
+| [the-prompt.md](the-prompt.md) | the prompt: named blocks in two regions, `render()`, and where what a lookup found actually lands |
 | [testing-an-agent.md](testing-an-agent.md) | the four rings: unit tests, goldens, personas, and the score every real call gets |
 | [the-cli.md](the-cli.md) | every verb, what it needs, and where its key comes from |
 

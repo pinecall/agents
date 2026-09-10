@@ -23,7 +23,7 @@ export const group: Group = {
 };
 
 const USAGE =
-  "usage: pinecall test [paths] [--agent agent.ts] [--model m]… [--grep x] [--watch] [--json]\n";
+  "usage: pinecall test [paths] [--agent agent.tsx] [--model m]… [--grep x] [--watch] [--json]\n";
 
 // Ring 2 is a synthetic caller on the wire — a room, a voice and a persona worker — and none of
 // that is in this tree yet. The flag says so rather than running ring 1 and calling it voice,

@@ -5,26 +5,25 @@ import { fileURLToPath } from "node:url";
 
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  CallWorld,
   describe as describeClass,
+  recalled,
   render,
   runHook,
   runTool,
   seal,
+  setCall,
   tool,
   toolNamed,
   type ToolDeclaration,
 } from "pinecall";
 
 import ClinicaNorte from "../agent.js";
-import view from "../views/agent.js";
-import availability from "../views/availability.js";
 import { agendaFor, REFUSED_HOUR, type Slot } from "../lib/agenda.js";
 
-const views = { view, availability };
-
-// El .ts de la clase, para que los tipos de los parámetros sobrevivan al transpilador: sin él,
+// El fuente de la clase, para que los tipos de los parámetros sobrevivan al transpilador: sin él,
 // `day: string` es un argumento sin tipo y el esquema no puede decir nada de él.
-const SOURCE = readFileSync(fileURLToPath(new URL("../agent.ts", import.meta.url)), "utf8");
+const SOURCE = readFileSync(fileURLToPath(new URL("../agent.tsx", import.meta.url)), "utf8");
 const ANA = "+34 600 000 001";
 
 // La clase recibe su propio fuente una vez, como se lo dará el runner: sin él los tipos de los
@@ -34,8 +33,15 @@ describeClass(ClinicaNorte, SOURCE);
 let clinica: ClinicaNorte;
 
 beforeEach(() => {
-  clinica = seal(new ClinicaNorte());
+  clinica = onA("phone");
 });
+
+/** La clínica atendiendo una llamada por esa puerta: es lo que `render()` lee de `this.call`. */
+function onA(channel: string): ClinicaNorte {
+  const agent = seal(new ClinicaNorte());
+  setCall(agent, new CallWorld({ id: "CA_1", contact: ANA, from: ANA, channel }, () => undefined));
+  return agent;
+}
 
 /** Llamar una tool como la llama el runtime: por su nombre, con el objeto que manda el modelo. */
 function call(name: string, args: Record<string, unknown>): Promise<unknown> {
@@ -48,8 +54,8 @@ function names(): string[] {
 }
 
 /** El texto de un bloque del prompt, por nombre, en el estado en que esté la clínica. */
-function block(name: string, context = {}): string {
-  const found = render(clinica, views, context).blocks.find((one) => one.name === name);
+function block(name: string, agent: ClinicaNorte = clinica): string {
+  const found = render(agent).blocks.find((one) => one.name === name);
   if (found === undefined) throw new Error(`no hay bloque ${name}`);
   return found.text;
 }
@@ -146,7 +152,7 @@ describe("reservar", () => {
     await call("book", { chosen: free.when });
     expect(clinica.booking?.when).toBe(free.when);
     expect(clinica.stage).toBe("done");
-    expect(render(clinica, views).history).toContain("Reservado");
+    expect(render(clinica).history).toContain("Reservado");
     expect(await agendaFor(clinica).free("martes")).not.toContainEqual(free);
   });
 
@@ -220,7 +226,7 @@ describe("las cuatro fases", () => {
 });
 
 describe("la view", () => {
-  const dynamic = (context = {}): string => block("view", context);
+  const dynamic = (agent: ClinicaNorte = clinica): string => block("view", agent);
 
   it("pide nombre y teléfono mientras no haya paciente", () => {
     expect(dynamic()).toContain("Saluda y pide nombre y teléfono");
@@ -241,15 +247,24 @@ describe("la view", () => {
   it("ofrece dos horas por teléfono y cinco por escrito, con las mismas horas en el estado", async () => {
     await call("findPatient", { name: "Ana García", phone: ANA });
     await call("freeSlots", { day: "martes" });
-    expect(dynamic({ call: { channel: "phone" } })).toContain("como máximo dos");
-    expect(dynamic({ call: { channel: "web" } })).toContain("hasta cinco horas");
+    expect(dynamic()).toContain("como máximo dos");
+
+    // La misma clase por la otra puerta: la llamada que atiende es lo único que cambia.
+    const escrita = onA("web");
+    await runTool(escrita, toolNamed(escrita, "findPatient") as ToolDeclaration, { name: "Ana García", phone: ANA });
+    await runTool(escrita, toolNamed(escrita, "freeSlots") as ToolDeclaration, { day: "martes" });
+    expect(dynamic(escrita)).toContain("hasta cinco horas");
   });
 
+  // Lo que la memoria sabe de esta paciente lo pone el runtime, y llega como palabras: `remembers`
+  // es cómo lo pregunta la clase, y contesta que no mientras nadie haya recordado nada.
   it("prioriza al médico habitual solo cuando la memoria lo sabe", async () => {
     await call("findPatient", { name: "Ana García", phone: ANA });
-    const knows = { memory: { has: (text: string) => text === "médico habitual" } };
-    expect(dynamic(knows)).toContain("Ofrece primero las horas de su médico habitual");
     expect(dynamic()).not.toContain("médico habitual");
+
+    recalled(clinica, ["su médico habitual es la doctora Vidal", "médico habitual"]);
+
+    expect(dynamic()).toContain("Ofrece primero las horas de su médico habitual");
   });
 
   it("mientras nada está sobre la mesa manda repetir la hora, preguntar y proponerla", async () => {
@@ -285,8 +300,10 @@ describe("la view", () => {
 });
 
 describe("los bloques estáticos", () => {
-  it("apuntan al fichero de conocimiento y listan las cinco tools", () => {
-    expect(block("knowledge")).toBe("<!-- knowledge: ./knowledge/clinica.md -->");
+  // El bloque `knowledge` lo escribe el runtime con el fichero que viaja en la declaración: la app
+  // no manda nada en él, porque el mismo fichero dos veces es peor bug que un bloque vacío.
+  it("dejan el conocimiento al runtime y listan las cinco tools", () => {
+    expect(block("knowledge")).toBe("");
     expect(block("identity")).toContain("Nunca inventes una hora");
     for (const name of ["findPatient", "freeSlots", "propose", "book", "transfer"]) {
       expect(block("tools")).toContain(`- ${name}:`);

@@ -1,4 +1,4 @@
-/** Clínica Norte: la clase entera del tenant — estado, herramientas y las tres puertas. */
+/** Clínica Norte: la clase entera del tenant — estado, herramientas, las tres puertas y su prompt. */
 
 import { Agent, tool, type Call, type MemoryOp, type Stages } from "pinecall";
 
@@ -11,11 +11,6 @@ import { crm } from "./lib/crm.js";
  * Nunca inventes una hora: las horas salen de la agenda, siempre.
  */
 export default class ClinicaNorte extends Agent {
-  // un bloque del prompt propio: las horas sobre la mesa viven en `views/availability.tsx` y se
-  // reescriben solas cuando freeSlots vuelve con otras. Es dinámico —va después de la historia,
-  // justo antes de la view— y así la view queda para decir qué hacer en ESTE turno.
-  static override prompt = { dynamic: ["availability"] };
-
   // canales: un agente, tres puertas
   phone = "+34910000000";
   whatsapp = "+34910000000";
@@ -33,11 +28,12 @@ export default class ClinicaNorte extends Agent {
   hears = ["Clínica Norte", "doctora Vidal", "doctor Sáez", "doctor Ferrán"];
 
   // `knowledge`: el fichero que el agente se sabe de memoria, leído al lado de esta clase y
-  // enviado entero; el runtime lo pone donde está el marcador, en el bloque estático, una vez por
-  // llamada. `docs`: la base que se recupera por turno, por el NOMBRE con que se subió —
-  // `pinecall knowledge push ./knowledge/docs --base clinica-norte`—, nunca un glob.
+  // enviado entero; el runtime escribe su texto en el bloque estático, una vez por llamada.
+  // `docs`: la base que se recupera por turno, por el NOMBRE con que se subió —
+  // `pinecall knowledge push ./knowledge/docs --base clinica-norte`—, nunca un glob. Cuántos
+  // trozos y con qué nota mínima se dice aquí, en la declaración, y no dentro del prompt.
   knowledge = "./knowledge/clinica.md";
-  docs = "clinica-norte";
+  docs = { base: "clinica-norte", k: 4, minScore: 0.5 };
   memory = {
     remember: ["cómo prefiere que le llamen", "alergias", "su médico habitual"],
     forget: ["pagos"],
@@ -144,8 +140,102 @@ export default class ClinicaNorte extends Agent {
     return "Le paso con recepción.";
   }
 
+  /**
+   * El prompt como función del estado: lo único que cambia entre dos turnos de una llamada, y lo
+   * último que lee el modelo. Todo lo que hay aquí son palabras de la clínica — lo que la memoria
+   * recuerda y lo que la base de conocimiento devuelve le llegan al modelo como resultados de una
+   * herramienta, y nunca metidos dentro de estas frases.
+   */
+  override render() {
+    return (
+      <>
+        {this.stage === "identify" && <p>Saluda y pide nombre y teléfono. Nada más hasta identificar al paciente.</p>}
+
+        {(this.stage === "choose" || this.stage === "book") && (
+          <>
+            {/* Quién está al teléfono, y que ya sabemos quién es. Sin la segunda frase el modelo ve
+                `findPatient` en la lista de herramientas del prefijo estático — que las lleva todas,
+                porque ese prefijo no cambia entre turnos — y vuelve a pedir nombre y teléfono a una
+                paciente cuya ficha tiene delante. */}
+            <p>
+              Hablas con {this.patient!.name}, ya en la ficha: no vuelvas a pedirle el nombre ni el teléfono.
+              {this.patient!.cita
+                ? ` Tiene cita el ${this.patient!.cita} con ${this.patient!.doctor}.`
+                : " Es paciente nuevo, todavía sin cita."}
+            </p>
+            {this.remembers("médico habitual") && <p>Ofrece primero las horas de su médico habitual.</p>}
+            {this.slots.length === 0 && (
+              // La misma regla que el docstring de `freeSlots`, dicha aquí en el momento en que
+              // el modelo decide: si el paciente ya ha nombrado un día, mirar la agenda es lo
+              // siguiente que toca, y preguntarle otra vez por el día es no haberle escuchado.
+              <p>
+                Si el paciente nombra un día, consulta SIEMPRE la agenda de ese día, aunque su ficha ya
+                tenga cita ese día. Si todavía no ha nombrado ninguno, pregúntale para qué día quiere
+                {this.patient!.cita ? " cambiarla." : " la cita."}
+              </p>
+            )}
+            {this.slots.length > 0 && this.hoursOnTheTable()}
+          </>
+        )}
+
+        {this.stage === "done" && (
+          <p>Confirma que le llega un SMS con la cita del {this.booking!.when}. Despídete y cuelga.</p>
+        )}
+      </>
+    );
+  }
+
   override onMemory(ops: MemoryOp[], call: Call): void {
     crm.apply(call.contact, ops);
+  }
+
+  // Las horas libres y qué hacer con ellas. Es un método aparte porque es una idea entera —la mesa
+  // puesta— y porque `render()` se lee mejor como la lista de los momentos de la conversación.
+  private hoursOnTheTable() {
+    return (
+      <>
+        <p>Horas libres, en orden:</p>
+        {this.slots.map((slot) => (
+          <p>
+            {slot.when} con {slot.doctor}
+          </p>
+        ))}
+        {this.call.channel === "phone" ? (
+          <p>Ofrece como máximo dos de estas horas y pregunta cuál prefiere.</p>
+        ) : (
+          <p>Muestra hasta cinco horas, una por línea.</p>
+        )}
+        {/* Lo que pasa en el turno siguiente, dicho donde el modelo decide. Sin esta frase la
+            vista se acababa en cómo ofrecer: el paciente elegía, el modelo veía `book` visible
+            con un docstring que hablaba de «la hora que el paciente ha elegido», y reservaba.
+            La regla que lo impide vivía sólo en el prefijo estático y en genérico —«antes de
+            una acción irreversible espera un sí explícito»—, y el prompt no dice en ninguna
+            parte que reservar lo sea: `side_effect` y `confirm` viajan en la declaración, no en
+            el texto. Dos de cada cinco llamadas no ataban los dos cabos (2026-09-08). */}
+        {!this.proposed && (
+          <p>
+            Que el paciente nombre una de estas horas todavía no la reserva. Repítesela entera
+            —día, hora y médico— y pregúntale si se la confirmas. Llama a book solo después de que
+            te haya dicho que sí. En cuanto nombre una, llama primero a propose con ella y
+            después léesela.
+          </p>
+        )}
+        {/* El otro momento, y el que faltaba: la hora ya está sobre la mesa. La frase de arriba
+            vale para el turno en que el paciente elige y es exactamente la contraria de la que
+            hace falta en el turno en que dice que sí — un modelo que la sigue al pie de la letra
+            vuelve a leer la hora y a preguntar, y la llamada se acaba sin reserva (2026-09-08,
+            gpt-5.4-mini). Una regla que solo dice «espera el sí» sin decir «y este es» está a
+            medias, así que la vista dice cuál de los dos turnos es. */}
+        {this.proposed && (
+          <p>
+            Le estás proponiendo {this.proposed.when} con {this.proposed.doctor}. Léesela entera si
+            todavía no lo has hecho y espera su respuesta. Cuando conteste que sí a esa hora,
+            llama a book con ella en ese mismo turno, sin repetírsela otra vez ni volver a
+            preguntar. Si dice que no, o nombra una hora distinta, llama a propose con la nueva.
+          </p>
+        )}
+      </>
+    );
   }
 
   // La agenda de esta llamada. Es un método y no un getter porque `state.ts` lee los getters del

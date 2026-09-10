@@ -2,7 +2,7 @@
   "name": "@pinecall/example-clinica-norte",
   "version": "0.0.0",
   "private": true,
-  "description": "Clínica Norte: one class, one view, one knowledge file — the tenant the design writes",
+  "description": "Clínica Norte: one class that renders its own prompt, one knowledge file — the tenant the design writes",
   "type": "module",
   "scripts": {
     "lint": "tsc -p tsconfig.json --noEmit",

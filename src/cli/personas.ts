@@ -11,7 +11,7 @@ export const group: Group = {
   run,
 };
 
-const USAGE = "usage: pinecall personas list | show <name> | try <name> [--agent agent.ts]\n";
+const USAGE = "usage: pinecall personas list | show <name> | try <name> [--agent agent.tsx]\n";
 
 // A caller with no facts of their own is not broken — they are somebody who will invent nothing,
 // which is what the model playing them is told. `show` says so rather than printing an empty block.

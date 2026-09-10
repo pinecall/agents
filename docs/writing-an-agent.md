@@ -1,7 +1,7 @@
 # Writing an agent
 
 An agent is a class. Its fields are what it remembers, its `@tool` methods are what the model may
-do, its docstrings are the prompt, and its `.tsx` view is what it knows right now. Everything
+do, its docstrings are the prompt, and its `render()` is what it says about right now. Everything
 else — the audio, the rooms, the turn taking, the log, the memory, the judges — is the platform's,
 and this class never imports any of it.
 
@@ -10,9 +10,8 @@ Both examples in `../examples/` are complete versions of everything below.
 ## The shape on disk
 
 ```
-agent.ts            the class: the state is fields, the tools are methods with a docstring
-views/agent.tsx     the view: the prompt as a function of the state, the last thing the model reads
-views/<name>.tsx    one per block the class declares in `static prompt` — optional
+agent.tsx           the class: the state is fields, the tools are methods with a docstring,
+                    and render() is the prompt as a function of the state
 knowledge/          clinica.md, cached ahead of everything · docs/ pushed by name, retrieved per turn
 lib/                the tenant's own systems: an agenda, a CRM, a catalogue
 test/
@@ -23,6 +22,9 @@ test/
 .env                PINECALL_URL and PINECALL_API_KEY
 tsconfig.json       { "extends": "pinecall/tsconfig.tenant.json" }
 ```
+
+The file is `agent.tsx` because the class renders JSX. That is the only reason, and it changes
+nothing else: a class that writes no `render()` may stay in `agent.ts`, and the CLI finds either.
 
 Two files carry the toolchain, and they are the only ceremony:
 
@@ -71,7 +73,7 @@ The **class docstring is the first thing the model reads** — it opens `identit
 block of the prompt. It has to be above the class, in a `/** … */`, and the CLI is what makes that possible: it hands the
 class its own source so the docstring survives compilation.
 
-The class is the **default export** of `agent.ts`. Its name gives the slug it registers under
+The class is the **default export** of `agent.tsx`. Its name gives the slug it registers under
 (`ClinicaNorte` → `clinica-norte`), unless it declares `static slug`.
 
 ### Config, and state
@@ -87,7 +89,7 @@ never rendered, never in a snapshot:
 | `language` | which standing rules the framework contributes (`es`, `en`) |
 | `says` | `{ DKV: "de ka uve" }` — how a word the voice would misread is said |
 | `hears` | the words the ears must know: names, brands, the doctor's surname |
-| `knowledge` | one file, read beside `agent.ts` and sent whole: cached ahead of everything |
+| `knowledge` | one file, read beside `agent.tsx` and sent whole: cached ahead of everything |
 | `docs` | the knowledge base retrieved per turn, **by the name it was pushed under** |
 | `memory` | what to remember about a caller across calls, and what never to |
 
@@ -115,36 +117,47 @@ memory = {
 };
 ```
 
-**`knowledge`** is the one file the agent knows by heart. The path is relative to `agent.ts`; the
-CLI reads it there and sends `{ path, text }` in the declaration, and the runtime puts the text
-where the `knowledge` marker is, once per call, in the cached prefix. A file that is not there is
+**`knowledge`** is the one file the agent knows by heart. The path is relative to `agent.tsx`; the
+CLI reads it there and sends `{ path, text }` in the declaration, and the runtime writes the text
+into the `knowledge` block, once per call, in the cached prefix. A file that is not there is
 refused at load: `knowledge ./knowledge/nadie.md: no such file at /…/knowledge/nadie.md`.
 
 **`docs`** names the knowledge base the agent answers from — the folder under `knowledge/docs/`,
 pushed to the gateway under a name:
 
 ```bash
-pinecall knowledge push                       # ./knowledge/docs beside agent.ts, base = the slug
+pinecall knowledge push                       # ./knowledge/docs beside agent.tsx, base = the slug
 pinecall knowledge push ./knowledge/docs --base clinica-norte
 pinecall knowledge list · pinecall knowledge drop clinica-norte
 ```
 
-A push sends the folder whole and replaces the base; the class then says `docs = "clinica-norte"`
-and the view places `<Retrieved k={4} minScore={0.5} />` where the chunks should land. The object
-form sets the defaults the marker may still override: `mode` (`retrieved` today), `k`, `minScore`.
+A push sends the folder whole and replaces the base; the class then says `docs = "clinica-norte"`,
+or the object form when it wants to say how the chunks come back: `mode` (who calls `search` —
+`retrieved`, the default, is the platform before the turn; `tool` is the model), `k`, `minScore`.
 The glob the field used to hold is refused with the verb that replaces it: `docs name the base they
 were pushed to: run \`pinecall knowledge push ./knowledge/docs --base <slug>\``. Both are typed —
 `DocsDeclaration`, `MemoryDeclaration` — for a class that annotates its fields.
 
+**What comes back is never spliced into your prompt.** A chunk of a document and a fact a model
+kept from an earlier caller arrived from outside the conversation, and they reach the model as
+`tool_result` blocks, JSON-encoded, where it can weigh them — never inside the words you wrote.
+The rule and the vendor guidance behind it are a public contract:
+`runtime/docs/security/prompt-injection.md`.
+
 **`memory`** is the policy, in your own words: what the runtime extracts about a contact at
 hang-up (one model call, after `call.ended` and before `call.summary`) and what it must never
-write. The facts are recalled on every turn into the `<Memory>` marker, filed under the very words
-you wrote here — so a `<Memory kinds>` that names any other word is refused as it renders: `memory
-kinds: "preference" is not one of the words this class remembers (cómo prefiere que le llamen,
-alergias, su médico habitual)`. A marker with no `kinds` asks for everything the class keeps. A
-person reads or erases the facts with `pinecall memory <contact>` and `pinecall memory forget
-<contact>`, and `onMemory` still hears every op the runtime wrote, so a CRM of your own can keep a
-copy.
+write. The facts are recalled on every turn, filed under the very words you wrote here, and your
+class asks about them with one question:
+
+```tsx
+{this.remembers("médico habitual") && <p>Ofrece primero las horas de su médico habitual.</p>}
+```
+
+`remembers(text)` is true when memory has already told THIS call something under that word — the
+word a fact was filed under, or the fact itself — and false until it has, which is exactly what a
+caller nobody has met looks like. A person reads or erases the facts with `pinecall memory
+<contact>` and `pinecall memory forget <contact>`, and `onMemory` still hears every op the runtime
+wrote, so a CRM of your own can keep a copy.
 
 A phone call names its caller; a written one does not, so `pinecall chat --as +34600123456` is how
 you say who is calling from this terminal and the only way to exercise memory before there is a
@@ -196,6 +209,29 @@ stage: Stages<"identify" | "choose" | "book" | "done"> = "identify";
 `pinecall run --show-prompt` and `pinecall prompt` print, under the blocks of the prompt, the stage
 the instance is in and the tools that stage shows. That page is how a state machine is read.
 
+## The prompt: `render()`
+
+The class writes one block of the prompt, the last one the model reads, as a method:
+
+```tsx
+/** El prompt como función del estado: lo único que cambia entre dos turnos. */
+render() {
+  return (
+    <>
+      {this.stage === "identify" && <p>Saluda y pide nombre y teléfono.</p>}
+      {this.patient && <p>Hablas con {this.patient.name}, ya en la ficha.</p>}
+      {this.call.channel === "phone" && <p>Ofrece como máximo dos horas.</p>}
+    </>
+  );
+}
+```
+
+`this` is the state, and JSX renders to **text, never to DOM**: `<p>` is a paragraph, siblings are
+one blank line apart, and `null`/`false`/`undefined` render nothing — which is what makes
+`{condition && <p>…</p>}` the whole control flow. A class with no `render()` sends an empty view.
+The whole of it, with where a rule belongs and what it costs to get wrong, is
+[the-prompt.md](the-prompt.md).
+
 ## The call
 
 Inside a tool or a hook, `this.call` is the one call being served:
@@ -209,6 +245,11 @@ this.call.invite("+34910000099", { kind: "sip" });
 this.call.send("cart", { total: 42 }, { to: identity });   // a payload to a browser in the room
 this.log("appointment.booked", booking);          // one named fact in the call's log
 ```
+
+A `render()` reads it too — `this.call.channel` is how the same class says two of these hours out
+loud and five of them in writing. It is only there while a call is being served: `pinecall prompt`
+and `pinecall run --show-prompt` give the instance they print a line of their own, and a test that
+renders gives one with `setCall(agent, new CallWorld(line, () => {}))`.
 
 There is no LiveKit here and no escape hatch to it. A need the room cannot express is a new command
 in the protocol, with a name.

@@ -1,4 +1,4 @@
-/** `pinecall chat [agent.ts]`: the agent mounted here and the caller's side open in the same terminal. */
+/** `pinecall chat [agent.tsx]`: the agent mounted here and the caller's side open in the same terminal. */
 
 import { createInterface } from "node:readline";
 import { parseArgs } from "node:util";
@@ -17,7 +17,7 @@ const PROMPT = `${CALLER} `;
 
 export const group: Group = {
   purpose: "the app in this terminal's own process, and a prompt against it",
-  usage: `usage: pinecall chat [agent.ts] [--as <contact>] [--state file [--case n]] [--events]
+  usage: `usage: pinecall chat [agent.tsx] [--as <contact>] [--state file [--case n]] [--events]
 
   With nothing after it: the agent mounted in this process, and a written caller against it. The
   tools run here, so a breakpoint in a @tool is reachable.
