@@ -23,7 +23,6 @@ export function helpFor(name: string, group: Group): string {
 export const PLANNED: Record<string, string> = {
   new: "scaffold an app: agent.tsx, knowledge, lib, test, .env",
   g: "generate a tool, a component, a golden, a persona, a channel",
-  sessions: "list | show | tail | replay | score a call's log",
   observe: "the agent log as it happens, with a persistent cursor",
   costs: "what the calls cost, by agent, model or channel",
   call: "the agent dials a number, for real",

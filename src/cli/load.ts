@@ -7,7 +7,7 @@ import { pathToFileURL } from "node:url";
 import { Agent, setCall } from "../agent/agent.js";
 import { describe } from "../agent/docstrings.js";
 import { CallWorld } from "../call/call.js";
-import type { MountOptions } from "../runtime/connect.js";
+import { type MountOptions, slugOf } from "../runtime/connect.js";
 import { groundingOf } from "../runtime/grounding.js";
 
 /** What the CLI needs to mount or render an agent: the class, and the file it came from. */
@@ -84,4 +84,16 @@ function theAgentHere(): string {
   const found = DEFAULT_AGENTS.map((name) => resolve(name)).find((path) => existsSync(path));
   if (found !== undefined) return found;
   throw new Error(`no agent here: looked for ${DEFAULT_AGENTS.join(" and ")} in ${process.cwd()}`);
+}
+
+// The slug of the agent this terminal is standing in, read the way `run` reads it, so no two verbs
+// disagree about whose directory this is. No file here is not an error: it is a terminal outside
+// any agent's directory, and the verb that asked says what it needs instead.
+export async function agentOfThisDirectory(): Promise<string | null> {
+  try {
+    const loaded = await load();
+    return slugOf(loaded.ctor);
+  } catch {
+    return null;
+  }
 }
