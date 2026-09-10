@@ -6,6 +6,14 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Added
+- **`pinecall sessions [call]`** — the calls this gateway has run, and what one of them came to.
+  With nothing after it, one row per call newest first: when it came in, how long it lasted, why it
+  ended, what it cost and the line the agent left as its outcome. With a call id, that call's
+  **score**: the verdict, how many questions the judging put to a model and what they cost, then one
+  line per judge with the question it answered — and, for a judge that did not hold, its own
+  reasoning. `--agent`, `--limit`, `--json`. It reads ring 4's judging back; it runs nothing.
+
 ### Fixed
 - **`pinecall ui` served a blank page from a checkout, and had for as long as it has existed.** Two
   faults, one evening. The console's directory arrives as a URL's path and so ends in a separator,

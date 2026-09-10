@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { slugOf } from "../../runtime/connect.js";
 import { doorLine, theDoor } from "../env.js";
 import type { Group } from "../groups.js";
-import { DEFAULT_AGENTS, load } from "../load.js";
+import { agentOfThisDirectory, DEFAULT_AGENTS } from "../load.js";
 import { headless, openInBrowser } from "./browser.js";
 import { LocalConsole } from "./server.js";
 
@@ -81,17 +81,6 @@ export async function ui(argv: string[], how: Opening = {}): Promise<number> {
 }
 
 // Named by the same rule `run` registers it under, read from the same file, so the two verbs never
-// disagree about who the agent of this directory is. No file here is not an error: it is a
-// terminal outside any agent's directory, and the console opens on the list of them all.
-async function agentOfThisDirectory(): Promise<string | null> {
-  try {
-    const loaded = await load();
-    return slugOf(loaded.ctor);
-  } catch {
-    return null;
-  }
-}
-
 // The console is a browser program inside this package: its source is src/cli/ui/console and vite
 // writes its build to dist/cli/ui/console, which is what `files` publishes. So from the compiled
 // verb the page is the sibling directory, and from the source under a loader it is the same path

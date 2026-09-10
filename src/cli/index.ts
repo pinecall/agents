@@ -9,7 +9,7 @@ import { helpFor, PLANNED, plannedGroup, type Group } from "./groups.js";
 // The order this table is written is the order the help prints: run and chat first, because
 // they are what a person types on the first day, and the planned groups after, in the design's
 // order. run is rails server and chat is rails console — see docs/decisions/tenant-cli.md.
-const BUILT = ["run", "chat", "ui", "prompt", "test", "simulate", "eval", "runs", "personas", "knowledge", "memory", "remember", "supervise", "keys", "login", "whoami"] as const;
+const BUILT = ["run", "chat", "ui", "prompt", "test", "simulate", "eval", "sessions", "runs", "personas", "knowledge", "memory", "remember", "supervise", "keys", "login", "whoami"] as const;
 
 /** Everything `pinecall` answers to, built and planned alike, in the order help prints them. */
 export function groupNames(): string[] {
@@ -69,6 +69,7 @@ async function groupFor(name: string, out: NodeJS.WritableStream): Promise<Group
   if (name === "memory") return (await import("./memory.js")).group;
   if (name === "remember") return (await import("./remember.js")).group;
   if (name === "supervise") return (await import("./supervise.js")).group;
+  if (name === "sessions") return (await import("./sessions.js")).group;
   if (name === "keys") return (await import("./keys.js")).group;
   if (name === "login") return (await import("./login.js")).group;
   if (name === "whoami") return (await import("./whoami.js")).group;
@@ -88,6 +89,7 @@ export function usage(): string {
     "  test      ring 1: the goldens, through the app in this terminal's own process",
     "  simulate  one persona calls the agent, live, with the checks resolving as they land",
     "  eval      ring 3: one real call, re-evaluated by the runtime's code checks",
+    "  sessions  list | show a call's log, with what it cost and how it was judged",
     "  runs      list | show | diff the suites, promote a call, and watch the drift",
     "  personas  list | show | try the synthetic callers in test/personas",
     "  knowledge push | list | drop the knowledge base the agent answers from",
