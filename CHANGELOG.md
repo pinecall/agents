@@ -7,6 +7,10 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- A ring-1 golden may open its call already knowing things: `"memory": [...]` seeds the facts the
+  `recall` tool answers for that call alone. It is how you test the one thing memory exists for —
+  that the agent uses what it remembered — without a contact in a database and without leaving a
+  fact behind. Clínica Norte ships one.
 - `pinecall knowledge eval [golden.json] [--base <name>] [--k <n>]`: every question of a golden
   asked of the base, and `recall@k` and `nDCG@10` printed — computed by code with no model, so two
   runs answer the same numbers. Prints every question it missed with what came back instead and

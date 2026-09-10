@@ -59,9 +59,26 @@ expected of it. One file per case, in `test/goldens/`, named after what it is ab
 }
 ```
 
+A golden may also open the call already knowing something about the person on the line, which is
+the one question memory exists to answer — does the agent use it?
+
+```jsonc
+{
+  "memory": ["Prefiere que le llamen por la mañana", "Su médico habitual es la doctora Vidal"],
+  "state":  { "stage": "choose", "patient": { "name": "Marta Ruiz" } },
+  "input":  ["¿Tenéis algo el martes?"],
+  "expect": { "tools": ["freeSlots"], "not": ["¿cómo prefiere", "¿a qué hora le viene"] }
+}
+```
+
+Those facts never reach the memory table: they are answered to the `recall` tool for this call
+alone, and the tool call, its result and the request around them are the real ones. So a golden
+about memory needs no contact in a database and leaves nothing behind.
+
 | field | means |
 |---|---|
 | `state` | the state the call opens in — written over the class's own, not instead of it |
+| `memory` | what memory already holds about this caller, in the words a fact is written in. The facts are answered to the `recall` tool for this call and nothing is written down — this is how you test that the agent USES what it remembered |
 | `input` | the caller's turns, in order |
 | `events` | facts from the backend, injected mid-conversation: `{ after_turn, name, data }` |
 | `today` | `YYYY-MM-DD`, so a golden that names a weekday reads the same in a year |
