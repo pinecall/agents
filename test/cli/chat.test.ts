@@ -25,6 +25,21 @@ describe("the caller socket chat opens", () => {
     );
   });
 
+  // A web caller is nobody until somebody says who they are, and `--as` is this terminal saying
+  // it: memory files the call under that id. A phone number is what forces the encoding — a `+`
+  // written raw into a query string arrives at the gateway as a space.
+  it("says who is calling when --as named a contact, encoded", () => {
+    expect(chatUrl("http://127.0.0.1:8080", "clinica-norte", undefined, "+34600123456")).toBe(
+      "ws://127.0.0.1:8080/v1/chat?agent=clinica-norte&contact=%2B34600123456",
+    );
+  });
+
+  // Without the flag the caller is a visitor the runtime names itself, which is what a web call
+  // with no token is: an agent that declares `memory` remembers nothing of them, and should not.
+  it("claims no contact at all when nobody said who is calling", () => {
+    expect(chatUrl("http://127.0.0.1:8080", "clinica-norte", "app_7c1e")).not.toContain("contact");
+  });
+
   it("says in one line that the app runs here", () => {
     expect(group.purpose).toContain("own process");
   });

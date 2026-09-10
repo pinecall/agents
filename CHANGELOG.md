@@ -15,6 +15,8 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 - `pinecall knowledge push [dir] --base <name>` · `list` · `drop <base>`, and
   `pinecall memory <contact>` · `memory forget <contact>`: the folder of `*.md` to the gateway
   under a name, and one contact's facts read or erased. Both leave the planned table.
+- `pinecall chat --as <contact>`: the written caller says who it is, and the socket carries it as
+  `?contact=`, so an agent that declares `memory` can be made to remember somebody from a terminal.
 - The console: a `memory.ops` and a `docs.sources` each read as one row of the live timeline, and
   Sessions prints a fill as `n sources · ms` with what was found one click under the turn.
 
