@@ -26,6 +26,10 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   reasoning. `--agent`, `--limit`, `--json`. It reads ring 4's judging back; it runs nothing.
 
 ### Fixed
+- **Clínica Norte's CRM is per call**, hung off the instance like its agenda, instead of one
+  module-level map every call in the process wrote into. A `TODO` naming a bridge function that
+  never existed is gone. `docs/the-cli.md` no longer lists `sessions` and `supervise` as unwritten.
+  `testing-an-agent.md` is split: memory's and the index's goldens have their own page.
 - **A reproduction says why there is no prompt, and only then.** `Cell.asked` is a list, or
   `null` when the runtime kept no requests; the file writes the sentence for `null` and an empty
   list for an empty list, where it used to read `[]` as "not recorded".

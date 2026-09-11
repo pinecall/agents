@@ -3,7 +3,7 @@
 import { Agent, tool, type Call, type MemoryOp, type Stages } from "pinecall";
 
 import { agendaFor, loose, NotOnTheTable, type Booking, type Patient, type Slot, type FakeAgenda } from "./lib/agenda.js";
-import { crm } from "./lib/crm.js";
+import { crmFor } from "./lib/crm.js";
 
 /**
  * Eres la recepción de Clínica Norte. Hablas de usted, con frases cortas.
@@ -72,8 +72,8 @@ export default class ClinicaNorte extends Agent {
   dayWithNoHours?: string | undefined;
 
   override async onCall(call: Call): Promise<void> {
-    // TODO: retomar una llamada cortada con `this.last(call.contact)` en cuanto el bridge llame
-    // a provideLast(); hasta entonces la llamada empieza por la ficha del número.
+    // La llamada empieza por la ficha del número. Retomar una llamada cortada con `this.last` es
+    // un ejemplo aparte, no este.
     this.patient = await this.agenda().byPhone(call.from ?? "");
     if (this.patient) this.stage = "choose";
   }
@@ -244,7 +244,7 @@ export default class ClinicaNorte extends Agent {
   }
 
   override onMemory(ops: MemoryOp[], call: Call): void {
-    crm.apply(call.contact, ops);
+    crmFor(this).apply(call.contact, ops);
   }
 
   // Las horas libres y qué hacer con ellas. Es un método aparte porque es una idea entera —la mesa

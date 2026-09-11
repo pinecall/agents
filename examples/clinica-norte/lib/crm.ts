@@ -28,5 +28,15 @@ export class FakeCrm {
   }
 }
 
-/** El CRM que usa el agente. */
-export const crm = new FakeCrm();
+// Un CRM por llamada, colgado de la instancia que la atiende, por la misma razón que la agenda
+// (agenda.ts): un mapa a nivel de módulo lo compartirían todas las llamadas del proceso.
+const crms = new WeakMap<object, FakeCrm>();
+
+/** El CRM de quien atiende esta llamada. La primera anotación lo crea; las demás lo encuentran. */
+export function crmFor(agent: object): FakeCrm {
+  const mine = crms.get(agent);
+  if (mine) return mine;
+  const made = new FakeCrm();
+  crms.set(agent, made);
+  return made;
+}

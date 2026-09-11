@@ -32,8 +32,7 @@ on the PATH: `pinecall run`. In this workspace: `pnpm exec pinecall run`.
 
 ## The verbs that are declared and not written
 
-`new`, `g`, `sessions`, `observe`, `costs`, `supervise`, `call`, `tokens`, `phones`,
-`agents`, `deploy`. Typing one prints what it *will* be and exits 0 — a person
+`new`, `g`, `observe`, `costs`, `call`, `tokens`, `phones`, `agents`, `deploy`. Typing one prints what it *will* be and exits 0 — a person
 who types `pinecall supervise` deserves better than "unknown command". `src/cli/groups.ts` is the
 one place that says which half of the CLI is still a design, and a verb leaves that table in the
 commit that writes it.
