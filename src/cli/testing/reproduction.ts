@@ -1,7 +1,7 @@
 /** A golden that broke, written out whole: what the model was asked, and everything that happened. */
 
 import { mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 import type { Cell, Entry, EvalRun } from "./gateway.js";
 import type { Golden } from "./goldens.js";
@@ -63,11 +63,10 @@ function aReproduction(
       reason: score.reason,
     })),
     // In the order they went out: one per request, so a turn that ran a tool has more than one.
-    // A spoken run builds its requests in the WORKER process and they never reach the runner, so
-    // there the key is the sentence saying so and never an empty list: `tools: []` under a call
-    // whose finding was "ran no tool at all" misled this project once already, and an `asked: []`
-    // under a spoken break would read exactly the same way.
-    asked: cell.asked === undefined || cell.asked.length === 0 ? NOT_RECORDED : cell.asked,
+    // The runtime says null when the run kept none — a spoken run builds its requests in the
+    // worker process — and here that is the sentence saying so, never an empty list: `tools: []`
+    // under a call whose finding was "ran no tool at all" misled this project once already.
+    asked: cell.asked ?? NOT_RECORDED,
     log,
   };
 }
@@ -75,7 +74,7 @@ function aReproduction(
 /** The line the report prints under a broken golden, once, naming the folder and not each file. */
 export function whereTheyAre(paths: string[]): string[] {
   if (paths.length === 0) return [];
-  const folder = paths[0]!.slice(0, paths[0]!.lastIndexOf("/"));
+  const folder = dirname(paths[0]!);
   return [`  ${paths.length} reproduction${paths.length === 1 ? "" : "s"} written to ${folder}/`];
 }
 

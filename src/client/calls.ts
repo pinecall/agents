@@ -27,6 +27,8 @@ export class Call {
   from: string | null = null;
   to: string | null = null;
   contact: Camel<Contact> | null = null;
+  /** The eval run that opened this call, or null for a person: a run's call starts mid-conversation. */
+  run: string | null = null;
   /** The app's state as this client last set it, and as `state.changed` last reported it. */
   state: Record<string, unknown> = {};
   /** The day the call opened, `YYYY-MM-DD` in this process's timezone: what a prompt means by today. */
@@ -139,11 +141,18 @@ export class Call {
     }
   }
 
-  #line(line: { channel: Channel; from: string; to: string; caller: Camel<Contact> | null }): void {
+  #line(line: {
+    channel: Channel;
+    from: string;
+    to: string;
+    caller: Camel<Contact> | null;
+    run?: string | null | undefined;
+  }): void {
     this.channel = line.channel;
     this.from = line.from;
     this.to = line.to;
     this.contact = line.caller;
+    this.run = line.run ?? null;
   }
 }
 

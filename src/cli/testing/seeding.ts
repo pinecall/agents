@@ -6,10 +6,6 @@ import type { Snapshot } from "../../agent/state.js";
 import type { EvalRun } from "./gateway.js";
 import type { Golden } from "./goldens.js";
 
-// The caller a run dials with, as the runtime's api/evals/conversation.py mints it. It is the one thing that
-// tells an eval call apart from a person who opened the chat door on the same app.
-export const A_CALLER = "eval_";
-
 /** What to say when the calls did not arrive in the order the run says it opened them in. */
 export const OUT_OF_ORDER =
   "the calls did not arrive in the order the run opened them: {said} took the state of {seeded}";
@@ -38,9 +34,9 @@ export class Openings {
     this.seeded.length = 0;
   }
 
-  /** The state this starting call opens in: the next golden's, or none when it is not a run's. */
+  /** The state this starting call opens in: the next golden's, or none when no run opened it. */
   opening(call: SdkCall): Snapshot | undefined {
-    if (typeof call.from !== "string" || !call.from.startsWith(A_CALLER)) return undefined;
+    if (call.run === null) return undefined;
     const golden = this.waiting.shift();
     if (golden === undefined) return undefined;
     this.seeded.push(golden.name);

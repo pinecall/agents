@@ -16,7 +16,7 @@ on the PATH: `pinecall run`. In this workspace: `pnpm exec pinecall run`.
 | `chat [agent.tsx]` | the same app in this terminal's own process, and a written caller against it. `--state file [--case n]` opens the call in a state, `--as <contact>` says who is calling — the id memory files the call under, without which a written caller is a visitor and is remembered by nobody. This is `rails console`: a breakpoint in a `@tool` is reachable | yes |
 | `ui [agent]` | the console on 127.0.0.1 for the life of the command, opened in this machine's browser | yes |
 | `prompt [agent.tsx] --state file` | the exact prompt a state would produce, with the stage and its tools beneath | **no** |
-| `test [paths]` | ring 1: the goldens, through the app in this process, scored by the runtime. `--agent`, `--model` (repeatable), `--grep`, `--watch`, `--json` | yes |
+| `test [paths]` | ring 1: the goldens, through the app in this process, scored by the runtime. `--voice` says the same goldens out loud on a real line, ring 2. `--agent`, `--model` (repeatable), `--grep`, `--watch`, `--json`, `--background-noise`, `--packet-loss` | yes |
 | `simulate --persona <name>` | a model plays one caller, live. `--judge`, `--turns n`, `--voice`, `--background-noise`, `--packet-loss` | yes |
 | `eval <call-id>` | ring 3: one real call re-evaluated by the runtime's code checks. `--policy`, `--json`. Exits 1 when a check does not hold | yes |
 | `runs list \| show \| diff \| promote \| drift` | what this gateway ran, and what moved between two windows | yes |

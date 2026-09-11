@@ -7,6 +7,11 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **`Call.run`** — the eval run that opened this call, or null for a person, read off the same
+  first entry the line is read from. `pinecall test` seeds a golden's state into the call that
+  carries a run, and into no other; the `eval_` caller prefix it used to look for is gone.
+- **`pinecall test --voice` in the docs**: ring 2 over the same goldens, and where a broken golden
+  is written out (`.pinecall/evals/<run>/<golden>.json`) with the requests its model answered.
 - **`greeting`: how a class opens a call**, without an `onCall` hook to do it.
   `greeting = "Clínica Norte, buenos días."` is the words, read out as written;
   `greeting = { reply: "saluda y preséntate" }` hands the model an instruction the caller never
@@ -21,6 +26,12 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   reasoning. `--agent`, `--limit`, `--json`. It reads ring 4's judging back; it runs nothing.
 
 ### Fixed
+- **A reproduction says why there is no prompt, and only then.** `Cell.asked` is a list, or
+  `null` when the runtime kept no requests; the file writes the sentence for `null` and an empty
+  list for an empty list, where it used to read `[]` as "not recorded".
+- **Clínica Norte's knowledge file stops giving procedure.** Three sentences that told the agent what
+  to ask before checking the agenda contradicted `freeSlots`'s own description, which had to shout
+  them down; the facts stay, the procedure lives in the tools.
 - **`pinecall ui` served a blank page from a checkout, and had for as long as it has existed.** Two
   faults, one evening. The console's directory arrives as a URL's path and so ends in a separator,
   and the server guarded its own root with `files + sep` — which reads `…/console//`, which no file

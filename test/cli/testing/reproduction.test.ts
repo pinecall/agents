@@ -51,7 +51,7 @@ function aRun(cells: Cell[]): EvalRun {
   };
 }
 
-function cell(golden: string, passed: boolean, asked: Asked[] = ASKED): Cell {
+function cell(golden: string, passed: boolean, asked: Asked[] | null = ASKED): Cell {
   return { model: "haiku", golden, scores: [score("tools", passed)], summary: null, asked };
 }
 
@@ -107,14 +107,24 @@ describe("a golden that broke is left on disk, whole", () => {
     expect(whereTheyAre([])).toEqual([]);
   });
 
-  // A spoken run builds its requests in the worker, so the runner has none. The file has to SAY
-  // that: `tools: []` under "ran no tool at all" cost this project a wrong diagnosis once.
-  it("says why there is no prompt instead of writing an empty list", () => {
+  // A spoken run builds its requests in the worker, so the runtime says null for them. The file
+  // has to SAY why: `tools: []` under "ran no tool at all" cost this project a wrong diagnosis once.
+  it("says why there is no prompt when the runtime kept none", () => {
+    const at = under();
+
+    const [path] = writtenOut(aRun([cell("ofrece-las-horas-del-martes", false, null)]), [GOLDEN], {}, at);
+    const written = JSON.parse(readFileSync(path!, "utf8")) as Record<string, unknown>;
+
+    expect(written["asked"]).toBe(NOT_RECORDED);
+  });
+
+  // Null and an empty list are two different facts, and the file keeps them apart.
+  it("writes an empty list when the call made no request at all", () => {
     const at = under();
 
     const [path] = writtenOut(aRun([cell("ofrece-las-horas-del-martes", false, [])]), [GOLDEN], {}, at);
     const written = JSON.parse(readFileSync(path!, "utf8")) as Record<string, unknown>;
 
-    expect(written["asked"]).toBe(NOT_RECORDED);
+    expect(written["asked"]).toEqual([]);
   });
 });

@@ -112,7 +112,7 @@ export default class ClinicaNorte extends Agent {
   /**
    * Consulta la agenda real de un día concreto y devuelve las horas que quedan libres ese día, cada una con su médico.
    * Llámala EN CUANTO el paciente nombre un día o lo dé a entender —«el martes», «¿y el jueves?», «el domingo por la
-   * mañana»— y antes de preguntarle ninguna otra cosa: ni la especialidad, ni el motivo, ni si quiere cambiar o cancelar.
+   * mañana»— y antes de preguntarle nada más.
    * Es la única fuente de horas que existe: ninguna hora puede decirse en voz alta si no ha salido de aquí. Llámala también
    * cuando la ficha del paciente ya tenga cita ese día, y también cuando creas que el centro cierra ese día —un día sin
    * agenda devuelve la lista vacía, y esa lista vacía ES la respuesta que hay que darle—. No devuelve precios ni

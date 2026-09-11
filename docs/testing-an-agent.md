@@ -94,6 +94,7 @@ pinecall test test/goldens/reserva-*.json      # some of them
 pinecall test --grep reserva --watch           # while writing one
 pinecall test --model haiku --model openai/gpt-4.1-mini   # the matrix: models × goldens
 pinecall test --json                           # for a pipe; the human matrix otherwise
+pinecall test --voice --grep reserva           # ring 2: the same goldens, said out loud
 ```
 
 **Where each half runs.** The class is mounted in *this terminal's own process*, exactly as
@@ -104,8 +105,16 @@ the gateway runs **one suite at a time**, answering a second with a 409 that nam
 already going.
 
 The report is a matrix: a line per golden, the evidence under the ones that broke, and the median
-latency each was answered with. `--voice` is ring 2 and says so rather than running ring 1 and
-calling it voice.
+latency each was answered with. `--voice` runs the same goldens as ring 2: each line is said out
+loud by this machine's speech tool on a real line to a worker, and the same judges read the log
+it leaves. It needs a worker running beside the gateway, and `--background-noise` and
+`--packet-loss` spoil the line the way they do for `simulate`.
+
+**A golden that broke is written out whole**, to `.pinecall/evals/<run>/<golden>.json` under the
+directory the suite ran in: the golden as declared, every verdict with its reason, the call's log,
+and `asked` — every request the model answered, verbatim, with its system blocks, tools and
+messages. Nothing else keeps the prompt; the log holds a hash of each block on purpose. A spoken
+run builds its requests in the worker and the file says so in place of the list.
 
 ## Ring 2 — a persona on the line
 

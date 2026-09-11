@@ -6,15 +6,15 @@ import type { Call as SdkCall } from "../../../src/client/index.js";
 
 import type { EvalRun } from "../../../src/cli/testing/gateway.js";
 import type { Golden } from "../../../src/cli/testing/goldens.js";
-import { A_CALLER, Openings, OUT_OF_ORDER } from "../../../src/cli/testing/seeding.js";
+import { Openings, OUT_OF_ORDER } from "../../../src/cli/testing/seeding.js";
 
 const GOLDENS: Golden[] = [
   { name: "identifica", input: ["hola"], state: { stage: "identify" } },
   { name: "ofrece", input: ["¿el martes?"], state: { stage: "choose" } },
 ];
 
-function aCall(from: string): SdkCall {
-  return { id: `CA_${from}`, from } as SdkCall;
+function aCall(tail: string, run: string | null = "run_1"): SdkCall {
+  return { id: `CA_${tail}`, from: `web_${tail}`, run } as SdkCall;
 }
 
 function opened(names: string[]): EvalRun {
@@ -35,15 +35,15 @@ describe("the state a starting call opens in", () => {
     const openings = new Openings();
     openings.expects(GOLDENS, 1);
 
-    expect(openings.opening(aCall(`${A_CALLER}one`))).toEqual({ stage: "identify" });
-    expect(openings.opening(aCall(`${A_CALLER}two`))).toEqual({ stage: "choose" });
+    expect(openings.opening(aCall("one"))).toEqual({ stage: "identify" });
+    expect(openings.opening(aCall("two"))).toEqual({ stage: "choose" });
   });
 
   it("walks the goldens once per model, models outermost, as the runner does", () => {
     const openings = new Openings();
     openings.expects(GOLDENS, 2);
 
-    const taken = ["a", "b", "c", "d"].map((one) => openings.opening(aCall(`${A_CALLER}${one}`)));
+    const taken = ["a", "b", "c", "d"].map((one) => openings.opening(aCall(one)));
 
     expect(taken.map((state) => state?.["stage"])).toEqual([
       "identify",
@@ -57,8 +57,8 @@ describe("the state a starting call opens in", () => {
     const openings = new Openings();
     openings.expects(GOLDENS, 1);
 
-    expect(openings.opening(aCall("+34600000001"))).toBeUndefined();
-    expect(openings.opening(aCall(`${A_CALLER}one`))).toEqual({ stage: "identify" });
+    expect(openings.opening(aCall("a-person", null))).toBeUndefined();
+    expect(openings.opening(aCall("one"))).toEqual({ stage: "identify" });
   });
 });
 
@@ -66,8 +66,8 @@ describe("the check that the seeds went where they were meant to", () => {
   it("says nothing when the run opened the goldens in the order they were handed out", () => {
     const openings = new Openings();
     openings.expects(GOLDENS, 1);
-    openings.opening(aCall(`${A_CALLER}one`));
-    openings.opening(aCall(`${A_CALLER}two`));
+    openings.opening(aCall("one"));
+    openings.opening(aCall("two"));
 
     expect(openings.mismatched(opened(["identifica", "ofrece"]))).toBeUndefined();
   });
@@ -75,8 +75,8 @@ describe("the check that the seeds went where they were meant to", () => {
   it("names both goldens when a call took a state that was not its own", () => {
     const openings = new Openings();
     openings.expects(GOLDENS, 1);
-    openings.opening(aCall(`${A_CALLER}one`));
-    openings.opening(aCall(`${A_CALLER}two`));
+    openings.opening(aCall("one"));
+    openings.opening(aCall("two"));
 
     const said = openings.mismatched(opened(["ofrece", "identifica"]));
 
