@@ -9,6 +9,7 @@ import { Readable } from "node:stream";
 
 import type { Door } from "../testing/gateway.js";
 import { Refused } from "./refused.js";
+import type { Chatting } from "./chatting.js";
 import type { Simulating } from "./simulating.js";
 import type { Testing } from "./testing.js";
 
@@ -34,14 +35,18 @@ const PERSONAS = `${OWN}personas`;
 const SIMULATE = `${OWN}simulate`;
 const GOLDENS = `${OWN}goldens`;
 const TEST = `${OWN}test`;
+const CHAT = `${OWN}chat`;
+const SAY = `${OWN}chat/say`;
+const HANG_UP = `${OWN}chat/end`;
 
 /** What this process can do of its own, handed in by `pinecall ui`; a test may hand in less. */
 export interface Own {
   simulating: Simulating | null;
   testing: Testing | null;
+  chatting: Chatting | null;
 }
 
-const NOTHING_OF_ITS_OWN: Own = { simulating: null, testing: null };
+const NOTHING_OF_ITS_OWN: Own = { simulating: null, testing: null, chatting: null };
 
 const TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -141,7 +146,7 @@ export class LocalConsole {
     const method = request.method ?? "GET";
     const asked = async (): Promise<unknown> => JSON.parse((await whole(request)).toString() || "{}");
     try {
-      const { simulating, testing } = this.#own;
+      const { simulating, testing, chatting } = this.#own;
       if (path === PERSONAS && method === "GET") {
         json(response, 200, await this.#simulating(simulating).roster());
       } else if (path === SIMULATE && method === "POST") {
@@ -150,6 +155,14 @@ export class LocalConsole {
         json(response, 200, await this.#testing(testing).roster());
       } else if (path === TEST && method === "POST") {
         json(response, 200, await this.#testing(testing).start(await asked()));
+      } else if (path === CHAT && method === "GET") {
+        json(response, 200, await this.#chatting(chatting).roster());
+      } else if (path === CHAT && method === "POST") {
+        json(response, 200, await this.#chatting(chatting).start(await asked()));
+      } else if (path === SAY && method === "POST") {
+        json(response, 200, await this.#chatting(chatting).say(await asked()));
+      } else if (path === HANG_UP && method === "POST") {
+        json(response, 200, await this.#chatting(chatting).end(await asked()));
       } else {
         throw new Refused(404, `nothing at ${path}`);
       }
@@ -238,6 +251,11 @@ export class LocalConsole {
 
   #testing(door: Testing | null): Testing {
     if (door === null) throw new Refused(404, "this console was opened with no goldens door");
+    return door;
+  }
+
+  #chatting(door: Chatting | null): Chatting {
+    if (door === null) throw new Refused(404, "this console was opened with no chat door");
     return door;
   }
 }

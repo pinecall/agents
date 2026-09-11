@@ -9,6 +9,7 @@ import { basename, join, sep } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { headless } from "../../src/cli/ui/browser.js";
+import type { Chatting } from "../../src/cli/ui/chatting.js";
 import { consoleFiles, ui } from "../../src/cli/ui/index.js";
 import { LocalConsole } from "../../src/cli/ui/server.js";
 import { Refused } from "../../src/cli/ui/refused.js";
@@ -192,9 +193,27 @@ describe("the console's own doors", () => {
     },
   };
 
+  // The chat door holds a socket per call in the terminal that typed `ui`; here it is a stub, and
+  // what is being pinned is the server's half: which path is which verb, and how a refusal travels.
+  const open = new Set<string>();
+  const chatting: Chatting = {
+    roster: async () => ({ agent: "clinica-norte" }),
+    start: async () => {
+      open.add("call_chat");
+      return { call: "call_chat" };
+    },
+    say: async (asked: unknown) => {
+      const said = asked as { call: string };
+      if (!open.has(said.call)) throw new Refused(404, `${said.call} is not a chat this console opened`);
+      return { call: said.call };
+    },
+    end: async (asked: unknown) => ({ call: (asked as { call: string }).call }),
+    close: async () => open.clear(),
+  };
+
   beforeEach(async () => {
     await gateway.open();
-    served = await LocalConsole.open({ url: gateway.url, apiKey: KEY }, aBuiltConsole(), { simulating, testing });
+    served = await LocalConsole.open({ url: gateway.url, apiKey: KEY }, aBuiltConsole(), { simulating, testing, chatting });
   });
   afterEach(async () => {
     await served.close();
@@ -247,6 +266,26 @@ describe("the console's own doors", () => {
       body: JSON.stringify({ agent: "clinica-norte", goldens: ["nadie"] }),
     });
     expect(refused.status).toBe(404);
+  });
+
+  it("opens a written call, carries a turn down it, and refuses a call it never opened", async () => {
+    expect(await (await fetch(`${served.url}ui/chat`)).json()).toEqual({ agent: "clinica-norte" });
+    const opened = await fetch(`${served.url}ui/chat`, {
+      method: "POST",
+      body: JSON.stringify({ agent: "clinica-norte" }),
+    });
+    expect(await opened.json()).toEqual({ call: "call_chat" });
+    const said = await fetch(`${served.url}ui/chat/say`, {
+      method: "POST",
+      body: JSON.stringify({ call: "call_chat", text: "hola" }),
+    });
+    expect(said.status).toBe(200);
+    const stray = await fetch(`${served.url}ui/chat/say`, {
+      method: "POST",
+      body: JSON.stringify({ call: "call_nobody", text: "hola" }),
+    });
+    expect(stray.status).toBe(404);
+    expect(gateway.heard).toEqual([]);
   });
 
   it("answers 404 for a door of its own it does not have, and for the wrong verb", async () => {

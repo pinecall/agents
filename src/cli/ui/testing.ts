@@ -7,6 +7,7 @@ import { inFlight } from "../testing/progress.js";
 import type { Door, Wanted as RunWanted } from "../testing/gateway.js";
 import { goldensIn, type Golden } from "../testing/goldens.js";
 import { mountedForASuite, ranSuite } from "../testing/suite.js";
+import { aFlag, anObject, aString, maybeNumber, names } from "./asked.js";
 import { Refused } from "./refused.js";
 
 /** What the page asks for: which goldens, and on what line. */
@@ -152,32 +153,14 @@ async function inThisProcess(
   }
 }
 
-// Read by hand and not by a schema library: the CLI carries none (test/the-imports.test.ts).
+// Read with the shared readers of ui/asked.ts: every door of this process reads a body the same way.
 function parsed(asked: unknown): Wanted {
-  if (typeof asked !== "object" || asked === null) throw new Refused(422, "a run is asked for with a JSON object");
-  const given = asked as Record<string, unknown>;
-  const agent = given["agent"];
-  if (typeof agent !== "string" || agent === "") throw new Refused(422, "agent is a name, and it was missing");
-  const goldens = given["goldens"];
-  if (!Array.isArray(goldens) || goldens.length === 0 || !goldens.every((one) => typeof one === "string")) {
-    throw new Refused(422, "goldens is a list of at least one name");
-  }
-  const voice = given["voice"];
-  if (voice !== undefined && typeof voice !== "boolean") throw new Refused(422, "voice is true or false");
+  const given = anObject(asked, "a run");
   return {
-    agent,
-    goldens: goldens as string[],
-    voice: voice === true,
-    background_noise: aNumber(given, "background_noise", 0, 120),
-    packet_loss: aNumber(given, "packet_loss", 0, 1),
+    agent: aString(given, "agent"),
+    goldens: names(given, "goldens"),
+    voice: aFlag(given, "voice"),
+    background_noise: maybeNumber(given, "background_noise", 0, 120),
+    packet_loss: maybeNumber(given, "packet_loss", 0, 1),
   };
-}
-
-function aNumber(given: Record<string, unknown>, name: string, least: number, most: number): number | undefined {
-  const value = given[name];
-  if (value === undefined) return undefined;
-  if (typeof value !== "number" || !Number.isFinite(value) || value < least || value > most) {
-    throw new Refused(422, `${name} is a number between ${least} and ${most}`);
-  }
-  return value;
 }
