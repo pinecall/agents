@@ -20,9 +20,11 @@ export const group: Group = {
   from a flag: argv is visible in \`ps\` to every user on the box, and a key pasted as an argument
   is a key in the shell history. rm gives that vendor back to the box's key.
 
-  No door of the runtime ever answers with a provider key: list prints the vendors and nothing
-  else, not a value, not a prefix, not a fingerprint. A key that was lost was lost at the vendor,
-  and the fix is to add it again.`,
+  No door a person reads ever answers with a provider key: list prints the vendors and nothing
+  else, not a value, not a prefix, not a fingerprint. The one door that does read a key back is
+  the worker's — GET /v1/agents/<slug>/provider-keys, an org's own keys to an org's own process,
+  on that org's key — and it is the whole reason the vault exists. A key that was lost is set
+  again.`,
   run,
 };
 

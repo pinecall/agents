@@ -1,7 +1,7 @@
 /** The console's own door to `runs promote`: one real call written down as a golden candidate, here. */
 
 import type { Golden } from "../testing/goldens.js";
-import type { Door } from "../testing/gateway.js";
+import { Refused, type Door } from "../testing/gateway.js";
 import { CANDIDATES, promotedTo } from "../runs/candidate.js";
 import { anObject, aString, maybeNumber, someWords } from "./asked.js";
 import { Refusal } from "./refusal.js";
@@ -48,8 +48,10 @@ export function promotingFrom(door: Door, agent: string | null, out: NodeJS.Writ
         out.write(`${written.path}  promoted from ${call}\n`);
         return written;
       } catch (refused) {
-        // A call nobody judged has no verdict to write an `expect` from, and that sentence is the
-        // answer: it names what is missing and what would give it — a run with --judge.
+        // The gateway refusing — another org's call, a door that is down — keeps its own status
+        // and sentence (ui/refusal.ts). What is a 422 HERE is this door's own two: a call with no
+        // log, and a call nobody judged, which has no verdict to write an `expect` from.
+        if (refused instanceof Refused) throw refused;
         throw new Refusal(422, refused instanceof Error ? refused.message : String(refused));
       }
     },

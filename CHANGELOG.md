@@ -28,8 +28,9 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   them knows nothing but their paths.
 - **`pinecall simulate --listen` works.** The call comes out of this machine's speakers while it
   happens: the same hidden `observe` seat the console's listen button takes, joined from Node with
-  `@livekit/rtc-node` (an optional dependency), both tracks through livekit's own `AudioMixer`,
-  written to whichever of `ffplay`, `play`, `aplay` or `pw-play` is on the PATH. The seat is
+  `@livekit/rtc-node` (an optional dependency) in a process of its own, both tracks through
+  livekit's own `AudioMixer`, written to whichever of `ffplay`, `play`, `aplay` or `pw-play` is on
+  the PATH. The seat is
   knocked for until the room opens, so the ear lands on the greeting. `--listen` turns `--voice`
   on, out loud: a written call has no audio in it.
 - **Chat from the console.** A screen of its own: the class of the directory `pinecall ui` runs in,

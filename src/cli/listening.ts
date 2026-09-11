@@ -2,7 +2,9 @@
 
 import { spawn, type ChildProcess } from "node:child_process";
 import { existsSync } from "node:fs";
-import { delimiter, join } from "node:path";
+import { delimiter, extname, join } from "node:path";
+import type { Readable } from "node:stream";
+import { fileURLToPath } from "node:url";
 
 import { asked, type Door } from "./testing/gateway.js";
 
@@ -21,8 +23,8 @@ export interface Ear {
 }
 
 // The room's own rate and shape. Everything that reaches a room is 48 kHz mono — the caller's
-// track is published at that rate (runtime evals/speech.py) — so the mixer and the player agree
-// on one number rather than each guessing.
+// track is published at that rate (runtime evals/speech.py) — so the ear and the player agree on
+// one number rather than each guessing.
 const SAMPLE_RATE = 48_000;
 const CHANNELS = 1;
 
@@ -31,6 +33,13 @@ const CHANNELS = 1;
 // the door is knocked at until it answers rather than once.
 const A_ROOM_OPENS_WITHIN_MS = 30_000;
 const A_KNOCK_EVERY_MS = 500;
+
+// How long the ear is given to leave the room on its own before it is made to.
+const LEAVING_TAKES_MS = 2_000;
+
+// The ear's PCM comes out of its fd 3, never its stdout: the room library's own logger writes to
+// stdout at debug and is exported nowhere, so stdout is the one place the samples could not go.
+const PCM = 3;
 
 /** The players this machine might have, in the order they are tried, each with its raw-audio flags. */
 const PLAYERS: { name: string; args: string[] }[] = [
@@ -55,42 +64,31 @@ export const NO_ROOM_LIBRARY =
  * It is the same seat the console's listen button takes — `POST /v1/calls/{call}/listen`, scope
  * `observe` — and the caller is never told anybody joined. Nothing is recorded here: the runtime
  * writes the recording, and this is only the ear.
+ *
+ * The room is joined in a process of its own (cli/ear.ts), because the room library is a native
+ * build with a logger this process cannot turn down and threads that would hold it open after the
+ * call. This side mints the seat, starts the player, and pipes the one into the other.
  */
 export async function anEarIn(door: Door, call: string, out: NodeJS.WritableStream): Promise<Ear> {
   const player = aPlayer();
   if (player === null) throw new Error(NO_PLAYER);
-  const room = await theRoomLibrary();
+  theRoomLibrary();
   const seat = await aSeatIn(door, call);
-  const joined = new room.Room();
-  const mixer = new room.AudioMixer(SAMPLE_RATE, CHANNELS);
-  // Both sides of the call are one stream: the caller's track and the agent's, mixed, so the
-  // speakers hear the conversation and not whichever track arrived first.
-  joined.on(room.RoomEvent.TrackSubscribed, (track) => {
-    if (track.kind === room.TrackKind.KIND_AUDIO) {
-      mixer.addStream(new room.AudioStream(track, SAMPLE_RATE, CHANNELS));
-    }
+  const ear = spawn(process.execPath, [...theLoaderFor(EAR), EAR, String(SAMPLE_RATE), String(CHANNELS)], {
+    stdio: ["pipe", "ignore", "ignore", "pipe"],
   });
-  await joined.connect(seat.server_url, seat.participant_token, { autoSubscribe: true, dynacast: false });
+  (ear.stdio[PCM] as Readable).pipe(player.stdin!);
+  ear.stdin!.write(`${JSON.stringify({ server_url: seat.server_url, participant_token: seat.participant_token })}\n`);
   out.write(`  listening as ${seat.identity} · ${player.spawnfile}\n`);
-  const playing = pour(mixer, player);
   return {
     identity: seat.identity,
     async leave(): Promise<void> {
-      await mixer.aclose();
-      await joined.disconnect();
-      await playing;
-      player.stdin?.end();
+      // Closing its stdin is how the ear is told to leave; a moment later it is made to.
+      ear.stdin!.end();
+      await gone(ear);
+      player.stdin!.end();
     },
   };
-}
-
-// The mixed frames, straight to the player's stdin as they are made. A frame is int16 samples,
-// which is exactly what every one of the four players is being told to expect.
-async function pour(mixer: AsyncIterable<{ data: Int16Array }>, player: ChildProcess): Promise<void> {
-  for await (const frame of mixer) {
-    if (player.stdin === null || player.stdin.destroyed) return;
-    player.stdin.write(Buffer.from(frame.data.buffer, frame.data.byteOffset, frame.data.byteLength));
-  }
 }
 
 /**
@@ -110,6 +108,35 @@ export async function aSeatIn(door: Door, call: string): Promise<Seat> {
   }
 }
 
+// The ear beside this file, whatever this file is: `ear.ts` under the loader in a checkout, `ear.js`
+// in the published dist. Which one is read off this module's own name.
+export const EAR = fileURLToPath(new URL(`ear${extname(fileURLToPath(import.meta.url))}`, import.meta.url));
+
+/** How node runs the ear: through tsx when it is TypeScript, and on its own when it is not. */
+function theLoaderFor(entry: string): string[] {
+  return extname(entry) === ".ts" ? ["--import", "tsx"] : [];
+}
+
+/** Whether the ear's one dependency is installed here, asked without loading it. */
+function theRoomLibrary(): void {
+  try {
+    import.meta.resolve("@livekit/rtc-node");
+  } catch {
+    throw new Error(NO_ROOM_LIBRARY);
+  }
+}
+
+/** The ear's exit, or the ear killed when it took too long about it. */
+function gone(ear: ChildProcess): Promise<void> {
+  return new Promise((left) => {
+    const kill = setTimeout(() => ear.kill("SIGKILL"), LEAVING_TAKES_MS);
+    ear.once("exit", () => {
+      clearTimeout(kill);
+      left();
+    });
+  });
+}
+
 /** The first player this machine has on its PATH, started and waiting for samples. */
 function aPlayer(): ChildProcess | null {
   for (const { name, args } of PLAYERS) {
@@ -122,27 +149,4 @@ function aPlayer(): ChildProcess | null {
 /** Is this program on this shell's PATH? Asked without starting anything to find out. */
 function onThePath(name: string): boolean {
   return (process.env["PATH"] ?? "").split(delimiter).some((where) => where !== "" && existsSync(join(where, name)));
-}
-
-/**
- * The room, in Node. It is an optional dependency because it is a native build of some weight and
- * every verb but this one talks to the gateway over HTTP: a tenant who never listens from their
- * terminal should not pay for it, and one who does is told the line that installs it.
- *
- * Its logger fixes its own level the first time the module is loaded — debug unless NODE_ENV says
- * production (its dist/log.cjs) — writes to the file descriptor rather than to `process.stdout`,
- * and is exported nowhere, so there is no turning it down afterwards. Three hundred lines of FFI
- * chatter over the transcript is not a call anybody can read, so the variable is set for the
- * length of that one import and put back exactly as it was, before any tenant code runs again.
- */
-async function theRoomLibrary(): Promise<typeof import("@livekit/rtc-node")> {
-  const before = process.env["NODE_ENV"];
-  process.env["NODE_ENV"] = before ?? "production";
-  try {
-    return await import("@livekit/rtc-node");
-  } catch {
-    throw new Error(NO_ROOM_LIBRARY);
-  } finally {
-    if (before === undefined) delete process.env["NODE_ENV"];
-  }
 }
