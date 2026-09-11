@@ -1,6 +1,7 @@
 /** The console's own door to the goldens: this directory's, listed, and a run of the chosen ones started from the page. */
 
 import { Pinecall } from "../../client/index.js";
+import { modelOf } from "../../runtime/connect.js";
 
 import { load } from "../load.js";
 import { inFlight } from "../testing/progress.js";
@@ -10,10 +11,12 @@ import { mountedForASuite, ranSuite } from "../testing/suite.js";
 import { aFlag, anObject, aString, maybeNumber, names } from "./asked.js";
 import { Refusal } from "./refusal.js";
 
-/** What the page asks for: which goldens, and on what line. */
+/** What the page asks for: which goldens, under which models, and on what line. */
 export interface Wanted {
   agent: string;
   goldens: string[];
+  /** `vendor/model`, one per column of the matrix. Empty is the one the class declared. */
+  models: string[];
   voice: boolean;
   /** dB under the caller. Only on a spoken line. */
   background_noise?: number | undefined;
@@ -44,7 +47,13 @@ export interface Testing {
 export interface Pieces {
   goldens: () => Promise<Golden[]>;
   /** Runs the chosen goldens through the class of this directory; answers the run's exit code. */
-  suite: (door: Door, goldens: Golden[], line: Partial<RunWanted>, out: NodeJS.WritableStream) => Promise<number>;
+  suite: (
+    door: Door,
+    goldens: Golden[],
+    models: string[],
+    line: Partial<RunWanted>,
+    out: NodeJS.WritableStream,
+  ) => Promise<number>;
   /** The id of the run the gateway is driving for this agent right now, when there is one. */
   running: (door: Door, agent: string) => Promise<string | undefined>;
 }
@@ -91,7 +100,7 @@ export function testingFrom(
       const chosen = (await pieces.goldens()).filter((golden) => wanted.goldens.includes(golden.name));
       const missing = wanted.goldens.filter((name) => !chosen.some((golden) => golden.name === name));
       if (missing.length > 0) throw new Refusal(404, `no golden called ${missing.join(", ")}`);
-      return await opened(agent, chosen, aLine(wanted), door, out, pieces);
+      return await opened(agent, chosen, wanted.models, aLine(wanted), door, out, pieces);
     },
   };
 }
@@ -113,13 +122,14 @@ function aLine(wanted: Wanted): Partial<RunWanted> {
 async function opened(
   agent: string,
   goldens: Golden[],
+  models: string[],
   line: Partial<RunWanted>,
   door: Door,
   out: NodeJS.WritableStream,
   pieces: Pieces,
 ): Promise<{ run: string }> {
   let settled = false;
-  const suite = pieces.suite(door, goldens, line, out).then(
+  const suite = pieces.suite(door, goldens, models, line, out).then(
     () => (settled = true),
     (failed: unknown) => {
       settled = true;
@@ -139,6 +149,7 @@ async function opened(
 async function inThisProcess(
   door: Door,
   goldens: Golden[],
+  models: string[],
   line: Partial<RunWanted>,
   out: NodeJS.WritableStream,
 ): Promise<number> {
@@ -147,7 +158,8 @@ async function inThisProcess(
   const held = mountedForASuite(loaded, pc);
   try {
     await pc.connect();
-    return await ranSuite({ door, loaded, held, goldens, models: [], line, out, json: false });
+    const asked = models.map(modelOf).filter((model) => model !== undefined);
+    return await ranSuite({ door, loaded, held, goldens, models: asked, line, out, json: false });
   } finally {
     pc.close();
   }
@@ -159,6 +171,7 @@ function parsed(asked: unknown): Wanted {
   return {
     agent: aString(given, "agent"),
     goldens: names(given, "goldens"),
+    models: given["models"] === undefined ? [] : names(given, "models"),
     voice: aFlag(given, "voice"),
     background_noise: maybeNumber(given, "background_noise", 0, 120),
     packet_loss: maybeNumber(given, "packet_loss", 0, 1),

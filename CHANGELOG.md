@@ -7,6 +7,13 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **A broken run's reproductions, in the console.** Evals → a run → the goldens that did not hold,
+  each opened whole: the golden as written, every verdict on it, and the requests the model
+  actually answered. The log keeps only a hash of each prompt block on purpose, so that file is
+  the one place the text is, and `ui/reproductions` is how a page reaches a file on this disk.
+- **A model matrix from the console.** The suite form takes models, comma by comma, the way
+  `pinecall test --model` is repeated — and a call read on the Sessions screen carries the same
+  two buttons the Evals screen has: re-check by code, and promote.
 - **The console does what the terminal does.** Five screens landed at once, and every one of them
   runs the very code its verb runs: **Knowledge** (the folder pushed from this directory, the
   bases listed and dropped, the golden asked), **Memory** (one contact read and forgotten, the

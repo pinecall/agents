@@ -15,15 +15,18 @@ function quiet(): NodeJS.WritableStream {
 }
 
 /** A suite that the gateway lists as running the moment it is asked, and that then finishes. */
-function opensARun(): { asked: Golden[][]; pieces: Pieces } {
+function opensARun(): { asked: Golden[][]; under: string[][]; pieces: Pieces } {
   const asked: Golden[][] = [];
+  const under: string[][] = [];
   let running: string | undefined;
   return {
     asked,
+    under,
     pieces: {
       goldens: async () => [RESERVA, IDENTIFICA],
-      suite: async (_door, goldens) => {
+      suite: async (_door, goldens, models) => {
         asked.push(goldens);
+        under.push(models);
         running = "run_from_the_page";
         await new Promise((wake) => setTimeout(wake, 600));
         return 0;
@@ -90,5 +93,31 @@ describe("running the ticked ones", () => {
     });
     await expect(door.start({ agent: "clinica-norte", goldens: ["reserva"] })).rejects.toMatchObject({ status: 502 });
     expect(written.join("")).toContain("no key for");
+  });
+});
+
+describe("a column per model", () => {
+  it("carries every model the page named, as `pinecall test --model` repeats it", async () => {
+    const opening = opensARun();
+    const door = testingFrom(DOOR, "clinica-norte", quiet(), opening.pieces);
+
+    await door.start({
+      agent: "clinica-norte",
+      goldens: ["reserva"],
+      models: ["anthropic/claude-haiku-4-5", "openai/gpt-4.1-mini"],
+    });
+
+    expect(opening.under[0]).toEqual(["anthropic/claude-haiku-4-5", "openai/gpt-4.1-mini"]);
+  });
+
+  // A model is read where the terminal reads it (runtime/connect.ts `modelOf`), so the page may
+  // write `anthropic/claude-haiku-4-5` or the short name, exactly as `--model` takes either.
+  it("runs the one the class declared when the page names none", async () => {
+    const opening = opensARun();
+    const door = testingFrom(DOOR, "clinica-norte", quiet(), opening.pieces);
+
+    await door.start({ agent: "clinica-norte", goldens: ["reserva"] });
+
+    expect(opening.under[0]).toEqual([]);
   });
 });
