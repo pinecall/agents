@@ -78,7 +78,14 @@ export default class ClinicaNorte extends Agent {
     if (this.patient) this.stage = "choose";
   }
 
-  /** Busca al paciente por nombre y teléfono. Pide los dos antes de llamarla. Si no está en la ficha, ofrécele darle de alta. */
+  /**
+   * Busca la ficha del paciente en el sistema de la clínica por su nombre completo y su teléfono, y la devuelve entera
+   * —con su cita actual si la tiene— o nada si esa combinación no existe. Los dos datos tienen que cuadrar, así que
+   * llámala sólo cuando el paciente te haya dicho los dos DE VERDAD: nunca con un hueco, ni con un «pendiente», ni con
+   * nada que te hayas inventado para rellenar, porque eso es una búsqueda que no puede encontrar a nadie. Si todavía te
+   * falta uno de los dos, pídeselo y espera. Si no aparece nadie con esa combinación, repítele el teléfono como lo has
+   * entendido por si lo has oído mal, y si aún así no está, ofrécele darle de alta con registerPatient.
+   */
   @tool({ stage: "identify", pii: ["name", "phone"] })
   async findPatient(name: string, phone: string): Promise<Patient | null> {
     this.patient = await this.agenda().find(name, phone);
@@ -86,7 +93,12 @@ export default class ClinicaNorte extends Agent {
     return this.patient ?? null;
   }
 
-  /** Da de alta a un paciente nuevo con su nombre y teléfono. Solo cuando findPatient no lo encontró y él acepta darse de alta. */
+  /**
+   * Da de alta en la clínica a un paciente que no tenía ficha, con su nombre completo y su teléfono, y devuelve la ficha
+   * nueva. Llámala sólo cuando ya hayas buscado con findPatient, no haya aparecido nadie, y el paciente te haya dicho
+   * que sí quiere darse de alta: es un alta de verdad en el sistema, no una forma de seguir adelante. Con los mismos dos
+   * datos reales que findPatient, y por la misma razón. Si el paciente no quiere darse de alta, no la llames.
+   */
   @tool({ stage: "identify", pii: ["name", "phone"] })
   async registerPatient(name: string, phone: string): Promise<Patient> {
     // Sin esta puerta, quien no está en la ficha se queda en `identify` para siempre: las horas no
