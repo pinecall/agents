@@ -32,9 +32,9 @@ jobs:
         with:
           repository: pinecall/protocol
           path: protocol
-          # A read token for the sibling repository while both are private. It is a secret of
-          # this repository and reaches nothing but this checkout.
-          token: ${{ secrets.SIBLING_REPOS_TOKEN }}
+          # A read-only deploy key of the sibling repository, while both are private: its private
+          # half is a secret of THIS repository and opens nothing but that one clone.
+          ssh-key: ${{ secrets.PROTOCOL_DEPLOY_KEY }}
 
       - uses: pnpm/action-setup@v4
         with:
