@@ -9,7 +9,7 @@ import { helpFor, PLANNED, plannedGroup, type Group } from "./groups.js";
 // The order this table is written is the order the help prints: run and chat first, because
 // they are what a person types on the first day, and the planned groups after, in the design's
 // order. run is rails server and chat is rails console — see docs/decisions/tenant-cli.md.
-const BUILT = ["run", "chat", "ui", "prompt", "test", "simulate", "eval", "sessions", "runs", "pipeline", "personas", "knowledge", "memory", "remember", "supervise", "keys", "login", "whoami"] as const;
+const BUILT = ["run", "chat", "ui", "prompt", "test", "simulate", "eval", "sessions", "runs", "pipeline", "personas", "knowledge", "memory", "remember", "supervise", "keys", "callbacks", "login", "whoami"] as const;
 
 /** Everything `pinecall` answers to, built and planned alike, in the order help prints them. */
 export function groupNames(): string[] {
@@ -77,6 +77,7 @@ export async function groupFor(name: string, out: NodeJS.WritableStream = proces
   if (name === "supervise") return (await import("./supervise.js")).group;
   if (name === "sessions") return (await import("./sessions.js")).group;
   if (name === "keys") return (await import("./keys.js")).group;
+  if (name === "callbacks") return (await import("./callbacks.js")).group;
   if (name === "login") return (await import("./login.js")).group;
   if (name === "whoami") return (await import("./whoami.js")).group;
   const planned = PLANNED[name];
@@ -104,6 +105,7 @@ export function usage(): string {
     "  remember  the goldens memory.remember is held to: what a call teaches, and what it never keeps",
     "  supervise listen in on a live call: whisper, say, take the line, give it back, end",
     "  keys      add | rm | list the provider keys this org brought of its own",
+    "  callbacks the numbers people left when every seat was taken: who to call back",
     "  login     sign in to a gateway once; the key is kept in ~/.pinecall/credentials",
     "  whoami    which gateway, which org, and where this terminal's key came from",
     "",
