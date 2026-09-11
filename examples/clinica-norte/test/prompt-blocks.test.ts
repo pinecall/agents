@@ -182,7 +182,7 @@ describe("con horas sobre la mesa, elegir una no la reserva", () => {
     expect(dynamic).toContain("todavía no la reserva");
     expect(dynamic).toContain("pregúntale si se la confirmas");
     expect(dynamic).toContain("solo después de que te haya dicho que sí");
-    expect(toolNamed(agent, "book")?.spec.description).toContain("Nunca la llames antes de ese sí");
+    expect(toolNamed(agent, "book")?.spec.description).toContain("NO es todavía ese sí");
   });
 
   it("calla la regla cuando no hay ninguna hora sobre la mesa", () => {
