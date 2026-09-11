@@ -4,7 +4,8 @@ import { describe, expect, it } from "vitest";
 
 import type { Simulated, Simulation } from "../../../src/cli/simulate.js";
 import type { Persona } from "../../../src/cli/testing/caller.js";
-import { Refused, simulatingFrom } from "../../../src/cli/ui/simulating.js";
+import { Refused } from "../../../src/cli/ui/refused.js";
+import { simulatingFrom } from "../../../src/cli/ui/simulating.js";
 
 const DOOR = { url: "http://127.0.0.1:1", apiKey: "pk_never_sent_anywhere" };
 const APURADO: Persona = { name: "apurado", goal: "cambiar la cita hoy", style: "rápido, corta frases" };

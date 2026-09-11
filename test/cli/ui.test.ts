@@ -11,7 +11,9 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { headless } from "../../src/cli/ui/browser.js";
 import { consoleFiles, ui } from "../../src/cli/ui/index.js";
 import { LocalConsole } from "../../src/cli/ui/server.js";
-import { Refused, type Simulating } from "../../src/cli/ui/simulating.js";
+import { Refused } from "../../src/cli/ui/refused.js";
+import type { Simulating } from "../../src/cli/ui/simulating.js";
+import type { Testing } from "../../src/cli/ui/testing.js";
 
 const KEY = "pk_the_org_key_that_stays_here";
 
@@ -181,9 +183,18 @@ describe("the console's own doors", () => {
     },
   };
 
+  const testing: Testing = {
+    roster: async () => ({ agent: "clinica-norte", goldens: [{ name: "reserva", input: ["sí"], expect: { tools: ["book"] } }] }),
+    start: async (wanted: unknown) => {
+      const asked = wanted as { goldens: string[] };
+      if (asked.goldens.includes("nadie")) throw new Refused(404, "no golden called nadie");
+      return { run: "run_ui" };
+    },
+  };
+
   beforeEach(async () => {
     await gateway.open();
-    served = await LocalConsole.open({ url: gateway.url, apiKey: KEY }, aBuiltConsole(), simulating);
+    served = await LocalConsole.open({ url: gateway.url, apiKey: KEY }, aBuiltConsole(), { simulating, testing });
   });
   afterEach(async () => {
     await served.close();
@@ -217,6 +228,25 @@ describe("the console's own doors", () => {
     });
     expect(answer.status).toBe(404);
     expect(await answer.json()).toEqual({ detail: "no persona called tranquilo" });
+  });
+
+  it("lists this directory's goldens and starts a run of the ticked ones", async () => {
+    const listed = await fetch(`${served.url}ui/goldens`);
+    expect(await listed.json()).toEqual({
+      agent: "clinica-norte",
+      goldens: [{ name: "reserva", input: ["sí"], expect: { tools: ["book"] } }],
+    });
+    const started = await fetch(`${served.url}ui/test`, {
+      method: "POST",
+      body: JSON.stringify({ agent: "clinica-norte", goldens: ["reserva"] }),
+    });
+    expect(started.status).toBe(200);
+    expect(await started.json()).toEqual({ run: "run_ui" });
+    const refused = await fetch(`${served.url}ui/test`, {
+      method: "POST",
+      body: JSON.stringify({ agent: "clinica-norte", goldens: ["nadie"] }),
+    });
+    expect(refused.status).toBe(404);
   });
 
   it("answers 404 for a door of its own it does not have, and for the wrong verb", async () => {

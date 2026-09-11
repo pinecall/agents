@@ -5,18 +5,13 @@ import { parseArgs } from "node:util";
 
 import { Pinecall } from "../client/index.js";
 
-import type { Agent } from "../agent/agent.js";
-import { modelOf, mount } from "../runtime/connect.js";
+import { modelOf } from "../runtime/connect.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
-import { load, mountOptions } from "./load.js";
-import { aRun, entriesOf, Refused, theRuns, type Door, type Entry, type EvalRun, type Wanted } from "./testing/gateway.js";
-import { GOLDENS, goldensIn, matching, NO_GOLDENS, type Golden } from "./testing/goldens.js";
-import { mediansOf } from "./testing/latency.js";
-import { reportOf, type Latencies } from "./testing/matrix.js";
-import { followed } from "./testing/progress.js";
-import { whereTheyAre, writtenOut } from "./testing/reproduction.js";
-import { Openings } from "./testing/seeding.js";
+import { load } from "./load.js";
+import type { Wanted } from "./testing/gateway.js";
+import { GOLDENS, goldensIn, matching, NO_GOLDENS } from "./testing/goldens.js";
+import { mountedForASuite, ranSuite } from "./testing/suite.js";
 
 export const group: Group = {
   purpose: "the goldens, run through the app in this terminal's own process",
@@ -51,15 +46,12 @@ function numberOf(said: string | undefined): number | undefined {
 // are one change to a person, and a run costs real calls.
 const SETTLE_MS = 150;
 
-// The gateway runs one suite at a time and says so with a 409. Its own sentence is about the
-// runner; this one is about what the person types next.
-const BUSY = "a run is already going on {agent} ({id}) — pinecall runs show {id} to watch it";
-
 /**
  * The class is mounted HERE, in this process, exactly as `pinecall chat` mounts it: the tenant's
  * @tool bodies run against the tenant's own database and a breakpoint in one is reachable. The
  * gateway drives the conversations and scores them, because the judge, the keys and the log are
- * its — see docs/decisions/pinecall-test.md.
+ * its — see docs/decisions/pinecall-test.md. The suite itself is `testing/suite.ts`, which the
+ * console runs too.
  */
 export async function run(argv: string[], out: NodeJS.WritableStream = process.stdout): Promise<number> {
   const { values, positionals } = parseArgs({
@@ -84,18 +76,8 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
   }
 
   const loaded = await load(values.agent);
-  const url = door.url;
-  const pc = new Pinecall({ url, apiKey: door.apiKey });
-  // takesUnclaimed: false for the reason `chat` has it: this process holds the agent so that the
-  // run reaches THIS class, and a real phone call must not ring in a terminal running a suite.
-  // Every golden opens its call in its own state, handed to the instance through mount's own
-  // `opening` seam — the one moment between the class's onCall and the first render.
-  const openings = new Openings();
-  const mounted = mount(loaded.ctor, {
-    ...mountOptions(loaded, pc),
-    takesUnclaimed: false,
-    opening: (call) => openings.opening(call),
-  });
+  const pc = new Pinecall({ url: door.url, apiKey: door.apiKey });
+  const held = mountedForASuite(loaded, pc);
   const models = (values.model ?? []).map(modelOf).filter((model) => model !== undefined);
 
   try {
@@ -106,32 +88,7 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
         process.stderr.write(`no golden matched${values.grep === undefined ? "" : ` --grep ${values.grep}`}\n`);
         return 2;
       }
-      openings.expects(goldens, models.length);
-      const declaredAs = declaredBy(loaded.ctor);
-      const pending = aRun(door, {
-        agent: mounted.slug,
-        goldens,
-        ...(models.length > 0 ? { models } : {}),
-        ...(mounted.agent.app === undefined ? {} : { app: mounted.agent.app }),
-        ...aLine(values),
-      });
-      const watched = {
-        agent: mounted.slug,
-        goldens: goldens.length,
-        models: models.length > 0 ? models.map((model) => `${model.provider}/${model.model}`) : [declaredAs],
-        declaredAs,
-      };
-      let run: EvalRun;
-      try {
-        run = await followed(door, watched, pending, out, values.json === true);
-      } catch (refused) {
-        if (!(refused instanceof Refused) || refused.status !== 409) throw refused;
-        process.stderr.write(`${await busy(door, mounted.slug, refused)}\n`);
-        return 1;
-      }
-      const wrong = openings.mismatched(run);
-      if (wrong !== undefined) process.stderr.write(`${wrong}\n`);
-      return await reported(door, run, goldens, declaredAs, values.json === true, out);
+      return await ranSuite({ door, loaded, held, goldens, models, line: aLine(values), out, json: values.json === true });
     };
     const code = await suite();
     if (values.watch !== true) return code;
@@ -139,51 +96,6 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
   } finally {
     pc.close();
   }
-}
-
-/** The run printed and answered for: exit 1 when a golden did not hold, whatever else went right. */
-async function reported(
-  door: Door,
-  run: EvalRun,
-  goldens: Golden[],
-  declaredAs: string,
-  asJson: boolean,
-  out: NodeJS.WritableStream,
-): Promise<number> {
-  const logs = await logsOf(door, run);
-  const latencies: Latencies = {};
-  for (const [call, entries] of Object.entries(logs)) latencies[call] = mediansOf(entries);
-  // The logs are already in hand, so a broken golden costs one write and no second round trip.
-  const written = writtenOut(run, goldens, logs);
-  if (asJson) out.write(`${JSON.stringify({ run, latencies, reproductions: written })}\n`);
-  else out.write(`${[...reportOf(run, latencies, declaredAs), ...whereTheyAre(written)].join("\n")}\n`);
-  return run.status === "done" && (run.matrix?.failures.length ?? 0) === 0 ? 0 : 1;
-}
-
-/**
- * Each call's own log, by call id. The runner's matrix carries what the graphs answered and
- * `call.summary`; the per-turn metrics entries and every other thing that happened live in the
- * log, so the report reads them from there rather than asking anybody to summarise them twice.
- */
-async function logsOf(door: Door, run: EvalRun): Promise<Record<string, Entry[]>> {
-  const logs: Record<string, Entry[]> = {};
-  for (const opened of run.calls) logs[opened.call] = await entriesOf(door, opened.call);
-  return logs;
-}
-
-// Which run has the AGENT is read off the door that lists them rather than out of the refusal's
-// sentence: the runner holds one run per agent, so the newest running run of THIS agent is the
-// one holding it — the org's newest run may well be somebody else's agent.
-async function busy(door: Door, agent: string, refused: Refused): Promise<string> {
-  const newest = (await theRuns(door, 1, agent))[0];
-  if (newest?.status !== "running") return refused.message;
-  return BUSY.replaceAll("{id}", newest.id).replace("{agent}", agent);
-}
-
-/** The model a person recognises: the word the class itself wrote, `llm = "haiku"` and no table. */
-function declaredBy(ctor: new () => Agent): string {
-  const declared = (new ctor() as { llm?: unknown }).llm;
-  return typeof declared === "string" && declared !== "" ? declared : "the app's own model";
 }
 
 // A change to a golden re-runs the suite; a change to the class does not, because the class is

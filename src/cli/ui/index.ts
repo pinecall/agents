@@ -10,6 +10,7 @@ import { agentOfThisDirectory, DEFAULT_AGENTS } from "../load.js";
 import { headless, openInBrowser } from "./browser.js";
 import { LocalConsole } from "./server.js";
 import { simulatingFrom } from "./simulating.js";
+import { testingFrom } from "./testing.js";
 
 const USAGE = "usage: pinecall ui [agent]";
 
@@ -65,9 +66,13 @@ export async function ui(argv: string[], how: Opening = {}): Promise<number> {
     err.write(`${NOT_BUILT}\n`);
     return 2;
   }
-  // A simulation started from the page mounts the class of THIS directory in this process and
-  // prints its turns here, exactly as `pinecall simulate` would; the page watches the call's log.
-  const served = await LocalConsole.open(door, files, simulatingFrom(door, here, out));
+  // A simulation or a suite started from the page mounts the class of THIS directory in this
+  // process and prints here, exactly as `pinecall simulate` and `pinecall test` would; the page
+  // watches the call's log, or the run's row.
+  const served = await LocalConsole.open(door, files, {
+    simulating: simulatingFrom(door, here, out),
+    testing: testingFrom(door, here, out),
+  });
   const at = agent === null ? served.url : served.at(`a/${agent}`);
   // Which gateway and which of the four places the key came from: the one line that answers
   // "why is it talking to that box" before anybody has to grep for an exported name.
