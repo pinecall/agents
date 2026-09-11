@@ -3,7 +3,7 @@
 // estáticos · la historia · la view, que es toda la región dinámica y lo último que lee el modelo
 // — el orden que el KV-cache del proveedor premia (docs/decisions/prompt-blocks.md).
 
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
@@ -92,10 +92,15 @@ describe("los bloques del prompt", () => {
     ]);
   });
 
+  // Las capturas se reescriben a mano y a propósito: `CAPTURE=1 pnpm test` las vuelve a grabar
+  // cuando la clase cambió de verdad —una descripción de tool, un bloque—, y el diff de git es la
+  // revisión. Sin la variable, el test compara y no escribe nada.
   it("coincide con lo capturado, para que las capturas no se pudran", () => {
     for (const [index] of STATES.entries()) {
+      const rendered = `${showPrompt(at(index))}\n`;
+      if (process.env["CAPTURE"]) writeFileSync(here(`./prompts/state-${index}.txt`), rendered);
       const captured = readFileSync(here(`./prompts/state-${index}.txt`), "utf8");
-      expect(`${showPrompt(at(index))}\n`).toBe(captured);
+      expect(rendered).toBe(captured);
     }
   });
 

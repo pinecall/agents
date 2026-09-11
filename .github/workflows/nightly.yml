@@ -64,12 +64,12 @@ jobs:
         with:
           repository: pinecall/protocol
           path: protocol
-          token: ${{ secrets.SIBLING_REPOS_TOKEN }}
+          ssh-key: ${{ secrets.PROTOCOL_DEPLOY_KEY }}
       - uses: actions/checkout@v4
         with:
           repository: pinecall/runtime
           path: runtime
-          token: ${{ secrets.SIBLING_REPOS_TOKEN }}
+          ssh-key: ${{ secrets.RUNTIME_DEPLOY_KEY }}
 
       - uses: astral-sh/setup-uv@v5
         with:
