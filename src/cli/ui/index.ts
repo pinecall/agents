@@ -9,6 +9,7 @@ import type { Group } from "../groups.js";
 import { agentOfThisDirectory, DEFAULT_AGENTS } from "../load.js";
 import { headless, openInBrowser } from "./browser.js";
 import { LocalConsole } from "./server.js";
+import { simulatingFrom } from "./simulating.js";
 
 const USAGE = "usage: pinecall ui [agent]";
 
@@ -57,13 +58,16 @@ export async function ui(argv: string[], how: Opening = {}): Promise<number> {
     err.write(`ui needs a browser on this machine and ${why}: run it where the screen is\n`);
     return 2;
   }
-  const agent = argv[0] ?? (await agentOfThisDirectory());
+  const here = await agentOfThisDirectory();
+  const agent = argv[0] ?? here;
   const files = how.files ?? consoleFiles();
   if (!existsSync(files)) {
     err.write(`${NOT_BUILT}\n`);
     return 2;
   }
-  const served = await LocalConsole.open(door, files);
+  // A simulation started from the page mounts the class of THIS directory in this process and
+  // prints its turns here, exactly as `pinecall simulate` would; the page watches the call's log.
+  const served = await LocalConsole.open(door, files, simulatingFrom(door, here, out));
   const at = agent === null ? served.url : served.at(`a/${agent}`);
   // Which gateway and which of the four places the key came from: the one line that answers
   // "why is it talking to that box" before anybody has to grep for an exported name.

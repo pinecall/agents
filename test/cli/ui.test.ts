@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { headless } from "../../src/cli/ui/browser.js";
 import { consoleFiles, ui } from "../../src/cli/ui/index.js";
 import { LocalConsole } from "../../src/cli/ui/server.js";
+import { Refused, type Simulating } from "../../src/cli/ui/simulating.js";
 
 const KEY = "pk_the_org_key_that_stays_here";
 
@@ -165,6 +166,73 @@ describe("the server under the nonce", () => {
     await served.close();
     await expect(fetch(url)).rejects.toThrow();
     served = await LocalConsole.open({ url: gateway.url, apiKey: KEY }, aBuiltConsole());
+  });
+});
+
+describe("the console's own doors", () => {
+  const gateway = new FakeGateway();
+  let served: LocalConsole;
+  const simulating: Simulating = {
+    roster: async () => ({ agent: "clinica-norte", personas: [{ name: "apurado", goal: "hoy", style: "rápido" }] }),
+    start: async (wanted: unknown) => {
+      const asked = wanted as { persona: string };
+      if (asked.persona !== "apurado") throw new Refused(404, `no persona called ${asked.persona}`);
+      return { call: "call_sim" };
+    },
+  };
+
+  beforeEach(async () => {
+    await gateway.open();
+    served = await LocalConsole.open({ url: gateway.url, apiKey: KEY }, aBuiltConsole(), simulating);
+  });
+  afterEach(async () => {
+    await served.close();
+    await gateway.close();
+  });
+
+  it("lists this directory's personas without asking the gateway", async () => {
+    const answer = await fetch(`${served.url}ui/personas`);
+    expect(answer.status).toBe(200);
+    expect(await answer.json()).toEqual({
+      agent: "clinica-norte",
+      personas: [{ name: "apurado", goal: "hoy", style: "rápido" }],
+    });
+    expect(gateway.heard).toEqual([]);
+  });
+
+  it("starts a simulation and answers the call to go and watch", async () => {
+    const answer = await fetch(`${served.url}ui/simulate`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ agent: "clinica-norte", persona: "apurado" }),
+    });
+    expect(answer.status).toBe(200);
+    expect(await answer.json()).toEqual({ call: "call_sim" });
+  });
+
+  it("carries a refusal as a status and a detail, the way the gateway's doors do", async () => {
+    const answer = await fetch(`${served.url}ui/simulate`, {
+      method: "POST",
+      body: JSON.stringify({ agent: "clinica-norte", persona: "tranquilo" }),
+    });
+    expect(answer.status).toBe(404);
+    expect(await answer.json()).toEqual({ detail: "no persona called tranquilo" });
+  });
+
+  it("answers 404 for a door of its own it does not have, and for the wrong verb", async () => {
+    expect((await fetch(`${served.url}ui/nothing`)).status).toBe(404);
+    expect((await fetch(`${served.url}ui/simulate`)).status).toBe(404);
+  });
+
+  it("says so when it was opened with no simulation door at all", async () => {
+    const bare = await LocalConsole.open({ url: gateway.url, apiKey: KEY }, aBuiltConsole());
+    try {
+      const answer = await fetch(`${bare.url}ui/personas`);
+      expect(answer.status).toBe(404);
+      expect(((await answer.json()) as { detail: string }).detail).toContain("no simulation door");
+    } finally {
+      await bare.close();
+    }
   });
 });
 

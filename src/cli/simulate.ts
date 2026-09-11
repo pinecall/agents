@@ -28,13 +28,13 @@ const USAGE =
   "usage: pinecall simulate --persona <name> [--judge] [--turns n] [--voice]\n" +
   "       [--background-noise <dB under the caller>] [--packet-loss <percent>] [--agent agent.tsx]\n";
 
-// The speakers need the room, and the only door into a room from this machine is the console's
-// Talk screen, which is a browser page and not a terminal.
-const NO_LISTEN = "--listen puts the call on your speakers: it needs a room — `pinecall ui` has one\n";
+// The speakers need the room, and the only door into a room from this machine is a browser page:
+// the console starts the same simulation from Calls and has a listen button beside it.
+const NO_LISTEN = "--listen puts the call on your speakers: it needs a room — `pinecall ui` → Calls → Simulate, then listen\n";
 
 // A spoiled line is a property of audio: there is nothing to mix into a written turn, and a flag
 // that quietly did nothing would be a run reporting a noisy line it never had.
-const ONLY_ON_A_LINE = "--background-noise and --packet-loss are about audio: add --voice\n";
+export const ONLY_ON_A_LINE = "--background-noise and --packet-loss are about audio: add --voice";
 
 /**
  * How many turns a caller improvises when nobody said. Six is the length of the walkthrough the
@@ -92,7 +92,7 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
   }
   const degraded = degradedBy(values["background-noise"], values["packet-loss"]);
   if (values.voice !== true && degraded !== undefined) {
-    process.stderr.write(ONLY_ON_A_LINE);
+    process.stderr.write(`${ONLY_ON_A_LINE}\n`);
     return 2;
   }
   const persona = await personaNamed(values.persona);
@@ -138,6 +138,10 @@ export interface Simulation {
   degraded?: Degraded | undefined;
   turns: number;
   out: NodeJS.WritableStream;
+  /** The gateway to run against. Absent, the one this terminal's environment names. */
+  door?: Door | undefined;
+  /** Told the call's id the moment it is known, so whoever started this can go and watch it. */
+  opened?: ((call: string) => void) | undefined;
 }
 
 /**
@@ -147,7 +151,7 @@ export interface Simulation {
  * and with `judge` the `call.score` the log seals on is read back and printed.
  */
 export async function aSimulation(persona: Persona, how: Simulation): Promise<Simulated | undefined> {
-  const door = theDoor();
+  const door = how.door ?? theDoor();
   if (door === undefined) return undefined;
   const loaded = await load(how.agentFile);
   const url = door.url;
@@ -183,7 +187,7 @@ async function inWriting(
   how: Simulation,
 ): Promise<string> {
   const socket = new WebSocket(socketUrl, { headers: { authorization: `Bearer ${apiKey}` } });
-  const heard = new Heard(how.out);
+  const heard = new Heard(how.out, how.opened);
   socket.on("message", (frame: Buffer) => heard.absorb(JSON.parse(frame.toString()) as Entry));
   await once(socket, "open");
   await heard.quiet();
@@ -214,6 +218,7 @@ async function outLoud(
   how: Simulation,
 ): Promise<string> {
   const call = aCallId();
+  how.opened?.(call);
   const heard = new Heard(how.out);
   const held = aVoiceCall(door, {
     call,
@@ -288,12 +293,18 @@ class Heard {
   readonly said: Spoken[] = [];
   private last = Date.now();
 
-  constructor(private readonly out: NodeJS.WritableStream) {}
+  constructor(
+    private readonly out: NodeJS.WritableStream,
+    private readonly opened?: ((call: string) => void) | undefined,
+  ) {}
 
   /** One entry: remembered, and printed when it is a line of the conversation rather than wiring. */
   absorb(entry: Entry): void {
     this.last = Date.now();
-    if (typeof entry.call === "string") this.call = entry.call;
+    if (typeof entry.call === "string" && this.call === undefined) {
+      this.call = entry.call;
+      this.opened?.(entry.call);
+    }
     if (entry.type === "turn.agent") this.agentTurns += 1;
     if (entry.type === "turn.user" || entry.type === "turn.agent") {
       this.said.push({
