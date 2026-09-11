@@ -187,6 +187,11 @@ a.chip:hover .chip-val {
   gap: var(--step);
 }
 
+/* Wide enough for three digits and the spinner a number input draws beside them. */
+.drift-field .input {
+  width: 5rem;
+}
+
 .drift-broke {
   display: flex;
   flex-direction: column;

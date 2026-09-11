@@ -125,6 +125,9 @@ export function Knowledge(): ReactNode {
 
       <div className="section">
         <h2 className="section-title">every base this org has pushed</h2>
+        {bases.length === 0 ? (
+          <Nothing>No base pushed yet. The button above sends this directory's folder.</Nothing>
+        ) : (
         <div className="table-wrap">
           <table className="table">
             <thead>
@@ -153,7 +156,7 @@ export function Knowledge(): ReactNode {
             </tbody>
           </table>
         </div>
-        {bases.length === 0 && <Nothing>No base pushed yet. The button above sends this directory's folder.</Nothing>}
+        )}
       </div>
     </section>
   );

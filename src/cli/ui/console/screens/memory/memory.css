@@ -39,6 +39,8 @@
 }
 
 .mem-run {
+  /* Left-aligned: a button that stretches to the panel is a banner, not a button. */
+  align-items: flex-start;
   display: flex;
   flex-direction: column;
   gap: var(--step);
