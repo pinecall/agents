@@ -9,6 +9,11 @@ import type { Golden } from "./goldens.js";
 /** Where a broken golden is left, under the directory the suite was run in. One folder per run. */
 export const REPRODUCTIONS = ".pinecall/evals";
 
+/** What stands in for the requests when nobody kept them: the reason, not an empty list. */
+export const NOT_RECORDED =
+  "not recorded: this call's requests were built in the worker process, which a spoken run " +
+  "drives over LiveKit. The log below is the whole of what this call left behind.";
+
 /**
  * One file per broken golden, and nothing at all when the suite is green. It carries the four
  * things a person needs to disagree with a verdict without running anything: the golden as it was
@@ -58,7 +63,11 @@ function aReproduction(
       reason: score.reason,
     })),
     // In the order they went out: one per request, so a turn that ran a tool has more than one.
-    asked: cell.asked ?? [],
+    // A spoken run builds its requests in the WORKER process and they never reach the runner, so
+    // there the key is the sentence saying so and never an empty list: `tools: []` under a call
+    // whose finding was "ran no tool at all" misled this project once already, and an `asked: []`
+    // under a spoken break would read exactly the same way.
+    asked: cell.asked === undefined || cell.asked.length === 0 ? NOT_RECORDED : cell.asked,
     log,
   };
 }

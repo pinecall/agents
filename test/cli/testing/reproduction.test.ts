@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 
 import type { Asked, Cell, Entry, EvalRun, Score } from "../../../src/cli/testing/gateway.js";
 import type { Golden } from "../../../src/cli/testing/goldens.js";
-import { whereTheyAre, writtenOut } from "../../../src/cli/testing/reproduction.js";
+import { NOT_RECORDED, whereTheyAre, writtenOut } from "../../../src/cli/testing/reproduction.js";
 
 const A_VIEW = "<instructions>\nHablas con Ana García, ya en la ficha.\n</instructions>";
 const A_CALL = "call_the_one_that_broke";
@@ -105,5 +105,16 @@ describe("a golden that broke is left on disk, whole", () => {
 
   it("says nothing when nothing was written", () => {
     expect(whereTheyAre([])).toEqual([]);
+  });
+
+  // A spoken run builds its requests in the worker, so the runner has none. The file has to SAY
+  // that: `tools: []` under "ran no tool at all" cost this project a wrong diagnosis once.
+  it("says why there is no prompt instead of writing an empty list", () => {
+    const at = under();
+
+    const [path] = writtenOut(aRun([cell("ofrece-las-horas-del-martes", false, [])]), [GOLDEN], {}, at);
+    const written = JSON.parse(readFileSync(path!, "utf8")) as Record<string, unknown>;
+
+    expect(written["asked"]).toBe(NOT_RECORDED);
   });
 });
