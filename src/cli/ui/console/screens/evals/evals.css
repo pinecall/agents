@@ -96,3 +96,85 @@
 a.chip:hover .chip-val {
   color: var(--accent);
 }
+
+/* Run a suite: the goldens as a ticked list, the line above them. */
+.suite-lede,
+.suite-aside {
+  color: var(--ink-faint);
+  font-size: 13px;
+  margin: 0 0 calc(var(--step) * 2);
+  max-width: 68ch;
+}
+
+.suite {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--step) * 2);
+}
+
+.suite-head {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--step) * 2);
+}
+
+.suite-check {
+  align-items: center;
+  color: var(--ink-soft);
+  display: flex;
+  font-size: 12px;
+  gap: var(--step);
+}
+
+.suite-field {
+  align-items: baseline;
+  color: var(--ink-faint);
+  display: flex;
+  font-size: 12px;
+  gap: var(--step);
+}
+
+.suite-input {
+  background: none;
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-size: 12px;
+  padding: calc(var(--step) * 0.5) var(--step);
+  width: 6ch;
+}
+
+.suite-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--step) * 0.5);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.suite-golden {
+  align-items: baseline;
+  border-top: 1px solid var(--edge);
+  display: grid;
+  gap: calc(var(--step) * 2);
+  grid-template-columns: minmax(18ch, 1fr) 2fr 2fr;
+  padding: calc(var(--step) * 0.75) 0;
+}
+
+.suite-says {
+  color: var(--ink-soft);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suite-expects {
+  color: var(--ink-faint);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

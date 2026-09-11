@@ -7,6 +7,11 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **Run the goldens from the console.** Evals → Run a suite: every golden of this directory as a
+  checkbox, with the caller's first line and what it expects; voice and a noisy line beside; the
+  run appears in the table as the gateway opens it. `ui/goldens` and `POST ui/test` are the
+  console's own doors, and the suite they run is the one `pinecall test` runs — its orchestration
+  moved to `testing/suite.ts` so it is written once.
 - **Simulate from the console.** Calls → Simulate: a persona from this directory's
   `test/personas`, written or spoken, judged or not, the line spoiled or clean — and the page goes
   to the call as it opens. Spoken, the listen button beside it is the speakers `simulate --listen`

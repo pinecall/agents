@@ -14,7 +14,7 @@ on the PATH: `pinecall run`. In this workspace: `pnpm exec pinecall run`.
 |---|---|---|
 | `run [agent.tsx]` | the app registered and answering — **the process you deploy**. Binds no port, serves no page. `--ui` for the full-screen terminal view, `--events` for one JSON line per entry, `--show-prompt` to print the prompt and exit | yes (except `--show-prompt`) |
 | `chat [agent.tsx]` | the same app in this terminal's own process, and a written caller against it. `--state file [--case n]` opens the call in a state, `--as <contact>` says who is calling — the id memory files the call under, without which a written caller is a visitor and is remembered by nobody. This is `rails console`: a breakpoint in a `@tool` is reachable | yes |
-| `ui [agent]` | the console on 127.0.0.1 for the life of the command, opened in this machine's browser. Calls → Simulate puts a persona on the line from the page, spoken or written, and the listen button is the speakers `--listen` never had | yes |
+| `ui [agent]` | the console on 127.0.0.1 for the life of the command, opened in this machine's browser. Calls → Simulate puts a persona on the line from the page, spoken or written, and the listen button is the speakers `--listen` never had; Evals → Run a suite ticks the goldens to run | yes |
 | `prompt [agent.tsx] --state file` | the exact prompt a state would produce, with the stage and its tools beneath | **no** |
 | `test [paths]` | ring 1: the goldens, through the app in this process, scored by the runtime. `--voice` says the same goldens out loud on a real line, ring 2. `--agent`, `--model` (repeatable), `--grep`, `--watch`, `--json`, `--background-noise`, `--packet-loss` | yes |
 | `simulate --persona <name>` | a model plays one caller, live. `--judge`, `--turns n`, `--voice`, `--background-noise`, `--packet-loss` | yes |
@@ -77,11 +77,12 @@ display it says so and exits 2.
 
 In a checkout the console must be bundled once (`scripts/build`): a browser reads no TypeScript.
 
-Two doors are this process's own and never the gateway's, under the same nonce: `ui/personas`
-lists the callers in this directory's `test/personas`, and `POST ui/simulate` starts one — the same
-`aSimulation` the terminal verb runs, mounting the class of THIS directory in THIS process and
-printing the turns in the terminal that typed `ui`. The page is answered with the call id the
-moment it exists and goes to Calls to watch it; on a spoken line, listen is one click away. A
-console opened on another agent's page gets a sentence instead: the class mounted here is this
-directory's.
+Four doors are this process's own and never the gateway's, under the same nonce. `ui/personas`
+lists the callers in this directory's `test/personas` and `POST ui/simulate` starts one — the same
+`aSimulation` the terminal verb runs. `ui/goldens` lists this directory's `test/goldens` and
+`POST ui/test` runs the ticked ones — the same suite `pinecall test` runs (`testing/suite.ts`),
+reported in the terminal that typed `ui`, the reproductions written where the verb writes them.
+Both mount the class of THIS directory in THIS process. The page is answered with the call id, or
+the run id, the moment it exists, and watches it off the gateway like anything else. A console
+opened on another agent's page gets a sentence instead: the class mounted here is this directory's.
 From npm it is already inside the package.

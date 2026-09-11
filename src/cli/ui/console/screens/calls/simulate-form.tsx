@@ -128,7 +128,7 @@ export function SimulateForm({ agent }: { agent: string }): ReactNode {
         <>
           <label className="sim-check">
             <input type="checkbox" checked={spoiled} onChange={(event) => setSpoiled(event.target.checked)} />
-            <span>spoil the line</span>
+            <span>noisy line — a TV behind the caller, packets lost</span>
           </label>
           {spoiled && (
             <>

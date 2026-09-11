@@ -8,7 +8,9 @@ import { extname, join, normalize, resolve, sep } from "node:path";
 import { Readable } from "node:stream";
 
 import type { Door } from "../testing/gateway.js";
-import { Refused, type Simulating } from "./simulating.js";
+import { Refused } from "./refused.js";
+import type { Simulating } from "./simulating.js";
+import type { Testing } from "./testing.js";
 
 // Loopback only, and the kernel picks the port: nothing on the network can reach this console,
 // and two `ui`s on one laptop do not fight over a number.
@@ -25,10 +27,21 @@ const NONCE_BYTES = 16;
 const DOORS = "v1/";
 
 // This process's OWN doors, beside the gateway's: what only the terminal that typed `ui` can do,
-// because it stands in the agent's directory — its personas, and a simulation mounted here.
+// because it stands in the agent's directory — its personas and goldens, and a simulation or a
+// suite mounted here.
 const OWN = "ui/";
 const PERSONAS = `${OWN}personas`;
 const SIMULATE = `${OWN}simulate`;
+const GOLDENS = `${OWN}goldens`;
+const TEST = `${OWN}test`;
+
+/** What this process can do of its own, handed in by `pinecall ui`; a test may hand in less. */
+export interface Own {
+  simulating: Simulating | null;
+  testing: Testing | null;
+}
+
+const NOTHING_OF_ITS_OWN: Own = { simulating: null, testing: null };
 
 const TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -55,12 +68,12 @@ export class LocalConsole {
   readonly #nonce: string;
   readonly #door: Door;
   readonly #files: string;
-  readonly #simulating: Simulating | null;
+  readonly #own: Own;
   #url = "";
 
-  private constructor(door: Door, files: string, simulating: Simulating | null) {
+  private constructor(door: Door, files: string, own: Own) {
     this.#door = door;
-    this.#simulating = simulating;
+    this.#own = own;
     // Resolved, which is what strips a trailing separator: the directory arrives as a URL's path
     // and so ends in one, and `#serve` compares against `#files + sep`. Left as it came, that
     // comparison is `…/console//`, which no file under it starts with, and EVERY request fell
@@ -73,8 +86,8 @@ export class LocalConsole {
   }
 
   /** Bind the loopback on a free port and serve the console in `files` for this door. */
-  static async open(door: Door, files: string, simulating: Simulating | null = null): Promise<LocalConsole> {
-    const served = new LocalConsole(door, files, simulating);
+  static async open(door: Door, files: string, own: Own = NOTHING_OF_ITS_OWN): Promise<LocalConsole> {
+    const served = new LocalConsole(door, files, own);
     await served.#listen();
     return served;
   }
@@ -116,22 +129,27 @@ export class LocalConsole {
     if (path.startsWith(DOORS)) {
       await this.#forward(request, response, `/${path}${asked.search}`);
     } else if (path.startsWith(OWN)) {
-      await this.#own(request, response, path);
+      await this.#answerOwn(request, response, path);
     } else {
       this.#serve(response, path);
     }
   }
 
-  // The two doors this process answers itself. A refusal travels as FastAPI's would — a status
-  // and a `detail` sentence — so the page reads both kinds of door the same way.
-  async #own(request: IncomingMessage, response: ServerResponse, path: string): Promise<void> {
+  // The doors this process answers itself. A refusal travels as FastAPI's would — a status and a
+  // `detail` sentence — so the page reads both kinds of door the same way.
+  async #answerOwn(request: IncomingMessage, response: ServerResponse, path: string): Promise<void> {
     const method = request.method ?? "GET";
+    const asked = async (): Promise<unknown> => JSON.parse((await whole(request)).toString() || "{}");
     try {
-      if (this.#simulating === null) throw new Refused(404, "this console was opened with no simulation door");
+      const { simulating, testing } = this.#own;
       if (path === PERSONAS && method === "GET") {
-        json(response, 200, await this.#simulating.roster());
+        json(response, 200, await this.#simulating(simulating).roster());
       } else if (path === SIMULATE && method === "POST") {
-        json(response, 200, await this.#simulating.start(JSON.parse((await whole(request)).toString() || "{}")));
+        json(response, 200, await this.#simulating(simulating).start(await asked()));
+      } else if (path === GOLDENS && method === "GET") {
+        json(response, 200, await this.#testing(testing).roster());
+      } else if (path === TEST && method === "POST") {
+        json(response, 200, await this.#testing(testing).start(await asked()));
       } else {
         throw new Refused(404, `nothing at ${path}`);
       }
@@ -211,6 +229,16 @@ export class LocalConsole {
   // wherever the address bar happens to stand.
   #page(): string {
     return readFileSync(join(this.#files, "index.html"), "utf8").replace("<head>", `<head><base href="/${this.#nonce}/">`);
+  }
+
+  #simulating(door: Simulating | null): Simulating {
+    if (door === null) throw new Refused(404, "this console was opened with no simulation door");
+    return door;
+  }
+
+  #testing(door: Testing | null): Testing {
+    if (door === null) throw new Refused(404, "this console was opened with no goldens door");
+    return door;
   }
 }
 

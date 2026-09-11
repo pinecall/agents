@@ -1,4 +1,4 @@
-/** Evals: every run this agent's suites have scored, the diff between runs, and what its calls were sealed with. */
+/** Evals: run the goldens from here, read every run and the diff between two, and what its calls were sealed with. */
 
 import type { ReactNode } from "react";
 import { useParams, useSearchParams } from "react-router";
@@ -6,6 +6,7 @@ import { useParams, useSearchParams } from "react-router";
 import { CallsTable } from "./calls-table";
 import { RunDetail } from "./run-detail";
 import { RunTable } from "./run-table";
+import { SuiteForm } from "./suite-form";
 import { useEvalRuns } from "./use-eval-runs";
 import { useScoredCalls } from "../../lib/use-scored-calls";
 import "./evals.css";
@@ -58,16 +59,13 @@ export function Evals(): ReactNode {
         <>
           <section className="section">
             <h2 className="section-title">Run a suite</h2>
-            <div className="empty">
-              <p className="empty-title">A run starts in the agent's directory, never here</p>
-              <div className="empty-body">
-                <p>
-                  The goldens are the agent's own files, beside its class, so the suite is opened by the process that
-                  holds them and scored by this gateway. A run appears below the moment it opens.
-                </p>
-                <code className="empty-cmd">pinecall test</code>
-              </div>
-            </div>
+            <p className="suite-lede">
+              The goldens are the agent's own files, beside its class, so the run is opened by the process that holds
+              them — the terminal that typed <code className="mono">pinecall ui</code>, exactly as{" "}
+              <code className="mono">pinecall test</code> would — and scored by this gateway. Tick the ones to run; the
+              run appears below the moment it opens, and every broken golden is written out where the verb writes it.
+            </p>
+            <SuiteForm agent={agent} onOpened={(run) => select({ run })} />
           </section>
 
           <section className="section">

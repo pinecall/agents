@@ -100,7 +100,7 @@ export function header(watched: Watched, id: string): string {
 
 // The run that has the gateway right now, by the door that lists them: the runner admits one run
 // at a time and writes its row before the first call, so the newest running row is this one.
-async function inFlight(door: Door, agent: string): Promise<string | undefined> {
+export async function inFlight(door: Door, agent: string): Promise<string | undefined> {
   const newest = (await theRuns(door, 1, agent))[0];
   return newest?.status === "running" ? newest.id : undefined;
 }

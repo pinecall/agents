@@ -3,6 +3,7 @@
 import { aSimulation, degradedBy, ONLY_ON_A_LINE, TURNS } from "../simulate.js";
 import { NO_PERSONAS, personasIn, type Persona } from "../testing/caller.js";
 import type { Door } from "../testing/gateway.js";
+import { Refused } from "./refused.js";
 
 /** What the page asks for: the caller, the line, and how far to go. */
 export interface Wanted {
@@ -32,18 +33,6 @@ export interface Listed {
 export interface Roster {
   agent: string | null;
   personas: Listed[];
-}
-
-/** A refusal with a sentence for the page and the status it travels under. */
-export class Refused extends Error {
-  override readonly name = "Refused";
-
-  constructor(
-    readonly status: number,
-    message: string,
-  ) {
-    super(message);
-  }
 }
 
 // The console may be opened on any agent the gateway holds, but a simulation needs the CLASS —
