@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import { groupNames, main } from "../../src/cli/index.js";
+import { builtNames, groupFor, groupNames, main } from "../../src/cli/index.js";
 import { connectedLine, doorsOf, run } from "../../src/cli/run.js";
 import { group as ui } from "../../src/cli/ui/index.js";
 
@@ -93,6 +93,24 @@ describe("`serve` is not a verb of this CLI", () => {
   it("is not a group the CLI declares, planned or built", () => {
     expect(groupNames()).not.toContain("serve");
     expect(groupNames()).toContain("run");
+  });
+});
+
+// A verb whose --help is one line is a verb whose flags are in the source and nowhere else. The
+// dispatcher prints `usage` under the purpose, so having one IS having a help page.
+describe("every built verb has a help page", () => {
+  it("prints its usage under its purpose, and the usage names the verb", async () => {
+    const quiet = { write: () => true } as unknown as NodeJS.WritableStream;
+    const silent: string[] = [];
+    for (const name of builtNames()) {
+      const code = await main([name, "--help"], quiet, quiet);
+      if (code !== 0) continue;
+      const group = await groupFor(name);
+      if (group === undefined) continue;
+      if (group.usage === undefined || !group.usage.includes(`pinecall ${name}`)) silent.push(name);
+    }
+
+    expect(silent, "give the group a `usage` naming its flags").toEqual([]);
   });
 });
 

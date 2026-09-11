@@ -29,6 +29,16 @@ export interface Case {
 
 export const group: Group = {
   purpose: "ring 3: one real call, re-evaluated",
+  usage: `usage: pinecall eval <call-id> [--policy policy.json] [--json]
+
+  One finished call rebuilt from its log and answered by the runtime's four CODE checks —
+  consent, register, errors, latency. Nothing is re-run and no model is asked; the verdicts are
+  the operator's vocabulary (passed · failed · deferred · skipped), never a judge's four words.
+  Exits 1 when a check did not hold.
+
+  --policy file   {"banned": ["…"], "budget": {"llm_ttft": 1.5}} — the words this business will
+                  not have its agent say, and the latencies it holds a call to
+  --json          the answer as the door wrote it`,
   run,
 };
 

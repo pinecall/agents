@@ -9,17 +9,25 @@ import { CANDIDATES, promoted } from "./candidate.js";
 import { A_WINDOW_OF_CALLS, drifted, secondsOf, THRESHOLD } from "./drift.js";
 import { DEFAULT_LIMIT, diffed, listed, shown } from "./suites.js";
 
-export const group: Group = {
-  purpose: "the runs this gateway has done: list, show, diff, promote a call, watch the drift",
-  run,
-};
-
 const USAGE = [
   "usage: pinecall runs list [--limit n] | show <id> | diff <a> <b>",
   "       pinecall runs promote <call-id> [--name x] [--out test/candidates] [--from-seq n]",
   "       pinecall runs drift --agent <slug> [--window 7d] [--baseline 30d] [--threshold 10]",
   "",
 ].join("\n");
+
+export const group: Group = {
+  purpose: "the runs this gateway has done: list, show, diff, promote a call, watch the drift",
+  usage: `${USAGE}  list    one line per run, newest first: when, which agent, how much held
+  show    one run as \`pinecall test\` printed it when it happened
+  diff    what moved between two runs, golden by golden
+  promote one real call written down as a golden CANDIDATE in test/candidates, with an expect
+          derived from what the judges answered. --from-seq cuts the call: the state as it stood
+          there, and every caller turn after it
+  drift   each judge's held-rate over two windows of finished calls, and the points between
+          them. Exits 1 when a judge fell further than --threshold allows`,
+  run,
+};
 
 /** What a window has to be, said once, because two flags are refused by the same sentence. */
 const NOT_A_WINDOW = "a window is a number and one of s, m, h, d — 90m, 24h, 7d";

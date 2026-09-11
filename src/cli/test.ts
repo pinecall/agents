@@ -13,14 +13,28 @@ import type { Wanted } from "./testing/gateway.js";
 import { GOLDENS, goldensIn, matching, NO_GOLDENS } from "./testing/goldens.js";
 import { mountedForASuite, ranSuite } from "./testing/suite.js";
 
-export const group: Group = {
-  purpose: "the goldens, run through the app in this terminal's own process",
-  run,
-};
-
 const USAGE =
   "usage: pinecall test [paths] [--agent agent.tsx] [--model m]… [--grep x] [--watch] [--json]\n" +
   "       pinecall test --voice [--background-noise dB] [--packet-loss 0.05]\n";
+
+export const group: Group = {
+  purpose: "the goldens, run through the app in this terminal's own process",
+  usage: `${USAGE}
+  Ring 1: every golden of test/goldens through the class this terminal holds, scored by the
+  gateway's judges, printed as a matrix. Exits 1 when a golden did not hold, and writes every
+  broken one to .pinecall/evals/<run>/ with the requests the model answered.
+
+  [paths]             files or directories of goldens; the whole of test/goldens when none
+  --agent agent.tsx   which class to mount, when the directory holds more than one
+  --model m           a column of the matrix: vendor/model, repeatable
+  --grep x            only the goldens whose name matches
+  --watch             run again whenever a file changes
+  --json              the run as one JSON document instead of the matrix
+  --voice             ring 2: the same goldens said out loud on a real line
+  --background-noise  dB under the caller, on a spoken run: a television behind them
+  --packet-loss       the share of the caller's packets that never arrive, 0 to 1`,
+  run,
+};
 
 // Ring 2: the same goldens, said out loud. Only the three fields a spoken run adds travel — a
 // written run must not carry a `voice: false` that reads as a decision somebody made.

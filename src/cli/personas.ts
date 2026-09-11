@@ -6,12 +6,22 @@ import type { Group } from "./groups.js";
 import { aSimulation, TURNS } from "./simulate.js";
 import { NO_PERSONAS, personaNamed, personasIn, type Persona } from "./testing/caller.js";
 
+const USAGE = "usage: pinecall personas list | show <name> | try <name> [--agent agent.tsx]\n";
+
 export const group: Group = {
   purpose: "list | show | try the synthetic callers in test/personas",
+  usage: `${USAGE}
+  A persona is a caller a model plays: a goal, a style, the facts they may state about
+  themselves, and the state the call opens in. One file per caller under test/personas,
+  default-exporting one.
+
+  list            every caller of this directory, with the goal each one pursues
+  show <name>     that caller whole, facts and all
+  try <name>      one improvised line from them, through the gateway's caller door — the same
+                  door \`pinecall simulate\` asks for every turn. Needs a key
+  --agent file    which class to read the personas beside, when there is more than one`,
   run,
 };
-
-const USAGE = "usage: pinecall personas list | show <name> | try <name> [--agent agent.tsx]\n";
 
 // A caller with no facts of their own is not broken — they are somebody who will invent nothing,
 // which is what the model playing them is told. `show` says so rather than printing an empty block.

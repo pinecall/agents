@@ -16,6 +16,11 @@ export function groupNames(): string[] {
   return [...BUILT, ...Object.keys(PLANNED)];
 }
 
+/** The ones that are written: what a person may actually run, and what owes a help page. */
+export function builtNames(): string[] {
+  return [...BUILT];
+}
+
 /**
  * Run one invocation. The group owns its own flags — this file only picks which module reads them,
  * so a new group is one import and one line, never a branch inside a growing parser.
@@ -55,7 +60,7 @@ export async function main(
 
 // A built group is imported only when it is asked for: `pinecall prompt` must not pay for the
 // websocket client that `run` needs, and a stub must not pay for anything at all.
-async function groupFor(name: string, out: NodeJS.WritableStream): Promise<Group | undefined> {
+export async function groupFor(name: string, out: NodeJS.WritableStream = process.stdout): Promise<Group | undefined> {
   if (name === "run") return (await import("./run.js")).group;
   if (name === "chat") return (await import("./chat.js")).group;
   if (name === "ui") return (await import("./ui/index.js")).group;
