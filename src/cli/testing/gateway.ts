@@ -34,8 +34,9 @@ export interface Cell {
   scores: Score[];
   summary: Summary | null;
   /** Every request this golden's call made, present only on a cell where something broke: the
-   * prompt is not in the log, and a broken golden is the one thing a person has to reproduce. */
-  asked?: Asked[];
+   * prompt is not in the log, and a broken golden is the one thing a person has to reproduce.
+   * Null when the run kept no requests — a spoken run builds them in the worker process. */
+  asked?: Asked[] | null;
 }
 
 /** `call.summary` as the log wrote it. Nothing here is recomputed by anybody who reads it. */

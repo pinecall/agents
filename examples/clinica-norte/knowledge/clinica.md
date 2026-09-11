@@ -172,8 +172,7 @@ igualmente pagándola como privada.
 
 Una cita se pide por teléfono, por la web o en el mostrador. Por teléfono hace falta el nombre
 completo del paciente y un teléfono de contacto; si el paciente ya tiene ficha, con el teléfono
-basta para encontrarla. Para una primera visita se pregunta además la especialidad o el motivo, en
-una frase, para elegir bien la agenda.
+basta para encontrarla.
 
 Una cita se puede cambiar o cancelar sin coste hasta veinticuatro horas antes de la hora prevista.
 Si se cancela con menos de veinticuatro horas de antelación, o si el paciente no acude y no avisa,
@@ -181,9 +180,7 @@ el centro puede cobrar veinte euros de gastos de gestión; con seguro se aplica 
 compañía, que en general no cobra nada la primera vez. Una cita se puede cambiar tantas veces como
 haga falta siempre que se respete ese margen.
 
-Para cambiar una cita hacen falta el nombre completo, la fecha y la hora de la cita actual y, a ser
-posible, el médico o la especialidad. La hora nueva depende de lo que tenga libre la agenda: se
-ofrecen siempre al menos dos opciones cuando existen, y nunca se ofrece una hora que la agenda no
+La hora nueva depende de lo que tenga libre la agenda: nunca se ofrece una hora que la agenda no
 haya devuelto. Al terminar, el paciente recibe un SMS con el día, la hora, el profesional y la
 planta.
 
