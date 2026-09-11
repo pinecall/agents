@@ -198,7 +198,7 @@ describe("the console's own doors", () => {
   // what is being pinned is the server's half: which path is which verb, and how a refusal travels.
   const open = new Set<string>();
   const chatting: Chatting = {
-    roster: async () => ({ agent: "clinica-norte" }),
+    roster: async () => ({ agent: "clinica-norte", states: [] }),
     start: async () => {
       open.add("call_chat");
       return { call: "call_chat" };
@@ -270,7 +270,7 @@ describe("the console's own doors", () => {
   });
 
   it("opens a written call, carries a turn down it, and refuses a call it never opened", async () => {
-    expect(await (await fetch(`${served.url}ui/chat`)).json()).toEqual({ agent: "clinica-norte" });
+    expect(await (await fetch(`${served.url}ui/chat`)).json()).toEqual({ agent: "clinica-norte", states: [] });
     const opened = await fetch(`${served.url}ui/chat`, {
       method: "POST",
       body: JSON.stringify({ agent: "clinica-norte" }),

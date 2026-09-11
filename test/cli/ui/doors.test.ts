@@ -14,7 +14,7 @@ describe("the table", () => {
   it("registers one row per thing the terminal handed in, and nothing for what it did not", () => {
     const doors = ownDoors({
       chatting: {
-        roster: async () => ({ agent: "clinica-norte" }),
+        roster: async () => ({ agent: "clinica-norte", states: [] }),
         start: async () => ({ call: "c" }),
         say: async () => ({ call: "c" }),
         end: async () => ({ call: "c" }),

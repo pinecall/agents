@@ -5,7 +5,7 @@ import { z } from "zod";
 import { post, read, type Credentials } from "../../lib/api";
 
 /** The class this console can chat with: the one in the directory `pinecall ui` runs in. */
-const RosterSchema = z.object({ agent: z.string().nullable() });
+const RosterSchema = z.object({ agent: z.string().nullable(), states: z.array(z.string()) });
 export type Roster = z.infer<typeof RosterSchema>;
 
 const CallSchema = z.object({ call: z.string() });
@@ -15,9 +15,18 @@ export async function readChatRoster(credentials: Credentials): Promise<Roster> 
   return RosterSchema.parse(await read(credentials, "/ui/chat"));
 }
 
-/** Open a written call against it. `as` files the call under a contact, so memory has a name. */
-export async function startChat(credentials: Credentials, agent: string, as: string): Promise<string> {
-  return CallSchema.parse(await post(credentials, "/ui/chat", { agent, ...(as === "" ? {} : { as }) })).call;
+/**
+ * Open a written call against it. `as` files the call under a contact, so memory has a name, and
+ * `golden` opens the conversation in that golden's state — `pinecall chat --state`, by name.
+ */
+export async function startChat(
+  credentials: Credentials,
+  agent: string,
+  as: string,
+  golden: string,
+): Promise<string> {
+  const body = { agent, ...(as === "" ? {} : { as }), ...(golden === "" ? {} : { golden }) };
+  return CallSchema.parse(await post(credentials, "/ui/chat", body)).call;
 }
 
 /** One turn, down the socket the terminal is holding. The answer arrives on the call's log. */

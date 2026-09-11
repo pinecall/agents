@@ -9,6 +9,7 @@ import { mount } from "../../runtime/connect.js";
 import { chatUrl } from "../chat.js";
 import { load, mountOptions } from "../load.js";
 import type { Door } from "../testing/gateway.js";
+import { goldensIn, type Golden } from "../testing/goldens.js";
 import { lineFor } from "../view.js";
 import { anObject, aString, someWords } from "./asked.js";
 import { Refusal } from "./refusal.js";
@@ -28,16 +29,20 @@ const NOT_THIS_DIRECTORY = (asked: string, here: string | null): string =>
 const NO_CALL = "the gateway took the socket but wrote no entry: nothing to read";
 const NOT_OPEN = (call: string): string => `${call} is not a chat this console opened`;
 
-/** What the page asks for when it opens one: which agent, and who is calling when anybody is. */
+/** What the page asks for when it opens one: which agent, who is calling, and where to open. */
 export interface Wanted {
   agent: string;
   /** The contact the call is filed under, so an agent with memory can be made to remember. */
   as?: string | undefined;
+  /** A golden of this directory whose state the call opens in — `pinecall chat --state`, by name. */
+  golden?: string | undefined;
 }
 
-/** What the door answers about itself: the class this console can chat with, if there is one. */
+/** What the door answers about itself: the class, and the states a conversation may open in. */
 export interface Roster {
   agent: string | null;
+  /** The goldens of this directory that declare a state, by name. Chat may open in any of them. */
+  states: string[];
 }
 
 /** What the server needs from the chat door, and nothing of how it holds a socket. */
@@ -59,7 +64,12 @@ export interface Line {
 
 /** Where a line comes from: this process's own mount by default, a test's own in a test. */
 export interface Lines {
-  open(contact: string | undefined): Promise<Line>;
+  /**
+   * One written call. With a state, the call opens in it — which needs a mount of its own, because
+   * the opening is applied where the class is held and the console's own mount serves every other
+   * conversation at once.
+   */
+  open(contact: string | undefined, opening?: Record<string, unknown> | undefined): Promise<Line>;
   close(): Promise<void>;
 }
 
@@ -74,17 +84,19 @@ export function chattingFrom(
   agent: string | null,
   out: NodeJS.WritableStream,
   lines: Lines = linesFromThisProcess(door, out),
+  goldens: () => Promise<Golden[]> = () => goldensIn([]),
 ): Chatting {
   const open = new Map<string, Line>();
   return {
     async roster(): Promise<Roster> {
-      return { agent };
+      return { agent, states: (await theStates(agent, goldens)).map((golden) => golden.name) };
     },
 
     async start(asked: unknown): Promise<{ call: string }> {
       const wanted = parsed(asked);
       if (wanted.agent !== agent) throw new Refusal(409, NOT_THIS_DIRECTORY(wanted.agent, agent));
-      const line = await lines.open(wanted.as);
+      const opening = wanted.golden === undefined ? undefined : await theStateOf(wanted.golden, agent, goldens);
+      const line = await lines.open(wanted.as, opening);
       open.set(line.call, line);
       return { call: line.call };
     },
@@ -123,7 +135,24 @@ function held(open: Map<string, Line>, call: string): Line {
 
 function parsed(asked: unknown): Wanted {
   const given = anObject(asked, "a chat");
-  return { agent: aString(given, "agent"), as: someWords(given, "as") };
+  return { agent: aString(given, "agent"), as: someWords(given, "as"), golden: someWords(given, "golden") };
+}
+
+/** The goldens of this directory that declare a state: the only ones a conversation may open in. */
+async function theStates(agent: string | null, goldens: () => Promise<Golden[]>): Promise<Golden[]> {
+  if (agent === null) return [];
+  return (await goldens()).filter((golden) => golden.state !== undefined);
+}
+
+/** The state one of them opens in, or the refusal that says which golden the page asked for. */
+async function theStateOf(
+  name: string,
+  agent: string | null,
+  goldens: () => Promise<Golden[]>,
+): Promise<Record<string, unknown>> {
+  const golden = (await theStates(agent, goldens)).find((one) => one.name === name);
+  if (golden === undefined) throw new Refusal(404, `no golden called ${name} declares a state to open a call in`);
+  return golden.state ?? {};
 }
 
 /**
@@ -133,21 +162,32 @@ function parsed(asked: unknown): Wanted {
  */
 export function linesFromThisProcess(door: Door, out: NodeJS.WritableStream): Lines {
   let mounting: Promise<{ pc: Pinecall; url: string }> | undefined;
-  const mounted = async (): Promise<{ pc: Pinecall; url: string }> => {
+  const mounted = async (opening?: Record<string, unknown> | undefined): Promise<{ pc: Pinecall; url: string }> => {
     const loaded = await load();
     const pc = new Pinecall({ url: door.url, apiKey: door.apiKey });
-    const app = mount(loaded.ctor, { ...mountOptions(loaded, pc), takesUnclaimed: false });
+    const app = mount(loaded.ctor, {
+      ...mountOptions(loaded, pc),
+      takesUnclaimed: false,
+      ...(opening === undefined ? {} : { opening: () => opening }),
+    });
     await pc.connect();
     // The app's id exists only after the register the connect awaited, and naming it is what sends
     // the call to THIS process rather than to whichever `pinecall run` registered last.
     return { pc, url: chatUrl(door.url, app.slug, app.agent.app) };
   };
   return {
-    async open(contact: string | undefined): Promise<Line> {
-      const { url } = await (mounting ??= mounted());
+    async open(contact: string | undefined, opening?: Record<string, unknown> | undefined): Promise<Line> {
+      // A conversation that opens in a state gets a MOUNT of its own: the opening is applied where
+      // the class is held, one instance per call, and the console's own mount is serving every
+      // other conversation at the same time — one slot shared between two would be a race.
+      const its = opening === undefined ? undefined : await mounted(opening);
+      const { url } = its ?? (await (mounting ??= mounted()));
       const address = new URL(url);
       if (contact !== undefined) address.searchParams.set("contact", contact);
-      return await aLine(address.toString(), door.apiKey, out);
+      const line = await aLine(address.toString(), door.apiKey, out);
+      if (its === undefined) return line;
+      const end = line.end;
+      return { ...line, end: () => { end(); its.pc.close(); } };
     },
     async close(): Promise<void> {
       const held = mounting;

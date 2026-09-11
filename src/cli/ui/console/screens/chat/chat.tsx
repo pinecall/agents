@@ -24,6 +24,7 @@ export function Chat(): ReactNode {
   const call = params["call"];
   const [roster, setRoster] = useState<Roster | null>(null);
   const [as, setAs] = useState("");
+  const [golden, setGolden] = useState("");
   const [refused, setRefused] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
 
@@ -58,7 +59,7 @@ export function Chat(): ReactNode {
     setOpening(true);
     setRefused(null);
     try {
-      navigate(`/a/${agent}/chat/${await startChat(credentials, agent, as.trim())}`);
+      navigate(`/a/${agent}/chat/${await startChat(credentials, agent, as.trim(), golden)}`);
     } catch (failed) {
       setRefused(failed instanceof GatewayError ? failed.message : String(failed));
     } finally {
@@ -73,7 +74,8 @@ export function Chat(): ReactNode {
           <h2 className="call-group-name">Chat</h2>
           <p className="chat-what">
             The class of this directory, in writing. The tools run in the terminal that serves this
-            page, on the same log every other screen reads.
+            page, on the same log every other screen reads — and a conversation can open part-way
+            through, in the state one of this directory's goldens declares.
           </p>
           <label className="chat-field">
             <span className="chat-label">as</span>
@@ -84,6 +86,19 @@ export function Chat(): ReactNode {
               onChange={(event) => setAs(event.target.value)}
             />
           </label>
+          {roster.states.length > 0 && (
+            <label className="chat-field">
+              <span className="chat-label">from</span>
+              <select className="input chat-input mono" value={golden} onChange={(event) => setGolden(event.target.value)}>
+                <option value="">the call's own opening</option>
+                {roster.states.map((name) => (
+                  <option key={name} value={name}>
+                    the state of {name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <button type="submit" className="button" disabled={opening}>
             {opening ? "opening…" : "start a chat"}
           </button>

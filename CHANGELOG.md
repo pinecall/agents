@@ -7,6 +7,9 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **A chat can open part-way through.** The Chat screen offers the states this directory's goldens
+  declare, which is `pinecall chat --state` by name; a conversation that opens in one gets a mount
+  of its own, because the opening is applied where the class is held.
 - **A broken run's reproductions, in the console.** Evals → a run → the goldens that did not hold,
   each opened whole: the golden as written, every verdict on it, and the requests the model
   actually answered. The log keeps only a hash of each prompt block on purpose, so that file is
