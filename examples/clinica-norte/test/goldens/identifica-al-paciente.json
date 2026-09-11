@@ -4,12 +4,15 @@
   },
   "input": [
     "Buenos días, quería cambiar mi cita",
-    "Ana García, mi teléfono es el 600 000 001"
+    "Ana García, mi teléfono es el 6 0 0 0 0 0 0 0 1"
   ],
   "expect": {
     "tools": [
       "findPatient"
     ],
-    "register": "usted"
+    "register": "usted",
+    "says": [
+      "jueves"
+    ]
   }
 }
