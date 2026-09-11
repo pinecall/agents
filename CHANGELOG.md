@@ -7,6 +7,12 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **Simulate from the console.** Calls → Simulate: a persona from this directory's
+  `test/personas`, written or spoken, judged or not, the line spoiled or clean — and the page goes
+  to the call as it opens. Spoken, the listen button beside it is the speakers `simulate --listen`
+  always refused to be. The `ui` process runs the same `aSimulation` the terminal verb runs and
+  prints the turns; the page reads the log. Two doors of the console's own, `ui/personas` and
+  `POST ui/simulate`, never the gateway's.
 - **`Call.run`** — the eval run that opened this call, or null for a person, read off the same
   first entry the line is read from. `pinecall test` seeds a golden's state into the call that
   carries a run, and into no other; the `eval_` caller prefix it used to look for is gone.

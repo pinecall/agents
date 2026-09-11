@@ -8,6 +8,7 @@ import { extname, join, normalize, resolve, sep } from "node:path";
 import { Readable } from "node:stream";
 
 import type { Door } from "../testing/gateway.js";
+import { Refused, type Simulating } from "./simulating.js";
 
 // Loopback only, and the kernel picks the port: nothing on the network can reach this console,
 // and two `ui`s on one laptop do not fight over a number.
@@ -22,6 +23,12 @@ const NONCE_BYTES = 16;
 // The gateway's doors, as the console asks for them relative to its base. Everything else under
 // the nonce is a file of the console, or the console's page for a screen it routes itself.
 const DOORS = "v1/";
+
+// This process's OWN doors, beside the gateway's: what only the terminal that typed `ui` can do,
+// because it stands in the agent's directory — its personas, and a simulation mounted here.
+const OWN = "ui/";
+const PERSONAS = `${OWN}personas`;
+const SIMULATE = `${OWN}simulate`;
 
 const TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -48,10 +55,12 @@ export class LocalConsole {
   readonly #nonce: string;
   readonly #door: Door;
   readonly #files: string;
+  readonly #simulating: Simulating | null;
   #url = "";
 
-  private constructor(door: Door, files: string) {
+  private constructor(door: Door, files: string, simulating: Simulating | null) {
     this.#door = door;
+    this.#simulating = simulating;
     // Resolved, which is what strips a trailing separator: the directory arrives as a URL's path
     // and so ends in one, and `#serve` compares against `#files + sep`. Left as it came, that
     // comparison is `…/console//`, which no file under it starts with, and EVERY request fell
@@ -64,8 +73,8 @@ export class LocalConsole {
   }
 
   /** Bind the loopback on a free port and serve the console in `files` for this door. */
-  static async open(door: Door, files: string): Promise<LocalConsole> {
-    const served = new LocalConsole(door, files);
+  static async open(door: Door, files: string, simulating: Simulating | null = null): Promise<LocalConsole> {
+    const served = new LocalConsole(door, files, simulating);
     await served.#listen();
     return served;
   }
@@ -106,8 +115,29 @@ export class LocalConsole {
     const path = asked.pathname.slice(under.length);
     if (path.startsWith(DOORS)) {
       await this.#forward(request, response, `/${path}${asked.search}`);
+    } else if (path.startsWith(OWN)) {
+      await this.#own(request, response, path);
     } else {
       this.#serve(response, path);
+    }
+  }
+
+  // The two doors this process answers itself. A refusal travels as FastAPI's would — a status
+  // and a `detail` sentence — so the page reads both kinds of door the same way.
+  async #own(request: IncomingMessage, response: ServerResponse, path: string): Promise<void> {
+    const method = request.method ?? "GET";
+    try {
+      if (this.#simulating === null) throw new Refused(404, "this console was opened with no simulation door");
+      if (path === PERSONAS && method === "GET") {
+        json(response, 200, await this.#simulating.roster());
+      } else if (path === SIMULATE && method === "POST") {
+        json(response, 200, await this.#simulating.start(JSON.parse((await whole(request)).toString() || "{}")));
+      } else {
+        throw new Refused(404, `nothing at ${path}`);
+      }
+    } catch (refused) {
+      const status = refused instanceof Refused ? refused.status : 500;
+      json(response, status, { detail: refused instanceof Error ? refused.message : String(refused) });
     }
   }
 
@@ -182,6 +212,12 @@ export class LocalConsole {
   #page(): string {
     return readFileSync(join(this.#files, "index.html"), "utf8").replace("<head>", `<head><base href="/${this.#nonce}/">`);
   }
+}
+
+/** One JSON answer, whole. */
+function json(response: ServerResponse, status: number, body: unknown): void {
+  response.writeHead(status, { "content-type": TYPES[".json"]!, "cache-control": "no-store" });
+  response.end(`${JSON.stringify(body)}\n`);
 }
 
 /** Every byte of a request's body, as one buffer. */

@@ -1,4 +1,4 @@
-/** Calls: this agent's calls on the left, and the ones being watched beside them, as they happen. */
+/** Calls: this agent's calls on the left, a caller to simulate above them, and what is live beside. */
 
 import type { ReactNode } from "react";
 import { useParams } from "react-router";
@@ -7,6 +7,7 @@ import { isLive, liveFirst, useAgentSessions } from "../../lib/use-agent-session
 import { Nothing } from "../../shell/nothing";
 import { Live } from "../live";
 import { CallList } from "./call-list";
+import { SimulateForm } from "./simulate-form";
 import "./calls.css";
 
 // The URL decides what is watched: a call in the path is that call alone, and no call in the path
@@ -22,7 +23,10 @@ export function Calls(): ReactNode {
 
   return (
     <section className="calls">
-      <CallList agent={agent} lines={lines} standing={listed.error ?? "live"} />
+      <div className="calls-aside">
+        <SimulateForm agent={agent} />
+        <CallList agent={agent} lines={lines} standing={listed.error ?? "live"} />
+      </div>
       <div className="calls-watching">
         {watching.length === 0 ? (
           <Nothing>
