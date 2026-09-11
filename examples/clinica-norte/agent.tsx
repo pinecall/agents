@@ -62,6 +62,14 @@ export default class ClinicaNorte extends Agent {
   proposed?: Slot | undefined;
   slot?: Slot | undefined;
   booking?: Booking | undefined;
+  // El día que se miró y volvió sin ninguna hora. Sin este campo, un día sin agenda deja el estado
+  // exactamente como estaba antes de mirarlo —`slots` vacío y fase `choose`—, la vista vuelve a la
+  // rama de «todavía no ha nombrado ningún día», y al paciente que pregunta por el domingo se le
+  // contesta «¿para qué día quiere cambiarla?» sin decirle nunca que el domingo no hay nada
+  // (2026-09-11, `no-inventa-horas-de-un-dia-sin-agenda`: la tool se llamaba y la respuesta se
+  // perdía). Es el mismo hueco que tapó `proposed`: la fase dice en qué punto va la conversación y
+  // hace falta un campo que diga qué acaba de pasar.
+  dayWithNoHours?: string | undefined;
 
   override async onCall(call: Call): Promise<void> {
     // TODO: retomar una llamada cortada con `this.last(call.contact)` en cuanto el bridge llame
@@ -89,20 +97,35 @@ export default class ClinicaNorte extends Agent {
     return this.patient;
   }
 
-  /** Horas libres de un día. Un día que nombre el paciente se consulta SIEMPRE, aunque su ficha ya tenga cita ese día. */
+  /**
+   * Consulta la agenda real de un día concreto y devuelve las horas que quedan libres ese día, cada una con su médico.
+   * Llámala EN CUANTO el paciente nombre un día o lo dé a entender —«el martes», «¿y el jueves?», «el domingo por la
+   * mañana»— y antes de preguntarle ninguna otra cosa: ni la especialidad, ni el motivo, ni si quiere cambiar o cancelar.
+   * Es la única fuente de horas que existe: ninguna hora puede decirse en voz alta si no ha salido de aquí. Llámala también
+   * cuando la ficha del paciente ya tenga cita ese día, y también cuando creas que el centro cierra ese día —un día sin
+   * agenda devuelve la lista vacía, y esa lista vacía ES la respuesta que hay que darle—. No devuelve precios ni
+   * información del centro.
+   */
   @tool({ stage: ["choose", "book"], preview: 2 })
   async freeSlots(day: string): Promise<Slot[]> {
     this.slots = await this.agenda().free(day);
     // Mirar otro día retira lo que hubiera sobre la mesa: la hora propuesta era de la lista
     // anterior y ya no está entre las que se pueden reservar.
     this.proposed = undefined;
+    // Qué día fue el que volvió vacío, para que la vista pueda nombrarlo.
+    this.dayWithNoHours = this.slots.length > 0 ? undefined : day;
     // Un día sin horas devuelve a elegir día: la fase dice en qué punto va la conversación, y sin
     // horas sobre la mesa no hay nada que reservar.
     this.stage = this.slots.length > 0 ? "book" : "choose";
     return this.slots;
   }
 
-  /** Deja sobre la mesa la hora que el paciente acaba de nombrar. Llámala en cuanto nombre una, antes de leérsela; reservar sigue siendo book, después de su sí. */
+  /**
+   * Deja sobre la mesa la hora que el paciente acaba de elegir de las que le has leído, para poder leérsela entera y
+   * pedirle su confirmación. Llámala en cuanto se refiera a una de ellas, la nombre entera o no: «la de las cuatro»,
+   * «esa», «la primera», «la de la tarde» son todas ella eligiendo. Pásale la hora como se la leíste tú, no como la dijo
+   * él. Esto NO reserva nada: reservar es book, y sólo después de que diga que sí.
+   */
   @tool({ stage: "book", when: (s) => s.slots.length > 0 })
   propose(chosen: string): Slot {
     // Sin este campo la vista no sabe en qué turno va: dice «repítesela y pregunta» tanto antes de
@@ -115,7 +138,12 @@ export default class ClinicaNorte extends Agent {
     return slot;
   }
 
-  /** Reserva la hora que el paciente ya ha confirmado, dicha tal y como se la has leído. Nunca antes de su sí. */
+  /**
+   * Reserva de verdad, en la agenda de la clínica, la hora que el paciente YA ha confirmado. Llámala en el mismo turno en
+   * que dice que sí a la hora que le acabas de leer, sea como sea que lo diga: «sí», «confírmemela», «esa me viene bien»,
+   * «perfecto». No se la vuelvas a leer ni le preguntes otra vez: ya ha dicho que sí. Nunca la llames antes de ese sí, y
+   * nunca con una hora que la agenda no haya devuelto.
+   */
   @tool({
     stage: "book",
     // La fase dice que toca reservar; el predicado, que hay algo que reservar. Se piden las dos.
@@ -167,7 +195,16 @@ export default class ClinicaNorte extends Agent {
                 : " Es paciente nuevo, todavía sin cita."}
             </p>
             {this.remembers("médico habitual") && <p>Ofrece primero las horas de su médico habitual.</p>}
-            {this.slots.length === 0 && (
+            {this.slots.length === 0 && this.dayWithNoHours && (
+              // Ya se miró un día y no había nada. Decirlo NOMBRANDO el día es la mitad que se
+              // perdía: el paciente preguntó por el domingo y se le ofrecía elegir otro día sin
+              // llegar a contarle qué pasaba con el suyo.
+              <p>
+                Ya has mirado la agenda del {this.dayWithNoHours} y no queda ninguna hora libre. Dile
+                eso, nombrando el día, y pregúntale qué otro día le viene bien.
+              </p>
+            )}
+            {this.slots.length === 0 && !this.dayWithNoHours && (
               // La misma regla que el docstring de `freeSlots`, dicha aquí en el momento en que
               // el modelo decide: si el paciente ya ha nombrado un día, mirar la agenda es lo
               // siguiente que toca, y preguntarle otra vez por el día es no haberle escuchado.

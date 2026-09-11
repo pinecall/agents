@@ -148,7 +148,7 @@ describe("la clase y la vista dicen lo mismo sobre el día que nombra el pacient
     agent.startIn(CASES[0]!.state);
     const dynamic = block(promptOf(agent), "view");
 
-    expect(toolNamed(agent, "freeSlots")?.spec.description).toContain("se consulta SIEMPRE");
+    expect(toolNamed(agent, "freeSlots")?.spec.description).toContain("EN CUANTO el paciente nombre un día");
     expect(dynamic).toContain("consulta SIEMPRE la agenda de ese día");
     // Y la vista sigue diciendo qué hacer cuando todavía no ha nombrado ningún día: son dos
     // ramas, no una regla que sustituye a la otra.
@@ -182,7 +182,7 @@ describe("con horas sobre la mesa, elegir una no la reserva", () => {
     expect(dynamic).toContain("todavía no la reserva");
     expect(dynamic).toContain("pregúntale si se la confirmas");
     expect(dynamic).toContain("solo después de que te haya dicho que sí");
-    expect(toolNamed(agent, "book")?.spec.description).toContain("Nunca antes de su sí");
+    expect(toolNamed(agent, "book")?.spec.description).toContain("Nunca la llames antes de ese sí");
   });
 
   it("calla la regla cuando no hay ninguna hora sobre la mesa", () => {
@@ -190,5 +190,32 @@ describe("con horas sobre la mesa, elegir una no la reserva", () => {
     agent.startIn(CASES[0]!.state);
 
     expect(block(promptOf(agent), "view")).not.toContain("todavía no la reserva");
+  });
+});
+
+// 2026-09-11: `no-inventa-horas-de-un-dia-sin-agenda` llamaba a freeSlots("domingo"), recibía la
+// lista vacía y no decía nunca la palabra domingo. El estado volvía a ser el de antes de mirar
+// —`slots` vacío, fase `choose`— y la vista repetía «¿para qué día quiere cambiarla?». El campo es
+// lo que distingue no haber mirado de haber mirado y no haber nada.
+describe("un día que se miró y volvió vacío se queda en el estado", () => {
+  it("nombra el día en la vista, en vez de volver a pedir un día", () => {
+    const agent = fresh();
+    agent.startIn({
+      stage: "choose",
+      patient: { id: "p-1041", name: "Ana García", phone: "+34 600 000 001", cita: "jueves a las diez", doctor: "la doctora Vidal" },
+      slots: [],
+      dayWithNoHours: "domingo",
+    });
+    const dynamic = block(promptOf(agent), "view");
+
+    expect(dynamic).toContain("agenda del domingo");
+    expect(dynamic).not.toContain("todavía no ha nombrado ningún día");
+  });
+
+  it("sigue pidiendo el día cuando todavía no se ha mirado ninguno", () => {
+    const agent = fresh();
+    agent.startIn(CASES[0]!.state);
+
+    expect(block(promptOf(agent), "view")).toContain("todavía no ha nombrado ningún día");
   });
 });
