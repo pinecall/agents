@@ -139,10 +139,11 @@ export default class ClinicaNorte extends Agent {
   }
 
   /**
-   * Reserva de verdad, en la agenda de la clínica, la hora que el paciente YA ha confirmado. Llámala en el mismo turno en
-   * que dice que sí a la hora que le acabas de leer, sea como sea que lo diga: «sí», «confírmemela», «esa me viene bien»,
-   * «perfecto». No se la vuelvas a leer ni le preguntes otra vez: ya ha dicho que sí. Nunca la llames antes de ese sí, y
-   * nunca con una hora que la agenda no haya devuelto.
+   * Reserva de verdad, en la agenda de la clínica, la hora que el paciente acaba de confirmar. Llámala sólo cuando le hayas
+   * leído una hora entera —día, hora y médico— le hayas preguntado si se la confirmas, y él conteste que sí: «sí»,
+   * «confírmemela», «adelante», «perfecto». Que diga que una hora le viene bien NO es todavía ese sí: eso es elegirla, y
+   * para eso está propose. Cuando el sí ya ha llegado no se la vuelvas a leer ni le preguntes otra vez. Nunca con una hora
+   * que la agenda no haya devuelto.
    */
   @tool({
     stage: "book",
