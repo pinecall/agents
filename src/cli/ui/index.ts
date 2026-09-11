@@ -8,6 +8,7 @@ import { doorLine, theDoor } from "../env.js";
 import type { Group } from "../groups.js";
 import { agentOfThisDirectory, DEFAULT_AGENTS } from "../load.js";
 import { headless, openInBrowser } from "./browser.js";
+import { chattingFrom } from "./chatting.js";
 import { LocalConsole } from "./server.js";
 import { simulatingFrom } from "./simulating.js";
 import { testingFrom } from "./testing.js";
@@ -69,9 +70,11 @@ export async function ui(argv: string[], how: Opening = {}): Promise<number> {
   // A simulation or a suite started from the page mounts the class of THIS directory in this
   // process and prints here, exactly as `pinecall simulate` and `pinecall test` would; the page
   // watches the call's log, or the run's row.
+  const chatting = chattingFrom(door, here, out);
   const served = await LocalConsole.open(door, files, {
     simulating: simulatingFrom(door, here, out),
     testing: testingFrom(door, here, out),
+    chatting,
   });
   const at = agent === null ? served.url : served.at(`a/${agent}`);
   // Which gateway and which of the four places the key came from: the one line that answers
@@ -84,6 +87,7 @@ export async function ui(argv: string[], how: Opening = {}): Promise<number> {
     await hungUp.happened;
   } finally {
     hungUp.stop();
+    await chatting.close();
     await served.close();
   }
   return 0;

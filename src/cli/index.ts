@@ -9,7 +9,7 @@ import { helpFor, PLANNED, plannedGroup, type Group } from "./groups.js";
 // The order this table is written is the order the help prints: run and chat first, because
 // they are what a person types on the first day, and the planned groups after, in the design's
 // order. run is rails server and chat is rails console — see docs/decisions/tenant-cli.md.
-const BUILT = ["run", "chat", "ui", "prompt", "test", "simulate", "eval", "sessions", "runs", "personas", "knowledge", "memory", "remember", "supervise", "keys", "login", "whoami"] as const;
+const BUILT = ["run", "chat", "ui", "prompt", "test", "simulate", "eval", "sessions", "runs", "pipeline", "personas", "knowledge", "memory", "remember", "supervise", "keys", "login", "whoami"] as const;
 
 /** Everything `pinecall` answers to, built and planned alike, in the order help prints them. */
 export function groupNames(): string[] {
@@ -64,6 +64,7 @@ async function groupFor(name: string, out: NodeJS.WritableStream): Promise<Group
   if (name === "simulate") return (await import("./simulate.js")).group;
   if (name === "eval") return (await import("./eval.js")).group;
   if (name === "runs") return (await import("./runs/index.js")).group;
+  if (name === "pipeline") return (await import("./pipeline.js")).group;
   if (name === "personas") return (await import("./personas.js")).group;
   if (name === "knowledge") return (await import("./knowledge.js")).group;
   if (name === "memory") return (await import("./memory.js")).group;
@@ -91,6 +92,7 @@ export function usage(): string {
     "  eval      ring 3: one real call, re-evaluated by the runtime's code checks",
     "  sessions  list | show a call's log, with what it cost and how it was judged",
     "  runs      list | show | diff the suites, promote a call, and watch the drift",
+    "  pipeline  what the agent hears, decides and speaks with, and the knobs over it",
     "  personas  list | show | try the synthetic callers in test/personas",
     "  knowledge push | list | drop the knowledge base the agent answers from",
     "  memory    what memory kept about a contact, forget it, and hold recall to a golden",

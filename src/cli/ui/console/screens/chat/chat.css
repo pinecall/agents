@@ -1,0 +1,50 @@
+/* Chat owns its own styles: the call above, the caller's one line below it. */
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--step) * 2);
+  height: 100%;
+  min-height: 0;
+}
+
+.chat-open {
+  display: flex;
+  flex-direction: column;
+  gap: var(--step);
+  max-width: 44rem;
+}
+
+.chat-what {
+  color: var(--quiet);
+  margin: 0;
+  max-width: 34rem;
+}
+
+.chat-field {
+  align-items: baseline;
+  display: flex;
+  gap: var(--step);
+}
+
+.chat-label {
+  color: var(--quiet);
+  width: 3rem;
+}
+
+.chat-input {
+  flex: 1;
+}
+
+.chat-composer {
+  align-items: center;
+  border-top: 1px solid var(--edge);
+  display: flex;
+  flex: none;
+  gap: var(--step);
+  padding-top: calc(var(--step) * 2);
+}
+
+.chat-say {
+  flex: 1;
+}

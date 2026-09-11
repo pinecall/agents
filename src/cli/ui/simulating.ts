@@ -3,6 +3,7 @@
 import { aSimulation, degradedBy, ONLY_ON_A_LINE, TURNS } from "../simulate.js";
 import { NO_PERSONAS, personasIn, type Persona } from "../testing/caller.js";
 import type { Door } from "../testing/gateway.js";
+import { aFlag, anObject, aNumber, aString, maybeNumber } from "./asked.js";
 import { Refused } from "./refused.js";
 
 /** What the page asks for: the caller, the line, and how far to go. */
@@ -131,37 +132,16 @@ async function opened(
   });
 }
 
-// Read by hand and not by a schema library: the CLI carries none (test/the-imports.test.ts), and
-// the shape is six fields the page itself wrote a moment ago.
+// Read with the shared readers of ui/asked.ts: every door of this process reads a body the same way.
 function parsed(asked: unknown): Wanted {
-  if (typeof asked !== "object" || asked === null) throw new Refused(422, "a simulation is asked for with a JSON object");
-  const given = asked as Record<string, unknown>;
-  const agent = aString(given, "agent");
-  const persona = aString(given, "persona");
-  const voice = aFlag(given, "voice");
-  const judge = aFlag(given, "judge");
-  const turns = given["turns"] === undefined ? TURNS : aNumber(given, "turns", 1, MOST_TURNS);
-  const noise = given["background_noise"] === undefined ? undefined : aNumber(given, "background_noise", 0, 120);
-  const loss = given["packet_loss"] === undefined ? undefined : aNumber(given, "packet_loss", 0, 100);
-  return { agent, persona, voice, judge, turns, background_noise: noise, packet_loss: loss };
-}
-
-function aString(given: Record<string, unknown>, name: string): string {
-  const value = given[name];
-  if (typeof value !== "string" || value === "") throw new Refused(422, `${name} is a name, and it was missing`);
-  return value;
-}
-
-function aFlag(given: Record<string, unknown>, name: string): boolean {
-  const value = given[name];
-  if (value !== undefined && typeof value !== "boolean") throw new Refused(422, `${name} is true or false`);
-  return value === true;
-}
-
-function aNumber(given: Record<string, unknown>, name: string, least: number, most: number): number {
-  const value = given[name];
-  if (typeof value !== "number" || !Number.isFinite(value) || value < least || value > most) {
-    throw new Refused(422, `${name} is a number between ${least} and ${most}`);
-  }
-  return value;
+  const given = anObject(asked, "a simulation");
+  return {
+    agent: aString(given, "agent"),
+    persona: aString(given, "persona"),
+    voice: aFlag(given, "voice"),
+    judge: aFlag(given, "judge"),
+    turns: given["turns"] === undefined ? TURNS : aNumber(given, "turns", 1, MOST_TURNS),
+    background_noise: maybeNumber(given, "background_noise", 0, 120),
+    packet_loss: maybeNumber(given, "packet_loss", 0, 100),
+  };
 }

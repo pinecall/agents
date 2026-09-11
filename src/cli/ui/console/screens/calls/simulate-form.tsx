@@ -96,7 +96,7 @@ export function SimulateForm({ agent }: { agent: string }): ReactNode {
       <h2 className="call-group-name">Simulate</h2>
       <label className="sim-field">
         <span className="sim-label">persona</span>
-        <select className="sim-input mono" value={persona} onChange={(event) => setPersona(event.target.value)}>
+        <select className="input sim-input mono" value={persona} onChange={(event) => setPersona(event.target.value)}>
           {roster.personas.map((one) => (
             <option key={one.name} value={one.name}>
               {one.name}
@@ -116,7 +116,7 @@ export function SimulateForm({ agent }: { agent: string }): ReactNode {
       <label className="sim-field">
         <span className="sim-label">turns</span>
         <input
-          className="sim-input mono"
+          className="input sim-input mono"
           type="number"
           min={1}
           max={30}
@@ -135,7 +135,7 @@ export function SimulateForm({ agent }: { agent: string }): ReactNode {
               <label className="sim-field">
                 <span className="sim-label">noise, dB under</span>
                 <input
-                  className="sim-input mono"
+                  className="input sim-input mono"
                   type="number"
                   min={0}
                   max={60}
@@ -146,7 +146,7 @@ export function SimulateForm({ agent }: { agent: string }): ReactNode {
               <label className="sim-field">
                 <span className="sim-label">packets lost, %</span>
                 <input
-                  className="sim-input mono"
+                  className="input sim-input mono"
                   type="number"
                   min={0}
                   max={100}

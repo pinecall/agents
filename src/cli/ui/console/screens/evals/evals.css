@@ -136,12 +136,6 @@ a.chip:hover .chip-val {
 }
 
 .suite-input {
-  background: none;
-  border: 1px solid var(--edge-strong);
-  border-radius: var(--radius);
-  color: var(--ink);
-  font-size: 12px;
-  padding: calc(var(--step) * 0.5) var(--step);
   width: 6ch;
 }
 

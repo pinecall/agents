@@ -115,11 +115,11 @@ export function SuiteForm({ agent, onOpened }: { agent: string; onOpened: (run: 
           <>
             <label className="suite-field">
               <span>noise, dB under</span>
-              <input className="suite-input mono" type="number" min={0} max={60} value={noise} onChange={(event) => setNoise(Number(event.target.value))} />
+              <input className="input suite-input mono" type="number" min={0} max={60} value={noise} onChange={(event) => setNoise(Number(event.target.value))} />
             </label>
             <label className="suite-field">
               <span>packets lost, %</span>
-              <input className="suite-input mono" type="number" min={0} max={100} value={loss} onChange={(event) => setLoss(Number(event.target.value))} />
+              <input className="input suite-input mono" type="number" min={0} max={100} value={loss} onChange={(event) => setLoss(Number(event.target.value))} />
             </label>
           </>
         )}

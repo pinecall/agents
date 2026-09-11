@@ -8,6 +8,7 @@ import "./rail.css";
 // Talk first: it is the screen a person opens the console for. The rest read the same log.
 const SCREENS = [
   { path: "talk", name: "Talk" },
+  { path: "chat", name: "Chat" },
   { path: "calls", name: "Calls" },
   { path: "sessions", name: "Sessions" },
   { path: "pipeline", name: "Pipeline" },

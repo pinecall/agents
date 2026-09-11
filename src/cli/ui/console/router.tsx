@@ -7,6 +7,7 @@ import { BASE } from "./lib/base";
 // that reorganises itself renames nothing here.
 import { Agents } from "./screens/agents";
 import { Calls } from "./screens/calls";
+import { Chat } from "./screens/chat";
 import { Evals } from "./screens/evals";
 import { Pipeline } from "./screens/pipeline";
 import { Session, Sessions } from "./screens/sessions";
@@ -29,6 +30,9 @@ export const router = createBrowserRouter(
       children: [
         { index: true, element: <Navigate to="talk" replace /> },
         { path: "talk", element: <Talk /> },
+        { path: "chat", element: <Chat /> },
+        // A call in the path is the conversation this page is having; without it, a new one opens.
+        { path: "chat/:call", element: <Chat /> },
         { path: "calls", element: <Calls /> },
         // A call in the path is the one being watched; without it, Calls watches every live call.
         { path: "calls/:call", element: <Calls /> },
