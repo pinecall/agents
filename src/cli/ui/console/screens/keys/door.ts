@@ -4,8 +4,9 @@ import { z } from "zod";
 
 import { drop, put, read, type Credentials } from "../../lib/api";
 
-// No door of the runtime ever answers with a provider key: this door answers vendor NAMES, and
-// that is the whole of what a screen may know — not a value, not a prefix, not a fingerprint.
+// This door answers vendor NAMES, and that is the whole of what a screen may know — not a value,
+// not a prefix, not a fingerprint. The one door that reads a key back is the worker's, and a page
+// is not a worker.
 const BroughtSchema = z.object({ vendors: z.array(z.string()) });
 
 /** The vendors this org runs on its own account. Every other vendor runs on the box's key. */

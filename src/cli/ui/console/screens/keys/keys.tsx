@@ -12,8 +12,9 @@ import "./keys.css";
  * The screen. A key typed here goes to this machine's own loopback, is signed by the terminal that
  * serves this page and sent once — exactly the path `pinecall keys add` takes, which reads it off
  * stdin for the same reason a flag is refused there: argv is visible to every user on the box.
- * No door of the runtime ever answers with a provider key, so this page lists vendors and nothing
- * more. A key that was lost was lost at the vendor, and the fix is to add it again.
+ * No door a person reads answers with a provider key — the one that does is the worker's, an
+ * org's own keys to its own process — so this page lists vendors and nothing more. A key that was
+ * lost is set again.
  */
 export function Keys(): ReactNode {
   const credentials = useCredentials();

@@ -373,9 +373,11 @@ from the next one; every vendor nobody brought runs on the box's own key. `add` 
 flag: argv is visible in `ps` to every user on the box, and a key pasted as an argument is a key in
 the shell history.
 
-No door of the runtime ever answers with a provider key: `list` prints the vendors and nothing
-else, not a value, not a prefix, not a fingerprint. A key that was lost was lost at the vendor, and
-the fix is to add it again. A runtime with no `PINECALL_VAULT_KEY` cannot keep somebody else's
+No door a person reads ever answers with a provider key: `list` prints the vendors and nothing
+else, not a value, not a prefix, not a fingerprint. The one door that reads a key back is the
+**worker's** — `GET /v1/agents/{slug}/provider-keys`, an org's own keys handed to the org's own
+process, on that org's key — which is the whole reason the vault exists. A key that was lost is set
+again. A runtime with no `PINECALL_VAULT_KEY` cannot keep somebody else's
 secret and says so with a 503; the vault, and how to turn it on, is the gateway API's §6.
 
 ## `login` · `whoami`

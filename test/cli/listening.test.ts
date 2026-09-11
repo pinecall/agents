@@ -2,11 +2,12 @@
 // the room — which player is spoken to, what is said when there is none, and the knocking that
 // makes the ear land on the greeting rather than on the third turn.
 
+import { existsSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { aSeatIn, anEarIn, NO_PLAYER } from "../../src/cli/listening.js";
+import { aSeatIn, anEarIn, EAR, NO_PLAYER } from "../../src/cli/listening.js";
 import { written } from "./said.js";
 
 const A_KEY = "pk_the_orgs_key";
@@ -84,5 +85,14 @@ describe("what plays it", () => {
     } finally {
       process.env["PATH"] = path;
     }
+  });
+});
+
+describe("the ear", () => {
+  // The room is joined in a program beside this module, named off this module's own extension: a
+  // rename of either file, or a build that forgot to copy one, is a `--listen` that starts nothing.
+  it("is a program that sits beside listening, under the same extension", () => {
+    expect(EAR.endsWith("/ear.ts") || EAR.endsWith("/ear.js")).toBe(true);
+    expect(existsSync(EAR)).toBe(true);
   });
 });
