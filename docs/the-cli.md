@@ -380,6 +380,24 @@ process, on that org's key — which is the whole reason the vault exists. A key
 again. A runtime with no `PINECALL_VAULT_KEY` cannot keep somebody else's
 secret and says so with a 503; the vault, and how to turn it on, is the gateway API's §6.
 
+## `callbacks`
+
+```
+pinecall callbacks [--agent <slug>] [--after <cursor>]
+```
+
+The numbers people left when every seat of the fleet was taken: a phone caller the overflow agent
+answered, or a web visitor who left a number at the widget after `POST /v1/tokens` answered `503`.
+One line each — when, the agent, the number, the channel, who took it — oldest first, and a
+`more: --after <cursor>` line when there is another page. The runtime records them
+(`callback.requested`, on the agent's log); dialing back is your app's.
+
+```
+gateway https://box.pinecall.io · key from PINECALL_API_KEY
+2026-09-11 19:20  clinica-norte  +34600000000  phone  via overflow on call_9f2c…
+2026-09-11 19:22  clinica-norte  +34611111111  web    via the widget
+```
+
 ## `login` · `whoami`
 
 ```
@@ -490,6 +508,7 @@ code can call — over HTTP, in any language, with the same key.
 | `memory` | `GET`·`DELETE /v1/contacts/{contact}/memory`, `POST /v1/contacts/memory/eval` |
 | `remember` | `POST /v1/agents/{slug}/memory/extraction` |
 | `keys` | `PUT`·`DELETE`·`GET /v1/provider-keys[/{vendor}]` |
+| `callbacks` | `GET /v1/callbacks[?agent=&after=]` |
 | `login` · `whoami` | `GET /v1/whoami` |
 | `ui` | all of the above, plus its own `ui/*` doors on 127.0.0.1 |
 | `prompt` | none. It is the one verb that needs no gateway and no key |
