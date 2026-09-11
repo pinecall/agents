@@ -4,6 +4,7 @@ import { Fragment, useState, type ReactNode } from "react";
 import { useLocation } from "react-router";
 
 import { currentTheme, toggleTheme, type Theme } from "./theme";
+import { Whose } from "./whose";
 
 export function Header({ agent }: { agent: string }): ReactNode {
   const segments = useLocation().pathname.split("/").filter(Boolean);
@@ -19,7 +20,10 @@ export function Header({ agent }: { agent: string }): ReactNode {
           </Fragment>
         ))}
       </div>
-      <ThemeToggle />
+      <div className="head-right">
+        <Whose />
+        <ThemeToggle />
+      </div>
     </div>
   );
 }

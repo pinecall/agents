@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useParams, useSearchParams } from "react-router";
 
 import { CallsTable } from "./calls-table";
+import { DriftPanel } from "./drift-panel";
 import { RunDetail } from "./run-detail";
 import { RunTable } from "./run-table";
 import { SuiteForm } from "./suite-form";
@@ -20,7 +21,8 @@ export function Evals(): ReactNode {
   const runs = useEvalRuns(agent);
   const scored = useScoredCalls(agent);
 
-  const view = params.get("view") === "calls" ? "calls" : "runs";
+  const asked = params.get("view");
+  const view = asked === "calls" || asked === "drift" ? asked : "runs";
   const selected = params.get("run");
   const open = runs.runs.find((run) => run.id === selected) ?? null;
 
@@ -43,7 +45,9 @@ export function Evals(): ReactNode {
           of a milestone's definition of done. <strong>Runs</strong> is where those runs are readable without a
           terminal — every judgment per golden, per model, per run, and what changed since the run before.{" "}
           <strong>Calls</strong> is ring four: what the judges sealed each finished call with, within a minute of the
-          caller hanging up.
+          caller hanging up — and any of them can be re-checked by code or written down as a golden candidate.{" "}
+          <strong>Drift</strong> is those verdicts counted over two windows, so a judge that started letting things
+          through is a number and not a feeling.
         </p>
         <nav className="tabs" aria-label="View">
           <button type="button" className={view === "runs" ? "tab is-active" : "tab"} onClick={() => select({ view: null })}>
@@ -51,6 +55,9 @@ export function Evals(): ReactNode {
           </button>
           <button type="button" className={view === "calls" ? "tab is-active" : "tab"} onClick={() => select({ view: "calls", run: null })}>
             calls
+          </button>
+          <button type="button" className={view === "drift" ? "tab is-active" : "tab"} onClick={() => select({ view: "drift", run: null })}>
+            drift
           </button>
         </nav>
       </header>
@@ -93,6 +100,8 @@ export function Evals(): ReactNode {
           )}
         </>
       )}
+
+      {view === "drift" && <DriftPanel agent={agent} />}
 
       {view === "calls" && (
         <section className="section">

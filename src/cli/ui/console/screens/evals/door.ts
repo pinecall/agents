@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 
-import { read, type Credentials } from "../../lib/api";
+import { post, read, type Credentials } from "../../lib/api";
 
 // The shapes are read here and nowhere else in the console, the way screens/pipeline/door.ts holds
 // the ones its own door wraps: `protocol/schema` describes a call, not an operator's screen.
@@ -75,4 +75,84 @@ export async function readRuns(credentials: Credentials, agent: string): Promise
     await read(credentials, "/v1/evals/runs", { agent, limit: AS_MANY_AS_IT_MAY }),
   );
   return listed.runs;
+}
+
+// ── what a run came to afterwards ───────────────────────────────────────────────
+
+/** One judge's standing in one window: how many verdicts settled, and how many of them held. */
+const RateSchema = z.object({ held: z.int(), settled: z.int(), percent: z.number() });
+
+/** One judge across the two windows, and the points between them. Null is silence, never zero. */
+const JudgeDriftSchema = z.object({
+  judge: z.string(),
+  before: RateSchema.nullable(),
+  now: RateSchema.nullable(),
+  delta: z.number().nullable(),
+});
+export type JudgeDrift = z.infer<typeof JudgeDriftSchema>;
+
+/** One broken verdict, as a reader opens the log at it: the call, the judge, the seqs, the why. */
+const BrokeSchema = z.object({
+  call: z.string(),
+  judge: z.string(),
+  seqs: z.array(z.int()),
+  reason: z.string(),
+});
+
+/** What drift came to: a row per judge, what nobody judged, the newest calls that broke, the worst drop. */
+const DriftedSchema = z.object({
+  agent: z.string(),
+  window: z.number(),
+  baseline: z.number(),
+  threshold: z.number(),
+  drift: z.object({
+    judges: z.array(JudgeDriftSchema),
+    notJudged: z.object({ now: z.int(), before: z.int() }),
+    broke: z.array(BrokeSchema),
+    worst: z.number().nullable(),
+  }),
+});
+export type Drifted = z.infer<typeof DriftedSchema>;
+
+// The two hundred calls and their scores are read by the process that holds the key, not by this
+// page: it is the very `theDrift` `pinecall runs drift` runs, and a browser would make two
+// hundred round trips to do it.
+/** Each judge's held-rate over two windows, and the points between them. */
+export async function readDrift(
+  credentials: Credentials,
+  agent: string,
+  window: number,
+  baseline: number,
+): Promise<Drifted> {
+  return DriftedSchema.parse(await post(credentials, "/ui/drift", { agent, window, baseline }));
+}
+
+/** One check of ring 3, as the replay door writes it: three strings and no nesting. */
+const VerdictSchema = z.object({ check: z.string(), status: z.string(), detail: z.string() });
+
+/** Ring 3 over one finished call: rebuilt from its log and answered by code, never by a model. */
+const ReplayedSchema = z.object({
+  call: z.string(),
+  agent: z.string(),
+  passed: z.boolean(),
+  verdicts: z.array(VerdictSchema),
+});
+export type Replayed = z.infer<typeof ReplayedSchema>;
+
+/** Re-evaluate one finished call with the runtime's four code checks. Nothing is re-run. */
+export async function replayCall(credentials: Credentials, call: string): Promise<Replayed> {
+  return ReplayedSchema.parse(await post(credentials, `/v1/evals/replay/${encodeURIComponent(call)}`, {}));
+}
+
+/** A call written down as a golden candidate: where the file landed, and what is a person's to decide. */
+const PromotedSchema = z.object({
+  path: z.string(),
+  candidate: z.object({ name: z.string(), input: z.array(z.string()) }),
+  notes: z.array(z.string()),
+});
+export type Promoted = z.infer<typeof PromotedSchema>;
+
+/** Promote one real call to `test/candidates`, in the directory the console runs in. */
+export async function promoteCall(credentials: Credentials, call: string): Promise<Promoted> {
+  return PromotedSchema.parse(await post(credentials, "/ui/promote", { call }));
 }

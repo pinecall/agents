@@ -9,6 +9,9 @@ import { Agents } from "./screens/agents";
 import { Calls } from "./screens/calls";
 import { Chat } from "./screens/chat";
 import { Evals } from "./screens/evals";
+import { Keys } from "./screens/keys";
+import { Knowledge } from "./screens/knowledge";
+import { Memory } from "./screens/memory";
 import { Pipeline } from "./screens/pipeline";
 import { Session, Sessions } from "./screens/sessions";
 import { Talk } from "./screens/talk";
@@ -22,7 +25,10 @@ export const router = createBrowserRouter(
     {
       path: "/",
       element: <Shell />,
-      children: [{ index: true, element: <Agents /> }],
+      children: [
+        { index: true, element: <Agents /> },
+        { path: "keys", element: <Keys /> },
+      ],
     },
     {
       path: "/a/:agent",
@@ -39,6 +45,8 @@ export const router = createBrowserRouter(
         { path: "sessions", element: <Sessions /> },
         { path: "sessions/:call", element: <Session /> },
         { path: "pipeline", element: <Pipeline /> },
+        { path: "knowledge", element: <Knowledge /> },
+        { path: "memory", element: <Memory /> },
         { path: "evals", element: <Evals /> },
       ],
     },

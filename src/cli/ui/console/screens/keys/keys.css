@@ -1,0 +1,34 @@
+/* Keys owns its own styles: one line to bring one, and the vendors under it. */
+
+.keys-add {
+  align-items: center;
+  display: flex;
+  gap: var(--step);
+  margin-bottom: calc(var(--step) * 2);
+}
+
+.keys-vendor {
+  width: 12rem;
+}
+
+.keys-secret {
+  width: 22rem;
+}
+
+.keys-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--step);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.keys-list li {
+  border-bottom: 1px solid var(--edge);
+  display: flex;
+  gap: calc(var(--step) * 2);
+  justify-content: space-between;
+  max-width: 30rem;
+  padding-bottom: var(--step);
+}

@@ -51,6 +51,11 @@ export async function post(credentials: Credentials, path: string, body: unknown
   return answered(answer);
 }
 
+/** One door, asked to delete what is behind it. A 204 with no body is an answer, not an error. */
+export async function drop(credentials: Credentials, path: string): Promise<unknown> {
+  return answered(await fetch(doorAt(credentials, path, {}), { method: "DELETE" }));
+}
+
 /** The URL an EventSource opens. The CLI in front of it signs the request like any other. */
 export function streamUrl(credentials: Credentials, path: string, params: Params = {}): string {
   return doorAt(credentials, path, params).toString();
@@ -63,9 +68,11 @@ type Params = Record<string, string | number>;
 // Every verb ends here, so an answer becomes a value or an error in one place. A 401 or a 403 is
 // the CLI's key being refused by the gateway, which no screen can fix: it is reported like any
 // other refusal, in the gateway's own words.
+const NO_BODY = 204;
+
 async function answered(answer: Response): Promise<unknown> {
   if (answer.ok) {
-    return answer.json();
+    return answer.status === NO_BODY ? null : answer.json();
   }
   throw new GatewayError(answer.status, await detail(answer));
 }

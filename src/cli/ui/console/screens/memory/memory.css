@@ -1,0 +1,49 @@
+/* Memory owns its own styles: one contact's facts, and the two goldens side by side. */
+
+.mem-ask {
+  align-items: center;
+  display: flex;
+  gap: var(--step);
+  margin-bottom: calc(var(--step) * 2);
+}
+
+.mem-contact {
+  width: 22rem;
+}
+
+.mem-facts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--step);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mem-facts li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--step);
+  justify-content: space-between;
+}
+
+/* A fact a later call superseded is still history, and reads as history. */
+.mem-gone {
+  opacity: 0.55;
+}
+
+.mem-goldens {
+  display: grid;
+  gap: calc(var(--step) * 2);
+  grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
+}
+
+.mem-run {
+  display: flex;
+  flex-direction: column;
+  gap: var(--step);
+}
+
+.mem-run p {
+  margin: 0;
+}

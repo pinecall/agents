@@ -1,6 +1,6 @@
 /** `pinecall memory <contact> | forget <contact> | eval`: what memory kept about one contact, the right to be forgotten, and how well recall ranks. */
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { createInterface } from "node:readline";
 import { parseArgs } from "node:util";
@@ -9,7 +9,7 @@ import type { ContactFact, ContactMemory, Forgotten, MemoryScore } from "@pineca
 
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
-import { dayAndTime } from "./knowledge.js";
+import { dayAndTime, theQuestionsIn } from "./knowledge.js";
 import { load } from "./load.js";
 import { asked, type Door } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
@@ -20,10 +20,15 @@ const USAGE = `usage: pinecall memory <contact>
 
 // The golden beside the agent that answers with those facts: the questions recall is held to, and
 // what each should have brought back. `memory/golden.json` is where `eval` looks when nobody says.
-const DEFAULT_GOLDEN = "memory/golden.json";
+export const DEFAULT_GOLDEN = "memory/golden.json";
 
 // The door takes the whole golden and needs no contact: every question carries its own facts.
 const EVAL = "/v1/contacts/memory/eval";
+
+/** The two sentences a golden is refused by, said the same in the terminal and on the page. */
+export const NO_GOLDEN = (golden: string): string => `no golden at ${golden}: a JSON list of {holds, asks, expects}`;
+export const AN_EMPTY_GOLDEN = (golden: string): string =>
+  `${golden} holds no questions: a golden is a JSON list of {holds, asks, expects}`;
 
 // A fact that a later call superseded is still in the history, and it is drawn dimmer so the
 // current ones read first — on a terminal, that is; a pipe gets the plain line.
@@ -123,19 +128,22 @@ async function evaluate(
 ): Promise<number> {
   const golden = resolve(file ?? join(dirname((await load(agent)).file), DEFAULT_GOLDEN));
   if (!existsSync(golden)) {
-    err.write(`no golden at ${golden}: a JSON list of {holds, asks, expects}\n`);
+    err.write(`${NO_GOLDEN(golden)}\n`);
     return 2;
   }
-  const questions: unknown = JSON.parse(readFileSync(golden, "utf8"));
-  if (!Array.isArray(questions) || questions.length === 0) {
-    err.write(`${golden} holds no questions: a golden is a JSON list of {holds, asks, expects}\n`);
+  const questions = theQuestionsIn(golden);
+  if (questions === null) {
+    err.write(`${AN_EMPTY_GOLDEN(golden)}\n`);
     return 2;
   }
-  const body: Record<string, unknown> = { questions };
-  if (k !== undefined) body["k"] = Number(k);
-  const score = await asked<MemoryScore>(door, EVAL, { method: "POST", body });
+  const score = await recalledOn(door, questions, k === undefined ? undefined : Number(k));
   out.write(`${recallLines(score).join("\n")}\n`);
   return score.misses.length === 0 ? 0 : 1;
+}
+
+/** Every question of a golden asked of recall, and the two figures code computed from the answers. */
+export async function recalledOn(door: Door, questions: unknown[], k: number | undefined): Promise<MemoryScore> {
+  return await asked<MemoryScore>(door, EVAL, { method: "POST", body: { questions, ...(k === undefined ? {} : { k }) } });
 }
 
 /** What a golden prints: the two figures on one line, then a line per question memory did not answer whole. */

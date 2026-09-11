@@ -8,10 +8,8 @@ import { extname, join, normalize, resolve, sep } from "node:path";
 import { Readable } from "node:stream";
 
 import type { Door } from "../testing/gateway.js";
-import { Refused } from "./refused.js";
-import type { Chatting } from "./chatting.js";
-import type { Simulating } from "./simulating.js";
-import type { Testing } from "./testing.js";
+import type { OwnDoor } from "./doors.js";
+import { Refusal, refusedAs } from "./refusal.js";
 
 // Loopback only, and the kernel picks the port: nothing on the network can reach this console,
 // and two `ui`s on one laptop do not fight over a number.
@@ -28,25 +26,9 @@ const NONCE_BYTES = 16;
 const DOORS = "v1/";
 
 // This process's OWN doors, beside the gateway's: what only the terminal that typed `ui` can do,
-// because it stands in the agent's directory — its personas and goldens, and a simulation or a
-// suite mounted here.
+// because it stands in the agent's directory. Which ones there are is ui/doors.ts, and this
+// server knows no more about them than their paths.
 const OWN = "ui/";
-const PERSONAS = `${OWN}personas`;
-const SIMULATE = `${OWN}simulate`;
-const GOLDENS = `${OWN}goldens`;
-const TEST = `${OWN}test`;
-const CHAT = `${OWN}chat`;
-const SAY = `${OWN}chat/say`;
-const HANG_UP = `${OWN}chat/end`;
-
-/** What this process can do of its own, handed in by `pinecall ui`; a test may hand in less. */
-export interface Own {
-  simulating: Simulating | null;
-  testing: Testing | null;
-  chatting: Chatting | null;
-}
-
-const NOTHING_OF_ITS_OWN: Own = { simulating: null, testing: null, chatting: null };
 
 const TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -73,10 +55,10 @@ export class LocalConsole {
   readonly #nonce: string;
   readonly #door: Door;
   readonly #files: string;
-  readonly #own: Own;
+  readonly #own: OwnDoor[];
   #url = "";
 
-  private constructor(door: Door, files: string, own: Own) {
+  private constructor(door: Door, files: string, own: OwnDoor[]) {
     this.#door = door;
     this.#own = own;
     // Resolved, which is what strips a trailing separator: the directory arrives as a URL's path
@@ -91,7 +73,7 @@ export class LocalConsole {
   }
 
   /** Bind the loopback on a free port and serve the console in `files` for this door. */
-  static async open(door: Door, files: string, own: Own = NOTHING_OF_ITS_OWN): Promise<LocalConsole> {
+  static async open(door: Door, files: string, own: OwnDoor[] = []): Promise<LocalConsole> {
     const served = new LocalConsole(door, files, own);
     await served.#listen();
     return served;
@@ -140,35 +122,19 @@ export class LocalConsole {
     }
   }
 
-  // The doors this process answers itself. A refusal travels as FastAPI's would — a status and a
-  // `detail` sentence — so the page reads both kinds of door the same way.
+  // The doors this process answers itself, read off the table it was opened with. A refusal
+  // travels as FastAPI's would — a status and a `detail` sentence — so the page reads both kinds
+  // of door the same way.
   async #answerOwn(request: IncomingMessage, response: ServerResponse, path: string): Promise<void> {
     const method = request.method ?? "GET";
-    const asked = async (): Promise<unknown> => JSON.parse((await whole(request)).toString() || "{}");
+    const door = this.#own.find((one) => `${OWN}${one.path}` === path);
+    const answer = method === "GET" ? door?.get : method === "POST" ? door?.post : undefined;
     try {
-      const { simulating, testing, chatting } = this.#own;
-      if (path === PERSONAS && method === "GET") {
-        json(response, 200, await this.#simulating(simulating).roster());
-      } else if (path === SIMULATE && method === "POST") {
-        json(response, 200, await this.#simulating(simulating).start(await asked()));
-      } else if (path === GOLDENS && method === "GET") {
-        json(response, 200, await this.#testing(testing).roster());
-      } else if (path === TEST && method === "POST") {
-        json(response, 200, await this.#testing(testing).start(await asked()));
-      } else if (path === CHAT && method === "GET") {
-        json(response, 200, await this.#chatting(chatting).roster());
-      } else if (path === CHAT && method === "POST") {
-        json(response, 200, await this.#chatting(chatting).start(await asked()));
-      } else if (path === SAY && method === "POST") {
-        json(response, 200, await this.#chatting(chatting).say(await asked()));
-      } else if (path === HANG_UP && method === "POST") {
-        json(response, 200, await this.#chatting(chatting).end(await asked()));
-      } else {
-        throw new Refused(404, `nothing at ${path}`);
-      }
+      if (answer === undefined) throw new Refusal(404, `nothing at ${path}`);
+      json(response, 200, await answer(JSON.parse((await whole(request)).toString() || "{}")));
     } catch (refused) {
-      const status = refused instanceof Refused ? refused.status : 500;
-      json(response, status, { detail: refused instanceof Error ? refused.message : String(refused) });
+      const said = refusedAs(refused);
+      json(response, said.status, { detail: said.detail });
     }
   }
 
@@ -244,20 +210,6 @@ export class LocalConsole {
     return readFileSync(join(this.#files, "index.html"), "utf8").replace("<head>", `<head><base href="/${this.#nonce}/">`);
   }
 
-  #simulating(door: Simulating | null): Simulating {
-    if (door === null) throw new Refused(404, "this console was opened with no simulation door");
-    return door;
-  }
-
-  #testing(door: Testing | null): Testing {
-    if (door === null) throw new Refused(404, "this console was opened with no goldens door");
-    return door;
-  }
-
-  #chatting(door: Chatting | null): Chatting {
-    if (door === null) throw new Refused(404, "this console was opened with no chat door");
-    return door;
-  }
 }
 
 /** One JSON answer, whole. */

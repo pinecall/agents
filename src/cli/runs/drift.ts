@@ -71,13 +71,18 @@ export interface Asked {
  * already carries, and fail when a judge fell further than the threshold allows.
  */
 export async function drifted(door: Door, asked: Asked, out: NodeJS.WritableStream): Promise<number> {
+  const drift = await theDrift(door, asked);
+  out.write(`${linesOf(asked, drift).join("\n")}\n`);
+  return drift.worst !== null && drift.worst < -Math.abs(asked.threshold) ? 1 : 0;
+}
+
+/** The two windows read and counted. Both doors — the verb and the console's — come through here. */
+export async function theDrift(door: Door, asked: Asked): Promise<Drift> {
   const sessions = await theSessions(door, asked.agent, asked.limit);
   const now = await judgedIn(door, finishedBetween(sessions, asked.now - asked.window, asked.now));
   const opened = asked.now - asked.baseline;
   const before = await judgedIn(door, finishedBetween(sessions, opened, asked.now - asked.window));
-  const drift = driftOf(now, before);
-  out.write(`${linesOf(asked, drift).join("\n")}\n`);
-  return drift.worst !== null && drift.worst < -Math.abs(asked.threshold) ? 1 : 0;
+  return driftOf(now, before);
 }
 
 /** The calls that ended inside a window, newest first. A live call has not been judged yet. */

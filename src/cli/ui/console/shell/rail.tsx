@@ -12,6 +12,8 @@ const SCREENS = [
   { path: "calls", name: "Calls" },
   { path: "sessions", name: "Sessions" },
   { path: "pipeline", name: "Pipeline" },
+  { path: "knowledge", name: "Knowledge" },
+  { path: "memory", name: "Memory" },
   { path: "evals", name: "Evals" },
 ] as const;
 
@@ -36,6 +38,9 @@ export function Rail({ agent }: { agent: string }): ReactNode {
         <div className="rail-label fixed">Gateway</div>
         <NavLink to="/" end className={({ isActive }) => (isActive ? "rail-link rail-link-here" : "rail-link")}>
           Agents
+        </NavLink>
+        <NavLink to="/keys" className={({ isActive }) => (isActive ? "rail-link rail-link-here" : "rail-link")}>
+          Keys
         </NavLink>
       </div>
       <div className="rail-foot fixed">

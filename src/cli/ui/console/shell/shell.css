@@ -89,6 +89,18 @@
   color: var(--ink-faint);
 }
 
+/* The right-hand end: whose gateway this is, and the one switch the console has. */
+.head-right {
+  align-items: center;
+  display: flex;
+  gap: calc(var(--step) * 2);
+}
+
+.head-whose {
+  color: var(--ink-faint);
+  font-size: 11px;
+}
+
 /* One hairline glyph, the weight of the crumbs beside it — a switch, not a button. */
 .theme-toggle {
   align-items: center;

@@ -18,13 +18,20 @@ const USAGE = `usage: pinecall knowledge push [dir] [--base <name>] [--agent age
        pinecall knowledge drop <base>
        pinecall knowledge eval [golden.json] [--base <name>] [--k <n>] [--agent agent.tsx]`;
 
+/** Where a base is refused before a byte is sent: the three sentences both doors say. */
+export const NO_DIRECTORY = (directory: string): string => `no knowledge directory at ${directory}`;
+export const NO_MARKDOWN = (directory: string): string => `no *.md under ${directory}: nothing to push`;
+export const NO_GOLDEN = (golden: string): string => `no golden at ${golden}: a JSON list of {asks, expects}`;
+export const AN_EMPTY_GOLDEN = (golden: string): string =>
+  `${golden} holds no questions: a golden is a JSON list of {asks, expects}`;
+
 // The golden beside the documents it asks about: the questions the base is held to, and the chunk
 // each should have found. `knowledge/golden.json` is where `eval` looks when nobody says.
-const DEFAULT_GOLDEN = "knowledge/golden.json";
+export const DEFAULT_GOLDEN = "knowledge/golden.json";
 
 // Where a tenant keeps what is retrieved per turn, beside the agent file: the layout every
 // example has, and the one `docs = "<base>"` on the class was pushed from.
-const DEFAULT_DIR = "knowledge/docs";
+export const DEFAULT_DIR = "knowledge/docs";
 
 export const group: Group = {
   purpose: "push | list | drop the knowledge base the agent answers from",
@@ -91,19 +98,15 @@ async function push(
   const directory = resolve(dir ?? join(dirname(loaded!.file), DEFAULT_DIR));
   const name = base ?? slugOf(loaded!.ctor);
   if (!existsSync(directory) || !statSync(directory).isDirectory()) {
-    err.write(`no knowledge directory at ${directory}\n`);
+    err.write(`${NO_DIRECTORY(directory)}\n`);
     return 2;
   }
   const files = markdownUnder(directory);
   if (files.length === 0) {
-    err.write(`no *.md under ${directory}: nothing to push\n`);
+    err.write(`${NO_MARKDOWN(directory)}\n`);
     return 2;
   }
-  const pushed = await asked<KnowledgePushed>(door, `/v1/knowledge/${encodeURIComponent(name)}`, {
-    method: "PUT",
-    body: { files },
-  });
-  out.write(`${pushedLine(pushed, files.length)}\n`);
+  out.write(`${pushedLine(await pushedTo(door, name, files), files.length)}\n`);
   return 0;
 }
 
@@ -140,22 +143,44 @@ async function evaluate(
   const golden = resolve(file ?? join(dirname(loaded!.file), DEFAULT_GOLDEN));
   const name = base ?? slugOf(loaded!.ctor);
   if (!existsSync(golden)) {
-    err.write(`no golden at ${golden}: a JSON list of {asks, expects}\n`);
+    err.write(`${NO_GOLDEN(golden)}\n`);
     return 2;
   }
-  const questions: unknown = JSON.parse(readFileSync(golden, "utf8"));
-  if (!Array.isArray(questions) || questions.length === 0) {
-    err.write(`${golden} holds no questions: a golden is a JSON list of {asks, expects}\n`);
+  const questions = theQuestionsIn(golden);
+  if (questions === null) {
+    err.write(`${AN_EMPTY_GOLDEN(golden)}\n`);
     return 2;
   }
-  const body: Record<string, unknown> = { questions };
-  if (k !== undefined) body["k"] = Number(k);
-  const score = await asked<KnowledgeScore>(door, `/v1/knowledge/${encodeURIComponent(name)}/eval`, {
-    method: "POST",
-    body,
-  });
+  const score = await scoredOn(door, name, questions, k === undefined ? undefined : Number(k));
   out.write(`${scoreLines(score).join("\n")}\n`);
   return score.misses.length === 0 ? 0 : 1;
+}
+
+/** The folder, sent whole: the base is replaced and never merged. Both doors push through here. */
+export async function pushedTo(door: Door, base: string, files: KnowledgeFile[]): Promise<KnowledgePushed> {
+  return await asked<KnowledgePushed>(door, `/v1/knowledge/${encodeURIComponent(base)}`, {
+    method: "PUT",
+    body: { files },
+  });
+}
+
+/** Every question of a golden asked of the base, and the two figures code computed from it. */
+export async function scoredOn(
+  door: Door,
+  base: string,
+  questions: unknown[],
+  k: number | undefined,
+): Promise<KnowledgeScore> {
+  return await asked<KnowledgeScore>(door, `/v1/knowledge/${encodeURIComponent(base)}/eval`, {
+    method: "POST",
+    body: { questions, ...(k === undefined ? {} : { k }) },
+  });
+}
+
+/** The questions a golden file holds, or nothing at all when it holds none. */
+export function theQuestionsIn(golden: string): unknown[] | null {
+  const questions: unknown = JSON.parse(readFileSync(golden, "utf8"));
+  return Array.isArray(questions) && questions.length > 0 ? questions : null;
 }
 
 /** What a golden prints: the two figures on one line, then a line per question the base missed. */

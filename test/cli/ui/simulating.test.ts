@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import type { Simulated, Simulation } from "../../../src/cli/simulate.js";
 import type { Persona } from "../../../src/cli/testing/caller.js";
-import { Refused } from "../../../src/cli/ui/refused.js";
+import { Refusal } from "../../../src/cli/ui/refusal.js";
 import { simulatingFrom } from "../../../src/cli/ui/simulating.js";
 
 const DOOR = { url: "http://127.0.0.1:1", apiKey: "pk_never_sent_anywhere" };
@@ -70,7 +70,7 @@ describe("starting one", () => {
 
   it("refuses another agent: the class mounted here is this directory's", async () => {
     const door = simulatingFrom(DOOR, "clinica-norte", quiet(), { personas: async () => [APURADO], simulate: async () => undefined });
-    await expect(door.start({ agent: "tienda-sur", persona: "apurado" })).rejects.toBeInstanceOf(Refused);
+    await expect(door.start({ agent: "tienda-sur", persona: "apurado" })).rejects.toBeInstanceOf(Refusal);
     await expect(door.start({ agent: "tienda-sur", persona: "apurado" })).rejects.toMatchObject({ status: 409 });
   });
 

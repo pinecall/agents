@@ -11,7 +11,7 @@ import { load, mountOptions } from "../load.js";
 import type { Door } from "../testing/gateway.js";
 import { lineFor } from "../view.js";
 import { anObject, aString, someWords } from "./asked.js";
-import { Refused } from "./refused.js";
+import { Refusal } from "./refusal.js";
 
 // How long the gateway is given to answer the socket with the call's first entry. A chat opens on
 // a class already mounted here, so this is the register and the first render, never a model.
@@ -83,7 +83,7 @@ export function chattingFrom(
 
     async start(asked: unknown): Promise<{ call: string }> {
       const wanted = parsed(asked);
-      if (wanted.agent !== agent) throw new Refused(409, NOT_THIS_DIRECTORY(wanted.agent, agent));
+      if (wanted.agent !== agent) throw new Refusal(409, NOT_THIS_DIRECTORY(wanted.agent, agent));
       const line = await lines.open(wanted.as);
       open.set(line.call, line);
       return { call: line.call };
@@ -117,7 +117,7 @@ export function chattingFrom(
 
 function held(open: Map<string, Line>, call: string): Line {
   const line = open.get(call);
-  if (line === undefined) throw new Refused(404, NOT_OPEN(call));
+  if (line === undefined) throw new Refusal(404, NOT_OPEN(call));
   return line;
 }
 
@@ -168,7 +168,7 @@ async function aLine(url: string, apiKey: string, out: NodeJS.WritableStream): P
     end: () => socket.close(),
   };
   return await new Promise<Line>((answer, refuse) => {
-    const giveUp = setTimeout(() => refuse(new Refused(502, NO_CALL)), A_CALL_OPENS_WITHIN_MS);
+    const giveUp = setTimeout(() => refuse(new Refusal(502, NO_CALL)), A_CALL_OPENS_WITHIN_MS);
     socket.on("message", (frame: Buffer) => {
       const entry = JSON.parse(frame.toString()) as { type?: string; call?: unknown; data?: Record<string, unknown> };
       if (line.call === "" && typeof entry.call === "string") {
@@ -183,11 +183,11 @@ async function aLine(url: string, apiKey: string, out: NodeJS.WritableStream): P
     // agent nobody is serving, a key this org does not have — and the page is told that sentence.
     socket.on("close", (_code: number, why: Buffer) => {
       clearTimeout(giveUp);
-      if (line.call === "") refuse(new Refused(502, why.toString() === "" ? NO_CALL : why.toString()));
+      if (line.call === "") refuse(new Refusal(502, why.toString() === "" ? NO_CALL : why.toString()));
     });
     socket.on("error", (failed: Error) => {
       clearTimeout(giveUp);
-      if (line.call === "") refuse(new Refused(502, failed.message));
+      if (line.call === "") refuse(new Refusal(502, failed.message));
     });
   });
 }

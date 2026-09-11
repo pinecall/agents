@@ -172,3 +172,41 @@ a.chip:hover .chip-val {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Drift: two windows above the table, and the calls that broke under it. */
+.drift-windows {
+  align-items: center;
+  display: flex;
+  gap: calc(var(--step) * 2);
+  margin-bottom: calc(var(--step) * 2);
+}
+
+.drift-field {
+  align-items: center;
+  display: flex;
+  gap: var(--step);
+}
+
+.drift-broke {
+  display: flex;
+  flex-direction: column;
+  gap: var(--step);
+  list-style: none;
+  margin: calc(var(--step) * 2) 0 0;
+  padding: 0;
+}
+
+.drift-broke li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--step);
+}
+
+/* The two things a person does to a judged call, beside the evidence for it. */
+.ev-acts {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--step);
+  margin-bottom: calc(var(--step) * 2);
+}

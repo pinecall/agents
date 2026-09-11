@@ -4,7 +4,7 @@ import { aSimulation, degradedBy, ONLY_ON_A_LINE, TURNS } from "../simulate.js";
 import { NO_PERSONAS, personasIn, type Persona } from "../testing/caller.js";
 import type { Door } from "../testing/gateway.js";
 import { aFlag, anObject, aNumber, aString, maybeNumber } from "./asked.js";
-import { Refused } from "./refused.js";
+import { Refusal } from "./refusal.js";
 
 /** What the page asks for: the caller, the line, and how far to go. */
 export interface Wanted {
@@ -78,15 +78,15 @@ export function simulatingFrom(
 
     async start(asked: unknown): Promise<{ call: string }> {
       const wanted = parsed(asked);
-      if (wanted.agent !== agent) throw new Refused(409, NOT_THIS_DIRECTORY(wanted.agent, agent));
+      if (wanted.agent !== agent) throw new Refusal(409, NOT_THIS_DIRECTORY(wanted.agent, agent));
       const degraded = degradedBy(
         wanted.background_noise === undefined ? undefined : String(wanted.background_noise),
         wanted.packet_loss === undefined ? undefined : String(wanted.packet_loss),
       );
-      if (!wanted.voice && degraded !== undefined) throw new Refused(422, ONLY_ON_A_LINE);
+      if (!wanted.voice && degraded !== undefined) throw new Refusal(422, ONLY_ON_A_LINE);
       const persona = (await pieces.personas()).find((one) => one.name === wanted.persona);
       if (persona === undefined) {
-        throw new Refused(404, `no persona called ${wanted.persona}: ${NO_PERSONAS}`);
+        throw new Refusal(404, `no persona called ${wanted.persona}: ${NO_PERSONAS}`);
       }
       return await opened(persona, wanted, degraded, door, out, pieces.simulate);
     },
@@ -121,12 +121,12 @@ async function opened(
     });
     running.then(
       () => {
-        if (!answered) refuse(new Refused(502, NO_CALL));
+        if (!answered) refuse(new Refusal(502, NO_CALL));
       },
       (failed: unknown) => {
         const why = failed instanceof Error ? failed.message : String(failed);
         out.write(`simulation failed: ${why}\n`);
-        if (!answered) refuse(new Refused(502, why));
+        if (!answered) refuse(new Refusal(502, why));
       },
     );
   });

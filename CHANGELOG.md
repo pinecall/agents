@@ -7,6 +7,15 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **The console does what the terminal does.** Five screens landed at once, and every one of them
+  runs the very code its verb runs: **Knowledge** (the folder pushed from this directory, the
+  bases listed and dropped, the golden asked), **Memory** (one contact read and forgotten, the
+  recall golden, the extraction goldens), **Keys** (the provider accounts this org brought),
+  **Evals → drift** (each judge's held-rate over two windows) and, on any judged call, **re-check
+  by code** (ring 3) and **promote to a golden candidate**. The header says whose gateway this is.
+  The console's own doors are a table now (`ui/doors.ts`): a screen that needs something only the
+  terminal in the agent's directory can do is one module and one row, and the server that serves
+  them knows nothing but their paths.
 - **`pinecall simulate --listen` works.** The call comes out of this machine's speakers while it
   happens: the same hidden `observe` seat the console's listen button takes, joined from Node with
   `@livekit/rtc-node` (an optional dependency), both tracks through livekit's own `AudioMixer`,
