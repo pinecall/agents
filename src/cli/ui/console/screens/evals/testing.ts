@@ -22,6 +22,8 @@ const StartedSchema = z.object({ run: z.string() });
 export interface Wanted {
   agent: string;
   goldens: string[];
+  /** `vendor/model`, one per column of the matrix. Empty runs the one the class declared. */
+  models?: string[];
   voice: boolean;
   background_noise?: number;
   /** A share, 0 to 1, as the wire takes it. */

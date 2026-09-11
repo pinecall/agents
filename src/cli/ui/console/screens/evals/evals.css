@@ -210,3 +210,32 @@ a.chip:hover .chip-val {
   gap: var(--step);
   margin-bottom: calc(var(--step) * 2);
 }
+
+/* What a broken run left on disk: the goldens as chips, and one of them opened whole. */
+.ev-repro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--step);
+  margin-top: calc(var(--step) * 3);
+}
+
+.ev-repro .chip {
+  cursor: pointer;
+}
+
+.ev-asked {
+  background: var(--panel-2);
+  border-radius: var(--radius);
+  font-size: 11px;
+  margin: 0;
+  max-height: 26rem;
+  overflow: auto;
+  padding: var(--step);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* One column of the matrix per model named here, comma by comma, as --model is repeated. */
+.suite-models {
+  width: 22rem;
+}

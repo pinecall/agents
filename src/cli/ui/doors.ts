@@ -5,6 +5,7 @@ import type { Drifting } from "./drifting.js";
 import type { Knowing } from "./knowing.js";
 import type { Promoting } from "./promoting.js";
 import type { Remembering } from "./remembering.js";
+import type { Reproducing } from "./reproducing.js";
 import type { Simulating } from "./simulating.js";
 import type { Testing } from "./testing.js";
 
@@ -27,6 +28,7 @@ export interface Own {
   remembering?: Remembering | undefined;
   promoting?: Promoting | undefined;
   drifting?: Drifting | undefined;
+  reproducing?: Reproducing | undefined;
 }
 
 /**
@@ -36,7 +38,7 @@ export interface Own {
  */
 export function ownDoors(own: Own): OwnDoor[] {
   const doors: OwnDoor[] = [];
-  const { simulating, testing, chatting, knowing, remembering, promoting, drifting } = own;
+  const { simulating, testing, chatting, knowing, remembering, promoting, drifting, reproducing } = own;
   if (simulating !== undefined) {
     doors.push({ path: "personas", get: () => simulating.roster() });
     doors.push({ path: "simulate", post: (asked) => simulating.start(asked) });
@@ -66,6 +68,10 @@ export function ownDoors(own: Own): OwnDoor[] {
   }
   if (drifting !== undefined) {
     doors.push({ path: "drift", post: (asked) => drifting.read(asked) });
+  }
+  if (reproducing !== undefined) {
+    doors.push({ path: "reproductions", post: (asked) => reproducing.roster(asked) });
+    doors.push({ path: "reproduction", post: (asked) => reproducing.read(asked) });
   }
   return doors;
 }

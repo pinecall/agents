@@ -14,6 +14,7 @@ import { ownDoors } from "./doors.js";
 import { knowingFrom } from "./knowing.js";
 import { promotingFrom } from "./promoting.js";
 import { rememberingFrom } from "./remembering.js";
+import { reproducingFrom } from "./reproducing.js";
 import { LocalConsole } from "./server.js";
 import { simulatingFrom } from "./simulating.js";
 import { testingFrom } from "./testing.js";
@@ -87,6 +88,7 @@ export async function ui(argv: string[], how: Opening = {}): Promise<number> {
       remembering: rememberingFrom(door, here),
       promoting: promotingFrom(door, here, out),
       drifting: driftingFrom(door),
+      reproducing: reproducingFrom(),
     }),
   );
   const at = agent === null ? served.url : served.at(`a/${agent}`);

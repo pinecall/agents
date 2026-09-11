@@ -6,6 +6,7 @@ import { Link } from "react-router";
 import { started } from "../../lib/clock";
 import { deltaBetween } from "./deltas";
 import type { Cell, EvalRun, Judged } from "./door";
+import { Reproductions } from "./reproductions";
 import { Changed } from "./run-table";
 
 export function RunDetail({ run, before }: { run: EvalRun; before: EvalRun | undefined }): ReactNode {
@@ -46,6 +47,8 @@ export function RunDetail({ run, before }: { run: EvalRun; before: EvalRun | und
       ) : (
         <Scores run={run} cells={run.matrix.runs} />
       )}
+
+      <Reproductions run={run.id} />
     </div>
   );
 }

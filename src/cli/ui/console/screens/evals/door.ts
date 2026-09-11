@@ -156,3 +156,34 @@ export type Promoted = z.infer<typeof PromotedSchema>;
 export async function promoteCall(credentials: Credentials, call: string): Promise<Promoted> {
   return PromotedSchema.parse(await post(credentials, "/ui/promote", { call }));
 }
+
+/** Which goldens of one run were written out on this machine, and where that folder is. */
+const WrittenSchema = z.object({ run: z.string(), folder: z.string(), goldens: z.array(z.string()) });
+export type Written = z.infer<typeof WrittenSchema>;
+
+/**
+ * One broken golden as the suite wrote it down: the golden itself, every verdict on it, and the
+ * requests the model answered — the region order, the tool list, the view, verbatim. The log
+ * keeps only a hash of each prompt block on purpose, so this file is the one place the text is.
+ */
+const ReproductionSchema = z.object({
+  run: z.string(),
+  agent: z.string(),
+  golden: z.string(),
+  model: z.string(),
+  call: z.string(),
+  declared: z.unknown(),
+  verdicts: z.array(z.object({ metric: z.string(), passed: z.boolean(), criteria: z.string(), reason: z.string() })),
+  asked: z.unknown(),
+});
+export type Reproduction = z.infer<typeof ReproductionSchema>;
+
+/** Which goldens of this run left a file behind. A run that was green left none. */
+export async function readWritten(credentials: Credentials, run: string): Promise<Written> {
+  return WrittenSchema.parse(await post(credentials, "/ui/reproductions", { run }));
+}
+
+/** One reproduction, whole, off the disk of the terminal that serves this page. */
+export async function readReproduction(credentials: Credentials, run: string, golden: string): Promise<Reproduction> {
+  return ReproductionSchema.parse(await post(credentials, "/ui/reproduction", { run, golden }));
+}

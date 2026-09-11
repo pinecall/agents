@@ -21,6 +21,7 @@ export function SuiteForm({ agent, onOpened }: { agent: string; onOpened: (run: 
   const credentials = useCredentials();
   const [roster, setRoster] = useState<Roster | null>(null);
   const [ticked, setTicked] = useState<Set<string>>(new Set());
+  const [models, setModels] = useState("");
   const [voice, setVoice] = useState(false);
   const [spoiled, setSpoiled] = useState(false);
   const [noise, setNoise] = useState(NOISE_DB);
@@ -74,9 +75,11 @@ export function SuiteForm({ agent, onOpened }: { agent: string; onOpened: (run: 
     setStarting(true);
     setRefused(null);
     try {
+      const asked = models.split(",").map((one) => one.trim()).filter((one) => one !== "");
       const opened = await startSuite(credentials, {
         agent,
         goldens: roster.goldens.map((one) => one.name).filter((name) => ticked.has(name)),
+        ...(asked.length === 0 ? {} : { models: asked }),
         voice,
         ...(voice && spoiled ? { background_noise: noise, packet_loss: loss / 100 } : {}),
       });
@@ -100,6 +103,15 @@ export function SuiteForm({ agent, onOpened }: { agent: string; onOpened: (run: 
           <span>
             {ticked.size} of {roster.goldens.length}
           </span>
+        </label>
+        <label className="suite-field">
+          <span>models</span>
+          <input
+            className="input suite-models mono"
+            value={models}
+            placeholder="the one the class declared"
+            onChange={(event) => setModels(event.target.value)}
+          />
         </label>
         <label className="suite-check">
           <input type="checkbox" checked={voice} onChange={(event) => setVoice(event.target.checked)} />

@@ -6,6 +6,7 @@ import { Link, useParams } from "react-router";
 
 import { started } from "../../lib/clock";
 import { medians } from "../../lib/metrics";
+import { WhatToDoWithIt } from "../evals";
 import { PromptBlocks } from "../live/prompt-blocks";
 import { Consents, consents } from "./consent";
 import { duration, euros } from "./finished-calls";
@@ -47,6 +48,7 @@ export function Session(): ReactNode {
           <Link to={`/a/${agent}/sessions`}>{agent} / sessions</Link>
         </div>
         <h1 className="page-title page-title-fixed">{call}</h1>
+        <WhatToDoWithIt call={call} />
       </header>
 
       {error !== null && (
