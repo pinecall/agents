@@ -11,6 +11,7 @@ import { mount } from "../runtime/connect.js";
 import { chatUrl } from "./chat.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
+import { anEarIn, type Ear } from "./listening.js";
 import { load, mountOptions } from "./load.js";
 import { NO_PERSONAS, personaNamed, type Persona } from "./testing/caller.js";
 import { type Door, entriesOf, type Entry, type Persona as Calling, type Spoken, theNextLine } from "./testing/gateway.js";
@@ -25,12 +26,12 @@ export const group: Group = {
 };
 
 const USAGE =
-  "usage: pinecall simulate --persona <name> [--judge] [--turns n] [--voice]\n" +
+  "usage: pinecall simulate --persona <name> [--judge] [--turns n] [--voice] [--listen]\n" +
   "       [--background-noise <dB under the caller>] [--packet-loss <percent>] [--agent agent.tsx]\n";
 
-// The speakers need the room, and the only door into a room from this machine is a browser page:
-// the console starts the same simulation from Calls and has a listen button beside it.
-const NO_LISTEN = "--listen puts the call on your speakers: it needs a room — `pinecall ui` → Calls → Simulate, then listen\n";
+// Hearing a call means a call with audio in it, so the flag turns the line on rather than refusing
+// a person who asked to listen to a written one. Said out loud, because it changes what is run.
+const LISTEN_IS_A_LINE = "--listen is a call with audio in it: --voice is on";
 
 // A spoiled line is a property of audio: there is nothing to mix into a written turn, and a flag
 // that quietly did nothing would be a run reporting a noisy line it never had.
@@ -82,16 +83,15 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
       agent: { type: "string" },
     },
   });
-  if (values.listen === true) {
-    process.stderr.write(NO_LISTEN);
-    return 2;
-  }
+  const listen = values.listen === true;
+  const voice = values.voice === true || listen;
+  if (listen && values.voice !== true) out.write(`${LISTEN_IS_A_LINE}\n`);
   if (values.persona === undefined) {
     process.stderr.write(USAGE);
     return 2;
   }
   const degraded = degradedBy(values["background-noise"], values["packet-loss"]);
-  if (values.voice !== true && degraded !== undefined) {
+  if (!voice && degraded !== undefined) {
     process.stderr.write(`${ONLY_ON_A_LINE}\n`);
     return 2;
   }
@@ -103,7 +103,8 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
   const said = await aSimulation(persona, {
     agentFile: values.agent,
     judge: values.judge === true,
-    voice: values.voice === true,
+    voice,
+    listen,
     ...(degraded === undefined ? {} : { degraded }),
     turns: values.turns === undefined ? TURNS : Number(values.turns),
     out,
@@ -135,6 +136,8 @@ export interface Simulation {
   agentFile?: string | undefined;
   judge: boolean;
   voice: boolean;
+  /** Put the call on this machine's speakers while it happens. Only on a spoken line. */
+  listen?: boolean | undefined;
   degraded?: Degraded | undefined;
   turns: number;
   out: NodeJS.WritableStream;
@@ -220,6 +223,9 @@ async function outLoud(
   const call = aCallId();
   how.opened?.(call);
   const heard = new Heard(how.out);
+  // The ear is taken before the call is asked for: the seat is minted off the room, which opens a
+  // moment later, and joining late is joining after the greeting — the one turn worth hearing.
+  const ear = how.listen === true ? listening(door, call, how.out) : null;
   const held = aVoiceCall(door, {
     call,
     agent: slug,
@@ -229,8 +235,20 @@ async function outLoud(
   });
   await watching(door, call, held, (entry) => heard.absorb(entry));
   const called = await held;
+  await (await ear)?.leave();
   how.out.write(`  ${call} · ${called.turns} caller turn(s) · ${heard.agentTurns} agent turn(s) · ${called.line}\n`);
   return call;
+}
+
+// An ear that could not be taken is a line printed and a call that still happens: a machine with
+// no player, or without the optional room library, must not lose the simulation over it.
+async function listening(door: Door, call: string, out: NodeJS.WritableStream): Promise<Ear | null> {
+  try {
+    return await anEarIn(door, call, out);
+  } catch (failed) {
+    out.write(`  not listening: ${failed instanceof Error ? failed.message : String(failed)}\n`);
+    return null;
+  }
 }
 
 /** The persona as the runtime's two doors take it: three declarations, and no script at all. */
