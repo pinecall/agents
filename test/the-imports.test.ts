@@ -32,7 +32,10 @@ const MAY_IMPORT: Record<string, string[]> = {
   "runtime": ["agent", "call", "views", "client", "@pinecall/protocol"],
   // The verbs. Anything of ours except the page the console is — that one is served, not imported.
   // It names `call` because a page that prints a prompt gives its instance a line to answer on.
-  "cli": ["agent", "call", "views", "runtime", "client", "@pinecall/protocol", "ws"],
+  // `@livekit/rtc-node` is the one vendor here, and it is `pinecall simulate --listen`: a room
+  // joined from this terminal so the call comes out of this machine's speakers. Optional, and
+  // imported where it is used and nowhere else.
+  "cli": ["agent", "call", "views", "runtime", "client", "@pinecall/protocol", "ws", "@livekit/rtc-node"],
   // A browser page. It must never reach the framework: none of it would run in a browser, and a
   // build that pulled a TypeScript parser into the bundle is a build nobody would notice.
   "cli/ui/console": ["@pinecall/protocol", "react", "react-dom", "react-router", "livekit-client", "vite", "@vitejs/plugin-react", "zod"],

@@ -7,6 +7,20 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **`pinecall simulate --listen` works.** The call comes out of this machine's speakers while it
+  happens: the same hidden `observe` seat the console's listen button takes, joined from Node with
+  `@livekit/rtc-node` (an optional dependency), both tracks through livekit's own `AudioMixer`,
+  written to whichever of `ffplay`, `play`, `aplay` or `pw-play` is on the PATH. The seat is
+  knocked for until the room opens, so the ear lands on the greeting. `--listen` turns `--voice`
+  on, out loud: a written call has no audio in it.
+- **Chat from the console.** A screen of its own: the class of the directory `pinecall ui` runs in,
+  mounted once in that process as `pinecall chat` mounts it, one socket per conversation, the tools
+  running in that terminal. `--as` is the `as` field of the form. Three doors of the console's own:
+  `ui/chat`, `POST ui/chat/say`, `POST ui/chat/end`.
+- **`pinecall pipeline`.** What the agent hears, decides and speaks with as the next call would be
+  built, the class's opening, the medians livekit measured, and which of the five knobs is turned.
+  `set` and `clear` turn the same knobs the console's Pipeline screen turns, over the same door —
+  and `set` sends the whole set, so turning one knob never gives another back to the class.
 - **Run the goldens from the console.** Evals → Run a suite: every golden of this directory as a
   checkbox, with the caller's first line and what it expects; voice and a noisy line beside; the
   run appears in the table as the gateway opens it. `ui/goldens` and `POST ui/test` are the
