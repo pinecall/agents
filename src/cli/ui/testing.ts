@@ -8,7 +8,7 @@ import type { Door, Wanted as RunWanted } from "../testing/gateway.js";
 import { goldensIn, type Golden } from "../testing/goldens.js";
 import { mountedForASuite, ranSuite } from "../testing/suite.js";
 import { aFlag, anObject, aString, maybeNumber, names } from "./asked.js";
-import { Refused } from "./refused.js";
+import { Refusal } from "./refusal.js";
 
 /** What the page asks for: which goldens, and on what line. */
 export interface Wanted {
@@ -85,12 +85,12 @@ export function testingFrom(
 
     async start(asked: unknown): Promise<{ run: string }> {
       const wanted = parsed(asked);
-      if (wanted.agent !== agent) throw new Refused(409, NOT_THIS_DIRECTORY(wanted.agent, agent));
+      if (wanted.agent !== agent) throw new Refusal(409, NOT_THIS_DIRECTORY(wanted.agent, agent));
       const spoiled = wanted.background_noise !== undefined || wanted.packet_loss !== undefined;
-      if (!wanted.voice && spoiled) throw new Refused(422, ONLY_ON_A_LINE);
+      if (!wanted.voice && spoiled) throw new Refusal(422, ONLY_ON_A_LINE);
       const chosen = (await pieces.goldens()).filter((golden) => wanted.goldens.includes(golden.name));
       const missing = wanted.goldens.filter((name) => !chosen.some((golden) => golden.name === name));
-      if (missing.length > 0) throw new Refused(404, `no golden called ${missing.join(", ")}`);
+      if (missing.length > 0) throw new Refusal(404, `no golden called ${missing.join(", ")}`);
       return await opened(agent, chosen, aLine(wanted), door, out, pieces);
     },
   };
@@ -132,7 +132,7 @@ async function opened(
     if (id !== undefined) return { run: id };
     await Promise.race([suite, new Promise((wake) => setTimeout(wake, A_LOOK_EVERY_MS))]);
   }
-  throw new Refused(502, NO_RUN);
+  throw new Refusal(502, NO_RUN);
 }
 
 /** The chosen goldens through the class of this directory, mounted here for the length of the run. */

@@ -10,9 +10,10 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { headless } from "../../src/cli/ui/browser.js";
 import type { Chatting } from "../../src/cli/ui/chatting.js";
+import { ownDoors } from "../../src/cli/ui/doors.js";
 import { consoleFiles, ui } from "../../src/cli/ui/index.js";
 import { LocalConsole } from "../../src/cli/ui/server.js";
-import { Refused } from "../../src/cli/ui/refused.js";
+import { Refusal } from "../../src/cli/ui/refusal.js";
 import type { Simulating } from "../../src/cli/ui/simulating.js";
 import type { Testing } from "../../src/cli/ui/testing.js";
 
@@ -179,7 +180,7 @@ describe("the console's own doors", () => {
     roster: async () => ({ agent: "clinica-norte", personas: [{ name: "apurado", goal: "hoy", style: "rápido" }] }),
     start: async (wanted: unknown) => {
       const asked = wanted as { persona: string };
-      if (asked.persona !== "apurado") throw new Refused(404, `no persona called ${asked.persona}`);
+      if (asked.persona !== "apurado") throw new Refusal(404, `no persona called ${asked.persona}`);
       return { call: "call_sim" };
     },
   };
@@ -188,7 +189,7 @@ describe("the console's own doors", () => {
     roster: async () => ({ agent: "clinica-norte", goldens: [{ name: "reserva", input: ["sí"], expect: { tools: ["book"] } }] }),
     start: async (wanted: unknown) => {
       const asked = wanted as { goldens: string[] };
-      if (asked.goldens.includes("nadie")) throw new Refused(404, "no golden called nadie");
+      if (asked.goldens.includes("nadie")) throw new Refusal(404, "no golden called nadie");
       return { run: "run_ui" };
     },
   };
@@ -204,7 +205,7 @@ describe("the console's own doors", () => {
     },
     say: async (asked: unknown) => {
       const said = asked as { call: string };
-      if (!open.has(said.call)) throw new Refused(404, `${said.call} is not a chat this console opened`);
+      if (!open.has(said.call)) throw new Refusal(404, `${said.call} is not a chat this console opened`);
       return { call: said.call };
     },
     end: async (asked: unknown) => ({ call: (asked as { call: string }).call }),
@@ -213,7 +214,7 @@ describe("the console's own doors", () => {
 
   beforeEach(async () => {
     await gateway.open();
-    served = await LocalConsole.open({ url: gateway.url, apiKey: KEY }, aBuiltConsole(), { simulating, testing, chatting });
+    served = await LocalConsole.open({ url: gateway.url, apiKey: KEY }, aBuiltConsole(), ownDoors({ simulating, testing, chatting }));
   });
   afterEach(async () => {
     await served.close();
@@ -293,12 +294,12 @@ describe("the console's own doors", () => {
     expect((await fetch(`${served.url}ui/simulate`)).status).toBe(404);
   });
 
-  it("says so when it was opened with no simulation door at all", async () => {
+  it("has no door of its own at all when it was opened with none", async () => {
     const bare = await LocalConsole.open({ url: gateway.url, apiKey: KEY }, aBuiltConsole());
     try {
       const answer = await fetch(`${bare.url}ui/personas`);
       expect(answer.status).toBe(404);
-      expect(((await answer.json()) as { detail: string }).detail).toContain("no simulation door");
+      expect(((await answer.json()) as { detail: string }).detail).toContain("nothing at ui/personas");
     } finally {
       await bare.close();
     }

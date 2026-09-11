@@ -39,23 +39,44 @@ export async function promoted(
   call: string,
   wanted: Promotion,
   out: NodeJS.WritableStream,
+  err: NodeJS.WritableStream = process.stderr,
 ): Promise<number> {
-  const entries = await entriesOf(door, call);
-  if (entries.length === 0) {
-    process.stderr.write(`no log for call ${call} on this gateway\n`);
+  let written: Written;
+  try {
+    written = await promotedTo(door, call, wanted);
+  } catch (refused) {
+    err.write(`${refused instanceof Error ? refused.message : String(refused)}\n`);
     return 1;
   }
+  out.write(`${linesOf(written, wanted.fromSeq).join("\n")}\n`);
+  return 0;
+}
+
+/** A promoted call: the file it landed in, the golden itself, and what is still a person's to decide. */
+export interface Written {
+  path: string;
+  candidate: Golden;
+  notes: string[];
+}
+
+/** The one place a call becomes a file. The verb prints what comes back; the console links to it. */
+export async function promotedTo(door: Door, call: string, wanted: Promotion): Promise<Written> {
+  const entries = await entriesOf(door, call);
+  if (entries.length === 0) throw new Error(`no log for call ${call} on this gateway`);
   const score = theScoreIn(entries);
   if (score === null || score.passed === null || score.passed === undefined) {
-    process.stderr.write(`${call} ${NOT_JUDGED}: ${whyNobodyJudged(score)}\n`);
-    return 1;
+    throw new Error(`${call} ${NOT_JUDGED}: ${whyNobodyJudged(score)}`);
   }
   const candidate = candidateOf(call, entries, wanted.fromSeq, score, wanted.name);
   await mkdir(wanted.out, { recursive: true });
   const path = join(wanted.out, `${candidate.name}.json`);
   await writeFile(path, `${JSON.stringify(candidate, null, 2)}\n`, "utf8");
-  out.write(`${[`${path}  ${candidate.input.length} caller turn(s) from seq ${wanted.fromSeq}`, ...notesOn(score, candidate.expect ?? {})].join("\n")}\n`);
-  return 0;
+  return { path, candidate, notes: notesOn(score, candidate.expect ?? {}) };
+}
+
+/** What a promotion prints: where it landed, how much of the call it took, and the notes on it. */
+export function linesOf(written: Written, fromSeq: number): string[] {
+  return [`${written.path}  ${written.candidate.input.length} caller turn(s) from seq ${fromSeq}`, ...written.notes];
 }
 
 /**

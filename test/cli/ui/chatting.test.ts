@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 
 import { chattingFrom, type Line, type Lines } from "../../../src/cli/ui/chatting.js";
-import { Refused } from "../../../src/cli/ui/refused.js";
+import { Refusal } from "../../../src/cli/ui/refusal.js";
 
 const DOOR = { url: "http://127.0.0.1:1", apiKey: "pk_never_sent_anywhere" };
 
@@ -44,7 +44,7 @@ describe("which class this console chats with", () => {
 
   it("refuses another agent: the class mounted here is this directory's", async () => {
     const door = chattingFrom(DOOR, "clinica-norte", quiet(), aTerminal().lines);
-    await expect(door.start({ agent: "tienda-sur" })).rejects.toBeInstanceOf(Refused);
+    await expect(door.start({ agent: "tienda-sur" })).rejects.toBeInstanceOf(Refusal);
     await expect(door.start({ agent: "tienda-sur" })).rejects.toMatchObject({ status: 409 });
   });
 });

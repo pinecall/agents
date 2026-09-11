@@ -9,6 +9,11 @@ import type { Group } from "../groups.js";
 import { agentOfThisDirectory, DEFAULT_AGENTS } from "../load.js";
 import { headless, openInBrowser } from "./browser.js";
 import { chattingFrom } from "./chatting.js";
+import { driftingFrom } from "./drifting.js";
+import { ownDoors } from "./doors.js";
+import { knowingFrom } from "./knowing.js";
+import { promotingFrom } from "./promoting.js";
+import { rememberingFrom } from "./remembering.js";
 import { LocalConsole } from "./server.js";
 import { simulatingFrom } from "./simulating.js";
 import { testingFrom } from "./testing.js";
@@ -71,11 +76,19 @@ export async function ui(argv: string[], how: Opening = {}): Promise<number> {
   // process and prints here, exactly as `pinecall simulate` and `pinecall test` would; the page
   // watches the call's log, or the run's row.
   const chatting = chattingFrom(door, here, out);
-  const served = await LocalConsole.open(door, files, {
-    simulating: simulatingFrom(door, here, out),
-    testing: testingFrom(door, here, out),
-    chatting,
-  });
+  const served = await LocalConsole.open(
+    door,
+    files,
+    ownDoors({
+      simulating: simulatingFrom(door, here, out),
+      testing: testingFrom(door, here, out),
+      chatting,
+      knowing: knowingFrom(door, here),
+      remembering: rememberingFrom(door, here),
+      promoting: promotingFrom(door, here, out),
+      drifting: driftingFrom(door),
+    }),
+  );
   const at = agent === null ? served.url : served.at(`a/${agent}`);
   // Which gateway and which of the four places the key came from: the one line that answers
   // "why is it talking to that box" before anybody has to grep for an exported name.

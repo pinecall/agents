@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Golden } from "../../../src/cli/testing/goldens.js";
-import { Refused } from "../../../src/cli/ui/refused.js";
+import { Refusal } from "../../../src/cli/ui/refusal.js";
 import { testingFrom, type Pieces } from "../../../src/cli/ui/testing.js";
 
 const DOOR = { url: "http://127.0.0.1:1", apiKey: "pk_never_sent_anywhere" };
@@ -67,7 +67,7 @@ describe("running the ticked ones", () => {
 
   it("refuses another agent: the class mounted here is this directory's", async () => {
     const door = testingFrom(DOOR, "clinica-norte", quiet(), opensARun().pieces);
-    await expect(door.start({ agent: "tienda-sur", goldens: ["reserva"] })).rejects.toBeInstanceOf(Refused);
+    await expect(door.start({ agent: "tienda-sur", goldens: ["reserva"] })).rejects.toBeInstanceOf(Refusal);
   });
 
   it("refuses a noisy line on a written run, and an empty list", async () => {
