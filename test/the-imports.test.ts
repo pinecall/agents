@@ -32,10 +32,10 @@ const MAY_IMPORT: Record<string, string[]> = {
   "runtime": ["agent", "call", "views", "client", "@pinecall/protocol"],
   // The verbs. Anything of ours except the page the console is — that one is served, not imported.
   // It names `call` because a page that prints a prompt gives its instance a line to answer on.
-  // `@livekit/rtc-node` is the one vendor here, and it is `pinecall simulate --listen`: a room
-  // joined from this terminal so the call comes out of this machine's speakers. Optional, and
-  // imported where it is used and nowhere else.
-  "cli": ["agent", "call", "views", "runtime", "client", "@pinecall/protocol", "ws", "@livekit/rtc-node"],
+  // Two of these are loaded only when something needs them: `tsx`, which is how a tenant writes
+  // .tsx and never a build step, and `@livekit/rtc-node`, which is `pinecall simulate --listen` —
+  // a room joined from this terminal so the call comes out of this machine's speakers.
+  "cli": ["agent", "call", "views", "runtime", "client", "@pinecall/protocol", "ws", "tsx", "@livekit/rtc-node"],
   // A browser page. It must never reach the framework: none of it would run in a browser, and a
   // build that pulled a TypeScript parser into the bundle is a build nobody would notice.
   "cli/ui/console": ["@pinecall/protocol", "react", "react-dom", "react-router", "livekit-client", "vite", "@vitejs/plugin-react", "zod"],
@@ -53,9 +53,11 @@ function partOf(path: string): string {
   throw new Error(`src/${path} is in no part of the table: give its directory a line`);
 }
 
-// What an import statement looks like once the comments are gone. A prose line naming a package
-// is prose, and this test used to read one of them as an import.
-const SPECIFIER = /^(?:import|export)[\s\S]*?from\s+"([^"]+)"|^import\s+"([^"]+)"/gm;
+// What an import looks like once the comments are gone. A prose line naming a package is prose,
+// and this test used to read one of them as an import. The third alternative is `import("x")` —
+// a package loaded when it is needed rather than when the module is: the optional room library
+// `--listen` joins a call with is reached that way, and the table governs it like any other.
+const SPECIFIER = /^(?:import|export)[\s\S]*?from\s+"([^"]+)"|^import\s+"([^"]+)"|\bimport\("([^"]+)"\)/gm;
 
 /** The source with its comments removed, so only code is read for imports. */
 function withoutComments(text: string): string {
@@ -75,8 +77,8 @@ function edges(): { from: string; to: string; file: string }[] {
       if (extname(full) !== ".ts" && extname(full) !== ".tsx") continue;
       const path = relative(SRC, full);
       const from = partOf(path);
-      for (const [, named, bare] of withoutComments(readFileSync(full, "utf8")).matchAll(SPECIFIER)) {
-        const spec = named ?? bare;
+      for (const [, named, bare, lazy] of withoutComments(readFileSync(full, "utf8")).matchAll(SPECIFIER)) {
+        const spec = named ?? bare ?? lazy;
         if (spec === undefined || spec.startsWith("node:")) continue;
         const to = spec.startsWith(".")
           ? partOf(relative(SRC, resolve(dir, spec)))
