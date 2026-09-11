@@ -20,14 +20,27 @@ import { linesOfScore } from "./testing/score.js";
 import { aCallId, aVoiceCall, DEGRADED, type Degraded, watching } from "./testing/voice.js";
 import { lineFor, metricsLine } from "./view.js";
 
-export const group: Group = {
-  purpose: "a model plays one persona against the agent, live, and the call is scored at hang-up",
-  run,
-};
-
 const USAGE =
   "usage: pinecall simulate --persona <name> [--judge] [--turns n] [--voice] [--listen]\n" +
   "       [--background-noise <dB under the caller>] [--packet-loss <percent>] [--agent agent.tsx]\n";
+
+export const group: Group = {
+  purpose: "a model plays one persona against the agent, live, and the call is scored at hang-up",
+  usage: `${USAGE}
+  A model in the gateway plays the caller: every turn improvised from the persona's goal, its
+  style and its own facts — there is no script. This terminal holds the class and the transcript;
+  the gateway holds the provider keys. The call lands in the log like any other.
+
+  --persona <name>    a file of test/personas, by its name
+  --judge             read back the call.score the log seals on, and print every judge
+  --turns n           how many turns the caller improvises before hanging up (default 6)
+  --voice             a real line: a room, the persona's own voice, the box's speech
+  --listen            the call on this machine's speakers while it happens; turns --voice on
+  --background-noise  dB under the caller: a television behind them. Spoken runs only
+  --packet-loss       percent of the caller's packets that never arrive. Spoken runs only
+  --agent agent.tsx   which class to mount, when the directory holds more than one`,
+  run,
+};
 
 // Hearing a call means a call with audio in it, so the flag turns the line on rather than refusing
 // a person who asked to listen to a written one. Said out loud, because it changes what is run.

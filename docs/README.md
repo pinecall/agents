@@ -1,8 +1,8 @@
 # Docs
 
-How to build an agent with this package. Five pages, in the order a person meets them: the first
+How to build an agent with this package. Six pages, in the order a person meets them: the first
 is a walk from an empty directory to an agent that answers from your documents and remembers who
-called, and the other four are the reference it points at.
+called, and the rest are the reference it points at.
 
 | page | about |
 |---|---|
@@ -11,10 +11,15 @@ called, and the other four are the reference it points at.
 | [the-prompt.md](the-prompt.md) | the prompt: named blocks in two regions, `render()`, and where what a lookup found actually lands |
 | [testing-an-agent.md](testing-an-agent.md) | the five rings: unit tests, goldens, personas, one call replayed, and the score every real call gets |
 | [testing-memory-and-knowledge.md](testing-memory-and-knowledge.md) | the goldens that are not about one call: what the agent remembers, what it recalls, whether the index answers, and why a call has no retrieval score |
-| [the-cli.md](the-cli.md) | every verb, what it needs, and where its key comes from |
+| [the-cli.md](the-cli.md) | every verb: what it takes, what it prints, where its key comes from, and which gateway doors it knocks at |
 
 What the package IS, file by file, is [../ARCHITECTURE.md](../ARCHITECTURE.md). The two examples
 in `../examples/` are the same material as working code, and they are what CI and the nightly run.
+
+**Writing your own client?** Everything this package does, it does over the gateway's public API,
+and that contract is documented door by door in the **runtime** repo's
+`docs/protocol/gateway-api.md` — the app socket, the callers, the log, the seats, the knobs, the
+vault — with a thirty-line app in it that uses no Pinecall package at all.
 
 > `docs/decisions/` is the maintainer's engineering notebook — dates, measurements, the arguments
 > as they happened — and it is git-ignored. A clone has these four pages and no such directory.

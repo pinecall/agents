@@ -16,6 +16,15 @@ interface Case {
 
 export const group: Group = {
   purpose: "the exact prompt a state would produce, offline",
+  usage: `usage: pinecall prompt [agent.tsx] --state <file> [--case n]
+
+  The three regions of the prompt as the model would receive them — the static prefix, the
+  history, the dynamic blocks at the end — and under them the stage and the tools that stage
+  shows. No gateway, no key, no call: the class is loaded here and put in the state the file
+  describes, so this answers in the time it takes to save the file.
+
+  --state file    a goldens file: an array of cases, each with its own \`state\`, or one object
+  --case n        which case of that file, when it holds several (default 0)`,
   run,
 };
 

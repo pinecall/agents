@@ -1,45 +1,51 @@
 # The CLI
 
-`pinecall <group> [args]`. One module per group, and a group is imported only when it is asked
-for — `pinecall prompt` must not pay for a websocket client. `pinecall` with nothing after it
-prints the whole CLI on one screen, built verbs and planned ones alike.
+`pinecall <group> [args]`. Every verb, what it is for, what it takes, and what it prints. The doors
+underneath are the gateway API — the **runtime** repo's `docs/protocol/gateway-api.md` — and this
+CLI is a client of that contract and of nothing else, so anything here is something your own code
+can do too.
+
+One module per group, imported only when it is asked for: `pinecall prompt` must not pay for a
+websocket client. `pinecall` with nothing after it prints the whole CLI on one screen, built verbs
+and planned ones alike, and `pinecall <group> --help` prints that group's flags.
+
+```bash
+pinecall run                 # in an app's directory: the process you deploy
+npx pinecall run             # from a project that installed the package
+pnpm exec pinecall run       # inside this workspace
+```
 
 In a checkout the CLI runs from source through tsx (`bin/pinecall.js`); what npm installs is the
-compiled `dist/cli/index.js` and needs no loader. In an app that installed `pinecall`, the verb is
-on the PATH: `pinecall run`. In this workspace: `pnpm exec pinecall run`.
+compiled `dist/cli/index.js` and needs no loader.
 
-## The verbs that are built
+## The map
 
-| verb | what it does | gateway |
+| verb | what it is | needs the gateway |
 |---|---|---|
-| `run [agent.tsx]` | the app registered and answering — **the process you deploy**. Binds no port, serves no page. `--ui` for the full-screen terminal view, `--events` for one JSON line per entry, `--show-prompt` to print the prompt and exit | yes (except `--show-prompt`) |
-| `chat [agent.tsx]` | the same app in this terminal's own process, and a written caller against it. `--state file [--case n]` opens the call in a state, `--as <contact>` says who is calling — the id memory files the call under, without which a written caller is a visitor and is remembered by nobody. This is `rails console`: a breakpoint in a `@tool` is reachable | yes |
-| `ui [agent]` | the console on 127.0.0.1 for the life of the command, opened in this machine's browser. Every verb of this table that a page can carry is on one of its screens: Chat writes to the class of this directory, Calls → Simulate puts a persona on the line, Evals runs a suite, reads the drift, re-checks a call by code (ring 3) and promotes one to a golden candidate, Knowledge pushes the folder and runs its golden, Memory reads and forgets a contact and runs both memory goldens, Pipeline turns the five knobs, Keys brings a provider account. The doors that read a file of this directory are the console's own, under `ui/`; everything else is the gateway's | yes |
-| `prompt [agent.tsx] --state file` | the exact prompt a state would produce, with the stage and its tools beneath | **no** |
-| `test [paths]` | ring 1: the goldens, through the app in this process, scored by the runtime. `--voice` says the same goldens out loud on a real line, ring 2. `--agent`, `--model` (repeatable), `--grep`, `--watch`, `--json`, `--background-noise`, `--packet-loss` | yes |
-| `simulate --persona <name>` | a model plays one caller, live. `--judge`, `--turns n`, `--voice`, `--listen`, `--background-noise`, `--packet-loss`. `--listen` puts the call on this machine's speakers while it happens — the same hidden `observe` seat the console's listen button takes, mixed onto `ffplay`, `play`, `aplay` or `pw-play` — and turns `--voice` on, because a written call has no audio in it | yes |
-| `eval <call-id>` | ring 3: one real call re-evaluated by the runtime's code checks. `--policy`, `--json`. Exits 1 when a check does not hold | yes |
-| `runs list \| show \| diff \| promote \| drift` | what this gateway ran, and what moved between two windows | yes |
-| `pipeline [set \| clear]` | what the agent hears, decides and speaks with as the NEXT call would be built, its opening, and the medians livekit measured. `set --stt --llm --voice --tts-model --greeting` turns the same five knobs the console's Pipeline screen turns, `clear [knob …]` gives them back to what the app declared. `--agent`, `--json` | yes |
-| `personas list \| show \| try` | the synthetic callers in `test/personas` | for `try` |
-| `knowledge push [dir] [--base <name>] [--agent agent.tsx]` | every `*.md` under the directory (`./knowledge/docs` beside the agent file by default), sent whole to `PUT /v1/knowledge/<base>`; the base is the agent's slug unless named. Prints `base · files · chunks · ms`. `list` and `drop <base>` beside it | yes |
-| `knowledge eval [golden.json] [--base <name>] [--k <n>]` | every question of a golden asked of the base, and `recall@k` and `nDCG@10` computed by code with no model. Prints the two figures and every question it missed with what came back instead; exits 1 when anything missed, so CI can hold a base to it. `knowledge/golden.json` beside the agent file by default | yes |
-| `memory <contact>` | everything memory kept about one contact: the current facts first, the superseded ones dimmed with the date they stopped holding. `memory forget <contact>` asks once on a terminal, erases all of it, and prints `forgotten: n` | yes |
-| `memory eval [golden.json] [--k <n>]` | every question of a memory golden asked of `recall`, and `recall@k` and `nDCG@10` computed by code with no model. Each question brings its own facts, so no contact of yours is read or written: they go to a scratch contact and are deleted again. Prints every question memory did not answer whole and what came back instead; exits 1 when anything did. `memory/golden.json` beside the agent file by default | yes |
-| `remember [paths]` | the extraction goldens: one call written down per file — **both speakers** — and what the hang-up's one model call must make of it. Judged entirely by code: which categories got a fact, which never did, which values must not survive in any fact's text, which held facts the call contradicted, and that a planted sentence was refused. `--agent`, `--grep`, `--json`. Exits 1 when a case did not hold. `test/memory` beside the agent file by default | yes |
-| `keys add <vendor>` | the org's own key for that vendor, read from **stdin** and never from a flag — typed with nothing echoed on a terminal, one piped line off one — sent to `PUT /v1/provider-keys/<vendor>`. Every call of this org then runs on that account; every vendor nobody brought runs on the box's own key. `keys rm <vendor>` gives one back, `keys list` prints the vendors and **never a value**: no door of the runtime answers with a provider key | yes |
-| `login <gateway>` | the key typed once (never echoed), proved at `/v1/whoami`, kept in `~/.pinecall/credentials`. `--key-stdin` for a script | yes |
-| `whoami` | which gateway, which org, which key id — and **where the key came from** | yes |
+| [`run`](#run) | the app registered and answering — **the process you deploy** | yes |
+| [`chat`](#chat) | the same app in this terminal, and a written caller against it | yes |
+| [`ui`](#ui) | the console on 127.0.0.1: talk, calls, sessions, pipeline, evals, knowledge, memory | yes |
+| [`prompt`](#prompt) | the exact prompt a state would produce, offline | **no** |
+| [`test`](#test) | ring 1 (and ring 2 with `--voice`): the goldens through this process | yes |
+| [`simulate`](#simulate) | a model plays one caller, live, and the call is judged at hang-up | yes |
+| [`eval`](#eval) | ring 3: one real call re-checked by code | yes |
+| [`sessions`](#sessions) | the calls this agent has run, and one of them whole | yes |
+| [`runs`](#runs) | the suites: list, show, diff, promote a call, watch the drift | yes |
+| [`pipeline`](#pipeline) | what it hears, decides and speaks with, and the five knobs | yes |
+| [`personas`](#personas) | the synthetic callers in `test/personas` | for `try` |
+| [`knowledge`](#knowledge) | the base the agent answers from: push, list, drop, eval | yes |
+| [`memory`](#memory) | what memory kept about a contact, forgetting it, and recall's golden | yes |
+| [`remember`](#remember) | the extraction goldens: what a hang-up makes of a call | yes |
+| [`supervise`](#supervise) | listen in on a live call and move on it | yes |
+| [`keys`](#keys) | the provider keys this org brought of its own | yes |
+| [`login`](#login) · [`whoami`](#whoami) | the key, once, and which one is being used | yes |
 
-## The verbs that are declared and not written
+Declared and not written: `new`, `g`, `observe`, `costs`, `call`, `tokens`, `phones`, `agents`,
+`deploy`. Typing one prints what it *will* be and exits 0 — a person who types a verb deserves
+better than "unknown command". `src/cli/groups.ts` is the one place that says which half of the
+CLI is still a design, and a verb leaves that table in the commit that writes it.
 
-`new`, `g`, `observe`, `costs`, `call`, `tokens`, `phones`, `agents`, `deploy`. Typing one prints what it *will* be and exits 0 — a person
-who types `pinecall supervise` deserves better than "unknown command". `src/cli/groups.ts` is the
-one place that says which half of the CLI is still a design, and a verb leaves that table in the
-commit that writes it.
-
-Two of those names exist **in the runtime's CLI** today: `pinecall-runtime sessions show <id>`
-reads a finished call, and the console's Sessions screen reads the same log.
+---
 
 ## Where the gateway and the key come from
 
@@ -54,8 +60,7 @@ One resolution order, in `src/cli/env.ts`, for every verb:
 3. otherwise `PINECALL_API_KEY`, then the `credentials` row for that URL, then `PINECALL_DEV_KEY`;
 4. nothing at all — the verb prints `pinecall login <url>` and exits 2.
 
-Every verb that connects opens by printing the line `gateway <url> · key from <source>`, and
-`pinecall whoami` prints it on its own, with what the gateway says that key is. **`env | grep
+Every verb that connects opens by printing `gateway <url> · key from <source>`. **`env | grep
 PINECALL` is the first thing to run when a door refuses you and will not say why.**
 
 ## `~/.pinecall/`
@@ -69,21 +74,420 @@ The directory is `0700` and every file `0600`. The `dev` file is trusted **only*
 account owns it and nobody else can read it — a key another account could have written is not a
 key, it is an invitation. A key is never printed, never logged, and never put in a URL.
 
-## The console
+---
 
-`pinecall ui` is the one verb that opens a port: 127.0.0.1, a port the kernel picks, and every
-path under a random nonce. The org key never reaches the browser — the page asks this process,
-and this process signs the request. Ctrl-C closes the port with the command. Over ssh or with no
-display it says so and exits 2.
+# Writing the agent
 
-In a checkout the console must be bundled once (`scripts/build`): a browser reads no TypeScript.
+## `run`
 
-Four doors are this process's own and never the gateway's, under the same nonce. `ui/personas`
-lists the callers in this directory's `test/personas` and `POST ui/simulate` starts one — the same
-`aSimulation` the terminal verb runs. `ui/goldens` lists this directory's `test/goldens` and
-`POST ui/test` runs the ticked ones — the same suite `pinecall test` runs (`testing/suite.ts`),
-reported in the terminal that typed `ui`, the reproductions written where the verb writes them.
-Both mount the class of THIS directory in THIS process. The page is answered with the call id, or
-the run id, the moment it exists, and watches it off the gateway like anything else. A console
-opened on another agent's page gets a sentence instead: the class mounted here is this directory's.
-From npm it is already inside the package.
+```
+pinecall run [agent.tsx] [--ui] [--events] [--show-prompt]
+```
+
+The app registered on the gateway and answering: **this is the process you deploy**. It binds no
+port and serves no page — the gateway is an API, and nothing in this CLI answers a browser except
+`ui`. One line per log entry on stdout.
+
+```console
+$ pinecall run
+gateway http://127.0.0.1:8080 · key from dev-file
+clinica-norte · connected to http://127.0.0.1:8080 · tools 4 · doors web
+› Clínica Norte, buenos días. ¿En qué puedo ayudarle?
+‹ Quería cambiar una cita
+→ findPatient({"name":"Ana García","phone":"600000001"})
+← findPatient {"id":"p-1041","cita":"jueves a las diez"}
+```
+
+| flag | |
+|---|---|
+| `--ui` | the full-screen terminal view. `p` pause · `c` clear · `e` events · `s` prompt · `q` quit |
+| `--events` | one JSON line per log entry instead of the lines, for a pipe |
+| `--show-prompt` | the prompt a fresh instance would produce, then exit. No key, no gateway |
+
+## `chat`
+
+```
+pinecall chat [agent.tsx] [--as <contact>] [--state file [--case n]] [--events]
+```
+
+The same app mounted in **this** process, and a written caller against it in the same terminal.
+This is `rails console`: the tools run here, so a breakpoint in a `@tool` is reachable. It works
+with no `pinecall run` up and with three of them, because the caller socket names this process.
+
+```console
+$ pinecall chat --as +34600000001
+‹ hola, quería cambiar mi cita del jueves
+› Claro. ¿Me da su nombre completo y su teléfono?
+```
+
+`--as` is who is calling — the id memory files the call under. `--state file [--case n]` opens the
+call in a state: the same goldens file `prompt` reads. `--events` prints the wire instead.
+
+## `prompt`
+
+```
+pinecall prompt [agent.tsx] --state <file> [--case n]
+```
+
+The exact prompt a state would produce, offline: **no gateway, no key, no call**. The three
+regions in the order the model receives them, then the stage and the tools that stage shows. The
+verb you run while writing a `render()`, and it answers in the time it takes to save the file.
+
+```console
+$ pinecall prompt --state test/goldens/identifica-al-paciente.json
+── identity (static) ──
+Eres la recepción de Clínica Norte. Hablas de usted, con frases cortas. …
+
+── knowledge (static) ──
+
+── tools (static) ──
+<tools>
+- findPatient: Busca la ficha del paciente … 
+```
+
+## `ui`
+
+```
+pinecall ui [agent]
+```
+
+The console on 127.0.0.1 for the life of the command, opened in this machine's browser: Talk (the
+browser's microphone), Chat, Calls, Sessions, Pipeline, Knowledge, Memory, Evals, and the fleet's
+Agents and Keys. **Every verb of this document that a page can carry is on one of its screens.**
+
+It is the one verb that opens a port: the kernel picks it, every path sits under a random 16-byte
+nonce, and the org key never reaches the browser — the page asks this process and this process
+signs the request. Ctrl-C closes the port with the command. Over ssh or with no display it says so
+and exits 2. In a checkout the console must be bundled once (`scripts/build`); from npm it is
+already inside the package.
+
+Some of its doors are **this process's own** (`ui/…`, never the gateway's), because they read a
+file of this directory or mount the class in it: the personas and a simulation, the goldens and a
+suite, a chat, `knowledge/docs` and its golden, `memory/golden.json` and `test/memory`, a promoted
+candidate, the reproductions a broken run left, and the drift of the last two windows. A console
+opened on another agent's page gets a sentence instead of a refusal: the class mounted here is
+this directory's.
+
+---
+
+# Holding it to something
+
+## `test`
+
+```
+pinecall test [paths] [--agent agent.tsx] [--model m]… [--grep x] [--watch] [--json]
+pinecall test --voice [--background-noise dB] [--packet-loss 0.05]
+```
+
+Ring 1: every golden of `test/goldens` through the class **this terminal holds**, scored by the
+gateway's judges, printed as a matrix. Exits 1 when a golden did not hold. Every broken golden is
+written whole to `.pinecall/evals/<run>/<golden>.json` — the golden as written, the verdicts, and
+**the requests the model answered**, which the log deliberately keeps only a hash of.
+
+```console
+$ pinecall test --grep reserva
+clinica-norte · 2 goldens · haiku · run_7ed3ace9352d
+clinica-norte · 2 goldens · anthropic/claude-haiku-4-5-20251001
+  ✓ no-reserva-antes-del-si  e2e_latency 2605ms · llm_node_ttft 763ms
+  ✓ reserva-cuando-el-paciente-dice-que-si  e2e_latency 1948ms · llm_node_ttft 911ms
+  2/2 · 0 judge calls · 0.0250 EUR · 8s
+```
+
+`--model vendor/model` repeated is a column of the matrix per model. `--voice` says the same
+goldens out loud on a real line (ring 2); `--background-noise` puts a television behind the caller
+at that many dB under them, and `--packet-loss` drops that share of their packets.
+
+## `simulate`
+
+```
+pinecall simulate --persona <name> [--judge] [--turns n] [--voice] [--listen]
+                  [--background-noise dB] [--packet-loss percent] [--agent agent.tsx]
+```
+
+A model in the gateway plays the caller — every turn improvised from the persona's goal, its style
+and its own facts, with no script. This terminal holds the class and prints the conversation; the
+gateway holds the provider keys.
+
+```console
+$ pinecall simulate --persona apurado --listen --turns 2
+--listen is a call with audio in it: --voice is on
+apurado · cambiar la cita al martes por la tarde sin dar más datos de los justos
+  listening as sup_edb03d90e627 · ffplay
+› Clínica Norte, buenos días.  ¿En qué puedo ayudarle?   tts_node_ttfb 127ms
+‹ Hola, necesito cambiar mi cita del jueves con la doctora Vidal al martes por la tarde.
+→ freeSlots({"day":"martes"})
+← freeSlots [{"when":"martes a las diez","doctor":"la doctora Vidal"},{…
+› Le muestro las horas libres del martes. …   llm_node_ttft 1681ms  tts_node_ttfb 127ms
+  call_6123e7d7deb875e2e9be7686 · 2 caller turn(s) · 3 agent turn(s) · a clean line
+```
+
+`--listen` puts the call on **this machine's speakers** while it happens: the same hidden `observe`
+seat the console's listen button takes, joined from Node, both tracks mixed onto whichever of
+`ffplay`, `play`, `aplay` or `pw-play` you have. It turns `--voice` on and says so, because a
+written call has no audio in it. `--judge` reads back the `call.score` the log seals on.
+
+## `personas`
+
+```
+pinecall personas list | show <name> | try <name> [--agent agent.tsx]
+```
+
+```console
+$ pinecall personas list
+apurado       frases cortas, interrumpe, da el dato justo y pide la hora ya   cambiar la cita al martes…
+desconfiado   educado y receloso, responde con otra pregunta                  enterarse del precio…
+spanglish     empieza en inglés y termina en español                          saber qué horas hay el lunes…
+```
+
+`show` prints one whole, facts and all. `try` asks the gateway's caller door for one improvised
+line — the same door `simulate` asks for every turn — so you can hear a persona before running one.
+
+## `eval`
+
+```
+pinecall eval <call-id> [--policy policy.json] [--json]
+```
+
+Ring 3: one finished call rebuilt from its log and answered by the runtime's four **code** checks.
+Nothing is re-run and no model is asked. Exits 1 when a check did not hold.
+
+```console
+$ pinecall eval call_29d7c7b6cdd643de9c659984a0125c8c
+call_29d7c7b6cdd643de9c659984a0125c8c  clinica-norte
+  consent   passed    no irreversible tool ran in this call; 1 tool call(s) did
+  register  skipped   no words were declared for this call: send them as `banned` …
+  errors    passed    the call logged no error
+  latency   failed    llm_node_ttft 1.209s > 1.000s over 1 turns; e2e_latency 2.638s > 2.000s
+```
+
+`--policy` is `{"banned": ["tarifa plana"], "budget": {"llm_ttft": 1.5}}`: the words this business
+will not have its agent say, and the latencies it holds a call to.
+
+## `runs`
+
+```
+pinecall runs list [--limit n] | show <id> | diff <a> <b>
+pinecall runs promote <call-id> [--name x] [--out test/candidates] [--from-seq n]
+pinecall runs drift --agent <slug> [--window 7d] [--baseline 30d] [--threshold 10]
+```
+
+```console
+$ pinecall runs list --limit 3
+run_8a8870b59bc1  2026-09-11 12:47:23  clinica-norte     done     1/1
+run_5c6b559d6093  2026-09-11 11:56:49  clinica-norte     done     2/2
+```
+
+`show` prints one run the way `test` printed it when it happened; `diff` says what moved between
+two, golden by golden. **`promote`** writes one real call down as a golden **candidate** in
+`test/candidates` — the state it was in, every caller turn from `--from-seq`, and an `expect`
+derived from what the judges answered — for a person to edit before it counts as a golden.
+**`drift`** counts each judge's held-rate over two windows of finished calls and exits 1 when one
+fell further than `--threshold` points: nothing is judged again, a held-rate is a count of the
+verdicts `call.score` already carries.
+
+---
+
+# Running it
+
+## `sessions`
+
+```
+pinecall sessions [call] [--agent <slug>] [--limit <n>] [--json]
+```
+
+```console
+$ pinecall sessions --limit 3
+clinica-norte · 3 calls
+
+● call_314b0306e2a64daba6b6dbab129540c0  web inbound     16m 27s  live                    —
+  call_df5aaa81ac7142f5a2c6f9b77033d23e  web inbound         31s  caller_hung_up    €0.0000  Clínica Norte, buenos días…
+  call_29d7c7b6cdd643de9c659984a0125c8c  web inbound          3s  caller_hung_up    €0.0205  Perfecto. El jueves tenemos…
+```
+
+With a call id: that call whole — what it was, how long, why it ended, what it cost, and the
+**score**, one line per judge with the question it answered and its own reasoning when it did not
+hold. The judging is ring 4's, at hang-up, in the gateway; this verb reads it back and runs
+nothing.
+
+## `pipeline`
+
+```
+pinecall pipeline [--agent <slug>] [--json]
+pinecall pipeline set [--stt x] [--llm x] [--voice x] [--tts-model x] [--greeting '…']
+pinecall pipeline clear [stt|llm|voice|tts-model|greeting …]
+```
+
+```console
+$ pinecall pipeline
+clinica-norte · 9 calls
+
+  hears     soniox · es
+  decides   anthropic · claude-haiku-4-5-20251001
+  speaks    elevenlabs · EXAVITQu4vr4xnSDxMaL · es
+
+  greeting  "Clínica Norte, buenos días. ¿En qué puedo ayudarle?"
+
+  transcription_delay 0.39s · end_of_turn_delay 0.41s · llm_node_ttft 0.86s · e2e_latency 2.36s
+```
+
+The three legs as the **next** call would be built, with `← turned` beside any knob an operator has
+moved. `set` turns one for every call from the next one, held by the gateway and not by a deploy —
+`--llm anthropic/claude-haiku-4-5` names the vendor and the model, `--llm claude-haiku-4-5` keeps
+whichever vendor is in use. A knob nobody names is left exactly as it stands, because the door
+takes the whole set and this verb reads it back before it sends. `clear` gives one back to what the
+app declared; with no name, all five. There is no blank value: an empty voice once silenced a whole
+line of calls.
+
+## `supervise`
+
+```
+pinecall supervise <call>
+```
+
+The call's transcript as it happens, and one line to move on it:
+
+```
+w <text>    whisper to the agent — the caller never hears it
+s <text>    say it to the caller, in the agent's voice, verbatim
+t           take the line: the agent stops speaking and you are on it
+x           give it back
+e [reason]  end the call
+q           leave the desk; the call goes on
+```
+
+Every move lands in the caller's own log as its own `supervisor.*` entry with a seq, so what a
+human did to a call is read the same way as what the agent did. The **audio** of a live call is
+`pinecall ui`, which has a room; this is the transcript and the desk.
+
+## `keys`
+
+```
+pinecall keys add <vendor>     # the key on stdin, never on the command line
+pinecall keys rm <vendor>
+pinecall keys list
+```
+
+A key added here is this org's own account with that vendor, and every call of this org runs on it
+from the next one; every vendor nobody brought runs on the box's own key. `add` reads the key from
+**stdin** — typed with nothing echoed on a terminal, one piped line off one — and never from a
+flag: argv is visible in `ps` to every user on the box, and a key pasted as an argument is a key in
+the shell history.
+
+No door of the runtime ever answers with a provider key: `list` prints the vendors and nothing
+else, not a value, not a prefix, not a fingerprint. A key that was lost was lost at the vendor, and
+the fix is to add it again. A runtime with no `PINECALL_VAULT_KEY` cannot keep somebody else's
+secret and says so with a 503; the vault, and how to turn it on, is the gateway API's §6.
+
+## `login` · `whoami`
+
+```
+pinecall login <gateway-url> [--key-stdin]
+pinecall whoami
+```
+
+`login` asks for the key without echoing it, proves it at `/v1/whoami`, and keeps it in
+`~/.pinecall/credentials` (0600) under that URL. After it, every verb finds the key by itself and
+nothing has to be exported.
+
+```console
+$ pinecall whoami
+gateway http://127.0.0.1:8080 · key from dev-file
+org default · key dev · PINECALL_DEV_KEY
+```
+
+---
+
+# What it remembers, and what it knows
+
+## `knowledge`
+
+```
+pinecall knowledge push [dir] [--base <name>] [--agent agent.tsx]
+pinecall knowledge list
+pinecall knowledge drop <base>
+pinecall knowledge eval [golden.json] [--base <name>] [--k <n>] [--agent agent.tsx]
+```
+
+`push` reads every `*.md` under the directory — `./knowledge/docs` beside the agent file when none
+is named — and sends the folder **whole**: the base is replaced, never merged. The base is the
+agent's slug unless `--base` says otherwise, and the class names it with `docs = "<base>"`.
+
+```console
+$ pinecall knowledge push
+clinica-norte · 7 files · 41 chunks · 812 ms      # base · sent · became · took
+```
+
+`eval` asks the base every question of a golden — a JSON list of `{asks, expects}`, where `expects`
+is the heading path the answer should carry — and prints `recall@k` and `nDCG@10`, computed by code
+with **no model in the loop**, plus every question it missed and what came back instead. Exits 1
+when anything missed, so CI can hold a base to it. A golden is fixed and the index is the variable:
+never soften a question so a change can pass.
+
+## `memory`
+
+```
+pinecall memory <contact>
+pinecall memory forget <contact>
+pinecall memory eval [golden.json] [--k <n>] [--agent agent.tsx]
+```
+
+Everything memory kept about one contact — the caller's number, or the id the app named — with the
+current facts first and the ones a later call superseded dimmed, with the date they stopped
+holding. `forget` erases all of it, the right to be forgotten; on a terminal it asks once, and
+prints how many facts went.
+
+`eval` holds **recall** to a golden of `{holds, asks, expects}`: each question brings its own facts,
+so no contact of yours is read or written — they go to a scratch contact and are deleted again.
+
+## `remember`
+
+```
+pinecall remember [paths] [--agent agent.tsx] [--grep x] [--json]
+```
+
+The other half of memory: the **write** side. A case is one call written down — both speakers,
+because nothing is re-run — the facts memory already holds, and what must come of it: which
+categories got a fact, which never did, which values must not survive in any fact's text, and
+which held facts the call contradicted.
+
+Each case costs ONE model call, the very one a hang-up makes, run by the gateway against the class
+this terminal is holding. Every answer is judged by code: a category is the class's own word, a
+value is a literal, a supersession is an id — never one sentence compared to another, because two
+ways of writing one fact are one fact.
+
+---
+
+## Exit codes
+
+| | |
+|---|---|
+| `0` | it did what it says |
+| `1` | the thing being measured did not hold: a golden broke, a check failed, a judge answered broken, a drift fell past the threshold — or the gateway refused, in its own words |
+| `2` | this command cannot run: no key, a flag that is not a flag, a persona nobody wrote, no browser for `ui` |
+
+A call **nobody judged** is not a pass: `simulate --judge` exits non-zero for it, because "nobody
+looked at this" must never open a gate.
+
+## What each verb knocks at
+
+The bridge between this document and the gateway API. Anything in the right-hand column, your own
+code can call — over HTTP, in any language, with the same key.
+
+| verb | doors |
+|---|---|
+| `run` · `chat` · `test` · `simulate` · `remember` | `WS /v1/apps` — the class is mounted in the process that typed the verb |
+| `chat` | `WS /v1/chat?agent=&app=&contact=` |
+| `run --events` · `sessions` · `supervise` | `GET /v1/calls/{call}/events` (SSE), `GET /v1/agents/{slug}/sessions` |
+| `supervise` | `POST /v1/calls/{call}/verbs` — with the **org key**: a desk that only reads and types needs no seat. A seat (`POST …/supervise`) is for audio, and that is the console's |
+| `simulate --listen` | `POST /v1/calls/{call}/listen`, then the LiveKit room |
+| `simulate --voice` · `test --voice` | `POST /v1/evals/voice`, `POST /v1/evals/caller` |
+| `test` · `runs` | `POST /v1/evals/run`, `GET /v1/evals/runs[/{id}]` |
+| `eval` | `POST /v1/evals/replay/{call}` |
+| `pipeline` | `GET /v1/agents/{slug}/pipeline`, `PUT …/pipeline/overrides` |
+| `knowledge` | `PUT`·`GET`·`DELETE /v1/knowledge[/{base}]`, `POST /v1/knowledge/{base}/eval` |
+| `memory` | `GET`·`DELETE /v1/contacts/{contact}/memory`, `POST /v1/contacts/memory/eval` |
+| `remember` | `POST /v1/agents/{slug}/memory/extraction` |
+| `keys` | `PUT`·`DELETE`·`GET /v1/provider-keys[/{vendor}]` |
+| `login` · `whoami` | `GET /v1/whoami` |
+| `ui` | all of the above, plus its own `ui/*` doors on 127.0.0.1 |
+| `prompt` | none. It is the one verb that needs no gateway and no key |
