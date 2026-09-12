@@ -390,4 +390,5 @@ is for.
 | the three regions, and what goes in each | [the-prompt.md](the-prompt.md) |
 | the four rings, and how a golden is written | [testing-an-agent.md](testing-an-agent.md) |
 | every verb | [the-cli.md](the-cli.md) |
+| working with a team, and putting the agent on a box | [worlds-and-teams.md](worlds-and-teams.md) |
 | why retrieval is shaped this way | `runtime/docs/security/prompt-injection.md` |

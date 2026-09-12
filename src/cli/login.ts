@@ -63,7 +63,7 @@ export async function login(argv: string[], how: Signing = {}): Promise<number> 
   }
   const environment = how.env ?? process.env;
   writeGateway(url, { api_key: key, org: who.org }, pinecallHome(environment));
-  out.write(`logged in to ${url} as org ${who.org}\n`);
+  out.write(`logged in to ${url} as org ${who.org} · ${who.env}\n`);
   const shadowed = shadowedByEnv(environment);
   if (shadowed !== undefined) err.write(`${shadowed}\n`);
   return 0;

@@ -3,7 +3,8 @@
 `pinecall <group> [args]`. Every verb, what it is for, what it takes, and what it prints. The doors
 underneath are the gateway API — the **runtime** repo's `docs/protocol/gateway-api.md` — and this
 CLI is a client of that contract and of nothing else, so anything here is something your own code
-can do too.
+can do too. Which world a verb acts in, and what is yours against what is the org's, is one page:
+[worlds-and-teams.md](worlds-and-teams.md).
 
 One module per group, imported only when it is asked for: `pinecall prompt` must not pay for a
 websocket client. `pinecall` with nothing after it prints the whole CLI on one screen, built verbs
@@ -425,8 +426,11 @@ pinecall signup [<gateway-url>] --org <slug> --email <you@…> --person "<your n
 
 The one verb that needs no key, because it is the one that gets you the first. It makes the org
 with you as its admin — what the org may do is whatever the people who run that gateway decided for
-a new one: on a box of your own, everything; on a hosted one, its trial — and keeps the key it is
-answered exactly where `login` keeps one, so the next verb just works. The
+a new one: on a box of your own, everything; on a hosted one, its trial. The gateway answers a
+**production** key; a terminal is a laptop, so the verb asks for the same person's **development**
+key and keeps that one where `login` keeps one — `run` and `chat` work straight after, in a world
+of your own ([worlds-and-teams.md](worlds-and-teams.md)). The console link it prints signs the
+browser in to production, where the org's numbers, people and usage are. The
 gateway is `https://box.pinecall.io` unless another is named. The password is asked for without
 echoing it, or read from one line of stdin with `--password-stdin`; it is never a flag, because a
 flag is shell history.
@@ -434,12 +438,12 @@ flag is shell history.
 ```console
 $ pinecall signup --org tienda-sur --name "Tienda Sur" --email ana@tiendasur.uy --person "Ana"
 Password (12 characters at least):
-created org tienda-sur on https://box.pinecall.io — signed in as Ana, key kept in ~/.pinecall/credentials
+created org tienda-sur on https://box.pinecall.io — signed in as Ana, development key kept in ~/.pinecall/credentials
 console  https://box.pinecall.io/?login=lc_…   (opens within five minutes, once)
 
 $ pinecall whoami
 gateway https://box.pinecall.io · key from credentials
-org org_4ad95a171a72 · key k_8dcc… · cli
+org org_4ad95a171a72 · key k_8dcc… · development · cli
 ```
 
 If `PINECALL_API_KEY` is exported in the shell, it is read *before* the row just kept, so the verb
@@ -468,7 +472,7 @@ nothing has to be exported.
 ```console
 $ pinecall whoami
 gateway http://127.0.0.1:8080 · key from dev-file
-org default · key dev · PINECALL_DEV_KEY
+org default · key dev · development · PINECALL_DEV_KEY
 ```
 
 ---

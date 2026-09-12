@@ -7,6 +7,12 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **`docs/worlds-and-teams.md`.** The model as a developer walks it, on one page: the two worlds
+  and what is yours against what is the org's, the path from the sign-up to the deploy, the roles
+  and the seats, two developers on one agent, and the four traps. Linked from the README, the
+  tutorial and the CLI page.
+- **`pinecall whoami` and `login` say the world.** `org clinica · key k_1 · development · laptop`:
+  where you are is the key you hold, so the verb that says which key you hold says which world.
 - **`pinecall keys`, and a Keys screen.** `issue | list | revoke` the API keys this org's machines
   run on, and the same three in the console. A key issued there is a machine's: it holds `app` in
   production unless `--scope` says otherwise, names nobody, and is printed once. It is the last

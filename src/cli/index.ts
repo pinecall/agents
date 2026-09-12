@@ -110,7 +110,7 @@ export function usage(): string {
     "  callbacks the numbers people left when every seat was taken: who to call back",
     "  signup    make an org on Pinecall's cloud and keep its first key",
     "  login     sign in to a gateway once; the key is kept in ~/.pinecall/credentials",
-    "  whoami    which gateway, which org, and where this terminal's key came from",
+    "  whoami    which gateway, which org, which world, and where this terminal's key came from",
     "",
   ];
   for (const [name, purpose] of Object.entries(PLANNED)) {
