@@ -193,6 +193,8 @@ export interface Discovered {
   version: string;
   cloud: boolean;
   signup: boolean;
+  /** How short a password this gateway accepts; 0 is no rule. A card asking for one says it. */
+  min_password: number;
 }
 
 /**
@@ -203,12 +205,17 @@ export interface Discovered {
  * through typing a password for a door that refuses.
  */
 export async function discovered(url: string): Promise<Discovered> {
-  const shut: Discovered = { version: "", cloud: false, signup: false };
+  const shut: Discovered = { version: "", cloud: false, signup: false, min_password: 0 };
   try {
     const answer = await fetch(`${url.replace(/\/$/, "")}/.well-known/pinecall`);
     if (!answer.ok) return shut;
     const said = (await answer.json()) as Partial<Discovered>;
-    return { version: said.version ?? "", cloud: said.cloud === true, signup: said.signup === true };
+    return {
+      version: said.version ?? "",
+      cloud: said.cloud === true,
+      signup: said.signup === true,
+      min_password: said.min_password ?? 0,
+    };
   } catch {
     return shut;
   }

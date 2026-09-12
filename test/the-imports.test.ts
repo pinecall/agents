@@ -36,9 +36,10 @@ const MAY_IMPORT: Record<string, string[]> = {
   // .tsx and never a build step, and `@livekit/rtc-node`, which is `pinecall simulate --listen` —
   // a room joined from this terminal so the call comes out of this machine's speakers.
   "cli": ["agent", "call", "views", "runtime", "client", "@pinecall/protocol", "ws", "tsx", "@livekit/rtc-node"],
-  // What both browser pages are: the fetch to the gateway, the credentials context, the theme and
-  // the style vocabulary. It names no page, so neither page can reach the other through it.
-  "cli/ui/shared": ["react", "react-router"],
+  // What both browser pages are: the fetch to the gateway, the credentials context, the theme, the
+  // frame, the way-in card's styles, and what the gateway says about itself before anybody holds a
+  // key. It names no page, so neither page can reach the other through it.
+  "cli/ui/shared": ["react", "react-router", "zod"],
   // The TENANT's page. It must never reach the framework: none of it would run in a browser, and a
   // build that pulled a TypeScript parser into the bundle is a build nobody would notice.
   "cli/ui/console": ["cli/ui/shared", "@pinecall/protocol", "react", "react-dom", "react-router", "livekit-client", "vite", "@vitejs/plugin-react", "zod"],
