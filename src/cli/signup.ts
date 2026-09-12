@@ -3,7 +3,7 @@
 import { parseArgs } from "node:util";
 
 import { pinecallHome, writeGateway } from "./credentials.js";
-import { CLOUD_URL } from "./env.js";
+import { CLOUD_URL, shadowedByEnv } from "./env.js";
 import type { Group } from "./groups.js";
 import { aLineOfStdin, typedInSilence } from "./secret.js";
 import { asked } from "./testing/gateway.js";
@@ -93,9 +93,12 @@ export async function signup(argv: string[], how: Making = {}): Promise<number> 
     err.write(`${refusal(refused)}\n`);
     return 1;
   }
-  writeGateway(url, { api_key: made.key, org: made.org }, pinecallHome(how.env ?? process.env));
+  const environment = how.env ?? process.env;
+  writeGateway(url, { api_key: made.key, org: made.org }, pinecallHome(environment));
   out.write(`${madeLine(made, url)}\n`);
   out.write(`console  ${url.replace(/\/$/, "")}/?login=${encodeURIComponent(made.code)}   (opens within five minutes, once)\n`);
+  const shadowed = shadowedByEnv(environment);
+  if (shadowed !== undefined) err.write(`${shadowed}\n`);
   return 0;
 }
 
