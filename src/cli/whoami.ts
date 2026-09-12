@@ -13,6 +13,8 @@ export interface Who {
   org: string;
   key_id: string;
   label: string | null;
+  /** The world this key opens. Where you are IS the key you hold, so the verb says which. */
+  env: string;
 }
 
 export const group: Group = {
@@ -20,7 +22,8 @@ export const group: Group = {
   usage: `usage: pinecall whoami
 
   Prints the gateway every connecting verb would talk to, where the key came from, and what
-  that gateway says the key is: the org, the key's id and the label it was issued under. The
+  that gateway says the key is: the org, the key's id, the world it opens and the label it was
+  issued under. The
   key itself is neither printed nor sent anywhere else.`,
   run,
 };
@@ -51,9 +54,9 @@ export async function whoIs(door: Door): Promise<Who> {
   return await asked<Who>(door, WHOAMI);
 }
 
-/** One line for an org: who it is, which key of theirs this is, and what that key was issued for. */
+/** One line: whose key, which of theirs, which world it opens, and what it was issued for. */
 export function describing(who: Who): string {
-  const said = [`org ${who.org}`, `key ${who.key_id}`];
+  const said = [`org ${who.org}`, `key ${who.key_id}`, who.env];
   if (who.label !== null) said.push(who.label);
   return said.join(" · ");
 }

@@ -40,7 +40,7 @@ class FakeGateway {
       return;
     }
     response.writeHead(200, { "content-type": "application/json" });
-    response.end(JSON.stringify({ org: "clinica", key_id: "k_1", label: "the laptop" }));
+    response.end(JSON.stringify({ org: "clinica", key_id: "k_1", label: "the laptop", env: "development" }));
   }
 }
 
@@ -64,7 +64,7 @@ describe("logging in to a gateway", () => {
     const code = await login([gateway.url], { out: out.stream, env: { PINECALL_HOME: home }, key: async () => A_KEY });
 
     expect(code).toBe(0);
-    expect(out.text()).toBe(`logged in to ${gateway.url} as org clinica\n`);
+    expect(out.text()).toBe(`logged in to ${gateway.url} as org clinica · development\n`);
     expect(out.text()).not.toContain(A_KEY);
     expect(gateway.heard).toEqual([`Bearer ${A_KEY}`]);
     expect(gatewayFor(gateway.url, home)).toMatchObject({ api_key: A_KEY, org: "clinica" });
@@ -117,7 +117,7 @@ describe("whoami", () => {
     const code = await whoami([], out.stream, written().stream, { PINECALL_HOME: home, PINECALL_URL: gateway.url });
 
     expect(code).toBe(0);
-    expect(out.text()).toBe(`gateway ${gateway.url} · key from credentials\norg clinica · key k_1 · the laptop\n`);
+    expect(out.text()).toBe(`gateway ${gateway.url} · key from credentials\norg clinica · key k_1 · development · the laptop\n`);
     expect(out.text()).not.toContain(A_KEY);
   });
 
@@ -135,7 +135,7 @@ describe("whoami", () => {
   });
 
   it("leaves a key with no label as two words rather than a dangling separator", () => {
-    expect(describing({ org: "clinica", key_id: "k_1", label: null })).toBe("org clinica · key k_1");
+    expect(describing({ org: "clinica", key_id: "k_1", label: null, env: "production" })).toBe("org clinica · key k_1 · production");
   });
 
   it("prints what a refusal that is not the gateway's says, rather than swallowing it", () => {
