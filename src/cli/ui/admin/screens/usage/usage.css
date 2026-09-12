@@ -1,0 +1,61 @@
+/* What the box's tenants consumed: the totals of a page, then the rows the fold read. */
+
+.consumed {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-top: 22px;
+}
+
+.consumed-org {
+  padding: 14px 16px;
+}
+
+.consumed-name {
+  font-size: 13px;
+  margin: 0 0 8px;
+}
+
+.consumed-figure {
+  color: var(--ink-soft);
+  font-size: 11.5px;
+}
+
+.metered {
+  border-collapse: collapse;
+  font-size: 12px;
+  width: 100%;
+}
+
+.metered th {
+  border-bottom: 1px solid var(--edge);
+  color: var(--ink-faint);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  padding: 8px 10px;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.metered td {
+  border-bottom: 1px solid var(--edge-soft);
+  padding: 7px 10px;
+  white-space: nowrap;
+}
+
+.metered tr:last-child td {
+  border-bottom: none;
+}
+
+.metered-scroll {
+  margin-top: 22px;
+  overflow-x: auto;
+}
+
+.metered-more {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 16px;
+}

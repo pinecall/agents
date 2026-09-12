@@ -4,17 +4,17 @@ import { StrictMode, useCallback, useMemo, useState, type ReactNode } from "reac
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router";
 
-import { onUnauthorized } from "./lib/api";
+import { onUnauthorized } from "../shared/api";
 import { BASE } from "./lib/base";
-import { CredentialsProvider } from "./lib/credentials";
+import { CredentialsProvider } from "../shared/credentials";
 import { loginToWorld, loginWithCode } from "./lib/login";
 import { forgetKey, keepKey, keepWorld, keptKey, keptWorld, type World } from "./lib/session-key";
 import { WhoamiProvider } from "./lib/whoami";
 import { WorldProvider } from "./lib/world";
 import { router } from "./router";
 import { Login } from "./screens/login";
-import { followTheSystemTheme } from "./shell/theme";
-import "./styles/app.css";
+import { followTheSystemTheme } from "../shared/theme";
+import "../shared/styles/app.css";
 
 followTheSystemTheme();
 

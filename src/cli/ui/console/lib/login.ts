@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 
-import { answered, post, type Credentials } from "./api";
+import { answered, post, type Credentials } from "../../shared/api";
 
 // What POST /v1/login answers, in the one shape a key travels in. The key is read once and kept
 // by lib/session-key.ts under the world it opens; the rest is what the header shows.

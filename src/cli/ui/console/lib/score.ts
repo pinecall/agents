@@ -2,7 +2,7 @@
 
 import { CallScoreSchema, LogPageSchema, TERMINAL_EVENT, type CallScore } from "@pinecall/protocol";
 
-import { read, type Credentials } from "./api";
+import { read, type Credentials } from "../../shared/api";
 
 // `call.score` is the entry the log SEALS on (TERMINAL_EVENT, and the runtime's
 // docs/decisions/scoring.md), so on a finished call it is the entry at `last_seq` and nowhere

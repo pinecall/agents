@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 
-import { post, read, type Credentials } from "../../lib/api";
+import { post, read, type Credentials } from "../../../shared/api";
 import { dev } from "../../lib/dev";
 
 // The shapes are read here and nowhere else in the console, the way screens/pipeline/door.ts holds

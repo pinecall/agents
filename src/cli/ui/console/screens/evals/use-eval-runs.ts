@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { useCredentials } from "../../lib/credentials";
+import { useCredentials } from "../../../shared/credentials";
 import { readRuns, type EvalRun } from "./door";
 
 // A run is written when it starts and rewritten as each call opens, so a running one is worth

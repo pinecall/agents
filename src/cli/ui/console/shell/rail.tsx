@@ -1,12 +1,11 @@
 /** The rail: the agent's screens and the gateway's, each drawn only when the key opens it. */
 
 import type { ReactNode } from "react";
-import { NavLink } from "react-router";
 
+import { RailGroup, RailLink } from "../../shared/frame";
 import { opens } from "../lib/scopes";
 import { useHeldAgents } from "../lib/use-held-agents";
 import { useScopes } from "../lib/whoami";
-import "./rail.css";
 
 // Talk first: it is the screen a person opens the console for. The rest read the same log.
 const AGENT_SCREENS = [
@@ -38,36 +37,29 @@ export function Rail({ agent }: { agent: string }): ReactNode {
   const scopes = useScopes();
   const held = useHeldAgents().agents.length;
   const open = (screen: string): boolean => scopes === null || opens(scopes, screen);
-  const linked = ({ isActive }: { isActive: boolean }): string =>
-    isActive ? "rail-link rail-link-here" : "rail-link";
   // The one count the rail knows without a stream: how many agents the gateway holds right now.
   const hint = (screen: string): string => (screen === "agents" && held > 0 ? String(held) : "");
 
   return (
     <>
       {agent !== "" && (
-        <div className="rail-group">
-          <p className="rail-label fixed">{agent}</p>
-          <div className="rail-links">
-            {AGENT_SCREENS.filter((screen) => open(screen.path)).map((screen) => (
-              <NavLink key={screen.path} to={`/a/${agent}/${screen.path}`} className={linked}>
-                <span>{screen.name}</span>
-              </NavLink>
-            ))}
-          </div>
-        </div>
-      )}
-      <div className="rail-group">
-        <p className="rail-label fixed">Gateway</p>
-        <div className="rail-links">
-          {ORG_SCREENS.filter((screen) => open(screen.key)).map((screen) => (
-            <NavLink key={screen.key} to={`/${screen.path}`} end={screen.path === ""} className={linked}>
-              <span>{screen.name}</span>
-              <span className="rail-hint fixed">{hint(screen.key)}</span>
-            </NavLink>
+        <RailGroup label={agent}>
+          {AGENT_SCREENS.filter((screen) => open(screen.path)).map((screen) => (
+            <RailLink key={screen.path} to={`/a/${agent}/${screen.path}`} name={screen.name} />
           ))}
-        </div>
-      </div>
+        </RailGroup>
+      )}
+      <RailGroup label="Gateway">
+        {ORG_SCREENS.filter((screen) => open(screen.key)).map((screen) => (
+          <RailLink
+            key={screen.key}
+            to={`/${screen.path}`}
+            end={screen.path === ""}
+            name={screen.name}
+            hint={hint(screen.key)}
+          />
+        ))}
+      </RailGroup>
       <div className="rail-foot fixed">
         web · whatsapp · phone
         <br />

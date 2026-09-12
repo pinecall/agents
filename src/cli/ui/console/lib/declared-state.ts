@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { z } from "zod";
 
-import { read } from "./api";
-import { useCredentials } from "./credentials";
+import { read } from "../../shared/api";
+import { useCredentials } from "../../shared/credentials";
 
 // The three the runtime knows, in the runtime's types/agent.py and nowhere else on this
 // side: a console that could spell a fourth would be a console deciding what one meant.

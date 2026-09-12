@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 
-import { put, read, type Credentials } from "../../lib/api";
+import { put, read, type Credentials } from "../../../shared/api";
 import { MEASURES } from "../../lib/metrics";
 
 // The shapes are read here and nowhere else in the console, the way lib/doors.ts holds the two the

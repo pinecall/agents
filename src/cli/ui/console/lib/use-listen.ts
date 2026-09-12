@@ -3,7 +3,7 @@
 import { Room, RoomEvent, Track, type RemoteTrack } from "livekit-client";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useCredentials } from "./credentials";
+import { useCredentials } from "../../shared/credentials";
 import { seatIn } from "./seat";
 
 /** Where the ear stands. `off` is not in the room; `muted` is in it and reading; `on` hears it. */

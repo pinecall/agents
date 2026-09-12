@@ -3,8 +3,8 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useNavigate } from "react-router";
 
-import { GatewayError } from "../../lib/api";
-import { useCredentials } from "../../lib/credentials";
+import { GatewayError } from "../../../shared/api";
+import { useCredentials } from "../../../shared/credentials";
 import { readRoster, startSimulation, type Roster } from "./simulating";
 
 // How many turns a caller improvises when nobody said: the same six `pinecall simulate` uses.

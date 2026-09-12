@@ -1,0 +1,108 @@
+/* The tenants: the list, then one of them whole — what it may do, what it holds, who is in it. */
+
+.tenants {
+  list-style: none;
+  margin: 22px 0 0;
+  padding: 0;
+}
+
+.tenant {
+  align-items: baseline;
+  border-bottom: 1px solid var(--edge-soft);
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  padding: 11px 16px;
+}
+
+.tenant:last-child {
+  border-bottom: none;
+}
+
+.tenant:hover {
+  background: var(--hover);
+}
+
+.tenant-id {
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.tenant-make {
+  margin-top: 22px;
+}
+
+.tenant-make-form {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  padding: 14px;
+}
+
+/* ── one tenant ───────────────────────────────────────────────────────────── */
+
+.limits {
+  display: grid;
+  gap: 10px 16px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  padding: 14px 16px;
+}
+
+.limit {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.limit-name {
+  color: var(--ink-soft);
+  font-size: 11px;
+}
+
+.limit-held {
+  color: var(--ink-faint);
+  font-size: 10.5px;
+}
+
+.limit-input {
+  width: 100%;
+}
+
+.limits-save {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 0 16px 14px;
+}
+
+.of-the-org {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.of-the-org li {
+  align-items: baseline;
+  border-bottom: 1px solid var(--edge-soft);
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1fr) 110px minmax(0, 1fr) auto;
+  padding: 9px 16px;
+}
+
+.of-the-org li:last-child {
+  border-bottom: none;
+}
+
+.gone {
+  opacity: 0.55;
+}
+
+@media (max-width: 760px) {
+  .tenant,
+  .tenant-make-form,
+  .of-the-org li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

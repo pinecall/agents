@@ -3,9 +3,9 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 
-import { GatewayError } from "../../lib/api";
-import { useCredentials } from "../../lib/credentials";
-import { Nothing } from "../../shell/nothing";
+import { GatewayError } from "../../../shared/api";
+import { useCredentials } from "../../../shared/credentials";
+import { Nothing } from "../../../shared/frame";
 import { readDrift, type Drifted, type JudgeDrift } from "./door";
 
 const A_DAY = 24 * 60 * 60;

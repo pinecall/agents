@@ -1,4 +1,4 @@
-/* The seam: the tokens, and the few rules that hold for the whole console. Screens style themselves. */
+/* The seam both pages import: the tokens, and the few rules that hold everywhere. Screens style themselves. */
 
 @import "./tokens.css";
 @import "./page.css";

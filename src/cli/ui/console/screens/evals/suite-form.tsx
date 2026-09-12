@@ -2,8 +2,8 @@
 
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 
-import { GatewayError } from "../../lib/api";
-import { useCredentials } from "../../lib/credentials";
+import { GatewayError } from "../../../shared/api";
+import { useCredentials } from "../../../shared/credentials";
 import { readGoldens, startSuite, type Listed, type Roster } from "./testing";
 
 // The television behind the caller at the level the hearing calls measured, and no packets lost:

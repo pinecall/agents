@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 
-import type { Credentials } from "../../lib/api";
+import type { Credentials } from "../../../shared/api";
 import { dev } from "../../lib/dev";
 
 /** One golden the page can tick: the name, what the caller says, what is expected of the agent. */

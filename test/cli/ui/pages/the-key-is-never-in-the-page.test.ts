@@ -9,8 +9,9 @@ import { fileURLToPath } from "node:url";
 import { expect, test } from "vitest";
 
 const REPO = fileURLToPath(new URL("../../../..", import.meta.url));
-const SOURCE = join(REPO, "src/cli/ui/console");
-const VITE_CONFIG = join(SOURCE, "vite.config.ts");
+// The three directories that ARE the browser: what both pages wear, and one per page.
+const PAGES = ["shared", "console", "admin"];
+const SOURCE = join(REPO, "src/cli/ui");
 
 // A key read out loud, as auth/keys.py mints it: the prefix nobody else uses and the bytes after
 // it. If one of these is ever in a built file, somebody put a credential in the bundle.
@@ -20,24 +21,26 @@ const SHAPED_LIKE_A_KEY = /pk_[A-Za-z0-9_-]{20,}/;
 // build that was handed a key at compile time.
 const AN_ENVIRONMENT_KEY = /PINECALL_(API|DEV)_KEY/;
 
-// The page holds ONE credential — a person's scoped key, minted for this tab at login — and it is
-// kept in exactly one file, in sessionStorage: one tab's, gone when the tab closes, surviving a
-// reload. localStorage would outlive the session and be every tab's, so nothing may reach it.
-test("only lib/session-key.ts reaches the tab's storage, and nothing reaches localStorage", () => {
-  expect(sourceFilesReaching("sessionStorage")).toEqual(["lib/session-key.ts"]);
+// Each page holds ONE credential — the console a person's scoped key, the admin the box's ops key
+// — and each keeps it in exactly one file, in sessionStorage: one tab's, gone when the tab closes,
+// surviving a reload. localStorage would outlive the session and be every tab's, so nothing may
+// reach it. Two files and not one, on purpose: the two credentials must never meet.
+test("one file per page reaches the tab's storage, and nothing reaches localStorage", () => {
+  expect(sourceFilesReaching("sessionStorage")).toEqual(["admin/lib/ops-key.ts", "console/lib/session-key.ts"]);
   expect(sourceFilesReaching("localStorage")).toEqual([]);
 });
 
-// The key rides one header and that header is spelled in one place: every door goes through
-// api.ts, and the stream and the recording ask it for the headers rather than writing their own.
-test("only lib/api.ts writes the authorization header", () => {
-  expect(sourceFilesReaching("authorization")).toEqual(["lib/api.ts"]);
+// The key rides one header and that header is spelled in one place for both pages: every door
+// goes through shared/api.ts, and the stream and the recording ask it for the headers rather than
+// writing their own.
+test("only shared/api.ts writes the authorization header", () => {
+  expect(sourceFilesReaching("authorization")).toEqual(["shared/api.ts"]);
 });
 
 // The test builds what it greps, into a directory of its own: a check about the bundle that
 // depended on somebody having run the build first was a check that passed by being skipped.
-test("the built page carries no key of its own", () => {
-  const built = builtFiles(buildTheConsole());
+test.each(["console", "admin"])("the built %s carries no key of its own", (page) => {
+  const built = builtFiles(buildThePage(page));
   expect(built.length, "vite built nothing").toBeGreaterThan(0);
   for (const [name, text] of built) {
     expect(text, `${name} carries something shaped like a key`).not.toMatch(SHAPED_LIKE_A_KEY);
@@ -50,16 +53,17 @@ test("the built page carries no key of its own", () => {
 /** Every source file that uses that name, named from src/, so a failure names it. */
 function sourceFilesReaching(name: string): string[] {
   const reaching = new RegExp(`\\b${name}\\s*[.[:]`);
-  return filesUnder(SOURCE)
+  return PAGES.flatMap((page) => filesUnder(join(SOURCE, page)))
     .filter((file) => reaching.test(readFileSync(file, "utf8")))
     .map((file) => relative(SOURCE, file))
     .sort();
 }
 
-/** The console, built by vite into a fresh directory: the very bundle the gateway would serve. */
-function buildTheConsole(): string {
-  const out = mkdtempSync(join(tmpdir(), "pinecall-console-"));
-  execFileSync("pnpm", ["exec", "vite", "build", "--config", VITE_CONFIG, "--outDir", out, "--logLevel", "error"], {
+/** One page, built by vite into a fresh directory: the very bundle the gateway would serve. */
+function buildThePage(page: string): string {
+  const out = mkdtempSync(join(tmpdir(), `pinecall-${page}-`));
+  const config = join(SOURCE, page, "vite.config.ts");
+  execFileSync("pnpm", ["exec", "vite", "build", "--config", config, "--outDir", out, "--logLevel", "error"], {
     cwd: REPO,
     stdio: "pipe",
   });

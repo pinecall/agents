@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 
-import { answered, headersFor, post, read, type Credentials } from "../../lib/api";
+import { answered, headersFor, post, read, type Credentials } from "../../../shared/api";
 
 export const ROLES = ["qa", "supervisor", "manager", "admin", "developer"] as const;
 export const STATUSES = ["invited", "active", "disabled"] as const;

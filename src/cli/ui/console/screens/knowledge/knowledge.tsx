@@ -4,9 +4,9 @@ import type { KnowledgeBase, KnowledgeScore } from "@pinecall/protocol";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useParams } from "react-router";
 
-import { GatewayError } from "../../lib/api";
-import { useCredentials } from "../../lib/credentials";
-import { Nothing } from "../../shell/nothing";
+import { GatewayError } from "../../../shared/api";
+import { useCredentials } from "../../../shared/credentials";
+import { Nothing } from "../../../shared/frame";
 import { askTheGolden, dropBase, pushKnowledge, readBases, readHere, type Here, type Pushed } from "./door";
 import "./knowledge.css";
 

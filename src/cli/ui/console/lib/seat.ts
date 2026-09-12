@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 
-import { post, type Credentials } from "./api";
+import { post, type Credentials } from "../../shared/api";
 
 /** The two doors that seat a person in a call: one that only hears, one that may also speak. */
 export type Seating = "listen" | "supervise";

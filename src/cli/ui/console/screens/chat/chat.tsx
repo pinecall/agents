@@ -3,9 +3,9 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
-import { GatewayError } from "../../lib/api";
-import { useCredentials } from "../../lib/credentials";
-import { Nothing } from "../../shell/nothing";
+import { GatewayError } from "../../../shared/api";
+import { useCredentials } from "../../../shared/credentials";
+import { Nothing } from "../../../shared/frame";
 import { Bubbles } from "./bubbles";
 import { endChat, readChatRoster, sayInChat, startChat, type Roster } from "./door";
 import "./chat.css";

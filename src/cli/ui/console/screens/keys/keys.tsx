@@ -2,9 +2,9 @@
 
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 
-import { GatewayError } from "../../lib/api";
-import { useCredentials } from "../../lib/credentials";
-import { Nothing } from "../../shell/nothing";
+import { GatewayError } from "../../../shared/api";
+import { useCredentials } from "../../../shared/credentials";
+import { Nothing } from "../../../shared/frame";
 import { issueKey, readKeys, revokeKey, type Issued, type Listed } from "./door";
 import "./keys.css";
 

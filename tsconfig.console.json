@@ -1,7 +1,9 @@
 {
-  // The console, checked against the browser it runs in. It is the one part of src/ that tsc does
-  // not compile — a page bundled by vite, with the DOM in its lib and React's JSX factory rather
-  // than ours — so it gets its own config here instead of bending the package's.
+  // The browser pages, checked against the browser they run in. `src/cli/ui` is the one part of
+  // src/ that tsc does not compile — pages bundled by vite, with the DOM in their lib and React's
+  // JSX factory rather than ours — so they get their own config here instead of bending the
+  // package's. Three directories: what both pages are (`shared`), the tenant's console, and the
+  // operator's admin.
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
@@ -18,5 +20,11 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["src/cli/ui/console", "test/cli/ui/console"]
+  "include": [
+    "src/cli/ui/shared",
+    "src/cli/ui/console",
+    "src/cli/ui/admin",
+    "test/cli/ui/console",
+    "test/cli/ui/pages"
+  ]
 }

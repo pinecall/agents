@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 
-import type { Credentials } from "../../lib/api";
+import type { Credentials } from "../../../shared/api";
 import { dev } from "../../lib/dev";
 
 /** One caller the page can pick: the name a verb takes, what they want, how they talk. */

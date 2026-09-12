@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 
-import type { Credentials } from "../../lib/api";
+import type { Credentials } from "../../../shared/api";
 import { dev } from "../../lib/dev";
 
 /** The class that process can chat with: the one in the directory `pinecall run` was typed in. */

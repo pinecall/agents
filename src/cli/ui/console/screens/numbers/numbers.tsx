@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 
-import { GatewayError } from "../../lib/api";
-import { useCredentials } from "../../lib/credentials";
+import { GatewayError } from "../../../shared/api";
+import { useCredentials } from "../../../shared/credentials";
 import { useHeldAgents } from "../../lib/use-held-agents";
 import { Adding } from "./adding";
 import { CarrierPanel } from "./carrier";

@@ -4,9 +4,9 @@ import type { ContactFact, ExtractionRun, MemoryScore } from "@pinecall/protocol
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useParams } from "react-router";
 
-import { GatewayError } from "../../lib/api";
-import { useCredentials } from "../../lib/credentials";
-import { Nothing } from "../../shell/nothing";
+import { GatewayError } from "../../../shared/api";
+import { useCredentials } from "../../../shared/credentials";
+import { Nothing } from "../../../shared/frame";
 import { askRecall, forgetContact, readContact, readHere, runExtraction, type Here } from "./door";
 import "./memory.css";
 

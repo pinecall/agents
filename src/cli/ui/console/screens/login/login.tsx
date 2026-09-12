@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent, type ReactNode } from "react";
 
-import { GatewayError } from "../../lib/api";
+import { GatewayError } from "../../../shared/api";
 import { loginWithPassword, type Signed } from "../../lib/login";
 import "./login.css";
 

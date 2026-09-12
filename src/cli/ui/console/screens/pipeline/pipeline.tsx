@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { useParams } from "react-router";
 
-import { Nothing } from "../../shell/nothing";
+import { Nothing } from "../../../shared/frame";
 import { Controls } from "./controls";
 import { greetingLine } from "./door";
 import { DecidesLeg, HearsLeg, SpeaksLeg } from "./legs";

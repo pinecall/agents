@@ -5,8 +5,8 @@ import { ParticipantKind, Room, RoomEvent, Track, type RemoteTrack, type TextStr
 import { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 
-import { post } from "../../lib/api";
-import { useCredentials } from "../../lib/credentials";
+import { post } from "../../../shared/api";
+import { useCredentials } from "../../../shared/credentials";
 import {
   A_BEAT_MS,
   markOf,

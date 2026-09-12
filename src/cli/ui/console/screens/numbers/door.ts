@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 
-import { drop, post, put, read, type Credentials } from "../../lib/api";
+import { drop, post, put, read, type Credentials } from "../../../shared/api";
 
 // The runtime's `Answering`: the domain's Route, and which of the two tables put it there.
 // `managed` is a number the box bought for the org — the stock the `numbers` quota caps.

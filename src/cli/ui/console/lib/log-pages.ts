@@ -2,7 +2,7 @@
 
 import { LogPageSchema, type Entry } from "@pinecall/protocol";
 
-import { read, type Credentials } from "./api";
+import { read, type Credentials } from "../../shared/api";
 
 // The gateway answers a page of at most this many entries and refuses to be asked for more
 // (the runtime's log/store/protocol.py). A page shorter than what was asked for is the last

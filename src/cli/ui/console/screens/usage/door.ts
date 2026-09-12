@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 
-import { read, type Credentials } from "../../lib/api";
+import { read, type Credentials } from "../../../shared/api";
 
 // The runtime's log/usage.py, field for field: UsageRow and Totals. Nothing is renamed here.
 const RowSchema = z.object({

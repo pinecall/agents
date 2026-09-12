@@ -3,7 +3,7 @@
 import type { Entry } from "@pinecall/protocol";
 import { useEffect, useState } from "react";
 
-import { useCredentials } from "../../lib/credentials";
+import { useCredentials } from "../../../shared/credentials";
 import { wholeLog } from "../../lib/log-pages";
 
 /** A finished call as this reader has it: every entry, or why it could not be read. */

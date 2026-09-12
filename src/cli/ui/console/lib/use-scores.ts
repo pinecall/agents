@@ -3,8 +3,8 @@
 import type { CallScore, SessionLine } from "@pinecall/protocol";
 import { useEffect, useRef, useState } from "react";
 
-import type { Credentials } from "./api";
-import { useCredentials } from "./credentials";
+import type { Credentials } from "../../shared/api";
+import { useCredentials } from "../../shared/credentials";
 import { readScore } from "./score";
 import { isLive } from "./use-agent-sessions";
 

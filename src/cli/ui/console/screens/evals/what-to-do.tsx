@@ -3,8 +3,8 @@
 import { useState, type ReactNode } from "react";
 import { useParams } from "react-router";
 
-import { GatewayError } from "../../lib/api";
-import { useCredentials } from "../../lib/credentials";
+import { GatewayError } from "../../../shared/api";
+import { useCredentials } from "../../../shared/credentials";
 import { promoteCall, replayCall, type Promoted, type Replayed } from "./door";
 
 /**

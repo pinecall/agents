@@ -2,8 +2,8 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 
-import { doorUrl, headersFor } from "../../lib/api";
-import { useCredentials } from "../../lib/credentials";
+import { doorUrl, headersFor } from "../../../shared/api";
+import { useCredentials } from "../../../shared/credentials";
 
 // call.summary carries the pointer and nothing else does (the runtime's worker/recordings.py
 // composes it). The file is on the box that took the call; the gateway's

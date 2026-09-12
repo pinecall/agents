@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { useCredentials } from "../../lib/credentials";
+import { useCredentials } from "../../../shared/credentials";
 import { readPipeline, turnKnobs, type Overridden, type Report } from "./door";
 
 /** What the screen draws with: the report, whether a turn is in flight, and what was refused. */

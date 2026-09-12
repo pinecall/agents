@@ -1,10 +1,11 @@
-/** The one place a request to the gateway is built: the base, the key, one error shape, one 401 hook. */
+/** How either page reaches the gateway: the base, the key, one error shape, one 401 hook. */
 
-// The gateway serves the console at `/` and every door of it under `/v1`. The page holds ONE
-// credential: a person's scoped key, minted for them and this browser at login and kept for the
-// tab's life (lib/session-key.ts). Never the org's key — that one lives in `pinecall run`'s
-// process and reaches a browser only as a one-use `?login=` code (lib/login.ts).
-/** Where this console is mounted, and the key it knocks with. */
+// The gateway serves two pages and every door of both under `/v1`. Each holds ONE credential and
+// they are never the same one: the console's is a person's scoped key, minted for them and this
+// browser at login (console/lib/session-key.ts); the admin's is the BOX's ops key, which belongs
+// to no org. Neither is ever the org's key — that lives in `pinecall run`'s process and reaches a
+// browser only as a one-use `?login=` code.
+/** Where a page is mounted, and the key it knocks with. */
 export interface Credentials {
   base: string;
   key: string;
@@ -27,9 +28,9 @@ export function headersFor(credentials: Credentials): Record<string, string> {
   return { authorization: `Bearer ${credentials.key}` };
 }
 
-// A 401 while the app is mounted is the key dying under it — revoked, or the gateway restarted on
-// a dev key — and the honest answer is the login screen again, not a page of refusals. The boot
-// installs the one listener; nothing else here decides what a dead key means.
+// A 401 while a page is mounted is its key dying under it — revoked, or the gateway restarted on
+// a dev key — and the honest answer is the login screen again, not a page of refusals. Each
+// page's boot installs the one listener; nothing else here decides what a dead key means.
 let unauthorized: (() => void) | null = null;
 
 /** What runs when a door answers 401. Installed once, by the boot. */

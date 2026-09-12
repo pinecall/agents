@@ -3,8 +3,8 @@
 import { SessionListSchema, type SessionLine } from "@pinecall/protocol";
 import { useEffect, useState } from "react";
 
-import { doorUrl, read } from "./api";
-import { useCredentials } from "./credentials";
+import { doorUrl, read } from "../../shared/api";
+import { useCredentials } from "../../shared/credentials";
 import { openLog } from "./stream";
 import type { Connection } from "./stream";
 

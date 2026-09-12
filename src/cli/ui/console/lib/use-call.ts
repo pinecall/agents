@@ -10,8 +10,8 @@ import {
 } from "@pinecall/protocol";
 import { useEffect, useRef, useState } from "react";
 
-import { GatewayError, doorUrl, type Credentials } from "./api";
-import { useCredentials } from "./credentials";
+import { GatewayError, doorUrl, type Credentials } from "../../shared/api";
+import { useCredentials } from "../../shared/credentials";
 import { wholeLog } from "./log-pages";
 import { openLog, type Connection } from "./stream";
 

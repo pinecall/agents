@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 
-import { GatewayError } from "../lib/api";
+import { GatewayError } from "../../shared/api";
 import type { World } from "../lib/session-key";
 import { useWorld } from "../lib/world";
 

@@ -12,7 +12,7 @@ import {
 } from "@pinecall/protocol";
 import { z } from "zod";
 
-import { drop, read, type Credentials } from "../../lib/api";
+import { drop, read, type Credentials } from "../../../shared/api";
 import { dev } from "../../lib/dev";
 
 /** What this directory holds for memory: the recall golden, and the extraction cases beside it. */

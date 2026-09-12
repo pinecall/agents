@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 
-import { post, read, type Credentials } from "../../lib/api";
+import { post, read, type Credentials } from "../../../shared/api";
 
 // Never a key: the table keeps a sha256 and the listing says so. `subject` names the member a key
 // was minted for; a machine's names nobody, which is what a deployment's key is.

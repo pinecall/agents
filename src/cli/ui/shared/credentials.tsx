@@ -1,4 +1,4 @@
-/** Who the console is, for as long as the page is open: the base and the tab's own key, one context, never a global. */
+/** Who a page is while it is open: the base and the tab's own key, one context, never a global. */
 
 import { createContext, useContext, type ReactNode } from "react";
 
@@ -21,7 +21,7 @@ export function CredentialsProvider({
 export function useCredentials(): Credentials {
   const held = useContext(Held);
   if (held === null) {
-    throw new Error("the console was mounted without credentials");
+    throw new Error("this page was mounted without credentials");
   }
   return held;
 }

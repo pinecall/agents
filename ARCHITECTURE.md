@@ -114,7 +114,7 @@ a directory earns its place there by having a line in that table (§13).
 | `personas.ts` · `machine.ts` · `view.ts` | the synthetic callers, the state machine on one page, the terminal view as a pure function |
 | `login.ts` · `whoami.ts` · `secret.ts` | the key typed once, which key a verb would use, and the one place a secret is read without echoing it |
 | `testing/` | what those verbs need: the gateway's eval doors, goldens off disk, latency, the matrix, the progress screen, the score, the seeding check, the voice door |
-| `ui/` | what `pinecall run` answers the console with, by the wire's verb (`doors.ts`, one module per verb family: a chat, a simulation, a suite, the knowledge and memory goldens, a promotion, drift, a reproduction), and `ui/console/` — the page itself, served by the gateway |
+| `ui/` | what `pinecall run` answers the console with, by the wire's verb (`doors.ts`, one module per verb family: a chat, a simulation, a suite, the knowledge and memory goldens, a promotion, drift, a reproduction) — and beside those node modules the three directories that are the BROWSER: `ui/shared/`, `ui/console/` and `ui/admin/`, served by the gateway and never imported by anything here |
 
 Beside `src/`:
 
@@ -394,10 +394,25 @@ that writes it.
 `~/.pinecall/` is 0700, every file 0600, and the `dev` file is trusted only when this account owns
 it and nobody else can read it. The `credentials` file keeps v1's top-level `api_key` untouched.
 
-## 11. The console
+## 11. The two pages
 
-The console is served by the **gateway**, at `/`, and this CLI opens no port at all. Everything
-about the page is a containment decision:
+Two browser programs live under `src/cli/ui/`, both served by the **gateway** — this CLI opens no
+port at all — and each with its own bundle, its own router and its own credential:
+
+| | mounted at | the credential it holds | who |
+|---|---|---|---|
+| `ui/console/` | `/` | a PERSON's scoped key, minted at login | the tenant |
+| `ui/admin/` | `/admin` | the BOX's ops key, typed in | the operator |
+| `ui/shared/` | — | the fetch, the credentials context, the theme, the frame, the style vocabulary | both |
+
+They are two programs and not two sections of one, because the ops key **belongs to no org** and
+must never reach a tab that holds a tenant's: two bundles, two storage names, and an import table
+that lets neither page name the other (`test/the-imports.test.ts`). `ui/shared/` names neither, so
+nothing reaches one page through the other.
+
+### The console
+
+The console is served at `/`. Everything about the page is a containment decision:
 
 - **The org key never reaches the browser.** The page holds a PERSON's scoped key, minted for it
   at login and kept in `sessionStorage` for the tab's life (`lib/session-key.ts`, the one file
@@ -411,9 +426,9 @@ about the page is a containment decision:
   caller, never by this page —
   `test/cli/ui/console/the-console-never-makes-an-org.test.ts` pins that by reading the sources
   with the comments stripped. It is also why the runtime sends no CORS header: the one door this
-  page opens with no key is `/v1/login`, on its own origin. `test/cli/ui/console/the-key-is-never-in-the-page.test.ts` pins it:
-  one file reaches `sessionStorage`, none reaches `localStorage`, only `lib/api.ts` writes the
-  `authorization` header, and the bundle carries no key and no key's name.
+  page opens with no key is `/v1/login`, on its own origin. `test/cli/ui/pages/the-key-is-never-in-the-page.test.ts` pins it:
+  one file PER PAGE reaches `sessionStorage`, none reaches `localStorage`, only `shared/api.ts`
+  writes the `authorization` header, and neither bundle carries a key or a key's name.
 - **Nothing rides a URL.** The log stream is `fetch` reading `text/event-stream` by hand
   (`lib/stream.ts`, `SseParser`), with the key on the header and `Last-Event-ID` sent by the
   reader on a reconnect; the recording is fetched with the header and played from an object URL.
@@ -455,6 +470,23 @@ one file, so **a class name is global** whatever directory it was written in
 `lib/lookups.ts`, which both timelines print from). Two more are conventions the reader enforces:
 `lib/api.ts` is the only place a request to the gateway is built, and `lib/metrics.ts` the only
 file that names a metric — Sessions must print the same digits as `pinecall-runtime sessions show`.
+
+### The admin
+
+The operator's page is served at `/admin`, and it is what the box's own key opens: orgs and their
+quotas, the keys of each, the people of each (**read only** — who works at a tenant is the
+tenant's to decide, and a box that could edit a member could put itself in somebody's org), the
+doors each answers at, the fleet with its cordons, and the metered rows folded off the log.
+
+The key is typed, never handed over: there is no `?login=` here and there never will be, because a
+code in a URL is how a browser is given a TENANT's key by the process holding it, and nothing
+hands out the box's. It is proved at `GET /v1/ops/whoami` before it is kept, exactly as
+`pinecall login` proves a tenant's at `/v1/whoami`, and kept in `sessionStorage` under a name of
+its own (`admin/lib/ops-key.ts`).
+
+**Nothing about a PLAN is on it.** What an org is charged, what it is owed, what it signed up to:
+none of that is the runtime's, and none of it is here. The page reads quotas — the mechanism — and
+the package that charges is what turns a plan into a row (the runtime's `extensions/`).
 
 ## 12. LiveKit: where it is, and where it is not
 

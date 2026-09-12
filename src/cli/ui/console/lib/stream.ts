@@ -2,7 +2,7 @@
 
 import { decodeEntry, type Entry } from "@pinecall/protocol";
 
-import { headersFor, type Credentials } from "./api";
+import { headersFor, type Credentials } from "../../shared/api";
 
 /** What the console can honestly say about its stream. Nothing here is a guess. */
 export type Connection = "connecting" | "live" | "reconnecting" | "ended";

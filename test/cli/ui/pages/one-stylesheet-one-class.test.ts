@@ -6,21 +6,25 @@ import { fileURLToPath } from "node:url";
 
 import { expect, test } from "vitest";
 
-const SOURCE = fileURLToPath(new URL("../../../../src/cli/ui/console", import.meta.url));
+const SOURCE = fileURLToPath(new URL("../../../../src/cli/ui", import.meta.url));
 
-// Every screen owns its own stylesheet, and vite bundles them all into one file the whole console
-// wears. So a class is global whatever directory it was written in: `.mark` was the talk
+// Every screen owns its own stylesheet, and vite bundles a page's into one file that page wears.
+// So a class is global whatever directory it was written in: `.mark` was the talk
 // transcript's line AND the session timeline's cell, and the table's `width: 1.5em` squeezed the
 // paragraph to one character a line (2026-09-08). A screen's class carries the thing it belongs
 // to — `.said-mark`, `.timeline .mark` — and this test is what keeps that true.
 const A_CLASS = /^\s*(\.[A-Za-z0-9_-]+)(?=[\s,{:])/gm;
 
 // The one stylesheet that is deliberately shared: the page vocabulary every screen builds from.
-const THE_SHARED_ONE = "styles/page.css";
+const THE_SHARED_ONE = "shared/styles/page.css";
 
-test("no class is defined by two stylesheets", () => {
+// One bundle per page, so a collision is a collision WITHIN a page; the vocabulary below is the
+// one thing both wear, and neither may redefine it.
+const PAGES = ["console", "admin"];
+
+test.each(PAGES)("no class is defined by two of the %s's stylesheets", (page) => {
   const owners = new Map<string, string[]>();
-  for (const file of stylesheets()) {
+  for (const file of stylesheets().filter((one) => one.startsWith(`${page}/`))) {
     for (const name of classesIn(readFileSync(join(SOURCE, file), "utf8"))) {
       owners.set(name, [...(owners.get(name) ?? []), file]);
     }
@@ -31,10 +35,10 @@ test("no class is defined by two stylesheets", () => {
   expect(shared).toEqual([]);
 });
 
-test("a screen never redefines the page vocabulary", () => {
+test("no screen of either page redefines the vocabulary both wear", () => {
   const page = new Set(classesIn(readFileSync(join(SOURCE, THE_SHARED_ONE), "utf8")));
   const taken: string[] = [];
-  for (const file of stylesheets().filter((one) => one !== THE_SHARED_ONE)) {
+  for (const file of stylesheets().filter((one) => !one.startsWith("shared/"))) {
     for (const name of classesIn(readFileSync(join(SOURCE, file), "utf8"))) {
       if (page.has(name)) taken.push(`${name}: ${file}`);
     }
@@ -48,7 +52,8 @@ function classesIn(css: string): string[] {
 }
 
 function stylesheets(): string[] {
-  return filesUnder(SOURCE)
+  return ["shared", "console", "admin"]
+    .flatMap((page) => filesUnder(join(SOURCE, page)))
     .filter((file) => file.endsWith(".css"))
     .map((file) => relative(SOURCE, file))
     .sort();

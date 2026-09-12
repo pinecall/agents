@@ -7,6 +7,19 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **An admin page for the operator, at `/admin`.** A second browser program beside the console,
+  with its own bundle, its own router and its own credential: the box's ops key, typed in and
+  proved at `GET /v1/ops/whoami` before it is kept, under a storage name of its own. Four screens
+  — Orgs (every tenant, and one of them whole: its quotas against what it is holding, its keys,
+  its people read-only, the vendors it brought), Routes, Fleet with its cordons, and Usage folded
+  off the log. Nothing about a plan is on it: what an org is charged is not the runtime's to know.
+  Two programs and not two sections of one, because the ops key belongs to no org and must never
+  reach a tab holding a tenant's — the import table lets neither page name the other.
+- **`src/cli/ui/shared/`.** What both pages wear, defined once: the fetch to the gateway and its
+  one error shape, the credentials context, the theme, the frame (the shell, the brand, the
+  crumbs, the rail, the empty state) and the style vocabulary. The console was where all of it
+  lived; it now imports it, and its own stylesheet holds only what is the console's — the agent it
+  is looking at, and the two worlds.
 - **`docs/worlds-and-teams.md`.** The model as a developer walks it, on one page: the two worlds
   and what is yours against what is the org's, the path from the sign-up to the deploy, the roles
   and the seats, two developers on one agent, and the four traps. Linked from the README, the

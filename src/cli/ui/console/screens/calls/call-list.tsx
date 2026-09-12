@@ -5,7 +5,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { NavLink } from "react-router";
 
 import { EVERY_MS, isLive } from "../../lib/use-agent-sessions";
-import { Nothing } from "../../shell/nothing";
+import { Nothing } from "../../../shared/frame";
 import { glyphOf } from "./channel-glyph";
 
 /** Every call this agent's log names. Selecting one is a URL, so the list holds no selection. */

@@ -3,9 +3,9 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 
-import { GatewayError } from "../../lib/api";
+import { GatewayError } from "../../../shared/api";
 import { started } from "../../lib/clock";
-import { useCredentials } from "../../lib/credentials";
+import { useCredentials } from "../../../shared/credentials";
 import { euros } from "../sessions/finished-calls";
 import { readUsage, type UsagePage } from "./door";
 import "./usage.css";

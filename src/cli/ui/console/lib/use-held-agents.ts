@@ -3,8 +3,8 @@
 import { AgentListSchema, type HeldAgent } from "@pinecall/protocol";
 import { useEffect, useState } from "react";
 
-import { read } from "./api";
-import { useCredentials } from "./credentials";
+import { read } from "../../shared/api";
+import { useCredentials } from "../../shared/credentials";
 
 /** The agents the gateway holds, and whatever the door refused with. */
 export interface HeldAgents {

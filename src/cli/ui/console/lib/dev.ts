@@ -2,7 +2,7 @@
 
 import type { DevVerb } from "@pinecall/protocol";
 
-import { post, type Credentials } from "./api";
+import { post, type Credentials } from "../../shared/api";
 
 // The family in the path is the door's scope, the verb the wire's word: the gateway's own table
 // (runtime api/agents/dev.py), spelled once here so every screen builds the same path.

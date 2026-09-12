@@ -1,4 +1,4 @@
-/** The console follows the system's light or dark, and a person may flip it for as long as the tab lives. */
+/** A page follows the system's light or dark, and a person may flip it for as long as the tab lives. */
 
 export type Theme = "dark" | "light";
 
@@ -18,7 +18,7 @@ export function currentTheme(): Theme {
   return document.documentElement.dataset["theme"] === "light" ? "light" : "dark";
 }
 
-// Remembered nowhere: the console writes nothing into a browser's storage, so a flip lasts until
+// Remembered nowhere: a page writes nothing into a browser's storage for this, so a flip lasts until
 // the tab closes or the system's own theme changes, and then the system has its say again.
 /** Flip the theme, and say which one it is now. */
 export function toggleTheme(): Theme {

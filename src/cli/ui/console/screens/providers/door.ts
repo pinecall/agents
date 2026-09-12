@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 
-import { drop, put, read, type Credentials } from "../../lib/api";
+import { drop, put, read, type Credentials } from "../../../shared/api";
 
 // This door answers vendor NAMES, and that is the whole of what a screen may know — not a value,
 // not a prefix, not a fingerprint. The one door that reads a key back is the worker's, and a page

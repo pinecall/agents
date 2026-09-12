@@ -7,5 +7,5 @@
     "noEmit": true
   },
   "include": ["src", "test"],
-  "exclude": ["src/cli/ui/console", "test/cli/ui/console"]
+  "exclude": ["src/cli/ui/shared", "src/cli/ui/console", "src/cli/ui/admin", "test/cli/ui/console", "test/cli/ui/pages"]
 }

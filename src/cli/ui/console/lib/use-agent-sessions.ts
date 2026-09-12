@@ -3,8 +3,8 @@
 import { SessionListSchema, type SessionLine } from "@pinecall/protocol";
 import { useEffect, useState } from "react";
 
-import { read } from "./api";
-import { useCredentials } from "./credentials";
+import { read } from "../../shared/api";
+import { useCredentials } from "../../shared/credentials";
 
 // A call's own log is a stream; the list of an agent's calls is not — a call that starts writes
 // into its own log, and the agent's own log never names it. So this asks the door again on a clock

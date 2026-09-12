@@ -3,8 +3,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { z } from "zod";
 
-import { read } from "./api";
-import { useCredentials } from "./credentials";
+import { read } from "../../shared/api";
+import { useCredentials } from "../../shared/credentials";
 
 // What `pinecall whoami` prints and the door answers: never the key itself, never its hash.
 const WhoseSchema = z.object({

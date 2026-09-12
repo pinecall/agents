@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 
 import { useHeldAgents } from "../../lib/use-held-agents";
-import { Nothing } from "../../shell/nothing";
+import { Nothing } from "../../../shared/frame";
 import "./agents.css";
 
 export function Agents(): ReactNode {

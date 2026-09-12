@@ -3,7 +3,7 @@
 import { KnowledgeListSchema, KnowledgePushedSchema, KnowledgeScoreSchema, type KnowledgeList, type KnowledgePushed, type KnowledgeScore } from "@pinecall/protocol";
 import { z } from "zod";
 
-import { drop, read, type Credentials } from "../../lib/api";
+import { drop, read, type Credentials } from "../../../shared/api";
 import { dev } from "../../lib/dev";
 
 /** What the directory `pinecall run` runs in has to push, and what golden sits beside it. */

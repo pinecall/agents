@@ -4,8 +4,8 @@ import { VerbSchema, type Verb } from "@pinecall/protocol";
 import { Room, Track } from "livekit-client";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { post, type Credentials } from "./api";
-import { useCredentials } from "./credentials";
+import { post, type Credentials } from "../../shared/api";
+import { useCredentials } from "../../shared/credentials";
 import { seatIn } from "./seat";
 
 /** The desk as the panel reads it: the six moves, who holds the line, and the last refusal. */

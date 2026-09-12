@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { useParams } from "react-router";
 
 import { isLive, liveFirst, useAgentSessions } from "../../lib/use-agent-sessions";
-import { Nothing } from "../../shell/nothing";
+import { Nothing } from "../../../shared/frame";
 import { Live } from "../live";
 import { CallList } from "./call-list";
 import { SimulateForm } from "./simulate-form";
