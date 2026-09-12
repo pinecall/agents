@@ -488,16 +488,32 @@ be one flag away from open registration on somebody else's box.
 ## `login` · `whoami`
 
 ```
-pinecall login <gateway-url> [--org <slug>] [--email <you@…>] [--key-stdin]
+pinecall login [gateway-url] [--key-stdin]
 pinecall whoami
 ```
 
-`login` asks for your **org, your email and your password** — the same three the console asks —
-mints a key for them at `POST /v1/login`, proves it at `/v1/whoami`, and keeps it in
-`~/.pinecall/credentials` (0600) under that URL. After it, every verb finds the key by itself and
-nothing has to be exported. The password is never echoed, never stored and never sent anywhere but
-that gateway; `--org` and `--email` are not secrets, so a flag may say them and only the password
-is asked for.
+`login` **prints a link and opens it**. You sign in there — in a browser, where a password belongs,
+where the browser autofills it and a password manager holds it — and the page hands this terminal a
+key of its **own**: minted for you, labelled as this machine, revoked on its own from the Keys
+screen. Nothing types a password into a shell, and the day your org signs in with Google this verb
+does not change.
+
+```console
+$ pinecall login
+gateway  https://box.pinecall.io   (the default — `pinecall login <url>` for your own box)
+
+open this to sign in:
+https://box.pinecall.io/cli?c=cli_…
+
+waiting…
+logged in to https://box.pinecall.io as org clinica · development
+```
+
+**With no URL it is `https://box.pinecall.io`, and it says so** in the line above the link, so a
+person who meant their own box sees the assumption before anything is kept. The word in the link
+dies in ten minutes and on first collection; a terminal on a server with no browser prints the same
+link and you open it from wherever you are. The key is kept in `~/.pinecall/credentials` (0600)
+under that URL, proved at `/v1/whoami` first, and after it every verb finds it by itself.
 
 **The key it keeps is this laptop's development key.** `pinecall run` and `pinecall chat` answer in
 a world of your own and never in the one your customers call — the console's toggle is the same
@@ -505,8 +521,7 @@ person looking the other way ([worlds-and-teams.md](worlds-and-teams.md)).
 
 `--key-stdin` reads a **key** from one line of stdin instead, for a machine: a server, a CI job, a
 container. That is what `pinecall keys issue` mints, and in a container there is no login at all —
-`PINECALL_API_KEY` in the environment is the same thing. With no terminal attached and no
-`--key-stdin`, the verb says so rather than pretending nothing was typed.
+`PINECALL_API_KEY` in the environment is the same thing.
 
 ```console
 $ pinecall whoami

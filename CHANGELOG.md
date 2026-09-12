@@ -76,13 +76,15 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   the word never appears.
 
 ### Changed
-- **`pinecall login` asks for what a person has.** It asked for an API key, and a person has none
-  — the console mints theirs into the tab and never shows it, so there was nowhere to copy one
-  from. It now asks for the org, the email and the password, the same three the console asks,
-  mints this laptop's **development** key at `POST /v1/login` and proves it at `/v1/whoami` before
-  keeping it. `--org` and `--email` are flags, because neither is a secret; only the password is
-  asked for in silence. `--key-stdin` is still the machine's way in, and with no terminal attached
-  the verb says there is nobody to ask instead of "nothing was typed".
+- **`pinecall login` signs you in through a browser.** It asked for an API key, and a person has
+  none — the console mints theirs into the tab and never shows it, so there was nowhere to copy
+  one from. It now prints a link and opens it: you sign in on the page, where a password belongs,
+  and the page hands this terminal a key of its **own** — minted for you, labelled as this
+  machine, revoked on its own from Keys. No password ever reaches a shell, and the day an org
+  signs in with Google this verb does not change. **With no URL it is `https://box.pinecall.io`
+  and it says so** before anything is kept. `--key-stdin` is still the machine's way in.
+- **The console has a `/cli` screen**: the card a person opens from their own terminal, naming
+  the machine that asked and approving it once.
 
 ### Removed
 - **`pinecall ui`.** The gateway serves the console now; nothing in this CLI opens a port.

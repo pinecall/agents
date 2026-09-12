@@ -112,7 +112,7 @@ a directory earns its place there by having a line in that table (§13).
 | `keys.ts` | the API keys this org's machines run on: one issued for a machine and printed once, the rows read back as fingerprints, one revoked |
 | `providers.ts` | the provider keys this org brought of its own: one added from stdin, one taken back, the vendors read by name — never a value |
 | `personas.ts` · `machine.ts` · `view.ts` | the synthetic callers, the state machine on one page, the terminal view as a pure function |
-| `login.ts` · `whoami.ts` · `secret.ts` | the org, email and password typed once and turned into this laptop's development key, which key a verb would use, and the one place a terminal is read — in silence, in the open, or not at all |
+| `login.ts` · `browser.ts` · `whoami.ts` · `secret.ts` | the browser dance that signs this terminal in (a word asked for, a link opened, the key collected once), how a URL is put in front of a person, which key a verb would use, and the one place a terminal is read |
 | `testing/` | what those verbs need: the gateway's eval doors, goldens off disk, latency, the matrix, the progress screen, the score, the seeding check, the voice door |
 | `ui/` | what `pinecall run` answers the console with, by the wire's verb (`doors.ts`, one module per verb family: a chat, a simulation, a suite, the knowledge and memory goldens, a promotion, drift, a reproduction) — and beside those node modules the three directories that are the BROWSER: `ui/shared/`, `ui/console/` and `ui/admin/`, served by the gateway and never imported by anything here |
 
