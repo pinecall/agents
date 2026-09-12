@@ -7,6 +7,11 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **`pinecall signup`.** The one verb that needs no key: it makes an org on Pinecall's cloud
+  (`https://box.pinecall.io` unless another gateway is named) with you as its admin on the free
+  trial, and keeps the key it is answered in `~/.pinecall/credentials` exactly as `login` does, so
+  every verb that connects works straight after. The password is typed in silence or read from
+  stdin, never a flag. It prints a console link that signs a browser in once.
 - **Sign-up from the console, on the cloud.** The login card asks `GET /.well-known/pinecall`
   once and, where the gateway says `cloud`, offers "create an account": the org's name (its
   address made from it and shown), the person, their password — `POST /v1/signup`, the free

@@ -372,12 +372,12 @@ prompt` must not pay for a websocket client.
 | `personas` | `list · show · try` the synthetic callers in `test/personas` | for `try` |
 | `knowledge` | `push [dir] --base <name>` · `list` · `drop <base>`: the folder of `*.md` sent whole to `PUT /v1/knowledge/{base}` | yes |
 | `memory` | `<contact>` · `forget <contact>`: one contact's facts, current first, and the right to be forgotten · `eval [golden.json] [--k n]`: every question of `memory/golden.json` asked of `recall`, each bringing its own facts, and the two figures a golden answers | yes |
+| `signup` | an org made on Pinecall's cloud (`POST /v1/signup`, `https://box.pinecall.io` by default), its first key kept where `login` keeps one | **no**: it is the verb that mints the first |
 | `login` | the key typed once, proved at the gateway, kept in `~/.pinecall/credentials` (0600) | yes |
 | `whoami` | which gateway, which org, and **where this terminal's key came from** | yes |
 
 `groups.ts` also declares every verb the design names and this tree has not written — `new`, `g`,
-`sessions`, `observe`, `costs`, `supervise`, `call`, `keys`, `tokens`, `phones`, `agents`,
-`deploy`. Typing one prints what it *will* be and exits 0. A verb leaves that table in the commit
+`observe`, `costs`, `call`, `tokens`, `phones`, `agents`, `deploy`. Typing one prints what it *will* be and exits 0. A verb leaves that table in the commit
 that writes it.
 
 **Where the key comes from** (`cli/env.ts`, the one place that decides it, for every verb):

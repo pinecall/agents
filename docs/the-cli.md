@@ -37,6 +37,7 @@ compiled `dist/cli/index.js` and needs no loader.
 | [`remember`](#remember) | the extraction goldens: what a hang-up makes of a call | yes |
 | [`supervise`](#supervise) | listen in on a live call and move on it | yes |
 | [`keys`](#keys) | the provider keys this org brought of its own | yes |
+| [`signup`](#signup) | an org on Pinecall's cloud, and its first key kept here | no, it makes one |
 | [`login`](#login) · [`whoami`](#whoami) | the key, once, and which one is being used | yes |
 
 Declared and not written: `new`, `g`, `observe`, `costs`, `call`, `tokens`, `phones`, `agents`,
@@ -385,6 +386,35 @@ gateway https://box.pinecall.io · key from PINECALL_API_KEY
 2026-09-11 19:20  clinica-norte  +34600000000  phone  via overflow on call_9f2c…
 2026-09-11 19:22  clinica-norte  +34611111111  web    via the widget
 ```
+
+## `signup`
+
+```
+pinecall signup [<gateway-url>] --org <slug> --email <you@…> --person "<your name>"
+                [--name "<Org Name>"] [--password-stdin]
+```
+
+The one verb that needs no key, because it is the one that gets you the first. It makes the org on
+Pinecall's cloud with you as its admin, on the free trial — forty-five minutes on us, no card — and
+keeps the key it is answered exactly where `login` keeps one, so the next verb just works. The
+gateway is `https://box.pinecall.io` unless another is named. The password is asked for without
+echoing it, or read from one line of stdin with `--password-stdin`; it is never a flag, because a
+flag is shell history.
+
+```console
+$ pinecall signup --org tienda-sur --name "Tienda Sur" --email ana@tiendasur.uy --person "Ana"
+Password (12 characters at least):
+created org tienda-sur on https://box.pinecall.io — signed in as Ana, key kept in ~/.pinecall/credentials
+console  https://box.pinecall.io/?login=lc_…   (opens within five minutes, once)
+
+$ pinecall whoami
+gateway https://box.pinecall.io · key from credentials
+org org_4ad95a171a72 · key k_8dcc… · cli
+```
+
+A gateway that is a box of its own takes no sign-up and says so in its own words: there an operator
+makes the org and invites you, and you arrive with `login`. The org's slug is yours to type and the
+gateway is its judge; a bad one comes back as a sentence, and nothing is made.
 
 ## `login` · `whoami`
 

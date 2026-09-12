@@ -205,9 +205,12 @@ export async function asked<T>(
   path: string,
   sent: { method?: string; body?: unknown } = {},
 ): Promise<T> {
+  // A door that mints the first key takes none (`/v1/signup`), so an empty key sends no header
+  // rather than an empty Bearer: what is not held is not claimed.
+  const authorization = door.apiKey === "" ? {} : { authorization: `Bearer ${door.apiKey}` };
   const answered = await fetch(`${door.url.replace(/\/$/, "")}${path}`, {
     method: sent.method ?? "GET",
-    headers: { authorization: `Bearer ${door.apiKey}`, "content-type": "application/json" },
+    headers: { ...authorization, "content-type": "application/json" },
     ...(sent.body === undefined ? {} : { body: JSON.stringify(sent.body) }),
   });
   const text = await answered.text();
