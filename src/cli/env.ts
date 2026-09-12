@@ -5,6 +5,9 @@ import { devGateway, gatewayFor, normalised, pinecallHome, theOnlyGateway } from
 /** The gateway a developer runs on their own machine, which is where `pinecall run` starts. */
 export const DEFAULT_URL = "http://localhost:8080";
 
+/** Pinecall's own cloud: where `pinecall signup` makes an org when no other gateway is named. */
+export const CLOUD_URL = "https://box.pinecall.io";
+
 /** Where the key came from, so a verb can say it and a person can check it without grepping. */
 export type Source = "dev-file" | "env" | "credentials" | "dev-env" | "none";
 
