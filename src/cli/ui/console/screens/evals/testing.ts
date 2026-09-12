@@ -1,8 +1,9 @@
-/** The console's own two doors for the goldens: which ones this directory has, and a run of the chosen ones. */
+/** The two goldens verbs, asked of the agent's directory: which ones it has, and a run of the chosen ones. */
 
 import { z } from "zod";
 
-import { post, read, type Credentials } from "../../lib/api";
+import type { Credentials } from "../../lib/api";
+import { dev } from "../../lib/dev";
 
 /** One golden the page can tick: the name, what the caller says, what is expected of the agent. */
 const ListedSchema = z.object({
@@ -12,7 +13,7 @@ const ListedSchema = z.object({
 });
 export type Listed = z.infer<typeof ListedSchema>;
 
-/** The class this console can run against — the one in the directory `ui` runs in — and its goldens. */
+/** The class the process can run against — the one in the directory `run` runs in — and its goldens. */
 const RosterSchema = z.object({ agent: z.string().nullable(), goldens: z.array(ListedSchema) });
 export type Roster = z.infer<typeof RosterSchema>;
 
@@ -30,12 +31,12 @@ export interface Wanted {
   packet_loss?: number;
 }
 
-/** The goldens of the directory `pinecall ui` was typed in, and which class they are for. */
-export async function readGoldens(credentials: Credentials): Promise<Roster> {
-  return RosterSchema.parse(await read(credentials, "/ui/goldens"));
+/** The goldens of the directory `pinecall run` was typed in, and which class they are for. */
+export async function readGoldens(credentials: Credentials, agent: string): Promise<Roster> {
+  return RosterSchema.parse(await dev(credentials, agent, "goldens.roster"));
 }
 
 /** Start one run of the chosen goldens. Answers with the run's id once the gateway has opened it. */
 export async function startSuite(credentials: Credentials, wanted: Wanted): Promise<string> {
-  return StartedSchema.parse(await post(credentials, "/ui/test", wanted)).run;
+  return StartedSchema.parse(await dev(credentials, wanted.agent, "goldens.run", wanted)).run;
 }

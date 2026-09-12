@@ -1,18 +1,19 @@
-/** The console's own doors to a written call: which class is here, one opened, one turn, one hangup. */
+/** The chat verbs, asked of the `pinecall run` in the agent's directory: the class there, a call, a turn, a hangup. */
 
 import { z } from "zod";
 
-import { post, read, type Credentials } from "../../lib/api";
+import type { Credentials } from "../../lib/api";
+import { dev } from "../../lib/dev";
 
-/** The class this console can chat with: the one in the directory `pinecall ui` runs in. */
+/** The class that process can chat with: the one in the directory `pinecall run` was typed in. */
 const RosterSchema = z.object({ agent: z.string().nullable(), states: z.array(z.string()) });
 export type Roster = z.infer<typeof RosterSchema>;
 
 const CallSchema = z.object({ call: z.string() });
 
-/** Which class the terminal that serves this page has mounted, if any. */
-export async function readChatRoster(credentials: Credentials): Promise<Roster> {
-  return RosterSchema.parse(await read(credentials, "/ui/chat"));
+/** Which class the process holding this agent has mounted, if any. */
+export async function readChatRoster(credentials: Credentials, agent: string): Promise<Roster> {
+  return RosterSchema.parse(await dev(credentials, agent, "chat.roster"));
 }
 
 /**
@@ -26,15 +27,15 @@ export async function startChat(
   golden: string,
 ): Promise<string> {
   const body = { agent, ...(as === "" ? {} : { as }), ...(golden === "" ? {} : { golden }) };
-  return CallSchema.parse(await post(credentials, "/ui/chat", body)).call;
+  return CallSchema.parse(await dev(credentials, agent, "chat.start", body)).call;
 }
 
-/** One turn, down the socket the terminal is holding. The answer arrives on the call's log. */
-export async function sayInChat(credentials: Credentials, call: string, text: string): Promise<void> {
-  CallSchema.parse(await post(credentials, "/ui/chat/say", { call, text }));
+/** One turn, down the socket that process is holding. The answer arrives on the call's log. */
+export async function sayInChat(credentials: Credentials, agent: string, call: string, text: string): Promise<void> {
+  CallSchema.parse(await dev(credentials, agent, "chat.say", { call, text }));
 }
 
 /** Hang up: closing the socket is what seals the log and runs the judges. */
-export async function endChat(credentials: Credentials, call: string): Promise<void> {
-  CallSchema.parse(await post(credentials, "/ui/chat/end", { call }));
+export async function endChat(credentials: Credentials, agent: string, call: string): Promise<void> {
+  CallSchema.parse(await dev(credentials, agent, "chat.end", { call }));
 }

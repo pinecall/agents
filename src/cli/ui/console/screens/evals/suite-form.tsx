@@ -31,7 +31,7 @@ export function SuiteForm({ agent, onOpened }: { agent: string; onOpened: (run: 
 
   useEffect(() => {
     let gone = false;
-    readGoldens(credentials).then(
+    readGoldens(credentials, agent).then(
       (read) => {
         if (gone) return;
         setRoster(read);
@@ -53,8 +53,8 @@ export function SuiteForm({ agent, onOpened }: { agent: string; onOpened: (run: 
     return (
       <p className="suite-aside">
         {roster.agent === null
-          ? "No agent class in the directory this console runs in, so no goldens to run."
-          : `This console runs in ${roster.agent}'s directory; its goldens are that agent's.`}
+          ? "No agent class in the directory the agent's `pinecall run` runs in, so no goldens to run."
+          : `The process holding the agent runs in ${roster.agent}'s directory; its goldens are that agent's.`}
       </p>
     );
   }

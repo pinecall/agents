@@ -50,11 +50,11 @@ export interface Here {
 
 const NOT_THIS_DIRECTORY = (asked: string, here: string | null): string =>
   here === null
-    ? `no agent class in this directory: run \`pinecall ui\` where ${asked}'s agent.tsx is`
-    : `this console runs in ${here}'s directory: to push ${asked}'s knowledge, run \`pinecall ui\` there`;
+    ? `no agent class in this directory: run \`pinecall run\` where ${asked}'s agent.tsx is`
+    : `this process runs in ${here}'s directory: to push ${asked}'s knowledge, run \`pinecall run\` there`;
 
 /**
- * One `Knowing` for the life of a `pinecall ui`. Pushing a base is reading files off this
+ * One `Knowing` for the life of a `pinecall run`. Pushing a base is reading files off this
  * machine's disk, which only the process standing in the agent's directory can do — the same
  * `knowledge/docs` and `knowledge/golden.json` `pinecall knowledge` reads, through the same two
  * doors of the gateway. Listing and dropping a base are the gateway's own and the page asks it

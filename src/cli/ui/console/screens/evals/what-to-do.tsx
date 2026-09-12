@@ -1,6 +1,7 @@
 /** The two things a person does to a call they have just read: re-check it, or write it down. */
 
 import { useState, type ReactNode } from "react";
+import { useParams } from "react-router";
 
 import { GatewayError } from "../../lib/api";
 import { useCredentials } from "../../lib/credentials";
@@ -15,6 +16,7 @@ import { promoteCall, replayCall, type Promoted, type Replayed } from "./door";
  */
 export function WhatToDoWithIt({ call }: { call: string }): ReactNode {
   const credentials = useCredentials();
+  const agent = useParams()["agent"] ?? "";
   const [busy, setBusy] = useState("");
   const [replayed, setReplayed] = useState<Replayed | null>(null);
   const [promoted, setPromoted] = useState<Promoted | null>(null);
@@ -25,7 +27,7 @@ export function WhatToDoWithIt({ call }: { call: string }): ReactNode {
     setRefused(null);
     try {
       if (what === "check") setReplayed(await replayCall(credentials, call));
-      else setPromoted(await promoteCall(credentials, call));
+      else setPromoted(await promoteCall(credentials, agent, call));
     } catch (failed) {
       setRefused(failed instanceof GatewayError ? failed.message : String(failed));
     } finally {

@@ -34,7 +34,7 @@ export function Knowledge(): ReactNode {
     let gone = false;
     void (async () => {
       try {
-        const read = await readHere(credentials);
+        const read = await readHere(credentials, agent);
         if (gone) return;
         setHere(read);
         setBase(read.base ?? "");
@@ -87,8 +87,8 @@ export function Knowledge(): ReactNode {
       {here !== null && here.agent !== agent && (
         <Nothing>
           {here.agent === null
-            ? "No agent class in the directory this console runs in, so there is nothing here to push."
-            : `This console runs in ${here.agent}'s directory: to push ${agent}'s knowledge, run \`pinecall ui\` there.`}
+            ? "No agent class in the directory the agent's `pinecall run` runs in, so there is nothing here to push."
+            : `The process holding the agent runs in ${here.agent}'s directory: to push ${agent}'s knowledge, run \`pinecall run\` there.`}
         </Nothing>
       )}
 

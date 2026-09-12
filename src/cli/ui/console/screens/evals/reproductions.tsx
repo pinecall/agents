@@ -1,6 +1,7 @@
 /** What a broken run left on disk: one file per golden that did not hold, opened here. */
 
 import { useEffect, useState, type ReactNode } from "react";
+import { useParams } from "react-router";
 
 import { GatewayError } from "../../lib/api";
 import { useCredentials } from "../../lib/credentials";
@@ -13,6 +14,7 @@ import { readReproduction, readWritten, type Reproduction } from "./door";
  */
 export function Reproductions({ run }: { run: string }): ReactNode {
   const credentials = useCredentials();
+  const agent = useParams()["agent"] ?? "";
   const [goldens, setGoldens] = useState<string[] | null>(null);
   const [folder, setFolder] = useState("");
   const [open, setOpen] = useState<Reproduction | null>(null);
@@ -22,7 +24,7 @@ export function Reproductions({ run }: { run: string }): ReactNode {
     let gone = false;
     setOpen(null);
     setRefused(null);
-    readWritten(credentials, run).then(
+    readWritten(credentials, agent, run).then(
       (written) => {
         if (gone) return;
         setGoldens(written.goldens);
@@ -43,7 +45,7 @@ export function Reproductions({ run }: { run: string }): ReactNode {
   const read = async (golden: string): Promise<void> => {
     setRefused(null);
     try {
-      setOpen(await readReproduction(credentials, run, golden));
+      setOpen(await readReproduction(credentials, agent, run, golden));
     } catch (failed) {
       setRefused(failed instanceof GatewayError ? failed.message : String(failed));
     }

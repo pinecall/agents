@@ -13,6 +13,7 @@ const PUBLIC = [
   "Call",
   "CallBook",
   "Connection",
+  "DevRefused",
   "Listeners",
   "Pinecall",
   "PinecallError",

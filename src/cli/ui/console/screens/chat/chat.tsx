@@ -30,7 +30,7 @@ export function Chat(): ReactNode {
 
   useEffect(() => {
     let gone = false;
-    readChatRoster(credentials).then(
+    readChatRoster(credentials, agent).then(
       (read) => {
         if (!gone) setRoster(read);
       },
@@ -48,8 +48,8 @@ export function Chat(): ReactNode {
     return (
       <Nothing>
         {roster.agent === null
-          ? "No agent class in the directory this console runs in, so there is nothing to chat with. Run `pinecall ui` where the agent's agent.tsx is."
-          : `This console runs in ${roster.agent}'s directory: to chat with ${agent}, run \`pinecall ui\` there.`}
+          ? "No agent class in the directory the agent's `pinecall run` runs in, so there is nothing to chat with. Run `pinecall run` where the agent's agent.tsx is."
+          : `The process holding the agent runs in ${roster.agent}'s directory: to chat with ${agent}, run \`pinecall run\` there.`}
       </Nothing>
     );
   }
@@ -131,7 +131,7 @@ function Composer({ agent, call }: { agent: string; call: string }): ReactNode {
     setSending(true);
     setRefused(null);
     try {
-      await sayInChat(credentials, call, said);
+      await sayInChat(credentials, agent, call, said);
       setText("");
     } catch (failed) {
       setRefused(failed instanceof GatewayError ? failed.message : String(failed));
@@ -144,7 +144,7 @@ function Composer({ agent, call }: { agent: string; call: string }): ReactNode {
   // navigation: leaving the page would keep the socket open in the terminal behind it.
   const hangUp = async (): Promise<void> => {
     try {
-      await endChat(credentials, call);
+      await endChat(credentials, agent, call);
     } catch (failed) {
       setRefused(failed instanceof GatewayError ? failed.message : String(failed));
       return;

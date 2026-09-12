@@ -29,7 +29,7 @@ export function Memory(): ReactNode {
 
   useEffect(() => {
     let gone = false;
-    readHere(credentials).then(
+    readHere(credentials, agent).then(
       (read) => {
         if (!gone) setHere(read);
       },
@@ -123,8 +123,8 @@ export function Memory(): ReactNode {
         {here !== null && here.agent !== agent ? (
           <Nothing>
             {here.agent === null
-              ? "No agent class in the directory this console runs in, so its goldens are not here."
-              : `This console runs in ${here.agent}'s directory: to run ${agent}'s memory goldens, run \`pinecall ui\` there.`}
+              ? "No agent class in the directory the agent's `pinecall run` runs in, so its goldens are not here."
+              : `The process holding the agent runs in ${here.agent}'s directory: to run ${agent}'s memory goldens, run \`pinecall run\` there.`}
           </Nothing>
         ) : (
           <div className="mem-goldens">

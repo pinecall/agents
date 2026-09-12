@@ -11,6 +11,15 @@ import { showMachine } from "./machine.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { instanceFor, load, mountOptions } from "./load.js";
+import { chattingFrom, type Chatting } from "./ui/chatting.js";
+import { devHandler, ownVerbs } from "./ui/doors.js";
+import { driftingFrom } from "./ui/drifting.js";
+import { knowingFrom } from "./ui/knowing.js";
+import { promotingFrom } from "./ui/promoting.js";
+import { rememberingFrom } from "./ui/remembering.js";
+import { reproducingFrom } from "./ui/reproducing.js";
+import { simulatingFrom } from "./ui/simulating.js";
+import { testingFrom } from "./ui/testing.js";
 import { absorb, draw, screenFor, type Screen } from "./view.js";
 
 // Ten frames a second. The terminal view is a person watching a conversation, and a person cannot read
@@ -71,8 +80,29 @@ export async function run(argv: string[]): Promise<number> {
   // Whoever opens the app socket closes it. Left open it keeps this process alive after the
   // signal has been read — a plain `kill` on `pinecall run` did nothing until this landed —
   // and the gateway holds the slug until it shuts.
+  // What a console may ask of THIS process through the gateway, because the answer is a file of
+  // this directory or the class in it: a written call, the personas and a simulation, the goldens
+  // and a suite, the knowledge folder, the memory goldens, a candidate, drift, a reproduction.
+  // The lines they print land here, in the terminal that typed `run`, as the verbs would print
+  // them. Registered before connect, so the first dev.request finds a handler.
+  let chatting: Chatting | undefined;
   try {
     const mounted = mount(loaded.ctor, mountOptions(loaded, pc));
+    chatting = chattingFrom(door, mounted.slug, process.stdout);
+    mounted.agent.onDev(
+      devHandler(
+        ownVerbs({
+          simulating: simulatingFrom(door, mounted.slug, process.stdout),
+          testing: testingFrom(door, mounted.slug, process.stdout),
+          chatting,
+          knowing: knowingFrom(door, mounted.slug),
+          remembering: rememberingFrom(door, mounted.slug),
+          promoting: promotingFrom(door, mounted.slug, process.stdout),
+          drifting: driftingFrom(door),
+          reproducing: reproducingFrom(),
+        }),
+      ),
+    );
     // --events is a pipe into another program: it prints nothing but its JSON.
     if (values.events === true) return await stream(pc, mounted.agent.onAny.bind(mounted.agent));
 
@@ -99,6 +129,7 @@ export async function run(argv: string[]): Promise<number> {
     };
     return await live(pc, mounted.agent.onAny.bind(mounted.agent), watching);
   } finally {
+    await chatting?.close();
     pc.close();
   }
 }

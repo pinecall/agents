@@ -37,7 +37,7 @@ export function SimulateForm({ agent }: { agent: string }): ReactNode {
 
   useEffect(() => {
     let gone = false;
-    readRoster(credentials).then(
+    readRoster(credentials, agent).then(
       (read) => {
         if (gone) return;
         setRoster(read);
@@ -59,8 +59,8 @@ export function SimulateForm({ agent }: { agent: string }): ReactNode {
     return (
       <p className="sim-aside">
         {roster.agent === null
-          ? "No agent class in the directory this console runs in, so nothing to simulate against."
-          : `This console runs in ${roster.agent}'s directory; a simulated caller is for that agent.`}
+          ? "No agent class in the directory the agent's `pinecall run` runs in, so nothing to simulate against."
+          : `The process holding the agent runs in ${roster.agent}'s directory; a simulated caller is for that agent.`}
       </p>
     );
   }

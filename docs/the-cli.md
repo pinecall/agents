@@ -104,6 +104,14 @@ clinica-norte · connected to http://127.0.0.1:8080 · tools 4 · doors web
 | `--events` | one JSON line per log entry instead of the lines, for a pipe |
 | `--show-prompt` | the prompt a fresh instance would produce, then exit. No key, no gateway |
 
+**It answers the console for this directory.** What a screen needs of the agent's directory — a
+written call to the class here, the personas and a simulation, the goldens and a suite, the
+knowledge folder pushed and its golden asked, the memory goldens, a call promoted to a candidate,
+the drift, a reproduction a broken run left — the console asks the gateway, and the gateway asks
+THIS process over the socket it already holds (`dev.request` → `dev.answer`; the runtime's
+`docs/protocol/dev-verbs.md`). The lines those verbs print land here, as if you had typed them.
+A `pinecall run` in a directory with no personas answers `simulate` with a sentence saying so.
+
 ## `chat`
 
 ```
@@ -161,12 +169,10 @@ signs the request. Ctrl-C closes the port with the command. Over ssh or with no 
 and exits 2. In a checkout the console must be bundled once (`scripts/build`); from npm it is
 already inside the package.
 
-Some of its doors are **this process's own** (`ui/…`, never the gateway's), because they read a
-file of this directory or mount the class in it: the personas and a simulation, the goldens and a
+What a screen needs of the agent's directory — the personas and a simulation, the goldens and a
 suite, a chat, `knowledge/docs` and its golden, `memory/golden.json` and `test/memory`, a promoted
-candidate, the reproductions a broken run left, and the drift of the last two windows. A console
-opened on another agent's page gets a sentence instead of a refusal: the class mounted here is
-this directory's.
+candidate, the reproductions a broken run left, the drift — is asked of the **`pinecall run`**
+holding that agent, through the gateway (see `run`). `ui` itself answers none of them any more.
 
 ---
 

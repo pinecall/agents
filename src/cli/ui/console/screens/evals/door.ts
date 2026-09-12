@@ -3,6 +3,7 @@
 import { z } from "zod";
 
 import { post, read, type Credentials } from "../../lib/api";
+import { dev } from "../../lib/dev";
 
 // The shapes are read here and nowhere else in the console, the way screens/pipeline/door.ts holds
 // the ones its own door wraps: `protocol/schema` describes a call, not an operator's screen.
@@ -124,7 +125,7 @@ export async function readDrift(
   window: number,
   baseline: number,
 ): Promise<Drifted> {
-  return DriftedSchema.parse(await post(credentials, "/ui/drift", { agent, window, baseline }));
+  return DriftedSchema.parse(await dev(credentials, agent, "drift.read", { agent, window, baseline }));
 }
 
 /** One check of ring 3, as the replay door writes it: three strings and no nesting. */
@@ -152,9 +153,9 @@ const PromotedSchema = z.object({
 });
 export type Promoted = z.infer<typeof PromotedSchema>;
 
-/** Promote one real call to `test/candidates`, in the directory the console runs in. */
-export async function promoteCall(credentials: Credentials, call: string): Promise<Promoted> {
-  return PromotedSchema.parse(await post(credentials, "/ui/promote", { call }));
+/** Promote one real call to `test/candidates`, in the directory the agent's `pinecall run` stands in. */
+export async function promoteCall(credentials: Credentials, agent: string, call: string): Promise<Promoted> {
+  return PromotedSchema.parse(await dev(credentials, agent, "promote.write", { call }));
 }
 
 /** Which goldens of one run were written out on this machine, and where that folder is. */
@@ -179,11 +180,11 @@ const ReproductionSchema = z.object({
 export type Reproduction = z.infer<typeof ReproductionSchema>;
 
 /** Which goldens of this run left a file behind. A run that was green left none. */
-export async function readWritten(credentials: Credentials, run: string): Promise<Written> {
-  return WrittenSchema.parse(await post(credentials, "/ui/reproductions", { run }));
+export async function readWritten(credentials: Credentials, agent: string, run: string): Promise<Written> {
+  return WrittenSchema.parse(await dev(credentials, agent, "reproductions.roster", { run }));
 }
 
-/** One reproduction, whole, off the disk of the terminal that serves this page. */
-export async function readReproduction(credentials: Credentials, run: string, golden: string): Promise<Reproduction> {
-  return ReproductionSchema.parse(await post(credentials, "/ui/reproduction", { run, golden }));
+/** One reproduction, whole, off the disk of the process holding the agent. */
+export async function readReproduction(credentials: Credentials, agent: string, run: string, golden: string): Promise<Reproduction> {
+  return ReproductionSchema.parse(await dev(credentials, agent, "reproductions.read", { run, golden }));
 }

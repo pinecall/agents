@@ -1,4 +1,4 @@
-/** The Memory screen's doors: one contact read and forgotten at the gateway, both goldens run here. */
+/** The Memory screen's doors: one contact read and forgotten at the gateway, both goldens run in the directory. */
 
 import {
   ContactMemorySchema,
@@ -12,7 +12,8 @@ import {
 } from "@pinecall/protocol";
 import { z } from "zod";
 
-import { drop, post, read, type Credentials } from "../../lib/api";
+import { drop, read, type Credentials } from "../../lib/api";
+import { dev } from "../../lib/dev";
 
 /** What this directory holds for memory: the recall golden, and the extraction cases beside it. */
 const HereSchema = z.object({
@@ -33,17 +34,17 @@ export async function forgetContact(credentials: Credentials, contact: string): 
   return ForgottenSchema.parse(await drop(credentials, `/v1/contacts/${encodeURIComponent(contact)}/memory`));
 }
 
-/** What this directory holds: the two goldens, read off the disk by the terminal that serves this page. */
-export async function readHere(credentials: Credentials): Promise<Here> {
-  return HereSchema.parse(await read(credentials, "/ui/memory"));
+/** What the agent's directory holds: the two goldens, read off its disk by the `pinecall run` there. */
+export async function readHere(credentials: Credentials, agent: string): Promise<Here> {
+  return HereSchema.parse(await dev(credentials, agent, "memory.roster", { agent }));
 }
 
 /** The recall golden: every question asked of the ranking, scored by code with no model. */
 export async function askRecall(credentials: Credentials, agent: string): Promise<MemoryScore> {
-  return MemoryScoreSchema.parse(await post(credentials, "/ui/memory/eval", { agent }));
+  return MemoryScoreSchema.parse(await dev(credentials, agent, "memory.eval", { agent }));
 }
 
 /** The extraction goldens: one hang-up's model call per case, judged by code. */
 export async function runExtraction(credentials: Credentials, agent: string): Promise<ExtractionRun> {
-  return ExtractionRunSchema.parse(await post(credentials, "/ui/memory/extraction", { agent }));
+  return ExtractionRunSchema.parse(await dev(credentials, agent, "memory.extraction", { agent }));
 }

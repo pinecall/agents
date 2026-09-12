@@ -5,7 +5,7 @@
 // its own way of deciding what to answer imports this and never the framework.
 
 export { Agent } from "./agent.js";
-export type { AgentGateway, AgentOptions, RouteInput, Tool } from "./agent.js";
+export type { AgentGateway, AgentOptions, DevHandler, RouteInput, Tool } from "./agent.js";
 export { Call, CallBook } from "./calls.js";
 export type { CallGateway, CallStatus } from "./calls.js";
 export { Pinecall } from "./client.js";
@@ -13,7 +13,7 @@ export type { PinecallOptions } from "./client.js";
 export { Connection } from "./connection.js";
 export type { Backoff, ConnectionHandlers, ConnectionOptions } from "./connection.js";
 export { agentLogUrl, appsUrl, callLogUrl } from "./endpoints.js";
-export { PinecallError, Refused, frame, nextId } from "./frames.js";
+export { DevRefused, PinecallError, Refused, frame, nextId } from "./frames.js";
 export { Listeners, camelEvent } from "./listeners.js";
 export type { AnyListener, CamelEvent, Listener, Payload } from "./listeners.js";
 export { history, observe } from "./observe.js";

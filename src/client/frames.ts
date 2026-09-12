@@ -23,6 +23,19 @@ export class Refused extends PinecallError {
   }
 }
 
+/**
+ * What a dev verb's handler throws to refuse: the status the console's door answers with, and the
+ * sentence it shows verbatim. Anything else thrown is a 500 with the error's message.
+ */
+export class DevRefused extends PinecallError {
+  constructor(
+    readonly status: number,
+    readonly detail: string,
+  ) {
+    super(`${status}: ${detail}`);
+  }
+}
+
 let sent = 0;
 
 /** The next command id, unique in this process: an `error` naming it is an answer to us. */

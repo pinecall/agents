@@ -41,8 +41,8 @@ export interface Roster {
 // directory `pinecall ui` was typed in. Another agent's page gets the sentence, not a call.
 const NOT_THIS_DIRECTORY = (asked: string, here: string | null): string =>
   here === null
-    ? `no agent class in this directory: run \`pinecall ui\` where ${asked}'s agent.tsx is`
-    : `this console runs in ${here}'s directory: to simulate ${asked}, run \`pinecall ui\` there`;
+    ? `no agent class in this directory: run \`pinecall run\` where ${asked}'s agent.tsx is`
+    : `this process runs in ${here}'s directory: to simulate ${asked}, run \`pinecall run\` there`;
 
 const NO_CALL = "the simulation ended before a call opened";
 
@@ -59,7 +59,7 @@ export interface Pieces {
 }
 
 /**
- * One `Simulating` for the life of a `pinecall ui`: the door it was opened with, the class of the
+ * One `Simulating` for the life of a `pinecall run`: the door it was opened with, the class of the
  * directory it runs in, and where the simulation's own lines go — the terminal that typed `ui`,
  * exactly as `pinecall simulate` prints them. The call itself is watched from the page, off the
  * log, like any other call; nothing here keeps a second transcript.

@@ -1,11 +1,12 @@
-/** The Knowledge screen's doors: the gateway's list and drop, and this directory's push and golden. */
+/** The Knowledge screen's doors: the gateway's list and drop, and the directory's push and golden through it. */
 
 import { KnowledgeListSchema, KnowledgePushedSchema, KnowledgeScoreSchema, type KnowledgeList, type KnowledgePushed, type KnowledgeScore } from "@pinecall/protocol";
 import { z } from "zod";
 
-import { drop, post, read, type Credentials } from "../../lib/api";
+import { drop, read, type Credentials } from "../../lib/api";
+import { dev } from "../../lib/dev";
 
-/** What the directory `pinecall ui` runs in has to push, and what golden sits beside it. */
+/** What the directory `pinecall run` runs in has to push, and what golden sits beside it. */
 const HereSchema = z.object({
   agent: z.string().nullable(),
   base: z.string().nullable(),
@@ -25,19 +26,19 @@ export async function readBases(credentials: Credentials): Promise<KnowledgeList
   return KnowledgeListSchema.parse(await read(credentials, "/v1/knowledge"));
 }
 
-/** What this directory holds: where the documents are, how many, and whether a golden is beside them. */
-export async function readHere(credentials: Credentials): Promise<Here> {
-  return HereSchema.parse(await read(credentials, "/ui/knowledge"));
+/** What that directory holds: where the documents are, how many, and whether a golden is beside them. */
+export async function readHere(credentials: Credentials, agent: string): Promise<Here> {
+  return HereSchema.parse(await dev(credentials, agent, "knowledge.roster", { agent }));
 }
 
 /** The folder, sent whole. The base is replaced and never merged. */
 export async function pushKnowledge(credentials: Credentials, agent: string, base: string): Promise<Pushed> {
-  return PushedSchema.parse(await post(credentials, "/ui/knowledge/push", { agent, ...(base === "" ? {} : { base }) }));
+  return PushedSchema.parse(await dev(credentials, agent, "knowledge.push", { agent, ...(base === "" ? {} : { base }) }));
 }
 
 /** The golden beside the documents, asked of the base: recall@k and nDCG@10, computed by code. */
 export async function askTheGolden(credentials: Credentials, agent: string, base: string): Promise<KnowledgeScore> {
-  return KnowledgeScoreSchema.parse(await post(credentials, "/ui/knowledge/eval", { agent, ...(base === "" ? {} : { base }) }));
+  return KnowledgeScoreSchema.parse(await dev(credentials, agent, "knowledge.eval", { agent, ...(base === "" ? {} : { base }) }));
 }
 
 /** One base gone. The gateway's own door, and there is no undo but another push. */
