@@ -51,6 +51,10 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   is one line, and the app runs on.
 
 ### Changed
+- **`knowledge push` and a contact's memory are your key's world's.** A push with the development
+  key a login keeps replaces the development base and never the one the telephone answers from;
+  promoting is the same push with the machine's key. A test call's facts stay in development.
+  Nothing in the verbs changed — the gateway reads the world off the key it always sent.
 - **Two developers of one tenant no longer take each other's agent.** The gateway holds a
   development agent per person, so `pinecall run` on your laptop and your colleague's are two
   agents: each `pinecall chat`, each suite and each console reaches its own. Nothing in this CLI

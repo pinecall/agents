@@ -488,6 +488,12 @@ pinecall knowledge eval [golden.json] [--base <name>] [--k <n>] [--agent agent.t
 is named — and sends the folder **whole**: the base is replaced, never merged. The base is the
 agent's slug unless `--base` says otherwise, and the class names it with `docs = "<base>"`.
 
+**The base you push is your key's world's.** A push with the development key a login keeps
+replaces the development base — what your own `pinecall run` answers from — and never the one the
+telephone answers from. Promoting is the same push made with the key the box runs on
+([`keys`](#keys)): `PINECALL_API_KEY=<the machine's> pinecall knowledge push`. `list` and `drop`
+read the same world.
+
 ```console
 $ pinecall knowledge push
 clinica-norte · 7 files · 41 chunks · 812 ms      # base · sent · became · took
