@@ -6,7 +6,7 @@ import { pinecallHome, writeGateway } from "./credentials.js";
 import { CLOUD_URL, shadowedByEnv } from "./env.js";
 import type { Group } from "./groups.js";
 import { aLineOfStdin, typedInSilence } from "./secret.js";
-import { asked } from "./testing/gateway.js";
+import { asked, discovered } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
 
 const USAGE = `usage: pinecall signup [<gateway-url>] --org <slug> --email <you@…> --person "<your name>"
@@ -19,6 +19,12 @@ const PROMPT = "Password (12 characters at least): ";
 // The door a stranger knocks at, and what it answers: the one shape a key travels in, plus the
 // org's slug, the member and a one-use code for a browser. runtime docs/protocol/people.md.
 const SIGNUP = "/v1/signup";
+
+// Whether that door is open here is the gateway's own fact, asked before anything else: a person
+// should not type a password for a door that will refuse it. The gateway's refusal names the
+// setting; this says the same thing before the typing rather than after.
+const SHUT = (url: string): string =>
+  `${url} takes no sign-ups: its operator opens them with PINECALL_SIGNUP, or makes the org and invites you — then \`pinecall login ${url}\``;
 
 /** What the gateway answers a sign-up: the key once, whose it is, and the way into the console. */
 interface SignedUp {
@@ -76,6 +82,10 @@ export async function signup(argv: string[], how: Making = {}): Promise<number> 
     err.write(`${USAGE}\n`);
     err.write(`missing: ${missing.map((one) => `--${one}`).join(" ")}\n`);
     return 2;
+  }
+  if (!(await discovered(url)).signup) {
+    err.write(`${SHUT(url)}\n`);
+    return 1;
   }
   const password = (await (how.password ?? (values["password-stdin"] === true ? aLineOfStdin : () => typedInSilence(PROMPT, out)))()).trim();
   if (password === "") {
