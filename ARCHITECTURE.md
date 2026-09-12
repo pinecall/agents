@@ -375,7 +375,7 @@ prompt` must not pay for a websocket client.
 | `knowledge` | `push [dir] --base <name>` · `list` · `drop <base>`: the folder of `*.md` sent whole to `PUT /v1/knowledge/{base}` | yes |
 | `memory` | `<contact>` · `forget <contact>`: one contact's facts, current first, and the right to be forgotten · `eval [golden.json] [--k n]`: every question of `memory/golden.json` asked of `recall`, each bringing its own facts, and the two figures a golden answers | yes |
 | `signup` | an org made on Pinecall's cloud (`POST /v1/signup`, `https://box.pinecall.io` by default), its first key kept where `login` keeps one | **no**: it is the verb that mints the first |
-| `login` | the key typed once, proved at the gateway, kept in `~/.pinecall/credentials` (0600) | yes |
+| `login` | a link printed and opened; the page signs this terminal in and mints it a key of its own, proved at the gateway and kept in `~/.pinecall/credentials` (0600) | yes |
 | `whoami` | which gateway, which org, and **where this terminal's key came from** | yes |
 
 `groups.ts` also declares every verb the design names and this tree has not written — `new`, `g`,
@@ -423,7 +423,10 @@ The console is served at `/`. Everything about the page is a containment decisio
   password (`screens/login/`). Opened from an invitation link — `/invitations/<token>`, the one an
   admin's Team screen or the operator's `orgs invite` hands out — it shows the card where the
   person chooses their password and takes their first key (`screens/login/accept.tsx`), and the
-  token leaves the address the moment it is spent. **It signs a person IN and never makes an org**: this page ships
+  token leaves the address the moment it is spent. At `/cli?c=<code>` it is the card that signs a
+  TERMINAL in (`screens/terminal/`): `pinecall login` holds no key and the person at it has none
+  to paste, so the terminal prints that link and this page — which does hold a key — approves it.
+  What the approval mints is the terminal's own key, and it never travels through this page. **It signs a person IN and never makes an org**: this page ships
   inside the runtime every self-hoster serves, so a registration form in it would be one flag away
   from open registration on somebody else's box, and making an org is not what a control plane for
   an existing org is for. `POST /v1/signup` is knocked at by `pinecall signup` and by an API

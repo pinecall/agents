@@ -32,6 +32,7 @@ compiled `dist/cli/index.js` and needs no loader.
 | [`sessions`](#sessions) | the calls this agent has run, and one of them whole | yes |
 | [`runs`](#runs) | the suites: list, show, diff, promote a call, watch the drift | yes |
 | [`pipeline`](#pipeline) | what it hears, decides and speaks with, and the five knobs | yes |
+| [`line`](#line) | whose terminal the org's shared development number rings in | yes |
 | [`personas`](#personas) | the synthetic callers in `test/personas` | for `try` |
 | [`knowledge`](#knowledge) | the base the agent answers from: push, list, drop, eval | yes |
 | [`memory`](#memory) | what memory kept about a contact, forgetting it, and recall's golden | yes |
@@ -630,6 +631,8 @@ code can call — over HTTP, in any language, with the same key.
 | `keys` | `GET`·`POST /v1/keys`, `POST /v1/keys/{fingerprint}/revoke` |
 | `providers` | `PUT`·`DELETE`·`GET /v1/provider-keys[/{vendor}]` |
 | `callbacks` | `GET /v1/callbacks[?agent=&after=]` |
-| `login` · `whoami` | `GET /v1/whoami` |
+| `line` | `GET`·`POST`·`DELETE /v1/agents/{slug}/line` |
+| `login` | `POST /v1/login/pairings`, `GET …/{code}/key` — then `GET /v1/whoami` to prove what it got |
+| `whoami` | `GET /v1/whoami` |
 | `ui` | all of the above, plus its own `ui/*` doors on 127.0.0.1 |
 | `prompt` | none. It is the one verb that needs no gateway and no key |
