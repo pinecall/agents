@@ -18,6 +18,7 @@ import { Numbers } from "./screens/numbers";
 import { Pipeline } from "./screens/pipeline";
 import { Session, Sessions } from "./screens/sessions";
 import { Talk } from "./screens/talk";
+import { Terminal } from "./screens/terminal";
 import { Team } from "./screens/team";
 import { Usage } from "./screens/usage";
 import { Shell } from "./shell/shell";
@@ -39,6 +40,8 @@ export const router = createBrowserRouter(
         { path: "providers", element: <Providers /> },
         { path: "team", element: <Team /> },
         { path: "usage", element: <Usage /> },
+        // Where `pinecall login` sends a person: the card that signs their terminal in.
+        { path: "cli", element: <Terminal /> },
       ],
     },
     {
