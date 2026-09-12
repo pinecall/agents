@@ -1,10 +1,11 @@
-/** The Numbers screen's one door: the org's doors in the key's world, each with its source. */
+/** The Numbers screen's doors: the org's routes, its carrier, what the carrier owns, one imported, one bought, one let go. */
 
 import { z } from "zod";
 
-import { read, type Credentials } from "../../lib/api";
+import { drop, post, put, read, type Credentials } from "../../lib/api";
 
 // The runtime's `Answering`: the domain's Route, and which of the two tables put it there.
+// `managed` is a number the box bought for the org — the stock the `numbers` quota caps.
 const AnsweringSchema = z.object({
   route: z.object({
     org: z.string(),
@@ -13,12 +14,97 @@ const AnsweringSchema = z.object({
     number: z.string().nullable(),
     label: z.string().nullable(),
     env: z.enum(["production", "development"]),
+    managed: z.boolean().default(false),
   }),
   source: z.enum(["operator", "app"]),
 });
 export type Answering = z.infer<typeof AnsweringSchema>;
 
+// runtime api/numbers.py: GET /v1/carrier answers the kind and the account, never a secret.
+const CarrierSchema = z.object({ kind: z.enum(["twilio", "sip"]), account: z.string() });
+export type Carrier = z.infer<typeof CarrierSchema>;
+
+// What the carrier account owns, and whether this org imported each one already.
+const AvailableSchema = z.object({
+  kind: z.enum(["twilio", "sip"]),
+  numbers: z.array(z.object({ number: z.string(), name: z.string(), imported: z.boolean() })),
+});
+export type Available = z.infer<typeof AvailableSchema>;
+
+// An import and a purchase answer the same shape: the route, the steps taken or planned, and
+// whether anything was written. `?dry_run=true` is the plan and nothing else.
+const WiredSchema = z.object({
+  route: AnsweringSchema.shape.route,
+  steps: z.array(z.string()),
+  dry_run: z.boolean(),
+});
+export type Wired = z.infer<typeof WiredSchema>;
+
+/** What PUT /v1/carrier takes: a Twilio account, or a SIP peer with its own networks. */
+export type WantedCarrier =
+  | { kind: "twilio"; account_sid: string; user: string; secret: string }
+  | { kind: "sip"; username: string; password: string; addresses: string[] };
+
+/** What an import wants: which number, which agent, on which channel. */
+export interface WantedNumber {
+  number: string;
+  agent: string;
+  channel: "phone" | "whatsapp";
+}
+
+/** What a purchase wants: where the number should be from, and who answers it. */
+export interface WantedPurchase {
+  country: string;
+  area_code?: string;
+  agent: string;
+  channel: "phone" | "whatsapp";
+}
+
 /** Every door the org answers in this world, in the order the worker is given them. */
 export async function readNumbers(credentials: Credentials): Promise<Answering[]> {
   return z.array(AnsweringSchema).parse(await read(credentials, "/v1/numbers"));
+}
+
+/** The org's carrier, or null when it has brought none yet (the door's own 404). */
+export async function readCarrier(credentials: Credentials): Promise<Carrier | null> {
+  try {
+    return CarrierSchema.parse(await read(credentials, "/v1/carrier"));
+  } catch (refused) {
+    if (isStatus(refused, 404)) return null;
+    throw refused;
+  }
+}
+
+/** Bring the carrier, replacing whatever the org had. A Twilio account is verified once there. */
+export async function bringCarrier(credentials: Credentials, wanted: WantedCarrier): Promise<void> {
+  await put(credentials, "/v1/carrier", wanted);
+}
+
+/** Forget the carrier. The numbers already imported stay routed until each is let go. */
+export async function dropCarrier(credentials: Credentials): Promise<void> {
+  await drop(credentials, "/v1/carrier");
+}
+
+/** What the carrier account owns that this org has not imported yet. A SIP peer lists nothing. */
+export async function readAvailable(credentials: Credentials): Promise<Available> {
+  return AvailableSchema.parse(await read(credentials, "/v1/numbers/available"));
+}
+
+/** Import one number: the plan alone with `dryRun`, or the three looked-up-first writes. */
+export async function importNumber(credentials: Credentials, wanted: WantedNumber, dryRun: boolean): Promise<Wired> {
+  return WiredSchema.parse(await post(credentials, `/v1/numbers${dryRun ? "?dry_run=true" : ""}`, wanted));
+}
+
+/** Buy one on the box's own carrier: the plan names the number and pays nothing with `dryRun`. */
+export async function buyNumber(credentials: Credentials, wanted: WantedPurchase, dryRun: boolean): Promise<Wired> {
+  return WiredSchema.parse(await post(credentials, `/v1/numbers/buy${dryRun ? "?dry_run=true" : ""}`, wanted));
+}
+
+/** Let a number go: the route and the admission. The carrier account is not touched. */
+export async function releaseNumber(credentials: Credentials, number: string): Promise<void> {
+  await drop(credentials, `/v1/numbers/${encodeURIComponent(number)}`);
+}
+
+function isStatus(failed: unknown, status: number): boolean {
+  return typeof failed === "object" && failed !== null && (failed as { status?: unknown }).status === status;
 }

@@ -1,80 +1,141 @@
-/** Numbers: the doors the org answers in this world — number, channel, agent, and who typed it. */
+/** Numbers: whose numbers reach the org, the doors it answers, and one more brought in — imported or bought. */
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 
 import { GatewayError } from "../../lib/api";
 import { useCredentials } from "../../lib/credentials";
-import { useWhoami } from "../../lib/whoami";
-import { readNumbers, type Answering } from "./door";
+import { useHeldAgents } from "../../lib/use-held-agents";
+import { Adding } from "./adding";
+import { CarrierPanel } from "./carrier";
+import {
+  bringCarrier,
+  buyNumber,
+  dropCarrier,
+  importNumber,
+  readAvailable,
+  readCarrier,
+  readNumbers,
+  releaseNumber,
+  type Answering,
+  type Available,
+  type Carrier,
+} from "./door";
 import "./numbers.css";
 
 /**
- * The table `pinecall-runtime routes list` prints, for the world the key opens. `operator` is a
- * row the operator typed and outranks a declaration; `app` is a door the running app declared and
- * nobody typed over. Importing or buying a number is a later card; today the command is named.
+ * Three things on one screen, in the order a person meets them: the carrier the org brought
+ * (a Twilio account or a SIP peer — nothing imports without one, and buying needs none), the
+ * doors it answers today with who put each there, and the way to add one — always the plan
+ * first, then the same request for real. Every refusal is the gateway's sentence, verbatim.
  */
 export function Numbers(): ReactNode {
   const credentials = useCredentials();
-  const whose = useWhoami();
+  const { agents } = useHeldAgents();
+  const [carrier, setCarrier] = useState<Carrier | null | undefined>(undefined);
   const [doors, setDoors] = useState<Answering[] | null>(null);
+  const [available, setAvailable] = useState<Available | null>(null);
+  const [busy, setBusy] = useState(false);
   const [refused, setRefused] = useState<string | null>(null);
+
+  const reread = useCallback(async (): Promise<void> => {
+    const [brought, answering] = await Promise.all([readCarrier(credentials), readNumbers(credentials)]);
+    setCarrier(brought);
+    setDoors(answering);
+    setAvailable(brought === null ? null : await readAvailable(credentials));
+  }, [credentials]);
 
   useEffect(() => {
     let gone = false;
-    readNumbers(credentials).then(
-      (answered) => {
-        if (!gone) setDoors(answered);
-      },
-      (failed: unknown) => {
-        if (!gone) setRefused(failed instanceof GatewayError ? failed.message : String(failed));
-      },
-    );
+    reread().catch((failed: unknown) => {
+      if (!gone) setRefused(saidBy(failed));
+    });
     return () => {
       gone = true;
     };
-  }, [credentials]);
+  }, [reread]);
 
-  const org = whose?.org ?? "<org>";
+  // One move at a time, the refusal shown where it happened, the tables re-read after.
+  const moved = async <T,>(move: () => Promise<T>): Promise<T> => {
+    setBusy(true);
+    setRefused(null);
+    try {
+      const answered = await move();
+      await reread();
+      return answered;
+    } catch (failed) {
+      setRefused(saidBy(failed));
+      throw failed;
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const numbered = (doors ?? []).filter((door) => door.route.number !== null);
+
   return (
     <div className="numbers">
       <h1 className="numbers-title">Numbers</h1>
-      <p className="numbers-lede">Which number reaches which agent, and through which door, in this world.</p>
-      {refused !== null && <p className="numbers-note fixed">{refused}</p>}
-      {doors !== null && doors.length === 0 && (
-        <div className="numbers-empty">
-          <p className="numbers-empty-title">No number answers for this org yet</p>
-          <p className="numbers-note fixed">
-            An operator types one: <span className="numbers-cmd">pinecall-runtime routes add &lt;number&gt; &lt;agent&gt; --org {org}</span>
-            {" "}— or the app declares a door and it appears here as <span className="numbers-cmd">app</span>.
-          </p>
-        </div>
+      <p className="numbers-lede">Whose numbers reach this org, which one reaches which agent, and one more brought in.</p>
+
+      {carrier !== undefined && (
+        <CarrierPanel
+          carrier={carrier}
+          busy={busy}
+          onBring={async (wanted) => { await moved(() => bringCarrier(credentials, wanted)).catch(() => undefined); }}
+          onDrop={async () => { await moved(() => dropCarrier(credentials)).catch(() => undefined); }}
+        />
       )}
-      {doors !== null && doors.length > 0 && (
-        <div className="numbers-panel">
-          <div className="numbers-row numbers-row-head fixed">
-            <span>NUMBER</span>
-            <span>CHANNEL</span>
-            <span>AGENT</span>
-            <span>WORLD</span>
-            <span>SOURCE</span>
-          </div>
-          {doors.map((door) => (
-            <div key={`${door.route.channel}-${door.route.number ?? door.route.agent}`} className="numbers-row">
-              <span className="fixed">{door.route.number ?? "—"}</span>
-              <span className="numbers-channel">{door.route.channel}</span>
-              <span className="fixed">{door.route.agent}</span>
-              <span className="fixed numbers-dim">{door.route.env}</span>
-              <span className={door.source === "operator" ? "fixed numbers-operator" : "fixed numbers-dim"}>{door.source}</span>
+
+      {refused !== null && <p className="numbers-note numbers-refused fixed">{refused}</p>}
+
+      {doors !== null && (
+        <section className="numbers-doors">
+          <div className="numbers-form-head"><span className="numbers-form-title">The doors this org answers</span></div>
+          {doors.length === 0 ? (
+            <p className="numbers-note fixed">none yet — bring a carrier and import one below, or have the box buy one; an app that declares a door shows up here too</p>
+          ) : (
+            <div className="numbers-panel">
+              <div className="numbers-row numbers-row-head fixed">
+                <span>NUMBER</span><span>CHANNEL</span><span>AGENT</span><span>WORLD</span><span>SOURCE</span><span></span>
+              </div>
+              {doors.map((door) => (
+                <div key={`${door.route.channel}-${door.route.number ?? door.route.agent}`} className="numbers-row">
+                  <span className="fixed">{door.route.number ?? "—"}{door.route.managed && <span className="numbers-managed fixed" title="bought by the box for this org: counts against the numbers quota">bought</span>}</span>
+                  <span className="numbers-channel">{door.route.channel}</span>
+                  <span className="fixed">{door.route.agent}</span>
+                  <span className="fixed numbers-dim">{door.route.env}</span>
+                  <span className={door.source === "operator" ? "fixed numbers-operator" : "fixed numbers-dim"}>{door.source}</span>
+                  <span className="numbers-row-moves">
+                    {door.route.number !== null && door.source === "operator" && (
+                      <button type="button" className="link" disabled={busy} onClick={() => void moved(() => releaseNumber(credentials, door.route.number ?? "")).catch(() => undefined)}>let go</button>
+                    )}
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+          {numbered.length > 0 && (
+            <p className="numbers-note fixed">
+              letting a number go removes the route and the media plane's admission; the carrier account is not touched, and a bought number stays the box's to release there
+            </p>
+          )}
+        </section>
       )}
-      {doors !== null && doors.length > 0 && (
-        <p className="numbers-note fixed">
-          {doors.length} door{doors.length === 1 ? "" : "s"} · an operator's row outranks a declaration · the same rows{" "}
-          <span className="numbers-cmd">pinecall-runtime routes list --org {org}</span> prints
-        </p>
+
+      {carrier !== undefined && (
+        <Adding
+          carrier={carrier}
+          agents={agents}
+          available={available}
+          busy={busy}
+          onImport={(wanted, dryRun) => moved(() => importNumber(credentials, { ...wanted, channel: "phone" }, dryRun))}
+          onBuy={(wanted, dryRun) => moved(() => buyNumber(credentials, { ...wanted, channel: "phone" }, dryRun))}
+        />
       )}
     </div>
   );
+}
+
+function saidBy(failed: unknown): string {
+  return failed instanceof GatewayError ? failed.message : String(failed);
 }

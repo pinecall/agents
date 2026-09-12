@@ -48,3 +48,26 @@ test("a number is a route with its source, and a member is who they are with wha
   answering({ members: [{ ...A_MEMBER, role: "owner" }] });
   await expect(readMembers(CREDENTIALS)).rejects.toBeInstanceOf(z.ZodError);
 });
+
+// runtime api/numbers.py and api/managed.py: the carrier by kind and account, what the account
+// owns, and the one shape an import and a purchase both answer — the route, the steps, dry_run.
+test("the numbers screen parses the carrier, the account's numbers and a plan, and refuses a step that is not a string", async () => {
+  const { readCarrier, readAvailable, importNumber, buyNumber } = await import("../../../../src/cli/ui/console/screens/numbers/door");
+  answering({ kind: "twilio", account: "AC" + "0".repeat(32) });
+  expect((await readCarrier(CREDENTIALS))?.kind).toBe("twilio");
+  answering({ kind: "twilio", numbers: [{ number: "+14176743169", name: "abai", imported: false }] });
+  expect((await readAvailable(CREDENTIALS)).numbers[0]?.imported).toBe(false);
+  const wired = { route: { ...A_DOOR.route, channel: "phone", number: "+14176743169", managed: true }, steps: ["buy      +14176743169 — on account AC…, billed to the box"], dry_run: true };
+  answering(wired);
+  expect((await buyNumber(CREDENTIALS, { country: "US", agent: "clinica-norte", channel: "phone" }, true)).route.managed).toBe(true);
+  answering({ ...wired, dry_run: false, route: { ...wired.route, managed: false } });
+  expect((await importNumber(CREDENTIALS, { number: "+14176743169", agent: "clinica-norte", channel: "phone" }, false)).dry_run).toBe(false);
+  answering({ ...wired, steps: [42] });
+  await expect(buyNumber(CREDENTIALS, { country: "US", agent: "clinica-norte", channel: "phone" }, true)).rejects.toBeInstanceOf(z.ZodError);
+});
+
+test("a carrier nobody brought is null, not a refusal: the door's 404 is the empty state", async () => {
+  const { readCarrier } = await import("../../../../src/cli/ui/console/screens/numbers/door");
+  globalThis.fetch = (async () => new Response(JSON.stringify({ detail: "this org has no carrier yet" }), { status: 404, headers: { "content-type": "application/json" } })) as typeof fetch;
+  expect(await readCarrier(CREDENTIALS)).toBeNull();
+});

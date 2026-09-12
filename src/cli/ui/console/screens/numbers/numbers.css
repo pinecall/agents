@@ -1,4 +1,4 @@
-/* Numbers: a head, one panel of rows, and a note naming the operator's verb. */
+/* Numbers: the carrier, the doors, and the two ways to add one — each a section, the plan in a sunk box. */
 
 .numbers {
   max-width: 940px;
@@ -15,8 +15,151 @@
 .numbers-lede {
   color: var(--ink-soft);
   font-size: 14px;
-  margin: 0 0 20px;
+  margin: 0 0 22px;
 }
+
+/* ── sections ───────────────────────────────────────────────────────────── */
+
+.numbers-carrier,
+.numbers-doors,
+.numbers-adding {
+  border-top: 1px solid var(--edge);
+  padding: 18px 0 22px;
+}
+
+.numbers-form-head {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.numbers-form-title {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ── the carrier standing ───────────────────────────────────────────────── */
+
+.numbers-carrier-standing {
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-panel);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+  gap: 14px;
+  padding: 12px 16px;
+}
+
+.numbers-kind {
+  background: var(--accent-soft);
+  border-radius: 4px;
+  color: var(--accent);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  text-transform: uppercase;
+}
+
+.numbers-carrier-moves {
+  display: flex;
+  gap: 14px;
+  margin-left: auto;
+}
+
+/* ── forms ──────────────────────────────────────────────────────────────── */
+
+.numbers-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.numbers-fields {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.numbers-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.numbers-field > span {
+  color: var(--ink-soft);
+  font-family: var(--face-fixed);
+  font-size: 10.5px;
+}
+
+.numbers-field > span > em {
+  color: var(--ink-faint);
+  font-style: normal;
+  margin-left: 6px;
+}
+
+.numbers-field > .input {
+  height: 30px;
+}
+
+.numbers-form-foot {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.numbers-form-foot > .numbers-note {
+  flex: 1 1 260px;
+  margin: 0;
+}
+
+/* ── the plan ───────────────────────────────────────────────────────────── */
+
+.numbers-plan {
+  background: var(--sunk);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius-panel);
+  margin-top: 14px;
+  padding: 14px 16px;
+}
+
+.numbers-done {
+  border-color: var(--edge);
+}
+
+.numbers-plan-title {
+  font-size: 13px;
+  margin: 0 0 10px;
+  text-wrap: pretty;
+}
+
+.numbers-steps {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  gap: 5px;
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.numbers-steps > li {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 64px minmax(0, 1fr);
+}
+
+.numbers-step-kind {
+  color: var(--accent);
+}
+
+/* ── the doors table ────────────────────────────────────────────────────── */
 
 .numbers-panel {
   background: var(--panel);
@@ -30,8 +173,8 @@
   border-bottom: 1px solid var(--edge-soft);
   display: grid;
   gap: 12px;
-  grid-template-columns: 170px 92px minmax(0, 1fr) 110px 84px;
-  min-width: 640px;
+  grid-template-columns: 190px 92px minmax(0, 1fr) 110px 84px 60px;
+  min-width: 700px;
   padding: 11px 16px;
 }
 
@@ -45,6 +188,22 @@
   font-size: 10.5px;
   letter-spacing: 0.06em;
   padding: 9px 16px;
+}
+
+.numbers-row-moves {
+  text-align: right;
+}
+
+.numbers-managed {
+  background: var(--panel-2);
+  border: 1px solid var(--edge);
+  border-radius: 3px;
+  color: var(--ink-soft);
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
+  margin-left: 8px;
+  padding: 1px 5px;
+  text-transform: uppercase;
 }
 
 .numbers-channel {
@@ -63,22 +222,11 @@
 .numbers-note {
   color: var(--ink-faint);
   font-size: 11px;
-  margin: 14px 0 0;
+  margin: 12px 0 0;
   text-wrap: pretty;
 }
 
-.numbers-cmd {
-  color: var(--ink-soft);
-}
-
-.numbers-empty {
-  border-top: 1px solid var(--edge);
-  max-width: 72ch;
-  padding-top: 24px;
-}
-
-.numbers-empty-title {
-  font-size: 15px;
-  font-weight: 500;
-  margin: 0;
+.numbers-refused {
+  color: var(--accent);
+  margin: 0 0 14px;
 }

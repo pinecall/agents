@@ -16,7 +16,7 @@ selection in memory.
 | `/` | Agents — the org's list, in this world |
 | `/live` | Live — every call up on the floor, whichever agent has it |
 | `/sessions` | Sessions — every agent's finished calls, one table, each naming its agent |
-| `/numbers` | Numbers — which number reaches which agent, and who typed it |
+| `/numbers` | Numbers — the org's carrier, which number reaches which agent, and one more imported or bought |
 | `/keys` | Keys — the provider accounts this org brought |
 | `/team` | Team — the org's people, invited and changed |
 | `/usage` | Usage — what the org consumed, totals then rows |
@@ -319,9 +319,14 @@ Before anybody picks an agent. **Live**: every call still going across the org (
 filtered to `live`, re-asked on a clock and the moment `GET /v1/events` says the floor changed), a row per
 call — channel mark, agent, who, status, id — linking into that agent's Calls. Empty: *Nothing live right
 now. Leave this open — a call that reaches any agent shows up here as it rings.* **Sessions**: the very
-table §5 draws, plus an `agent` column, off `GET /v1/sessions`. **Numbers**: number · channel · agent ·
-world · source (`operator` typed it, `app` declared it) off `GET /v1/numbers`; empty names the operator's
-verb `pinecall-runtime routes add <number> <agent> --org <org>`. **Team**: every member (name, email, role,
+table §5 draws, plus an `agent` column, off `GET /v1/sessions`. **Numbers**, three sections: the
+carrier standing (kind · account, `replace` · `forget`) or the form to bring one — Twilio (account SID,
+API key, secret) or SIP peer (username, password, CIDRs) — off `/v1/carrier`; the doors (number · channel ·
+agent · world · source, `bought` marked, `let go` on an operator's row) off `GET /v1/numbers`; and *Add a
+number* with two tabs — import one the carrier owns (a `<select>` off `GET /v1/numbers/available`, or a
+typed E.164) or have the box buy one (country, area code) — where the first button is always **show the
+plan** (`?dry_run=true`) and the gateway's steps are drawn verbatim before **do it** sends the same
+request for real. Empty doors say to bring a carrier or buy one below. **Team**: every member (name, email, role,
 agents, status) off `GET /v1/members`; an invite form (`POST /v1/members`) whose answer's token is shown
 ONCE with the sentence that it is never shown again; role and agents edited in place, and one move on the
 standing — disable, or bring back — never `active` by hand (`PATCH /v1/members/{id}`). **Usage**: the totals
