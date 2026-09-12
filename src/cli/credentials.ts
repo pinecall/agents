@@ -25,6 +25,10 @@ export interface GatewayEntry {
   api_key: string;
   org: string;
   logged_in_at: string;
+  /** The phone this person calls FROM, so a ring in development reaches their own agent rather
+   * than whoever holds the line. Said once with `pinecall line from`, and re-sent by every
+   * `pinecall run` — the gateway keeps it beside its live table, not in a row. */
+  calling?: string;
 }
 
 /**
@@ -86,6 +90,26 @@ export function writeGateway(
   // writeFileSync's mode applies only when it creates the file, so a file that was already there
   // keeps whatever mode it had — including one an editor widened.
   chmodSync(path, FILE_MODE);
+}
+
+/**
+ * Remember which phone this person calls from, on the row for this gateway.
+ *
+ * A row only, never a login: `line from` is said by somebody already logged in, and rewriting the
+ * key here would be a second place that decides what the key is. Nothing happens for a gateway
+ * with no row — you cannot say which phone is yours at a gateway you have not signed in to.
+ */
+export function writeCalling(url: string, calling: string | undefined, home: string = pinecallHome()): boolean {
+  const kept = readCredentials(home);
+  const row = kept.gateways[normalised(url)];
+  if (row === undefined) return false;
+  kept.gateways[normalised(url)] = { ...row, ...(calling === undefined ? {} : { calling }) };
+  if (calling === undefined) delete kept.gateways[normalised(url)]?.calling;
+  mkdirSync(home, { recursive: true, mode: DIRECTORY_MODE });
+  const path = join(home, CREDENTIALS);
+  writeFileSync(path, `${JSON.stringify(kept, null, 2)}\n`, { mode: FILE_MODE });
+  chmodSync(path, FILE_MODE);
+  return true;
 }
 
 /**
