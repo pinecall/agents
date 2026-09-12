@@ -6,6 +6,13 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Added
+- **The console's org layer.** Before anybody picks an agent: Live (every call up across the org,
+  repainted as `GET /v1/events` says the floor changed), Sessions across every agent, Numbers,
+  Team (invite, change, the invitation token shown once), Usage. An agent selector in the header,
+  a Production / Development toggle that holds one key per world and mints the other for the same
+  person, and a rail that draws only what the key's scopes open.
+
 ### Removed
 - **`pinecall ui`.** The gateway serves the console now; nothing in this CLI opens a port.
 
