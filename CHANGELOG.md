@@ -13,9 +13,9 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   list, or bought on the box's account by country and area code; every write preceded by the
   gateway's own plan (`?dry_run=true`) drawn step by step and confirmed by a second click; a
   bought number marked; one let go from its row. Before this the screen only listed.
-- **`pinecall signup`.** The one verb that needs no key: it makes an org on Pinecall's cloud
-  (`https://box.pinecall.io` unless another gateway is named) with you as its admin on the free
-  trial, and keeps the key it is answered in `~/.pinecall/credentials` exactly as `login` does, so
+- **`pinecall signup`.** The one verb that needs no key: it makes an org (at
+  `https://box.pinecall.io` unless another gateway is named) with you as its admin — allowed
+  whatever that gateway's people decided for a new one — and keeps the key it is answered in `~/.pinecall/credentials` exactly as `login` does, so
   every verb that connects works straight after. The password is typed in silence or read from
   stdin, never a flag. It prints a console link that signs a browser in once. Both it and `login`
   now say out loud when an exported `PINECALL_API_KEY` would shadow the key they just kept, and
