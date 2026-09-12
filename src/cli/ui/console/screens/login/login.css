@@ -1,0 +1,49 @@
+/* Login: one card, three fields, and the gateway's refusal in its own words underneath. */
+
+.login {
+  align-items: center;
+  display: flex;
+  height: 100%;
+  justify-content: center;
+}
+
+.login-card {
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: var(--step);
+  padding: calc(var(--step) * 3);
+  width: 22rem;
+}
+
+.login-brand {
+  color: var(--ink-soft);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  margin-bottom: var(--step);
+  text-transform: uppercase;
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--step) * 0.5);
+}
+
+.login-label {
+  color: var(--ink-soft);
+  font-size: 11px;
+}
+
+.login-refused {
+  color: var(--warn, var(--ink));
+  font-size: 12px;
+  margin: var(--step) 0 0;
+}
+
+.login-hint {
+  color: var(--ink-faint);
+  font-size: 11px;
+  margin: var(--step) 0 0;
+}

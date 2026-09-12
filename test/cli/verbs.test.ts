@@ -1,5 +1,5 @@
-// The two verbs a person types at an agent: `run` starts it and says what it registered, and
-// binds no port on this machine; `ui` is the one verb that does, on 127.0.0.1 (ui.test.ts).
+// The verb a person types at an agent: `run` starts it, says what it registered, prints where the
+// console is, and binds no port on this machine — the gateway serves the page.
 
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -7,8 +7,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { builtNames, groupFor, groupNames, main } from "../../src/cli/index.js";
-import { connectedLine, doorsOf, run } from "../../src/cli/run.js";
-import { group as ui } from "../../src/cli/ui/index.js";
+import { connectedLine, consoleUrl, doorsOf, run } from "../../src/cli/run.js";
 
 const GATEWAY = "https://box.pinecall.io";
 
@@ -20,8 +19,8 @@ function collected(): { stream: NodeJS.WritableStream; text(): string } {
 }
 
 describe("the line `pinecall run` prints when the socket is up", () => {
-  // It names no page. The console was deleted on 2026-09-08 and the gateway serves none, so a
-  // `console <url>` back in this line would be an address nothing answers at.
+  // It names no page: the console's URL is its own line, minted after the socket is up, because
+  // it carries a one-use code this line cannot have before the gateway answers.
   it("names the agent, the gateway, the tools and the doors, and no page", () => {
     const line = connectedLine({
       slug: "clinica-norte",
@@ -51,17 +50,25 @@ describe("the line `pinecall run` prints when the socket is up", () => {
   });
 });
 
+describe("the console's URL `pinecall run` prints", () => {
+  // The gateway serves the console at /a/<agent>, and the browser signs in with a one-use code
+  // this process minted: the code rides the URL once, the key never does.
+  it("is the gateway's page for this agent, with the code, and never a key", () => {
+    expect(consoleUrl("https://box.pinecall.io/", "clinica-norte", "lc_abc")).toBe(
+      "https://box.pinecall.io/a/clinica-norte?login=lc_abc",
+    );
+    expect(consoleUrl(GATEWAY, "tienda sur", "lc_a/b")).toBe("https://box.pinecall.io/a/tienda%20sur?login=lc_a%2Fb");
+  });
+});
+
 describe("`pinecall run` opens no port", () => {
-  // The agent's process serves no UI at all: the console left on 2026-09-08 and the gateway is an
-  // API, so nothing under the tenant's CLI listens for a connection. A grep is the honest test of
-  // that — a suite cannot prove the absence of a socket, and this catches the file that would
-  // bring one back. `pinecall ui` opens one on 127.0.0.1 for the life of the command, from
-  // exactly one file, and that file is the only one named here (ui.test.ts pins what it does).
-  it("has nothing under cli/ that binds one, but the console's own server", () => {
+  // The agent's process serves no UI at all: the gateway serves the console, so nothing under the
+  // tenant's CLI listens for a connection. A grep is the honest test of that — a suite cannot
+  // prove the absence of a socket, and this catches the file that would bring one back.
+  it("has nothing under cli/ that binds one", () => {
     const cli = fileURLToPath(new URL("../../src/cli/", import.meta.url));
 
     for (const file of sources(cli)) {
-      if (file.endsWith("/ui/server.ts")) continue;
       const source = readFileSync(file, "utf8");
       expect(`${file}: ${source.includes("createServer")}`).toBe(`${file}: false`);
       expect(`${file}: ${/\.listen\(/.test(source)}`).toBe(`${file}: false`);
@@ -114,11 +121,19 @@ describe("every built verb has a help page", () => {
   });
 });
 
-describe("`pinecall ui [agent]` says what it is in one line", () => {
-  it("names the console and what it holds, never a port a person has to know", () => {
-    expect(ui.purpose).toContain("console");
-    expect(ui.purpose).toContain("talk");
-    expect(ui.purpose).not.toMatch(/\d{4}/);
+// The console was a verb of this CLI for four days: served on 127.0.0.1 by `pinecall ui`, signing
+// every request with the org key. It is the gateway's page now (docs/decisions/console.md), so the
+// verb is gone, not deprecated: nothing was published and nobody had a bookmark.
+describe("`ui` is not a verb of this CLI", () => {
+  it("is refused, and the usage names `run`, which prints where the console is", async () => {
+    const out = collected();
+    const err = collected();
+
+    const code = await main(["ui"], out.stream, err.stream);
+
+    expect(code).toBe(2);
+    expect(err.text()).toContain("no such group: ui");
+    expect(groupNames()).not.toContain("ui");
   });
 });
 

@@ -41,7 +41,7 @@ vi.mock("livekit-client", () => {
 
 const { Desk } = await import("../../../../src/cli/ui/console/lib/use-supervise");
 
-const CREDENTIALS = { base: "/nonce" };
+const CREDENTIALS = { base: "/", key: "pk_test_a_key_the_desk_signs_with" };
 const CALL = "call_9f2a";
 
 // What the doors answered, and what was asked of them: one entry per call, in order.
@@ -74,7 +74,7 @@ test("a whisper is one post of the protocol's own verb to that call's door", asy
   await new Desk(CREDENTIALS, CALL).send({ verb: "whisper", text: "hay un hueco a las 15:40" });
   expect(asked).toEqual([
     {
-      url: `http://127.0.0.1:53211/nonce/v1/calls/${CALL}/verbs`,
+      url: `http://127.0.0.1:53211/v1/calls/${CALL}/verbs`,
       method: "POST",
       body: { verb: "whisper", text: "hay un hueco a las 15:40" },
     },

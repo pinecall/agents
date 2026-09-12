@@ -1,4 +1,4 @@
-/** Who the console is, for as long as the page is open: one context, never a global. */
+/** Who the console is, for as long as the page is open: the base and the tab's own key, one context, never a global. */
 
 import { createContext, useContext, type ReactNode } from "react";
 

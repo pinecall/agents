@@ -10,7 +10,7 @@ import {
 } from "@pinecall/protocol";
 import { useEffect, useRef, useState } from "react";
 
-import { GatewayError, streamUrl, type Credentials } from "./api";
+import { GatewayError, doorUrl, type Credentials } from "./api";
 import { useCredentials } from "./credentials";
 import { wholeLog } from "./log-pages";
 import { openLog, type Connection } from "./stream";
@@ -31,7 +31,7 @@ export interface CallLog {
 // The state object is folded in a ref and published as a shallow copy on every paint: the
 // protocol's reducer appends to the arrays it already holds, so `state.turns` keeps its identity
 // while its contents grow. Memoise on `state.seq`, never on an array.
-/** Follow one call. Re-mounting reconnects; the browser's Last-Event-ID is the cursor it resumes on. */
+/** Follow one call. Re-mounting reconnects; the stream's Last-Event-ID is the cursor it resumes on. */
 export function useCall(call: string, options: CallOptions = {}): CallLog {
   const credentials = useCredentials();
   const [state, setState] = useState<State>(initialState);
@@ -71,7 +71,7 @@ export function useCall(call: string, options: CallOptions = {}): CallLog {
         setConnection("ended");
         return;
       }
-      close = openLog(streamUrl(credentials, `/v1/calls/${call}/events`, { after: cursor }), {
+      close = openLog(doorUrl(credentials, `/v1/calls/${call}/events`, { after: cursor }), credentials, {
         onEntry(entry) {
           folded.current = apply(folded.current, entry);
           heard.current.onEntry?.(entry);

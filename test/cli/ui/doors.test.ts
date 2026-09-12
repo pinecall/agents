@@ -1,33 +1,11 @@
-// The table of the console's own doors: what it registers, and that it registers nothing else.
+// The table of the verbs this process answers the console: what it registers, and nothing else.
 
 import { describe, expect, it } from "vitest";
 
 import { DevRefused } from "../../../src/client/index.js";
-import { devHandler, ownDoors, ownVerbs } from "../../../src/cli/ui/doors.js";
+import { devHandler, ownVerbs } from "../../../src/cli/ui/doors.js";
 import { Refusal, refusedAs } from "../../../src/cli/ui/refusal.js";
 import { Refused } from "../../../src/cli/testing/gateway.js";
-
-describe("the table", () => {
-  it("is empty when this console was opened with nothing of its own", () => {
-    expect(ownDoors({})).toEqual([]);
-  });
-
-  it("registers one row per thing the terminal handed in, and nothing for what it did not", () => {
-    const doors = ownDoors({
-      chatting: {
-        roster: async () => ({ agent: "clinica-norte", states: [] }),
-        start: async () => ({ call: "c" }),
-        say: async () => ({ call: "c" }),
-        end: async () => ({ call: "c" }),
-        close: async () => undefined,
-      },
-    });
-
-    expect(doors.map((door) => door.path)).toEqual(["chat", "chat/say", "chat/end"]);
-    expect(doors.find((door) => door.path === "chat/say")?.get).toBeUndefined();
-    expect(doors.find((door) => door.path === "chat")?.get).toBeTypeOf("function");
-  });
-});
 
 describe("what a refusal becomes", () => {
   // Three things reach the page through one shape, and the gateway's own words are the ones that

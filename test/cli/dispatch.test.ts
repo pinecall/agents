@@ -16,7 +16,7 @@ describe("the groups the CLI answers to", () => {
   it("declares every group of the design's verb list", () => {
     const declared = groupNames();
 
-    for (const group of ["new", "g", "run", "chat", "prompt", "test", "simulate", "runs", "personas", "eval", "sessions", "knowledge", "memory", "login", "whoami", "keys", "tokens", "phones", "agents", "supervise", "ui", "observe", "call", "costs", "deploy"]) {
+    for (const group of ["new", "g", "run", "chat", "prompt", "test", "simulate", "runs", "personas", "eval", "sessions", "knowledge", "memory", "login", "whoami", "keys", "tokens", "phones", "agents", "supervise", "observe", "call", "costs", "deploy"]) {
       expect(declared).toContain(group);
     }
   });
@@ -31,8 +31,8 @@ describe("the groups the CLI answers to", () => {
   });
 
   // `talk` spawned the operator's Python worker once, was planned again as a microphone in the
-  // terminal, and was a page of its own for an evening; it is now the first screen of `ui`, the
-  // console the CLI itself serves on 127.0.0.1 (ui.test.ts). The gateway serves no page.
+  // terminal, and was a page of its own for an evening; it is the first screen of the console,
+  // which the GATEWAY serves at /a/<agent>/talk. Neither is a verb here, and `ui` left too.
   it("holds no `console` verb and no `talk` of its own", () => {
     expect(Object.keys(PLANNED)).not.toContain("console");
     expect(Object.keys(PLANNED)).not.toContain("talk");

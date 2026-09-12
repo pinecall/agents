@@ -332,11 +332,12 @@ discount, and it cannot open the confirmation gate anyway, because that gate is 
 Everything above wrote lines. Read them:
 
 ```
-pinecall ui
+pinecall run
+console  https://box.pinecall.io/a/clinica-norte?login=lc_…   (opens within five minutes, once)
 ```
 
-The console opens on 127.0.0.1, for the life of the command. Your org key never reaches the
-browser. The Live screen shows a call as it happens: the turns, the tools, the state after each
+Open that URL. The gateway serves the console; the code signs this browser in with a key of its
+own, and your org key never reaches it. The Live screen shows a call as it happens: the turns, the tools, the state after each
 one, `recall · 1 fact · 138 ms`, `search · 3 chunks · 181 ms`, and the verdicts at hang-up.
 
 The same thing without a browser:

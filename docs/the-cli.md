@@ -24,7 +24,6 @@ compiled `dist/cli/index.js` and needs no loader.
 |---|---|---|
 | [`run`](#run) | the app registered and answering — **the process you deploy** | yes |
 | [`chat`](#chat) | the same app in this terminal, and a written caller against it | yes |
-| [`ui`](#ui) | the console on 127.0.0.1: talk, calls, sessions, pipeline, evals, knowledge, memory | yes |
 | [`prompt`](#prompt) | the exact prompt a state would produce, offline | **no** |
 | [`test`](#test) | ring 1 (and ring 2 with `--voice`): the goldens through this process | yes |
 | [`simulate`](#simulate) | a model plays one caller, live, and the call is judged at hang-up | yes |
@@ -85,13 +84,17 @@ pinecall run [agent.tsx] [--ui] [--events] [--show-prompt]
 ```
 
 The app registered on the gateway and answering: **this is the process you deploy**. It binds no
-port and serves no page — the gateway is an API, and nothing in this CLI answers a browser except
-`ui`. One line per log entry on stdout.
+port and serves no page — the gateway serves the console, at `/` — and nothing in this CLI answers
+a browser. One line per log entry on stdout, and under the connected line the console's URL:
+`console  https://box.pinecall.io/a/clinica-norte?login=lc_…`. The code in it is one-use and dies
+in five minutes; the page spends it for a key of its own (a person's, scoped, kept for the tab)
+and never sees this process's. Opening the console cold instead asks for org, email and password.
 
 ```console
 $ pinecall run
 gateway http://127.0.0.1:8080 · key from dev-file
 clinica-norte · connected to http://127.0.0.1:8080 · tools 4 · doors web
+console  http://127.0.0.1:8080/a/clinica-norte?login=lc_…   (opens within five minutes, once)
 › Clínica Norte, buenos días. ¿En qué puedo ayudarle?
 ‹ Quería cambiar una cita
 → findPatient({"name":"Ana García","phone":"600000001"})
@@ -152,27 +155,6 @@ Eres la recepción de Clínica Norte. Hablas de usted, con frases cortas. …
 <tools>
 - findPatient: Busca la ficha del paciente … 
 ```
-
-## `ui`
-
-```
-pinecall ui [agent]
-```
-
-The console on 127.0.0.1 for the life of the command, opened in this machine's browser: Talk (the
-browser's microphone), Chat, Calls, Sessions, Pipeline, Knowledge, Memory, Evals, and the fleet's
-Agents and Keys. **Every verb of this document that a page can carry is on one of its screens.**
-
-It is the one verb that opens a port: the kernel picks it, every path sits under a random 16-byte
-nonce, and the org key never reaches the browser — the page asks this process and this process
-signs the request. Ctrl-C closes the port with the command. Over ssh or with no display it says so
-and exits 2. In a checkout the console must be bundled once (`scripts/build`); from npm it is
-already inside the package.
-
-What a screen needs of the agent's directory — the personas and a simulation, the goldens and a
-suite, a chat, `knowledge/docs` and its golden, `memory/golden.json` and `test/memory`, a promoted
-candidate, the reproductions a broken run left, the drift — is asked of the **`pinecall run`**
-holding that agent, through the gateway (see `run`). `ui` itself answers none of them any more.
 
 ---
 
@@ -363,7 +345,7 @@ q           leave the desk; the call goes on
 
 Every move lands in the caller's own log as its own `supervisor.*` entry with a seq, so what a
 human did to a call is read the same way as what the agent did. The **audio** of a live call is
-`pinecall ui`, which has a room; this is the transcript and the desk.
+the console's Live screen, which has a room; this is the transcript and the desk.
 
 ## `keys`
 

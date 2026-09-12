@@ -9,7 +9,7 @@ import { helpFor, PLANNED, plannedGroup, type Group } from "./groups.js";
 // The order this table is written is the order the help prints: run and chat first, because
 // they are what a person types on the first day, and the planned groups after, in the design's
 // order. run is rails server and chat is rails console — see docs/decisions/tenant-cli.md.
-const BUILT = ["run", "chat", "ui", "prompt", "test", "simulate", "eval", "sessions", "runs", "pipeline", "personas", "knowledge", "memory", "remember", "supervise", "keys", "callbacks", "login", "whoami"] as const;
+const BUILT = ["run", "chat", "prompt", "test", "simulate", "eval", "sessions", "runs", "pipeline", "personas", "knowledge", "memory", "remember", "supervise", "keys", "callbacks", "login", "whoami"] as const;
 
 /** Everything `pinecall` answers to, built and planned alike, in the order help prints them. */
 export function groupNames(): string[] {
@@ -63,7 +63,6 @@ export async function main(
 export async function groupFor(name: string, out: NodeJS.WritableStream = process.stdout): Promise<Group | undefined> {
   if (name === "run") return (await import("./run.js")).group;
   if (name === "chat") return (await import("./chat.js")).group;
-  if (name === "ui") return (await import("./ui/index.js")).group;
   if (name === "prompt") return (await import("./prompt.js")).group;
   if (name === "test") return (await import("./test.js")).group;
   if (name === "simulate") return (await import("./simulate.js")).group;

@@ -1,4 +1,4 @@
-/** The absence, proven: no browser storage in the source, no key and no key's name in the bundle. */
+/** The org key is never in the page, the tab's own key lives in one file, and the bundle carries neither. */
 
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
@@ -20,15 +20,18 @@ const SHAPED_LIKE_A_KEY = /pk_[A-Za-z0-9_-]{20,}/;
 // build that was handed a key at compile time.
 const AN_ENVIRONMENT_KEY = /PINECALL_(API|DEV)_KEY/;
 
-// The console holds no key: `pinecall ui` signs every request in front of it. So there is nothing
-// for the page to remember, and nothing it may write into a browser's storage.
-test("the console never reaches a browser's storage", () => {
+// The page holds ONE credential — a person's scoped key, minted for this tab at login — and it is
+// kept in exactly one file, in sessionStorage: one tab's, gone when the tab closes, surviving a
+// reload. localStorage would outlive the session and be every tab's, so nothing may reach it.
+test("only lib/session-key.ts reaches the tab's storage, and nothing reaches localStorage", () => {
+  expect(sourceFilesReaching("sessionStorage")).toEqual(["lib/session-key.ts"]);
   expect(sourceFilesReaching("localStorage")).toEqual([]);
-  expect(sourceFilesReaching("sessionStorage")).toEqual([]);
 });
 
-test("the console sends no authorization header of its own", () => {
-  expect(sourceFilesReaching("authorization")).toEqual([]);
+// The key rides one header and that header is spelled in one place: every door goes through
+// api.ts, and the stream and the recording ask it for the headers rather than writing their own.
+test("only lib/api.ts writes the authorization header", () => {
+  expect(sourceFilesReaching("authorization")).toEqual(["lib/api.ts"]);
 });
 
 // The test builds what it greps, into a directory of its own: a check about the bundle that
@@ -53,8 +56,7 @@ function sourceFilesReaching(name: string): string[] {
     .sort();
 }
 
-/** The built page and everything it loads, as name and text. Empty when nobody has built one. */
-/** The console, built by vite into a fresh directory: the very bundle `pinecall ui` would serve. */
+/** The console, built by vite into a fresh directory: the very bundle the gateway would serve. */
 function buildTheConsole(): string {
   const out = mkdtempSync(join(tmpdir(), "pinecall-console-"));
   execFileSync("pnpm", ["exec", "vite", "build", "--config", VITE_CONFIG, "--outDir", out, "--logLevel", "error"], {
@@ -64,6 +66,7 @@ function buildTheConsole(): string {
   return out;
 }
 
+/** The built page and everything it loads, as name and text. */
 function builtFiles(built: string): [string, string][] {
   return filesUnder(built)
     .filter((file) => /\.(js|css|html|map)$/.test(file))

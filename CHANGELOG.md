@@ -6,7 +6,19 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Removed
+- **`pinecall ui`.** The gateway serves the console now; nothing in this CLI opens a port.
+
+### Added
+- **`pinecall run` prints the console's URL** — `https://<gateway>/a/<agent>?login=<code>` — with
+  a one-use code that signs the browser in for a key of its own. A gateway that refuses the code
+  is one line, and the app runs on.
+
 ### Changed
+- **The console is served by the gateway at `/`** and holds a person's scoped key, never the
+  org's: spent from `?login=`, or asked for as org, email and password, and kept in
+  `sessionStorage` for the tab's life. The log stream and the recording carry the key on a header,
+  so nothing rides a URL. The header shows who is signed in and which world the key opens.
 - **`pinecall run` answers the console for its directory.** A written call to the class, the
   personas and a simulation, the goldens and a suite, the knowledge folder and its golden, the
   memory goldens, a promoted candidate, drift and the reproductions are asked of the gateway,
