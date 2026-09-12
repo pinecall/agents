@@ -66,6 +66,15 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   a Production / Development toggle that holds one key per world and mints the other for the same
   person, and a rail that draws only what the key's scopes open.
 
+### Changed
+- **`pinecall login` asks for what a person has.** It asked for an API key, and a person has none
+  — the console mints theirs into the tab and never shows it, so there was nowhere to copy one
+  from. It now asks for the org, the email and the password, the same three the console asks,
+  mints this laptop's **development** key at `POST /v1/login` and proves it at `/v1/whoami` before
+  keeping it. `--org` and `--email` are flags, because neither is a secret; only the password is
+  asked for in silence. `--key-stdin` is still the machine's way in, and with no terminal attached
+  the verb says there is nobody to ask instead of "nothing was typed".
+
 ### Removed
 - **`pinecall ui`.** The gateway serves the console now; nothing in this CLI opens a port.
 

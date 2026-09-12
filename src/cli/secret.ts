@@ -1,4 +1,4 @@
-/** One secret this terminal is given: typed with nothing echoed, or piped in as a line of stdin. */
+/** What this terminal is asked for: a secret with nothing echoed, a word in the open, or a line of stdin. */
 
 import { createInterface } from "node:readline";
 
@@ -17,6 +17,21 @@ export async function typedInSilence(prompt: string, out: NodeJS.WritableStream)
   reading.close();
   out.write("\n");
   return secret;
+}
+
+/** One line typed in the open: an org, an email — anything that is not a secret. */
+export async function typedAloud(prompt: string, out: NodeJS.WritableStream): Promise<string> {
+  const reading = createInterface({ input: process.stdin, output: out, terminal: true });
+  const said = await new Promise<string>((typed) => reading.question(prompt, typed));
+  reading.close();
+  return said;
+}
+
+/** Whether anybody is at this terminal. With nobody, a prompt returns "" the instant it is made,
+ * and a verb that asked has to say THAT rather than "nothing was typed" — which reads as though
+ * the person had pressed enter. */
+export function nobodyIsTyping(): boolean {
+  return process.stdin.isTTY !== true;
 }
 
 /** The script's way in: one line, no terminal, nothing asked. `echo $KEY | pinecall keys add …`. */

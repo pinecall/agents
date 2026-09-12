@@ -461,13 +461,25 @@ be one flag away from open registration on somebody else's box.
 ## `login` · `whoami`
 
 ```
-pinecall login <gateway-url> [--key-stdin]
+pinecall login <gateway-url> [--org <slug>] [--email <you@…>] [--key-stdin]
 pinecall whoami
 ```
 
-`login` asks for the key without echoing it, proves it at `/v1/whoami`, and keeps it in
+`login` asks for your **org, your email and your password** — the same three the console asks —
+mints a key for them at `POST /v1/login`, proves it at `/v1/whoami`, and keeps it in
 `~/.pinecall/credentials` (0600) under that URL. After it, every verb finds the key by itself and
-nothing has to be exported.
+nothing has to be exported. The password is never echoed, never stored and never sent anywhere but
+that gateway; `--org` and `--email` are not secrets, so a flag may say them and only the password
+is asked for.
+
+**The key it keeps is this laptop's development key.** `pinecall run` and `pinecall chat` answer in
+a world of your own and never in the one your customers call — the console's toggle is the same
+person looking the other way ([worlds-and-teams.md](worlds-and-teams.md)).
+
+`--key-stdin` reads a **key** from one line of stdin instead, for a machine: a server, a CI job, a
+container. That is what `pinecall keys issue` mints, and in a container there is no login at all —
+`PINECALL_API_KEY` in the environment is the same thing. With no terminal attached and no
+`--key-stdin`, the verb says so rather than pretending nothing was typed.
 
 ```console
 $ pinecall whoami
