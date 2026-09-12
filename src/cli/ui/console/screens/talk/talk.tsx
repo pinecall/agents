@@ -72,10 +72,14 @@ function Marks({ call, heard }: { call: string; heard: (entry: Entry) => void })
   return null;
 }
 
+// What the big line beside the button says. The idle one is the whole reason this function has a
+// comment: it used to read "not connected", which is the first thing on the screen and reads as a
+// FAULT — three people in a row opened a working agent and thought it was broken. Nothing is
+// wrong before you press the button, and the line now says what to do instead of what is absent.
 function standing(live: Talking): string {
   switch (live.phase) {
     case "idle":
-      return "not connected";
+      return "ready — press Talk";
     case "connecting":
       return "joining the room…";
     case "live":
@@ -90,7 +94,7 @@ function standing(live: Talking): string {
 function hint(phase: Phase): string {
   switch (phase) {
     case "idle":
-      return "press Talk: the browser asks for the microphone, and the agent answers";
+      return "the browser will ask for the microphone, and the agent answers straight away";
     case "connecting":
       return "joining the room…";
     case "live":

@@ -161,7 +161,9 @@ export default class ClinicaNorte extends Agent {
     stage: "book",
     // La fase dice que toca reservar; el predicado, que hay algo que reservar. Se piden las dos.
     when: (s) => s.slots.length > 0,
-    confirm: "Le reservo el {{result.when}} con {{result.doctor}}. ¿Lo confirmo?",
+    // Un recibo, no una pregunta: la plataforma lo lee DESPUÉS de que la reserva ocurrió, así que
+    // «¿Lo confirmo?» se oye cuando ya está confirmada. docs/writing-an-agent.md.
+    confirm: "Reservado: el {{result.when}} con {{result.doctor}}.",
   })
   async book(chosen: string): Promise<Booking> {
     // El modelo elige diciendo la hora, no rellenando una ficha. Pedirle un `Slot` entero fue el

@@ -3,16 +3,38 @@
 import type { ReactNode } from "react";
 import { Outlet, useParams } from "react-router";
 
-import { Frame } from "../../shared/frame";
+import { Frame, Nothing } from "../../shared/frame";
+import { useHeldAgents } from "../lib/use-held-agents";
 import { Header } from "./header";
 import { Rail } from "./rail";
 import "./shell.css";
 
+// What a slug in the path is NOT: proof that this org has such an agent. The path is a person's
+// to type and a link's to carry — one sent by a colleague in another org, one kept from before a
+// world toggle — and the console used to draw the whole agent for it either way: Talk, Chat,
+// Sessions, the lot, every one of them answering 404 on the first click. The list the gateway
+// gives is the truth, and this is where the two are compared.
+const NOT_HELD = "no agent called {agent} is held here";
+
 export function Shell(): ReactNode {
   const agent = useParams()["agent"] ?? "";
+  const { agents, loaded } = useHeldAgents();
+  // Only once the door has answered: an empty list before that is a list nobody has read.
+  const missing = agent !== "" && loaded && !agents.some((held) => held.slug === agent);
   return (
-    <Frame head={<Header agent={agent} />} rail={<Rail agent={agent} />}>
-      <Outlet />
+    <Frame head={<Header agent={agent} />} rail={<Rail agent={missing ? "" : agent} />}>
+      {missing ? <Missing agent={agent} /> : <Outlet />}
     </Frame>
+  );
+}
+
+/** Said instead of an agent's screens, because every one of them would refuse the first click. */
+function Missing({ agent }: { agent: string }): ReactNode {
+  return (
+    <Nothing>
+      {NOT_HELD.replace("{agent}", agent)} — this org, in this world. Check the org you signed in
+      with and the production/development toggle above, or run `pinecall run` in the app's
+      directory.
+    </Nothing>
   );
 }

@@ -10,6 +10,10 @@ import { useCredentials } from "../../shared/credentials";
 export interface HeldAgents {
   agents: HeldAgent[];
   error: string | null;
+  /** Whether the door has answered at all yet. An empty list before it has is not an empty
+   * fleet, and a screen that treats the two alike says "you have no agents" to somebody who
+   * simply arrived a moment ago. */
+  loaded: boolean;
 }
 
 // Read once, and again when told: the list changes when a socket connects or leaves, which the
@@ -19,6 +23,7 @@ export function useHeldAgents(tick = 0): HeldAgents {
   const credentials = useCredentials();
   const [agents, setAgents] = useState<HeldAgent[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     let stopped = false;
@@ -31,6 +36,8 @@ export function useHeldAgents(tick = 0): HeldAgents {
         }
       } catch (refused) {
         if (!stopped) setError(String(refused));
+      } finally {
+        if (!stopped) setLoaded(true);
       }
     })();
     return () => {
@@ -38,5 +45,5 @@ export function useHeldAgents(tick = 0): HeldAgents {
     };
   }, [credentials, tick]);
 
-  return { agents, error };
+  return { agents, error, loaded };
 }
