@@ -363,6 +363,7 @@ prompt` must not pay for a websocket client.
 | verb | what it is | needs a gateway |
 |---|---|---|
 | `run` | the app registered and answering: **the process you deploy**. Binds no port, serves no page | yes |
+| `line` | whose terminal the org's shared development number rings in; `claim` takes it | yes |
 | `chat` | the same app in this terminal's own process, and a written caller against it | yes |
 | `ui` | the console on 127.0.0.1 for the life of the command | yes |
 | `prompt` | the exact prompt a state would produce | **no** |

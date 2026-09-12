@@ -93,7 +93,7 @@ run holds a development agent, and what holds the production one is a key issued
 `app` in production at all, so a `pinecall run` on it is refused there, in a sentence naming what
 the key does open. **In development the agent is held per person**: two developers of one tenant
 each run the same agent and each reaches their own, while the org's development *number* is one
-door and the newest run answers it. It binds no
+door and rings where it was claimed ([`line`](#line)). It binds no
 port and serves no page — the gateway serves the console, at `/` — and nothing in this CLI answers
 a browser. One line per log entry on stdout, and under the connected line the console's URL:
 `console  https://box.pinecall.io/a/clinica-norte?login=lc_…`. The code in it is one-use and dies
@@ -105,6 +105,7 @@ $ pinecall run
 gateway http://127.0.0.1:8080 · key from dev-file
 clinica-norte · connected to http://127.0.0.1:8080 · tools 4 · doors web
 console  http://127.0.0.1:8080/a/clinica-norte?login=lc_…   (opens within five minutes, once)
+line     rings in this terminal · also running: carla@clinica.test
 › Clínica Norte, buenos días. ¿En qué puedo ayudarle?
 ‹ Quería cambiar una cita
 → findPatient({"name":"Ana García","phone":"600000001"})
@@ -124,6 +125,32 @@ the drift, a reproduction a broken run left — the console asks the gateway, an
 THIS process over the socket it already holds (`dev.request` → `dev.answer`; the runtime's
 `docs/protocol/dev-verbs.md`). The lines those verbs print land here, as if you had typed them.
 A `pinecall run` in a directory with no personas answers `simulate` with a sentence saying so.
+
+## `line`
+
+```
+pinecall line [claim | release] [agent.tsx]
+```
+
+**An org shares one development number, and a number rings in one place.** With one developer
+that is not a decision: the first `pinecall run` to hold the agent answers its ring, and you never
+learn the word. With three, it used to be whoever restarted last — so you would dial the number to
+test your change and be answered in a colleague's scrollback, with nothing on either screen saying
+so. Now the ring lands on the agent's **line**, and taking it is a thing you do on purpose.
+
+```console
+$ pinecall line
+rings in berna@clinica.test · `pinecall line claim` takes it
+
+$ pinecall line claim
+rings in this terminal · also running: berna@clinica.test
+```
+
+`release` gives it up, and whoever else is still running the agent picks it up — which is also
+what happens on its own when the terminal holding it closes. A claim on an agent this terminal is
+not running is refused: a ring lands on the line, so a corner with no app in it would take the
+call and drop it. Production has one corner and the box holds it, so there is nothing to claim
+there; `pinecall run` prints the line only for an agent that answers at a number at all.
 
 ## `chat`
 

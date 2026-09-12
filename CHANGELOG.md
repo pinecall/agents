@@ -66,6 +66,15 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   a Production / Development toggle that holds one key per world and mints the other for the same
   person, and a rail that draws only what the key's scopes open.
 
+### Added
+- **`pinecall line`: whose terminal the development number rings in.** An org shares one
+  development number, so with three developers on one agent it used to ring wherever somebody had
+  restarted last — you would dial it to test your change and be answered in a colleague's
+  scrollback. The first `pinecall run` to hold an agent takes its line and a second developer
+  claims it on purpose; `claim` and `release` are the two moves, and `run` prints the line under
+  the console's URL for any agent that answers at a number. With one developer nothing changes and
+  the word never appears.
+
 ### Changed
 - **`pinecall login` asks for what a person has.** It asked for an API key, and a person has none
   — the console mints theirs into the tab and never shows it, so there was nowhere to copy one
