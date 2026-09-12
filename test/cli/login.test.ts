@@ -51,7 +51,15 @@ class FakeGateway {
     if (request.headers.authorization !== `Bearer ${A_KEY}`) {
       return said(response, 401, { detail: "this door takes an API key" });
     }
-    said(response, 200, { org: "clinica", key_id: "k_1", label: "the laptop", env: "development" });
+    // `org` is the id every door takes and `slug` the word a person reads. They differ on an org
+    // the box made, which is the case the line below exists to keep honest.
+    said(response, 200, {
+      org: "org_98889a61509c",
+      slug: "clinica",
+      key_id: "k_1",
+      label: "the laptop",
+      env: "development",
+    });
   }
 }
 
@@ -100,6 +108,7 @@ describe("signing a terminal in through a browser", () => {
     expect(code).toBe(0);
     expect(out.text()).toContain(signingIn(gateway.url, A_WORD));
     expect(out.text()).toContain(`logged in to ${gateway.url} as org clinica · development`);
+    expect(out.text()).not.toContain("org_98889a61509c");
     expect(gatewayFor(gateway.url, home)).toMatchObject({ api_key: A_KEY, org: "clinica" });
   });
 
@@ -190,6 +199,7 @@ describe("whoami", () => {
 
     expect(code).toBe(0);
     expect(out.text()).toBe(`gateway ${gateway.url} · key from credentials\norg clinica · key k_1 · development · the laptop\n`);
+    expect(out.text()).not.toContain("org_98889a61509c");
     expect(out.text()).not.toContain(A_KEY);
   });
 
@@ -208,6 +218,12 @@ describe("whoami", () => {
 
   it("leaves a key with no label as two words rather than a dangling separator", () => {
     expect(describing({ org: "clinica", key_id: "k_1", label: null, env: "production" })).toBe("org clinica · key k_1 · production");
+  });
+
+  it("says the id only when there is no slug: a gateway too old to carry one", () => {
+    const old = { org: "org_98889a61509c", key_id: "k_1", label: null, env: "production" };
+
+    expect(describing(old)).toBe("org org_98889a61509c · key k_1 · production");
   });
 
   it("prints what a refusal that is not the gateway's says, rather than swallowing it", () => {

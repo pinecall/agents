@@ -9,7 +9,7 @@ import { CLOUD_URL, shadowedByEnv } from "./env.js";
 import type { Group } from "./groups.js";
 import { aLineOfStdin } from "./secret.js";
 import { asked } from "./testing/gateway.js";
-import { refusal, whoIs, type Who } from "./whoami.js";
+import { orgOf, refusal, whoIs, type Who } from "./whoami.js";
 
 const USAGE = "usage: pinecall login [gateway-url] [--key-stdin]";
 
@@ -82,8 +82,10 @@ export async function login(argv: string[], how: Signing = {}): Promise<number> 
     return 1;
   }
   const environment = how.env ?? process.env;
-  writeGateway(url, { api_key: key, org: who.org }, pinecallHome(environment));
-  out.write(`logged in to ${url} as org ${who.org} · ${who.env}\n`);
+  // The slug and not the id, in the file as on the line: a person opening `credentials` to see
+  // which org a gateway is has to read a word they recognise.
+  writeGateway(url, { api_key: key, org: orgOf(who) }, pinecallHome(environment));
+  out.write(`logged in to ${url} as org ${orgOf(who)} · ${who.env}\n`);
   const shadowed = shadowedByEnv(environment);
   if (shadowed !== undefined) err.write(`${shadowed}\n`);
   return 0;

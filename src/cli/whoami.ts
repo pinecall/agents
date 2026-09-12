@@ -11,6 +11,9 @@ const WHOAMI = "/v1/whoami";
 /** What the gateway says about the key that opened it: never the key, and never its hash. */
 export interface Who {
   org: string;
+  /** The word a person types and reads — `clinica` — as against `org`, which is the id every
+   * door takes. A gateway too old to answer it leaves it out, and the id is what is said then. */
+  slug?: string | null;
   key_id: string;
   label: string | null;
   /** The world this key opens. Where you are IS the key you hold, so the verb says which. */
@@ -54,9 +57,20 @@ export async function whoIs(door: Door): Promise<Who> {
   return await asked<Who>(door, WHOAMI);
 }
 
+/**
+ * Whose org this is, in the word its people use.
+ *
+ * `org` is the id every door takes — `org_98889a61509c` on an org the box made — and a line that
+ * prints THAT at a person prints them nothing. The id is said only when there is no slug: a
+ * gateway too old to carry one, or an org whose row is gone.
+ */
+export function orgOf(who: Who): string {
+  return who.slug ?? who.org;
+}
+
 /** One line: whose key, which of theirs, which world it opens, and what it was issued for. */
 export function describing(who: Who): string {
-  const said = [`org ${who.org}`, `key ${who.key_id}`, who.env];
+  const said = [`org ${orgOf(who)}`, `key ${who.key_id}`, who.env];
   if (who.label !== null) said.push(who.label);
   return said.join(" · ");
 }
