@@ -7,6 +7,11 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **`pinecall keys`, and a Keys screen.** `issue | list | revoke` the API keys this org's machines
+  run on, and the same three in the console. A key issued there is a machine's: it holds `app` in
+  production unless `--scope` says otherwise, names nobody, and is printed once. It is the last
+  step before a deploy, because a key a person holds by being logged in no longer holds an agent
+  in production — the process on the box does.
 - **Numbers, the whole screen.** The org's carrier brought from the console — a Twilio account,
   verified once, or a SIP peer with its own networks — shown by kind and account and never a
   secret, replaced or forgotten; a number imported from what that account owns, picked from a
@@ -15,8 +20,12 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   bought number marked; one let go from its row. Before this the screen only listed.
 - **`pinecall signup`.** The one verb that needs no key: it makes an org (at
   `https://box.pinecall.io` unless another gateway is named) with you as its admin — allowed
-  whatever that gateway's people decided for a new one — and keeps the key it is answered in `~/.pinecall/credentials` exactly as `login` does, so
-  every verb that connects works straight after. The password is typed in silence or read from
+  whatever that gateway's people decided for a new one. The sign-up answers a production key; a
+  terminal is a laptop, so it asks `/v1/login/env` for the same person's DEVELOPMENT key and keeps
+  that one in `~/.pinecall/credentials` exactly as `login` keeps one — `pinecall run` and
+  `pinecall chat` work straight after, and the console link it prints signs the browser in to
+  production, where the org's numbers, people and usage are. A gateway that mints no second world
+  is said out loud and the production key is kept. The password is typed in silence or read from
   stdin, never a flag. It prints a console link that signs a browser in once. Both it and `login`
   now say out loud when an exported `PINECALL_API_KEY` would shadow the key they just kept, and
   `signup` asks `GET /.well-known/pinecall` first so a gateway that opens no sign-up is named
@@ -42,6 +51,10 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   is one line, and the app runs on.
 
 ### Changed
+- **`pinecall keys` is now `pinecall providers`.** The verb for the vendor keys an org brought
+  takes the name of the scope that opens it (`providers`), and `keys` means the org's own API
+  keys, here and at the gateway. The console screen follows: `/providers` is the vendor accounts,
+  `/keys` the API keys.
 - **The console wears the design canvas.** IBM Plex Sans and Mono, the pink accent on four
   near-blacks (and the paper theme under it), panels with hairlines, the header strip with the mark
   and the breadcrumb, a 204px rail with the accent bar on the screen you are on. Every screen

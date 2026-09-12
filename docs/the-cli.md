@@ -36,7 +36,8 @@ compiled `dist/cli/index.js` and needs no loader.
 | [`memory`](#memory) | what memory kept about a contact, forgetting it, and recall's golden | yes |
 | [`remember`](#remember) | the extraction goldens: what a hang-up makes of a call | yes |
 | [`supervise`](#supervise) | listen in on a live call and move on it | yes |
-| [`keys`](#keys) | the provider keys this org brought of its own | yes |
+| [`keys`](#keys) | the API keys this org's machines run on: issue, list, revoke | yes |
+| [`providers`](#providers) | the provider keys this org brought of its own | yes |
 | [`signup`](#signup) | an org on Pinecall's cloud, and its first key kept here | no, it makes one |
 | [`login`](#login) · [`whoami`](#whoami) | the key, once, and which one is being used | yes |
 
@@ -351,9 +352,30 @@ the console's Live screen, which has a room; this is the transcript and the desk
 ## `keys`
 
 ```
-pinecall keys add <vendor>     # the key on stdin, never on the command line
-pinecall keys rm <vendor>
+pinecall keys issue --label "prod server" [--env production|development] [--scope <scope>]…
 pinecall keys list
+pinecall keys revoke <fingerprint>
+```
+
+A key issued here is a **machine's**: a server, a CI job, a box. It names nobody — people get keys
+by logging in — and it holds `app` in production unless `--scope` says otherwise, which is the
+shape a deployment has. This matters because **your own key does not hold `app` in production**:
+a deployed agent is held by the process somebody put on a box, not by whoever is logged in. So
+this is the last step before a deploy — issue one, put it in that box's environment, and that
+`pinecall run` is the one that answers your numbers.
+
+`issue` prints the key once and never again: the gateway keeps its sha256 and no door reads one
+back. `list` prints fingerprints, labels, worlds, whose each is and whether it is revoked — never
+a key. `revoke` takes a fingerprint as `list` prints it; the row and its history stay, so the
+calls that key wrote stay readable. A key may not issue a scope it does not itself open, and a
+fingerprint that is not this org's is refused as one that is nobody's.
+
+## `providers`
+
+```
+pinecall providers add <vendor>     # the key on stdin, never on the command line
+pinecall providers rm <vendor>
+pinecall providers list
 ```
 
 A key added here is this org's own account with that vendor, and every call of this org runs on it
@@ -534,7 +556,8 @@ code can call — over HTTP, in any language, with the same key.
 | `knowledge` | `PUT`·`GET`·`DELETE /v1/knowledge[/{base}]`, `POST /v1/knowledge/{base}/eval` |
 | `memory` | `GET`·`DELETE /v1/contacts/{contact}/memory`, `POST /v1/contacts/memory/eval` |
 | `remember` | `POST /v1/agents/{slug}/memory/extraction` |
-| `keys` | `PUT`·`DELETE`·`GET /v1/provider-keys[/{vendor}]` |
+| `keys` | `GET`·`POST /v1/keys`, `POST /v1/keys/{fingerprint}/revoke` |
+| `providers` | `PUT`·`DELETE`·`GET /v1/provider-keys[/{vendor}]` |
 | `callbacks` | `GET /v1/callbacks[?agent=&after=]` |
 | `login` · `whoami` | `GET /v1/whoami` |
 | `ui` | all of the above, plus its own `ui/*` doors on 127.0.0.1 |

@@ -9,7 +9,7 @@ import { helpFor, PLANNED, plannedGroup, type Group } from "./groups.js";
 // The order this table is written is the order the help prints: run and chat first, because
 // they are what a person types on the first day, and the planned groups after, in the design's
 // order. run is rails server and chat is rails console — see docs/decisions/tenant-cli.md.
-const BUILT = ["run", "chat", "prompt", "test", "simulate", "eval", "sessions", "runs", "pipeline", "personas", "knowledge", "memory", "remember", "supervise", "keys", "callbacks", "signup", "login", "whoami"] as const;
+const BUILT = ["run", "chat", "prompt", "test", "simulate", "eval", "sessions", "runs", "pipeline", "personas", "knowledge", "memory", "remember", "supervise", "keys", "providers", "callbacks", "signup", "login", "whoami"] as const;
 
 /** Everything `pinecall` answers to, built and planned alike, in the order help prints them. */
 export function groupNames(): string[] {
@@ -76,6 +76,7 @@ export async function groupFor(name: string, out: NodeJS.WritableStream = proces
   if (name === "supervise") return (await import("./supervise.js")).group;
   if (name === "sessions") return (await import("./sessions.js")).group;
   if (name === "keys") return (await import("./keys.js")).group;
+  if (name === "providers") return (await import("./providers.js")).group;
   if (name === "callbacks") return (await import("./callbacks.js")).group;
   if (name === "signup") return (await import("./signup.js")).group;
   if (name === "login") return (await import("./login.js")).group;
@@ -104,7 +105,8 @@ export function usage(): string {
     "  memory    what memory kept about a contact, forget it, and hold recall to a golden",
     "  remember  the goldens memory.remember is held to: what a call teaches, and what it never keeps",
     "  supervise listen in on a live call: whisper, say, take the line, give it back, end",
-    "  keys      add | rm | list the provider keys this org brought of its own",
+    "  keys      issue | list | revoke the API keys this org's machines run on",
+    "  providers add | rm | list the provider keys this org brought of its own",
     "  callbacks the numbers people left when every seat was taken: who to call back",
     "  signup    make an org on Pinecall's cloud and keep its first key",
     "  login     sign in to a gateway once; the key is kept in ~/.pinecall/credentials",

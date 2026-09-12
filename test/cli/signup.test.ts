@@ -14,13 +14,19 @@ import { signup } from "../../src/cli/signup.js";
 import { written } from "./said.js";
 
 const A_KEY = "pk_the_first_key_this_org_was_given";
+
+// The key the same person holds in the other world: what a terminal keeps, because a laptop is
+// where things are written and `pinecall run` answers there.
+const A_LAPTOPS_KEY = "pk_the_key_this_laptop_writes_on";
 const A_PASSWORD = "correct horse battery staple";
 const WHO = ["--org", "tienda-sur", "--email", "ana@tiendasur.uy", "--person", "Ana"];
 
-/** A gateway with one door: /v1/signup, which takes no key and answers the way the runtime does. */
+/** A gateway with two doors: /v1/signup, which takes no key, and the one that mints the other world. */
 class FakeCloud {
   readonly heard: { authorization: string | undefined; body: Record<string, unknown> }[] = [];
   cloud = true;
+  /** Whether this gateway mints the development key. False is an older one, or a refusal. */
+  worlds = true;
   #server!: Server;
   url = "";
 
@@ -45,6 +51,11 @@ class FakeCloud {
     for await (const chunk of request) chunks.push(chunk as Buffer);
     const body = JSON.parse(Buffer.concat(chunks).toString()) as Record<string, unknown>;
     this.heard.push({ authorization: request.headers.authorization, body });
+    if (request.url === "/v1/login/env") {
+      response.writeHead(this.worlds ? 200 : 403, { "content-type": "application/json" });
+      response.end(JSON.stringify(this.worlds ? { key: A_LAPTOPS_KEY, env: "development" } : { detail: "no" }));
+      return;
+    }
     if (!this.cloud) {
       response.writeHead(403, { "content-type": "application/json" });
       response.end(JSON.stringify({ detail: "this gateway takes no sign-ups: it is a box of its own, and its operator invites people" }));
@@ -75,6 +86,7 @@ let home = "";
 beforeEach(async () => {
   cloud.heard.length = 0;
   cloud.cloud = true;
+  cloud.worlds = true;
   home = mkdtempSync(join(tmpdir(), "pinecall-home-"));
   await cloud.open();
 });
@@ -84,7 +96,7 @@ afterEach(async () => {
 });
 
 describe("signing up", () => {
-  it("makes the org with no key at all, and keeps the one it is answered", async () => {
+  it("makes the org with no key at all, and keeps the development key for this laptop", async () => {
     const out = written();
 
     const code = await signup([cloud.url, ...WHO], { out: out.stream, env: { PINECALL_HOME: home }, password: async () => A_PASSWORD });
@@ -92,7 +104,19 @@ describe("signing up", () => {
     expect(code).toBe(0);
     expect(cloud.heard[0]?.authorization).toBeUndefined();
     expect(cloud.heard[0]?.body).toMatchObject({ org: "tienda-sur", email: "ana@tiendasur.uy", person: "Ana", device: "cli" });
-    expect(gatewayFor(cloud.url, home)).toMatchObject({ api_key: A_KEY, org: "org_1" });
+    expect(cloud.heard[1]?.body).toEqual({ env: "development" });
+    expect(gatewayFor(cloud.url, home)).toMatchObject({ api_key: A_LAPTOPS_KEY, org: "org_1" });
+  });
+
+  it("keeps the production key and says so when the gateway mints no second world", async () => {
+    cloud.worlds = false;
+    const err = written();
+
+    const code = await signup([cloud.url, ...WHO], { out: written().stream, err: err.stream, env: { PINECALL_HOME: home }, password: async () => A_PASSWORD });
+
+    expect(code).toBe(0);
+    expect(gatewayFor(cloud.url, home)).toMatchObject({ api_key: A_KEY });
+    expect(err.text()).toContain("kept the production key");
   });
 
   it("says what now exists and how to open the console, and prints neither key nor password", async () => {
@@ -154,7 +178,9 @@ describe("signing up", () => {
     await signup([cloud.url, ...WHO], { out: written().stream, env: { PINECALL_HOME: home }, password: async () => A_PASSWORD });
 
     const kept = readFileSync(join(home, "credentials"), "utf8");
-    expect(kept.split(A_KEY)).toHaveLength(2);
+    expect(kept.split(A_LAPTOPS_KEY)).toHaveLength(2);
+    // The production key passed through this process and is kept by nobody: a terminal is a laptop.
+    expect(kept).not.toContain(A_KEY);
     expect(kept).not.toContain(A_PASSWORD);
   });
 });
@@ -172,7 +198,7 @@ describe("the key it kept, and what would shadow it", () => {
 
     expect(err.text()).toContain("PINECALL_API_KEY is exported");
     expect(err.text()).toContain("unset PINECALL_API_KEY");
-    expect(gatewayFor(cloud.url, home)).toMatchObject({ api_key: A_KEY });
+    expect(gatewayFor(cloud.url, home)).toMatchObject({ api_key: A_LAPTOPS_KEY });
   });
 
   it("says nothing when no key is exported to shadow it", async () => {
