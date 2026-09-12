@@ -403,14 +403,14 @@ about the page is a containment decision:
   that touches storage). `pinecall run` mints a one-use code standing for its key and prints
   `/a/<agent>?login=<code>`; the page spends it for a key of its own and takes it out of the
   address bar before rendering (`main.tsx`, `lib/login.ts`). Cold, it asks for org, email and
-  password (`screens/login/`) — and where `GET /.well-known/pinecall` says **`signup`**
-  (`lib/discovery.ts`, asked once with no key; off unless the gateway's operator set
-  `PINECALL_SIGNUP`, and never read off `cloud`), the card turns over into a sign-up: the org's
-  name, whose address is made from it (`screens/login/slug.ts`), the person, their password;
-  `POST /v1/signup` makes the org on the free trial and answers the first key in a login's shape,
-  so the tab holds it the same way. **`/signup` opens that side directly**, which is how a site in
-  front of this gateway links to it instead of posting to the door from its own origin — the one
-  reason the runtime would have needed a CORS header, and the reason it needs none. `test/cli/ui/console/the-key-is-never-in-the-page.test.ts` pins it:
+  password (`screens/login/`). **It signs a person IN and never makes an org**: this page ships
+  inside the runtime every self-hoster serves, so a registration form in it would be one flag away
+  from open registration on somebody else's box, and making an org is not what a control plane for
+  an existing org is for. `POST /v1/signup` is knocked at by `pinecall signup` and by an API
+  caller, never by this page —
+  `test/cli/ui/console/the-console-never-makes-an-org.test.ts` pins that by reading the sources
+  with the comments stripped. It is also why the runtime sends no CORS header: the one door this
+  page opens with no key is `/v1/login`, on its own origin. `test/cli/ui/console/the-key-is-never-in-the-page.test.ts` pins it:
   one file reaches `sessionStorage`, none reaches `localStorage`, only `lib/api.ts` writes the
   `authorization` header, and the bundle carries no key and no key's name.
 - **Nothing rides a URL.** The log stream is `fetch` reading `text/event-stream` by hand

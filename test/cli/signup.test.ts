@@ -36,6 +36,11 @@ class FakeCloud {
   }
 
   async #answer(request: IncomingMessage, response: ServerResponse): Promise<void> {
+    if (request.url === "/.well-known/pinecall") {
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify({ version: "0.0.0", cloud: false, signup: this.cloud }));
+      return;
+    }
     const chunks: Buffer[] = [];
     for await (const chunk of request) chunks.push(chunk as Buffer);
     const body = JSON.parse(Buffer.concat(chunks).toString()) as Record<string, unknown>;
@@ -113,14 +118,25 @@ describe("signing up", () => {
     expect(CLOUD_URL).toBe("https://box.pinecall.io");
   });
 
-  it("keeps nothing when a box of its own refuses, and prints the gateway's own sentence", async () => {
+  it("says a gateway takes no sign-ups BEFORE asking for a password, and keeps nothing", async () => {
     cloud.cloud = false;
     const err = written();
+    let asked = false;
 
-    const code = await signup([cloud.url, ...WHO], { err: err.stream, env: { PINECALL_HOME: home }, password: async () => A_PASSWORD });
+    const code = await signup([cloud.url, ...WHO], {
+      err: err.stream,
+      env: { PINECALL_HOME: home },
+      password: async () => {
+        asked = true;
+        return A_PASSWORD;
+      },
+    });
 
     expect(code).toBe(1);
     expect(err.text()).toContain("takes no sign-ups");
+    expect(err.text()).toContain("PINECALL_SIGNUP");
+    expect(asked).toBe(false);
+    expect(cloud.heard).toEqual([]);
     expect(gatewayFor(cloud.url, home)).toBeUndefined();
   });
 

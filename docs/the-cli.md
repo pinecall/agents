@@ -415,9 +415,14 @@ org org_4ad95a171a72 · key k_8dcc… · cli
 If `PINECALL_API_KEY` is exported in the shell, it is read *before* the row just kept, so the verb
 says so on stderr rather than letting the next verb answer for another org.
 
-A gateway that is a box of its own takes no sign-up and says so in its own words: there an operator
-makes the org and invites you, and you arrive with `login`. The org's slug is yours to type and the
-gateway is its judge; a bad one comes back as a sentence, and nothing is made.
+The verb asks `GET /.well-known/pinecall` before anything else, so a gateway that opens no sign-up
+is named **before** you type a password rather than after: its operator opens them with
+`PINECALL_SIGNUP`, or makes the org and invites you, and you arrive with `login`. The org's slug is
+yours to type and the gateway is its judge; a bad one comes back as a sentence, nothing is made.
+
+**This is the only place a person makes an org, besides the API.** The console signs you in and
+never registers you: it ships inside every self-hosted runtime, and a registration form there would
+be one flag away from open registration on somebody else's box.
 
 ## `login` · `whoami`
 
