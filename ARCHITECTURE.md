@@ -403,7 +403,11 @@ about the page is a containment decision:
   that touches storage). `pinecall run` mints a one-use code standing for its key and prints
   `/a/<agent>?login=<code>`; the page spends it for a key of its own and takes it out of the
   address bar before rendering (`main.tsx`, `lib/login.ts`). Cold, it asks for org, email and
-  password (`screens/login/`). `test/cli/ui/console/the-key-is-never-in-the-page.test.ts` pins it:
+  password (`screens/login/`) — and where `GET /.well-known/pinecall` says `cloud`
+  (`lib/discovery.ts`, asked once with no key), the card turns over into a sign-up: the org's
+  name, whose address is made from it (`screens/login/slug.ts`), the person, their password;
+  `POST /v1/signup` makes the org on the free trial and answers the first key in a login's shape,
+  so the tab holds it the same way. A box of its own shows no such side. `test/cli/ui/console/the-key-is-never-in-the-page.test.ts` pins it:
   one file reaches `sessionStorage`, none reaches `localStorage`, only `lib/api.ts` writes the
   `authorization` header, and the bundle carries no key and no key's name.
 - **Nothing rides a URL.** The log stream is `fetch` reading `text/event-stream` by hand

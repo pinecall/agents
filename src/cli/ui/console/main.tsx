@@ -7,6 +7,7 @@ import { RouterProvider } from "react-router";
 import { onUnauthorized } from "./lib/api";
 import { BASE } from "./lib/base";
 import { CredentialsProvider } from "./lib/credentials";
+import { discover } from "./lib/discovery";
 import { loginToWorld, loginWithCode } from "./lib/login";
 import { forgetKey, keepKey, keepWorld, keptKey, keptWorld, type World } from "./lib/session-key";
 import { WhoamiProvider } from "./lib/whoami";
@@ -28,14 +29,17 @@ if (root === null) {
 // reload, a bookmark or a screenshot never carries it.
 const LOGIN = "login";
 
-/** What the tab starts as: the world it looks at, and the key it holds for it, if any. */
+/** What the tab starts as: the world it looks at, the key it holds for it, if any, and whose gateway this is. */
 interface Start {
   world: World;
   key: string | null;
+  cloud: boolean;
 }
 
 /** The key this tab starts with: spent from `?login=` (which also names the world), or kept. */
 async function theKeyToStartWith(): Promise<Start> {
+  // Asked once, with no key, so a cold login knows whether there is a sign-up to offer.
+  const { cloud } = await discover(BASE);
   const address = new URL(window.location.href);
   const code = address.searchParams.get(LOGIN);
   if (code !== null) {
@@ -45,14 +49,14 @@ async function theKeyToStartWith(): Promise<Start> {
       const signed = await loginWithCode(BASE, code);
       keepKey(signed.env, signed.key);
       keepWorld(signed.env);
-      return { world: signed.env, key: signed.key };
+      return { world: signed.env, key: signed.key, cloud };
     } catch {
       // A code spent already, or expired: the person logs in the long way, and is told nothing
       // a stranger who found the URL would not be.
     }
   }
   const world = keptWorld();
-  return { world, key: keptKey(world) };
+  return { world, key: keptKey(world), cloud };
 }
 
 /** The app, or the login until there is a key: one component, so a dead key falls back to login. */
@@ -87,6 +91,7 @@ function Console({ startingWith }: { startingWith: Start }): ReactNode {
     return (
       <Login
         base={BASE}
+        cloud={startingWith.cloud}
         onSigned={(signed) => {
           keepKey(signed.env, signed.key);
           keepWorld(signed.env);

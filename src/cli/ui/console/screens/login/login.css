@@ -55,3 +55,22 @@
   margin: 4px 0 0;
   text-wrap: pretty;
 }
+
+/* The card's other side, and the way over: one line under the form, in the same voice. */
+.login-lead {
+  color: var(--ink-soft);
+  font-size: 12.5px;
+  margin: 0 0 6px;
+  text-wrap: pretty;
+}
+
+.login-slug {
+  color: var(--ink-faint);
+  font-family: var(--face-fixed);
+  font-size: 10.5px;
+}
+
+.login-switch {
+  font-size: inherit;
+  text-decoration: underline;
+}
