@@ -22,6 +22,14 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   is one line, and the app runs on.
 
 ### Changed
+- **The console wears the design canvas.** IBM Plex Sans and Mono, the pink accent on four
+  near-blacks (and the paper theme under it), panels with hairlines, the header strip with the mark
+  and the breadcrumb, a 204px rail with the accent bar on the screen you are on. Every screen
+  redrawn on the canvas's own measures: Calls edge to edge with the list, the head strip, the desk
+  and the seq · kind · text timeline; Talk as one centred column with the round door; Chat as
+  bubbles off the call's log; Sessions, Evals, Pipeline, Knowledge, Memory, Keys and the org's
+  screens in the same panels and tables. Nothing a screen states changed — only how it is drawn.
+### Changed
 - **The console is served by the gateway at `/`** and holds a person's scoped key, never the
   org's: spent from `?login=`, or asked for as org, email and password, and kept in
   `sessionStorage` for the tab's life. The log stream and the recording carry the key on a header,

@@ -427,6 +427,18 @@ about the page is a containment decision:
 | `numbers/` · `team/` · `usage/` | which number reaches which agent in this world and who typed it (`GET /v1/numbers`); the org's people, invited with a token shown once and changed in place (`/v1/members`); what the org consumed, totals then rows in the runtime's own field names (`GET /v1/usage`) |
 | the shell | an agent selector (`GET /v1/agents`), the Production / Development toggle — one key per world in the tab, the other minted for the same person by `POST /v1/login/env` (`lib/world.tsx`, `lib/session-key.ts`) — and a rail gated by the key's scopes off `GET /v1/whoami` (`lib/scopes.ts`, `lib/whoami.tsx`): a screen the key does not open is not drawn |
 
+**What it looks like** is the design canvas, translated: `styles/tokens.css` is the one file
+allowed to hold a hex and carries the canvas's palette under the console's names (`--ground`,
+`--panel`, `--panel-2`, `--edge`, `--edge-soft`, four inks `--ink` / `--ink-2` / `--ink-soft` /
+`--ink-faint`, one `--accent` with its `--accent-soft` ground and `--accent-line`, `--ok`, `--warn`),
+both themes — the light one under `:root[data-theme="light"]`, stamped by `shell/theme.ts`;
+`styles/page.css` is the vocabulary every screen builds from (a page, a panel, a table, a chip, a
+segmented tab strip, a bordered 28px control, one filled `.button-accent`); each screen's own
+stylesheet holds only what is that screen's. Prose is IBM Plex Sans and anything a machine wrote is
+IBM Plex Mono, both fetched from Google Fonts by `index.html` with a system fallback — the one
+request the page makes to anything but the gateway. The mark is `public/logo-mark.png`, served at
+`/logo-mark.png`.
+
 Its own laws. Three are held by a test of their own: vite bundles every screen's stylesheet into
 one file, so **a class name is global** whatever directory it was written in
 (`one-stylesheet-one-class`); the desk sends **one** verb per gesture and one seat request
