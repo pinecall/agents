@@ -51,6 +51,12 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   is one line, and the app runs on.
 
 ### Changed
+- **Two developers of one tenant no longer take each other's agent.** The gateway holds a
+  development agent per person, so `pinecall run` on your laptop and your colleague's are two
+  agents: each `pinecall chat`, each suite and each console reaches its own. Nothing in this CLI
+  changed for it — what says whose corner you are in is the key, and `pinecall signup` and
+  `pinecall login` already keep one per person. The org's development *number* stays one door,
+  answered by whichever run started last.
 - **`pinecall keys` is now `pinecall providers`.** The verb for the vendor keys an org brought
   takes the name of the scope that opens it (`providers`), and `keys` means the org's own API
   keys, here and at the gateway. The console screen follows: `/providers` is the vendor accounts,

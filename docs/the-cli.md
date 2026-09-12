@@ -85,7 +85,14 @@ key, it is an invitation. A key is never printed, never logged, and never put in
 pinecall run [agent.tsx] [--ui] [--events] [--show-prompt]
 ```
 
-The app registered on the gateway and answering: **this is the process you deploy**. It binds no
+The app registered on the gateway and answering: **this is the process you deploy**. Which world
+it answers in is the key's: `pinecall signup` and a login keep a development key, so a laptop's
+run holds a development agent, and what holds the production one is a key issued for a machine
+([`keys`](#keys)) put in that box's environment. A key you hold by being logged in does not open
+`app` in production at all, so a `pinecall run` on it is refused there, in a sentence naming what
+the key does open. **In development the agent is held per person**: two developers of one tenant
+each run the same agent and each reaches their own, while the org's development *number* is one
+door and the newest run answers it. It binds no
 port and serves no page — the gateway serves the console, at `/` — and nothing in this CLI answers
 a browser. One line per log entry on stdout, and under the connected line the console's URL:
 `console  https://box.pinecall.io/a/clinica-norte?login=lc_…`. The code in it is one-use and dies
