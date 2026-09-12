@@ -106,11 +106,14 @@ describe("los bloques del prompt", () => {
 
   // La puerta del servidor que exigía el sí se quitó (2026-09-06) y vuelve cuando un milestone la
   // necesite; la declaración viaja igual en el wire, y eso es lo que la clase aporta y se prueba aquí.
-  it("declara book como irreversible, con su lectura en voz alta", () => {
+  it("declara book como irreversible, con un recibo y no una pregunta", () => {
+    // La plataforma lee el `confirm` DESPUÉS de que la herramienta corrió, así que una pregunta
+    // ahí se oye cuando ya está hecha. docs/writing-an-agent.md.
     const book = toolNamed(at(1), "book");
 
     expect(book?.spec.side_effect).toBe("irreversible");
-    expect(book?.spec.confirm).toContain("¿Lo confirmo?");
+    expect(book?.spec.confirm).toContain("Reservado:");
+    expect(book?.spec.confirm).not.toContain("¿");
   });
 });
 

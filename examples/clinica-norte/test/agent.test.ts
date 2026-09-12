@@ -206,7 +206,8 @@ describe("las cuatro fases", () => {
   it("declara book como irreversible y propose como lectura, con la frase que el gate leerá", () => {
     const book = clinica.tools().find((spec) => spec.name === "book");
     expect(book?.side_effect).toBe("irreversible");
-    expect(book?.confirm).toBe("Le reservo el {{result.when}} con {{result.doctor}}. ¿Lo confirmo?");
+    // Un recibo y no una pregunta: se lee DESPUÉS de que la reserva ocurrió.
+    expect(book?.confirm).toBe("Reservado: el {{result.when}} con {{result.doctor}}.");
     // Proponer no toca la agenda: el gate no tiene nada que leer antes de dejarla pasar, y por eso
     // el modelo puede llamarla en el mismo turno en que el paciente nombra la hora.
     const propose = clinica.tools().find((spec) => spec.name === "propose");
