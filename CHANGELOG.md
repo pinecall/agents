@@ -7,6 +7,11 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **The console accepts an invitation.** `/invitations/<token>` is a card where the person the
+  link names chooses their password and takes their first key; until now the Team screen showed
+  the raw token and told them to `POST` it with curl. Team hands out the link instead, and so does
+  the operator's `orgs invite`. The card knows the token and nothing about the person — the token
+  is the right, and a card that said whose it was would tell a stranger who found the link.
 - **An admin page for the operator, at `/admin`.** A second browser program beside the console,
   with its own bundle, its own router and its own credential: the box's ops key, typed in and
   proved at `GET /v1/ops/whoami` before it is kept, under a storage name of its own. Four screens

@@ -1,4 +1,4 @@
-/** The console starts here: the theme, the key this tab holds for the world it looks at — or the login — and the router. */
+/** The console starts here: the theme, the key this tab holds for the world it looks at — or the login, or an invitation — and the router. */
 
 import { StrictMode, useCallback, useMemo, useState, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
@@ -7,12 +7,12 @@ import { RouterProvider } from "react-router";
 import { onUnauthorized } from "../shared/api";
 import { BASE } from "./lib/base";
 import { CredentialsProvider } from "../shared/credentials";
-import { loginToWorld, loginWithCode } from "./lib/login";
+import { loginToWorld, loginWithCode, type Signed } from "./lib/login";
 import { forgetKey, keepKey, keepWorld, keptKey, keptWorld, type World } from "./lib/session-key";
 import { WhoamiProvider } from "./lib/whoami";
 import { WorldProvider } from "./lib/world";
 import { router } from "./router";
-import { Login } from "./screens/login";
+import { Accept, Login } from "./screens/login";
 import { followTheSystemTheme } from "../shared/theme";
 import "../shared/styles/app.css";
 
@@ -27,6 +27,17 @@ if (root === null) {
 // here for a key of this tab's own and taken out of the address bar before anything renders, so a
 // reload, a bookmark or a screenshot never carries it.
 const LOGIN = "login";
+
+// The path an invitation link opens: /invitations/<token>. The token stays in the URL until it is
+// spent — it is one use and dies in a week on its own, and a person may need to reload the card —
+// and is taken out the moment it has bought a key.
+const INVITATIONS = /^\/invitations\/([^/]+)\/?$/;
+
+/** The token in the address, when this tab was opened from an invitation link. */
+function theInvitationInTheAddress(): string | null {
+  const found = INVITATIONS.exec(window.location.pathname);
+  return found === null ? null : decodeURIComponent(found[1] ?? "");
+}
 
 /** What the tab starts as: the world it looks at, and the key it holds for it, if any. */
 interface Start {
@@ -83,18 +94,29 @@ function Console({ startingWith }: { startingWith: Start }): ReactNode {
   );
   const worlds = useMemo(() => ({ world, turnTo }), [world, turnTo]);
 
+  const signed = (proof: Signed): void => {
+    keepKey(proof.env, proof.key);
+    keepWorld(proof.env);
+    setWorld(proof.env);
+    setKey(proof.key);
+  };
+
   if (key === null) {
-    return (
-      <Login
-        base={BASE}
-        onSigned={(signed) => {
-          keepKey(signed.env, signed.key);
-          keepWorld(signed.env);
-          setWorld(signed.env);
-          setKey(signed.key);
-        }}
-      />
-    );
+    const token = theInvitationInTheAddress();
+    if (token !== null) {
+      return (
+        <Accept
+          base={BASE}
+          token={token}
+          onSigned={(proof) => {
+            // Spent: the address is the console's root from here, so a reload is the console.
+            window.history.replaceState(null, "", BASE);
+            signed(proof);
+          }}
+        />
+      );
+    }
+    return <Login base={BASE} onSigned={signed} />;
   }
   return (
     <CredentialsProvider value={{ base: BASE, key }}>

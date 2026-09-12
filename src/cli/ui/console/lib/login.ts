@@ -1,4 +1,4 @@
-/** The ways a browser gets a key of its own: a one-use code `pinecall run` printed, a person's password, or the other world. */
+/** The ways a browser gets a key of its own: a code `pinecall run` printed, an invitation accepted, a password, or the other world. */
 
 import { z } from "zod";
 
@@ -40,9 +40,24 @@ export async function loginToWorld(credentials: Credentials, env: Signed["env"])
   return SignedSchema.parse(await post(credentials, "/v1/login/env", { env }));
 }
 
+/**
+ * Accept the invitation this tab was sent: the person chooses a password, the token is spent, and
+ * the answer is their first key — in the same shape a login answers, so the tab keeps it the same
+ * way. The token was in the LINK and never in a header: it is the right, and it is one use.
+ */
+export async function acceptInvitation(base: string, token: string, password: string): Promise<Signed> {
+  return knocked(base, `/v1/invitations/${encodeURIComponent(token)}`, { password, device: THIS_DEVICE });
+}
+
 // The one door a browser knocks at with no key at all: it is how this tab gets its own.
 async function login(base: string, body: unknown): Promise<Signed> {
-  const answer = await fetch(new URL(`${base.replace(/\/$/, "")}/v1/login`, window.location.origin), {
+  return knocked(base, "/v1/login", body);
+}
+
+// The two doors that take no key — a login, an invitation accepted — through one fetch: no
+// Authorization header, because there is nothing yet to put in one.
+async function knocked(base: string, path: string, body: unknown): Promise<Signed> {
+  const answer = await fetch(new URL(`${base.replace(/\/$/, "")}${path}`, window.location.origin), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),

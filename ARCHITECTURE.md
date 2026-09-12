@@ -419,7 +419,10 @@ The console is served at `/`. Everything about the page is a containment decisio
   that touches storage). `pinecall run` mints a one-use code standing for its key and prints
   `/a/<agent>?login=<code>`; the page spends it for a key of its own and takes it out of the
   address bar before rendering (`main.tsx`, `lib/login.ts`). Cold, it asks for org, email and
-  password (`screens/login/`). **It signs a person IN and never makes an org**: this page ships
+  password (`screens/login/`). Opened from an invitation link — `/invitations/<token>`, the one an
+  admin's Team screen or the operator's `orgs invite` hands out — it shows the card where the
+  person chooses their password and takes their first key (`screens/login/accept.tsx`), and the
+  token leaves the address the moment it is spent. **It signs a person IN and never makes an org**: this page ships
   inside the runtime every self-hoster serves, so a registration form in it would be one flag away
   from open registration on somebody else's box, and making an org is not what a control plane for
   an existing org is for. `POST /v1/signup` is knocked at by `pinecall signup` and by an API

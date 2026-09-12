@@ -6,8 +6,8 @@ import { drop, post, put, read, type Credentials } from "../../shared/api";
 
 const OPS = "/v1/ops";
 
-// Seven numbers, spelled once and in the runtime's own order (types/org.py). Four are a FLOW —
-// what the org has consumed or holds open — and three a STOCK, what it may keep standing. `null`
+// The eight quotas, spelled once and in the runtime's own order (types/org.py). Four are a FLOW —
+// what the org has consumed or holds open — and four a STOCK, what it may keep standing. `null`
 // is no limit, which is what a box of its own gives everybody; `0` is a real limit that refuses.
 export const QUOTAS = [
   "minutes",
@@ -23,12 +23,17 @@ export const QUOTAS = [
 /** One quota's name, as the gateway spells it and as a flag of the runtime's CLI spells it. */
 export type Quota = (typeof QUOTAS)[number];
 
-const QuotasSchema = z.object(
-  Object.fromEntries(QUOTAS.map((name) => [name, z.number().nullable()])) as Record<
-    Quota,
-    z.ZodNullable<z.ZodNumber>
-  >,
-);
+const aLimit = z.number().nullable();
+const QuotasSchema = z.object({
+  minutes: aLimit,
+  messages: aLimit,
+  agents: aLimit,
+  concurrent_calls: aLimit,
+  memory_facts: aLimit,
+  knowledge_chunks: aLimit,
+  numbers: aLimit,
+  seats: aLimit,
+});
 
 // What the org is HOLDING against the stocks, counted by query at the moment it is asked. The
 // gateway answers only the four it can count; a key that opens a gateway with no database reads
@@ -199,10 +204,19 @@ export async function routesOf(
   return z.array(RouteSchema).parse(await read(credentials, `${OPS}/routes`, { org, env }));
 }
 
-/** Every worker the hub has heard from, with what it is carrying, and the hub's clock beside it. */
-export async function fleet(credentials: Credentials): Promise<{ now: number; workers: Worker[] }> {
+/** The fleet as the hub answers it: its clock, how long a silence counts as gone, the workers. */
+export interface TheFleet {
+  now: number;
+  stale_after_s: number;
+  workers: Worker[];
+}
+
+/** Every worker the hub has heard from, with what it is carrying, and the hub's own clock. */
+export async function fleet(credentials: Credentials): Promise<TheFleet> {
   const said = await read(credentials, `${OPS}/fleet`);
-  return z.object({ now: z.number(), workers: z.array(WorkerSchema) }).parse(said);
+  return z
+    .object({ now: z.number(), stale_after_s: z.number(), workers: z.array(WorkerSchema) })
+    .parse(said);
 }
 
 /** Stop giving a worker new calls, or start again. The calls it holds are never touched. */

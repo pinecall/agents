@@ -5,12 +5,11 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { GatewayError } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
 import { Nothing } from "../../../shared/frame";
-import { cordon, fleet, type Worker } from "../../lib/doors";
+import { cordon, fleet, type TheFleet, type Worker } from "../../lib/doors";
 import "./fleet.css";
 
-// The hub stops routing to a worker it has not heard from in this long, so the page dims one at
-// the same moment rather than showing a row that looks alive. runtime fleet/roster.py.
-const STALE_AFTER_S = 30;
+// A heartbeat is not an event anybody can subscribe to: the hub hears one every few seconds and
+// this page asks, on a clock of its own, for what it heard.
 const EVERY_MS = 5_000;
 
 /**
@@ -22,7 +21,7 @@ const EVERY_MS = 5_000;
  */
 export function Fleet(): ReactNode {
   const credentials = useCredentials();
-  const [seen, setSeen] = useState<{ now: number; workers: Worker[] } | null>(null);
+  const [seen, setSeen] = useState<TheFleet | null>(null);
   const [refused, setRefused] = useState<string | null>(null);
 
   const reread = useCallback(async (): Promise<void> => {
@@ -33,8 +32,6 @@ export function Fleet(): ReactNode {
     }
   }, [credentials]);
 
-  // On a clock, because a heartbeat is not an event anybody can subscribe to: the hub hears one
-  // every few seconds and this page asks for what it heard.
   useEffect(() => {
     void reread();
     const ticking = window.setInterval(() => void reread(), EVERY_MS);
@@ -69,7 +66,9 @@ export function Fleet(): ReactNode {
       {seen !== null && seen.workers.length > 0 && (
         <ul className="panel workers">
           {seen.workers.map((worker) => {
-            const quiet = seen.now - worker.seen_at > STALE_AFTER_S;
+            // The hub's own threshold, read off the answer: the page dims a worker at the very
+            // moment the hub stops routing to it, and keeps no second copy of the number.
+            const quiet = seen.now - worker.seen_at > seen.stale_after_s;
             return (
               <li className={quiet ? "worker worker-quiet" : "worker"} key={worker.worker}>
                 <span className="fixed">{worker.worker}</span>

@@ -3,8 +3,7 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 
 import { GatewayError } from "../../../shared/api";
-import { followTheSystemTheme } from "../../../shared/theme";
-import { named, theBox } from "../../lib/the-box";
+import { theBox } from "../../lib/the-box";
 import "./login.css";
 
 // What the key is, said where somebody who does not have it will read it: it is the BOX's, out of
@@ -35,10 +34,13 @@ export function Login({
     setBusy(true);
     setRefused(null);
     try {
-      const box = await theBox({ base, key: key.trim() });
-      // Out of the field the moment it is out of this component: what keeps it is the caller.
+      const proved = key.trim();
+      // The door answers 401 to any key that is not the box's, and answered() throws on it: a
+      // key that reaches the next line opened the box. Out of the field the moment it is out of
+      // this component — what keeps it is the caller.
+      await theBox({ base, key: proved });
       setKey("");
-      onProved(box.operator ? key.trim() : "");
+      onProved(proved);
     } catch (failed) {
       setRefused(failed instanceof GatewayError ? failed.message : String(failed));
     } finally {
@@ -46,13 +48,12 @@ export function Login({
     }
   };
 
-  followTheSystemTheme();
   return (
     <div className="way-in">
       <section className="panel way-in-card">
         <h1 className="way-in-title">pinecall · admin</h1>
         <p className="note">
-          {named({ operator: true, version: "", domain: null })} — {WHAT_IT_IS}
+          {window.location.host} — {WHAT_IT_IS}
         </p>
         <form className="way-in-form" onSubmit={(event) => void prove(event)}>
           <input

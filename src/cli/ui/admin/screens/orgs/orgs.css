@@ -76,6 +76,18 @@
   padding: 0 16px 14px;
 }
 
+.of-the-org-panel {
+  margin-top: 22px;
+}
+
+.of-the-org-empty {
+  padding: 0 16px 14px;
+}
+
+.of-the-org-note {
+  padding: 0 16px 12px;
+}
+
 .of-the-org {
   list-style: none;
   margin: 0;

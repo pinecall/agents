@@ -67,12 +67,11 @@ export function Team(): ReactNode {
       {invited !== null && (
         <div className="team-token">
           <p className="team-token-title">
-            {invited.member.name} is invited. This is the invitation — copy it now: the table keeps the fingerprint, and it is never shown again.
+            {invited.member.name} is invited. Send them this link — copy it now: the table keeps the fingerprint, and it is never shown again.
           </p>
-          <code className="team-token-code fixed">{invited.token}</code>
+          <code className="team-token-code fixed">{invitationLink(invited.token)}</code>
           <p className="team-note fixed">
-            one use · dies {invited.expires_at} · the person opens{" "}
-            <span className="team-cmd">POST /v1/invitations/&lt;token&gt;</span> with a password and takes their first key
+            one use · dies {invited.expires_at} · it opens a card where they choose their password and take their first key
           </p>
         </div>
       )}
@@ -152,4 +151,9 @@ function InviteForm({ onInvite }: { onInvite: (who: Parameters<typeof invite>[1]
 
 function saidBy(failed: unknown): string {
   return failed instanceof GatewayError ? failed.message : String(failed);
+}
+
+/** Where an invited person opens the console: the card at /invitations/<token>, on this same origin. */
+function invitationLink(token: string): string {
+  return `${window.location.origin}/invitations/${encodeURIComponent(token)}`;
 }

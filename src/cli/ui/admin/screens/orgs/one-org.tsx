@@ -105,10 +105,10 @@ export function OneOrgScreen(): ReactNode {
 
       <Limits org={all.org} onSaved={again} />
 
-      <div className="panel" style={{ marginTop: "22px" }}>
+      <div className="panel of-the-org-panel">
         <p className="panel-title">keys · {all.keys.filter((one) => one.revoked_at === null).length} live</p>
         {all.keys.length === 0 ? (
-          <div style={{ padding: "0 16px 14px" }}>
+          <div className="of-the-org-empty">
             <Nothing>No key issued to this org yet.</Nothing>
           </div>
         ) : (
@@ -131,10 +131,10 @@ export function OneOrgScreen(): ReactNode {
         )}
       </div>
 
-      <div className="panel" style={{ marginTop: "22px" }}>
+      <div className="panel of-the-org-panel">
         <p className="panel-title">people · {all.people.seated} seated</p>
         {all.people.members.length === 0 ? (
-          <div style={{ padding: "0 16px 14px" }}>
+          <div className="of-the-org-empty">
             <Nothing>Nobody has been invited to this org.</Nothing>
           </div>
         ) : (
@@ -149,16 +149,16 @@ export function OneOrgScreen(): ReactNode {
             ))}
           </ul>
         )}
-        <p className="note" style={{ padding: "0 16px 12px" }}>
+        <p className="note of-the-org-note">
           Read only: who works at a tenant is the tenant&rsquo;s to decide, and a box that could
           edit a member could put itself in somebody&rsquo;s org.
         </p>
       </div>
 
-      <div className="panel" style={{ marginTop: "22px" }}>
+      <div className="panel of-the-org-panel">
         <p className="panel-title">vendors it brought</p>
         {all.vendors.length === 0 ? (
-          <div style={{ padding: "0 16px 14px" }}>
+          <div className="of-the-org-empty">
             <Nothing>None: every call of this org runs on the keys of the box.</Nothing>
           </div>
         ) : (

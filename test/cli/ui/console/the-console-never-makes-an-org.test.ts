@@ -18,7 +18,7 @@ test("no file of the console knocks at the sign-up door", () => {
 
 // The one door it does knock at with no key: the login, which mints a key for an org that exists.
 test("the login door is reached from exactly one file", () => {
-  expect(filesReaching("/v1/login`")).toEqual(["lib/login.ts"]);
+  expect(filesReaching("\"/v1/login\"")).toEqual(["lib/login.ts"]);
 });
 
 // A slug is minted by the gateway out of what a sign-up typed. With no sign-up here, nothing in

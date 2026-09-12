@@ -63,8 +63,10 @@ what it was issued with — `app` unless `--scope` said otherwise.
 ## The team
 
 People are rows, not shared keys. The admin invites from the console's Team screen or with `POST
-/v1/members`; the person accepts the link, picks a password, and holds keys of their own from
-then on — one per device, revoked on their own. A role is a preset of what those keys open:
+/v1/members`, and gets a **link** to send; the person opens it, chooses a password on the card it
+lands on, and holds keys of their own from then on — one per device, revoked on their own. On a
+gateway that takes no sign-up, the very first admin is invited the same way by whoever runs the
+box (`pinecall-runtime orgs invite`). A role is a preset of what those keys open:
 
 | role | opens | who |
 |---|---|---|
