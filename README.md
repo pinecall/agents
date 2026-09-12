@@ -51,8 +51,8 @@ pnpm exec pinecall prompt --state test/prompts/states.json   the exact prompt a 
 pnpm exec pinecall run             the app: the process you deploy
 pnpm exec pinecall knowledge push  ./knowledge/docs to the gateway, under the agent's name
 pnpm exec pinecall test            ring 1: the goldens, through the app in this process
-scripts/build && pnpm exec pinecall ui     the console on 127.0.0.1 — the one thing a browser
-                                           cannot read from TypeScript, so it is bundled first
+                                   `run` prints the console's URL: the gateway serves the page,
+                                   and the code in the URL signs this browser in, once
 ```
 
 A tenant that installed `pinecall` from npm has it on the PATH and writes `pinecall run`.

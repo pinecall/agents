@@ -363,8 +363,8 @@ pinecall chat                      # the app in THIS terminal, and a written cal
 pinecall chat --as +34600123456    # the same call, from somebody memory can file it under
 pinecall prompt --state test/prompts/states.json    # what the model would read, offline
 pinecall knowledge push            # ./knowledge/docs to the gateway, under the agent's slug
-pinecall run                       # the app registered and answering: the process you deploy
-pinecall ui                        # the console on 127.0.0.1: talk, calls, sessions, evals
+pinecall run                       # the app registered and answering: the process you deploy —
+                                   # and it prints the console's URL: talk, calls, sessions, evals
 ```
 
 `pinecall run` is the same process in development and in production: it runs the agent, binds no

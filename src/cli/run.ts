@@ -11,6 +11,7 @@ import { showMachine } from "./machine.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { instanceFor, load, mountOptions } from "./load.js";
+import { asked, Refused, type Door } from "./testing/gateway.js";
 import { chattingFrom, type Chatting } from "./ui/chatting.js";
 import { devHandler, ownVerbs } from "./ui/doors.js";
 import { driftingFrom } from "./ui/drifting.js";
@@ -35,7 +36,8 @@ export const group: Group = {
   usage: `usage: pinecall run [agent.tsx] [--ui] [--events] [--show-prompt]
 
   With nothing after it: the agent registered on the gateway, one line per log entry on stdout,
-  no port bound and no page served: the gateway is an API and nothing here answers a browser.
+  no port bound and no page served: the gateway serves the console, and this prints its URL with a
+  one-use code that signs the browser in. It answers that console for this directory.
 
   --show-prompt  the prompt a fresh instance would produce, then exit. No key, no gateway
   --events       one JSON line per log entry instead of the lines, for a pipe
@@ -113,7 +115,7 @@ export async function run(argv: string[]): Promise<number> {
         tools: mounted.options.tools?.length ?? 0,
         doors: doorsOf(mounted.options.routes),
       });
-      return await plain(pc, mounted.agent.onAny.bind(mounted.agent), mounted.slug, url, line);
+      return await plain(pc, mounted.agent.onAny.bind(mounted.agent), mounted.slug, url, line, () => consoleLine(door, mounted.slug));
     }
 
     // Which call the `s` key renders: the newest one, so the prompt on screen is the prompt of the
@@ -131,6 +133,25 @@ export async function run(argv: string[]): Promise<number> {
   } finally {
     await chatting?.close();
     pc.close();
+  }
+}
+
+// The console is the gateway's page at `/a/<agent>`, and it holds a key of its own — never this
+// process's. So this process mints a one-use code standing for its key (five minutes, once) and
+// prints the URL that carries it; the page spends it for a key of the tab's own. A gateway that
+// refuses the code — a key without the scope, an older gateway — is one line, and the app runs on.
+/** Where the console of this agent is, with the code that signs the browser in. */
+export function consoleUrl(gateway: string, slug: string, code: string): string {
+  return `${gateway.replace(/\/$/, "")}/a/${encodeURIComponent(slug)}?login=${encodeURIComponent(code)}`;
+}
+
+async function consoleLine(door: Door, slug: string): Promise<string> {
+  try {
+    const minted = await asked<{ code: string }>(door, "/v1/login/codes", { method: "POST", body: {} });
+    return `console  ${consoleUrl(door.url, slug, minted.code)}   (opens within five minutes, once)`;
+  } catch (refused) {
+    const why = refused instanceof Refused ? `the gateway answered ${refused.status}` : refused instanceof Error ? refused.message : String(refused);
+    return `console  not available: ${why}`;
   }
 }
 
@@ -183,7 +204,14 @@ async function stream(pc: Pinecall, listen: Listen): Promise<number> {
 
 // The default: the same lines the view would have grown, appended, with nothing that moves
 // the cursor. It is what a process manager captures and what `docker logs` shows.
-async function plain(pc: Pinecall, listen: Listen, slug: string, url: string, connected: string): Promise<number> {
+async function plain(
+  pc: Pinecall,
+  listen: Listen,
+  slug: string,
+  url: string,
+  connected: string,
+  console: () => Promise<string>,
+): Promise<number> {
   let screen = screenFor(slug, url);
   listen((event) => {
     const before = screen;
@@ -194,6 +222,7 @@ async function plain(pc: Pinecall, listen: Listen, slug: string, url: string, co
   // gateway that refused it must leave its own refusal as the last thing on the screen.
   await pc.connect();
   process.stdout.write(`${connected}\n`);
+  process.stdout.write(`${await console()}\n`);
   await forever();
   return 0;
 }

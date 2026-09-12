@@ -113,7 +113,7 @@ a directory earns its place there by having a line in that table (§13).
 | `personas.ts` · `machine.ts` · `view.ts` | the synthetic callers, the state machine on one page, the terminal view as a pure function |
 | `login.ts` · `whoami.ts` · `secret.ts` | the key typed once, which key a verb would use, and the one place a secret is read without echoing it |
 | `testing/` | what those verbs need: the gateway's eval doors, goldens off disk, latency, the matrix, the progress screen, the score, the seeding check, the voice door |
-| `ui/` | `pinecall ui`: the local server (nonce, loopback, the key never leaving this process), the browser opener, and `ui/console/` — the page itself |
+| `ui/` | what `pinecall run` answers the console with, by the wire's verb (`doors.ts`, one module per verb family: a chat, a simulation, a suite, the knowledge and memory goldens, a promotion, drift, a reproduction), and `ui/console/` — the page itself, served by the gateway |
 
 Beside `src/`:
 
@@ -395,15 +395,23 @@ it and nobody else can read it. The `credentials` file keeps v1's top-level `api
 
 ## 11. The console
 
-`pinecall ui` is the one verb that opens a port, and everything about it is a containment
-decision:
+The console is served by the **gateway**, at `/`, and this CLI opens no port at all. Everything
+about the page is a containment decision:
 
-- **127.0.0.1 only**, the kernel picks the port, and everything answers under a random nonce path.
-  A process that scans the loopback finds a 404.
-- **The org key never reaches the browser.** The page asks this process; this process signs the
-  request and forwards it to the gateway, passing only `content-type`, `accept`, `last-event-id`
-  and `range`. `test/cli/ui/console/the-key-is-never-in-the-page.test.ts` proves the absence: no
-  browser storage in the source, and no key and no key's name in the built bundle.
+- **The org key never reaches the browser.** The page holds a PERSON's scoped key, minted for it
+  at login and kept in `sessionStorage` for the tab's life (`lib/session-key.ts`, the one file
+  that touches storage). `pinecall run` mints a one-use code standing for its key and prints
+  `/a/<agent>?login=<code>`; the page spends it for a key of its own and takes it out of the
+  address bar before rendering (`main.tsx`, `lib/login.ts`). Cold, it asks for org, email and
+  password (`screens/login/`). `test/cli/ui/console/the-key-is-never-in-the-page.test.ts` pins it:
+  one file reaches `sessionStorage`, none reaches `localStorage`, only `lib/api.ts` writes the
+  `authorization` header, and the bundle carries no key and no key's name.
+- **Nothing rides a URL.** The log stream is `fetch` reading `text/event-stream` by hand
+  (`lib/stream.ts`, `SseParser`), with the key on the header and `Last-Event-ID` sent by the
+  reader on a reconnect; the recording is fetched with the header and played from an object URL.
+- **What only the agent's directory can answer** — the class for a written call, the personas, the
+  goldens, the knowledge folder — the page asks the gateway, and the gateway asks the `pinecall
+  run` standing there (`lib/dev.ts`; the runtime's `docs/protocol/dev-verbs.md`).
 - **The page may not import the framework** (§13). None of it would run in a browser, and a build
   that pulled a TypeScript parser into the bundle is a build nobody would notice.
 
@@ -511,6 +519,7 @@ two models, all three repositories checked out, a throwaway Postgres, a gateway 
   and tsx each take both from the preset, and a tenant adds nothing. The one thing `.tsx` costs is
   the angle-bracket cast — `<Slot>row` is JSX there, so a class that wants one writes `row as Slot`.
 - **The console is the one thing that must be built**: a browser reads no TypeScript, so
-  `scripts/build` runs `vite build` into `dist/cli/ui/console`, the path `pinecall ui` serves.
+  `scripts/build` runs `vite build` into `dist/cli/ui/console`. The runtime's `scripts/console`
+  copies that directory into the gateway as package data, and the gateway serves it at `/`.
 - `scripts/check` is build → lint → test, in that order, for the package and for every workspace
   package; CI runs exactly that, with `pinecall/protocol` checked out beside it.
