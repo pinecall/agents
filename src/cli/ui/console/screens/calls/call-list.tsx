@@ -1,10 +1,10 @@
-/** The left column: the calls happening now, and under them the ones that already hung up. */
+/** The left column: a strip saying the list is live, the calls happening now, and under them the ones that hung up. */
 
 import type { SessionLine } from "@pinecall/protocol";
 import { useEffect, useState, type ReactNode } from "react";
 import { NavLink } from "react-router";
 
-import { isLive } from "../../lib/use-agent-sessions";
+import { EVERY_MS, isLive } from "../../lib/use-agent-sessions";
 import { Nothing } from "../../shell/nothing";
 import { glyphOf } from "./channel-glyph";
 
@@ -24,12 +24,22 @@ export function CallList({
 
   return (
     <nav className="call-list">
-      <p className="call-list-standing fixed">{standing}</p>
+      <p className="call-list-standing fixed">
+        <span className="call-list-live">
+          {standing === "live" && <span className="call-list-dot" aria-hidden />}
+          {standing}
+        </span>
+        <span className="call-list-asked">re-asked every {EVERY_MS / 1000} s</span>
+      </p>
       {lines.length === 0 ? (
-        <Nothing>No calls yet. The first one to reach this agent appears here as it rings.</Nothing>
+        <div className="call-list-nothing">
+          <Nothing>No calls yet. The first one to reach this agent appears here as it rings.</Nothing>
+        </div>
       ) : null}
-      <Group name="Live" agent={agent} lines={live} now={now} />
-      <Group name="Recent" agent={agent} lines={over} now={now} />
+      <div className="call-groups">
+        <Group name="Live" agent={agent} lines={live} now={now} />
+        <Group name="Recent" agent={agent} lines={over} now={now} />
+      </div>
     </nav>
   );
 }
@@ -49,15 +59,15 @@ function Group({
     return null;
   }
   return (
-    <section className="call-group">
-      <h2 className="call-group-name">{name}</h2>
+    <section className={`call-group call-group-${name.toLowerCase()}`}>
+      <h2 className="call-group-name fixed">{name}</h2>
       {lines.map((line) => (
         <NavLink
           key={line.call}
           to={`/a/${agent}/calls/${line.call}`}
           className={({ isActive }) => (isActive ? "call-line call-line-here" : "call-line")}
         >
-          <span className="call-line-glyph">{glyphOf(line.channel)}</span>
+          <span className="call-line-glyph fixed">{glyphOf(line.channel)}</span>
           <span className="call-line-who">{whoIsOn(line)}</span>
           <span className="call-line-when fixed">{when(line, now)}</span>
         </NavLink>

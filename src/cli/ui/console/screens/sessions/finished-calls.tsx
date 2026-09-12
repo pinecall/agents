@@ -28,26 +28,25 @@ export function Sessions(): ReactNode {
 
   return (
     <div className="page page-wide">
-      <header className="page-head">
-        <div className="page-eyebrow">{agent}</div>
-        <h1 className="page-title">Sessions</h1>
-        <p className="page-lede">
-          Every conversation this agent has had, newest first — phone calls included. A row opens the
-          session's append-only log: one line per fact, numbered by <code className="mono">seq</code>, with
-          the per-turn STT / LLM / TTS breakdown and the consent proof beside it. The <strong>score</strong>{" "}
-          column is the call judging itself, written into the same log as{" "}
-          <code className="mono">call.score</code> within a minute of the caller hanging up.
-        </p>
-      </header>
-
-      <section className="section">
+      <div className="sessions-head">
+        <header className="page-head">
+          <div className="page-eyebrow">{agent}</div>
+          <h1 className="page-title">Sessions</h1>
+          <p className="page-lede">
+            Every conversation this agent has had, newest first — phone calls included. A row opens the
+            session's append-only log: one line per fact, numbered by <code className="mono">seq</code>, with
+            the per-turn STT / LLM / TTS breakdown and the consent proof beside it. The <strong>score</strong>{" "}
+            column is the call judging itself, written into the same log as{" "}
+            <code className="mono">call.score</code> within a minute of the caller hanging up.
+          </p>
+        </header>
         <form className="by-hand" onSubmit={open}>
-          <input className="ctl-input mono" name={BY_HAND} placeholder="open a call by id" aria-label="a call id" />
-          <button className="button" type="submit">
+          <input className="by-hand-id" name={BY_HAND} placeholder="open a call by id" aria-label="a call id" />
+          <button className="by-hand-open" type="submit">
             open
           </button>
         </form>
-      </section>
+      </div>
 
       {error !== null && <p className="note note-warn">{error}</p>}
 
@@ -121,7 +120,7 @@ function Row({ row, withAgent }: { row: Scored; withAgent: boolean }): ReactNode
       </td>
       {withAgent && <td className="mono dim">{line.agent}</td>}
       <td>
-        <span className={`medium medium-${line.channel ?? "none"}`}>{line.channel ?? "—"}</span>
+        <span className="medium">{line.channel ?? "—"}</span>
       </td>
       <td className="mono dim">{whoWasOn(line)}</td>
       <td className="mono dim">{started(line.started_at)}</td>
@@ -166,7 +165,7 @@ function ScoreChip({ row }: { row: Scored }): ReactNode {
   }
   const held = score.judges.filter((judge) => judge.verdict === "held").length;
   return (
-    <span className={score.passed ? "accent mono" : "ev-bad mono"} title={score.judges.map((judge) => `${judge.name} ${judge.verdict}`).join(", ")}>
+    <span className={score.passed ? "ev-held mono" : "ev-bad mono"} title={score.judges.map((judge) => `${judge.name} ${judge.verdict}`).join(", ")}>
       {score.passed ? "passed" : "did not pass"} · {held}/{score.judges.length}
     </span>
   );

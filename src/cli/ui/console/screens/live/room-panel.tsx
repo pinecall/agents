@@ -12,21 +12,23 @@ export function RoomPanel({ room, from }: { room: Room | null; from: string | nu
         <p className="live-panel-empty">No room: this session carries no media.</p>
       ) : (
         <>
-          <p className="live-panel-line fixed">
-            {room.name} · {room.sid}
+          <p className="live-panel-line">
+            {room.name}
+            <br />
+            {room.sid}
+            {from !== null && <> · rang from {from}</>}
           </p>
-          {from === null ? null : <p className="live-panel-line fixed">from {from}</p>}
           <ul className="participants">
             {room.participants.map((who) => (
               <li className="participant" key={who.identity}>
                 <details>
                   <summary className="participant-line">
-                    <span className={who.speaking ? "participant-speaking" : "participant-quiet"}>●</span>
-                    <span className="participant-who fixed">{who.name ?? who.identity}</span>
-                    <span className="participant-kind">{who.kind}</span>
+                    <span className={who.speaking ? "participant-dot participant-speaking" : "participant-dot participant-quiet"} />
+                    <span>{who.name ?? who.identity}</span>
+                    <span className="participant-kind fixed">{who.kind}</span>
                   </summary>
                   {/* The trunk's own headers: for a phone call this is where the SIP number is. */}
-                  <pre className="live-mark-data fixed">{JSON.stringify(who.attributes, null, 2)}</pre>
+                  <pre className="log-data fixed">{JSON.stringify(who.attributes, null, 2)}</pre>
                 </details>
               </li>
             ))}

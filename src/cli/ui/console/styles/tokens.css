@@ -1,87 +1,96 @@
-/* Every colour, face and measure the console has. The only file in it allowed to hold a hex.
+/* Every colour, face and measure the console has: the design canvas's palette, under the console's
+ * own names. The only file in it allowed to hold a hex.
  *
  * Dark, quiet, and mostly monochrome: four layered near-blacks, hairline borders instead of
- * shadows, and ONE accent — signal lime — spent only where it means "live, or here, or now".
- * Prose is Inter and anything a machine wrote is mono. Density is earned: tables and logs are
- * dense, everything else breathes.
+ * shadows, and ONE accent — the canvas's pink — spent only where it means "live, or here, or now",
+ * or a refusal. Prose is IBM Plex Sans and anything a machine wrote is IBM Plex Mono. Density is
+ * earned: tables and logs are dense, everything else breathes.
+ *
+ * The mapping from the canvas's names: --bg→--ground · --panel · --panel2→--panel-2 ·
+ * --sel→--panel-3 and --selected · --sunk · --line→--edge and --edge-strong · --line2→--edge-soft ·
+ * --ink · --ink2→--ink-2 · --mut→--ink-soft · --mut2→--ink-faint · --acc→--accent ·
+ * --accSoft→--accent-soft · --accLine→--accent-line · --ok · --warn · --hov→--hover.
  */
 
 :root {
   color-scheme: dark;
 
   /* The grounds: four layers, each a few percent lighter than the last. No gradients anywhere. */
-  --ground: #0b0e12;
-  --panel: #0f1319;
-  --panel-2: #141922;
-  --panel-3: #1a212b;
+  --ground: #0d0d0f;
+  --panel: #101013;
+  --panel-2: #16161a;
+  --panel-3: #202028;
 
-  /* Hairlines. 1px, never a shadow. */
-  --edge: #1c232e;
-  --edge-strong: #28323f;
+  /* Hairlines. 1px, never a shadow. The canvas draws one line everywhere a control has an edge. */
+  --edge: #24242a;
+  --edge-strong: #24242a;
+  --edge-soft: #1c1c22;
 
-  /* Three inks and no more: what you read, what supports it, what is only there when you look. */
-  --ink: #e4ebf2;
-  --ink-soft: #8794a4;
-  --ink-faint: #56637a;
+  /* Four inks: what you read, what a row says, what supports it, what is only there when you look. */
+  --ink: #ececec;
+  --ink-2: #c9c9d0;
+  --ink-soft: #8b8b93;
+  --ink-faint: #5c5c66;
 
-  /* One accent. It means live, selected, or the single thing that matters on the screen. */
-  --accent: #c8f24e;
-  --accent-soft: rgba(200, 242, 78, 0.1);
-  --accent-line: rgba(200, 242, 78, 0.35);
+  /* One accent. It means live, selected, the single thing that matters — or a refusal. */
+  --accent: #f0569a;
+  --accent-soft: #1a1217;
+  --accent-line: #3a2130;
+  /* What is written on a filled accent button, in both themes. */
+  --on-accent: #ffffff;
 
-  /* Held, passed, active: the one colour that says so. */
+  /* Held, passed, done: the one colour that says so. */
   --ok: #7fae86;
 
-  /* Two more colours exist, and only to say something is wrong. */
-  --warn: #d8a83c;
-  --danger: #e8695c;
+  /* One more colour exists, and only to say something did not finish or did not hold. */
+  --warn: #cfae7e;
 
-  /* Prose is Inter; anything a machine wrote is mono. */
-  --face: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  --face-fixed: "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  /* Prose is Plex Sans; anything a machine wrote is Plex Mono. */
+  --face: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --face-fixed: "IBM Plex Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
 
   /* Two more grounds: the sunk field an input sits in, and the two states a row takes. */
-  --sunk: #080a0d;
-  --hover: #141922;
-  --selected: #1a212b;
-  --edge-soft: #161c25;
+  --sunk: #0a0a0c;
+  --hover: #1a1a20;
+  --selected: #202028;
 
   /* One rhythm: everything is a multiple of --step, so nothing needs a number of its own. */
   --step: 8px;
-  --rail: 236px;
-  --head: 52px;
-  --radius: 3px;
+  --rail: 204px;
+  --head: 50px;
+  /* A chip, a control, a panel: the three corners the canvas draws. */
+  --radius: 4px;
+  --radius-control: 5px;
   --radius-panel: 8px;
 }
 
 /* The same instrument in daylight: paper and ink, not a bright SaaS. ONLY the colours move; every
-   size and face stays put, so nothing about the layout changes. The accent is the same lime
-   deepened to an olive that clears WCAG AA on white while staying recognisably it. */
+   size and face stays put, so nothing about the layout changes. */
 :root[data-theme="light"] {
   color-scheme: light;
 
-  --ground: #fbfbf9;
-  --panel: #f2f2ec;
-  --panel-2: #ebebe4;
-  --panel-3: #e0e0d7;
+  --ground: #f6f6f4;
+  --panel: #ffffff;
+  --panel-2: #fbfbf9;
+  --panel-3: #eaeae6;
 
-  --edge: #dedcd2;
-  --edge-strong: #c6c4b8;
+  --edge: #e3e3de;
+  --edge-strong: #e3e3de;
+  --edge-soft: #ededea;
 
-  --ink: #191c20;
-  --ink-soft: #545c68;
-  --ink-faint: #7c8593;
+  --ink: #17171a;
+  --ink-2: #3e3e45;
+  --ink-soft: #74747c;
+  --ink-faint: #a4a4ac;
 
-  --accent: #5f7d16;
-  --accent-soft: rgba(95, 125, 22, 0.14);
-  --accent-line: rgba(95, 125, 22, 0.35);
+  --accent: #c92572;
+  --accent-soft: #fdf1f6;
+  --accent-line: #f0cfdf;
+
   --ok: #3d7a4c;
-
-  --warn: #8a6100;
-  --danger: #c62f28;
+  --warn: #8a6a2c;
 
   --sunk: #f1f1ee;
   --hover: #f1f1ee;
   --selected: #eaeae6;
-  --edge-soft: #ededea;
 }

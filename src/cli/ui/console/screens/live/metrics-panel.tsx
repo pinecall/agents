@@ -1,4 +1,4 @@
-/** METRICS: what the call's turns usually cost, and every block the session measured, whole. */
+/** METRICS: what the call's turns usually cost, as bars, and every block the session measured, whole. */
 
 import type { CollectedMetrics, Entry } from "@pinecall/protocol";
 import type { ReactNode } from "react";
@@ -16,6 +16,7 @@ export function MetricsPanel({
   entries: Entry[];
 }): ReactNode {
   const middle = medians(entries);
+  const longest = Math.max(...middle.map((row) => row.seconds), 0);
   const shapes = blockShapes();
   return (
     <section className="live-panel">
@@ -23,13 +24,17 @@ export function MetricsPanel({
       {middle.length === 0 ? (
         <p className="live-panel-empty">Nothing measured yet: the first turn fills this in.</p>
       ) : (
-        <Readings
-          rows={middle.map((row) => ({
-            field: `${row.name} · ${String(row.turns)} turns`,
-            value: seconds(row.seconds),
-            unit: null,
-          }))}
-        />
+        middle.map((row) => (
+          <div className="live-meter fixed" key={row.name}>
+            <span className="live-meter-name" title={`${String(row.turns)} turns`}>
+              {row.name}
+            </span>
+            <span className="live-meter-track">
+              <span className="live-meter-bar" style={{ width: `${String(longest === 0 ? 0 : (row.seconds / longest) * 100)}%` }} />
+            </span>
+            <span className="live-meter-value">{seconds(row.seconds)}</span>
+          </div>
+        ))
       )}
       {Object.entries(metrics).map(([kind, blocks]) => (
         <Blocks key={kind} kind={kind} blocks={blocks} shape={shapes.get(kind)} />

@@ -14,41 +14,52 @@ import "./talk.css";
 export function Talk(): ReactNode {
   const agent = useParams()["agent"] ?? "";
   const live = useRoom(agent);
+  const on = live.phase === "live" || live.phase === "connecting";
   return (
     <section className="talk">
-      <header className="talk-head">
-        <div className="talk-eyebrow fixed">{agent}</div>
-        <h1 className="talk-title">Talk</h1>
+      <div className="talk-column">
+        <h1 className="talk-title">Talk to {agent}</h1>
         <p className="talk-lede">
-          The microphone in this tab joins the agent's room over WebRTC. What is said is drawn word
-          by word as the voice says it; the tools, the state and every fact of the call arrive from
-          the log underneath, the same log <span className="fixed">pinecall-runtime sessions show</span>{" "}
-          prints.
+          This machine's microphone reaches the agent. The call is the same log everything else reads.
         </p>
-      </header>
-      <div className="talk-bar">
-        <Door live={live} />
-        <span className="talk-status">{standing(live)}</span>
-        {live.call !== null && <span className="talk-call fixed">{live.call}</span>}
+        <div className="talk-door-row">
+          <Door live={live} />
+          <div className="talk-standing">
+            <span className="talk-phase">{standing(live)}</span>
+            <span className="talk-signal">
+              <span className={on ? "talk-bars talk-bars-on" : "talk-bars"} aria-hidden>
+                <span />
+                <span />
+                <span />
+              </span>
+              {live.call !== null && <span className="talk-call fixed">{live.call}</span>}
+            </span>
+          </div>
+        </div>
+        <Transcript lines={live.lines} empty={hint(live.phase)} />
+        {live.error !== null && <p className="talk-error fixed">{live.error}</p>}
       </div>
-      <Transcript lines={live.lines} empty={hint(live.phase)} />
-      {live.error !== null && <p className="talk-error">{live.error}</p>}
       {live.call !== null && <Marks call={live.call} heard={live.heard} />}
-      {live.call !== null && <Live call={live.call} />}
+      {live.call !== null && (
+        <div className="talk-whole">
+          <Live call={live.call} />
+        </div>
+      )}
     </section>
   );
 }
 
+// One round button: filled while the line is open, outlined while it is not.
 function Door({ live }: { live: Talking }): ReactNode {
   if (live.phase === "live" || live.phase === "connecting") {
     return (
-      <button type="button" className="door door-stop" disabled={live.phase === "connecting"} onClick={() => void live.close()}>
+      <button type="button" className="door door-on" disabled={live.phase === "connecting"} onClick={() => void live.close()}>
         Hang up
       </button>
     );
   }
   return (
-    <button type="button" className="door door-on" onClick={() => void live.open()}>
+    <button type="button" className="door" onClick={() => void live.open()}>
       {live.phase === "idle" ? "Talk" : "Talk again"}
     </button>
   );

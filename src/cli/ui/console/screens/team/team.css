@@ -70,7 +70,7 @@
   background: var(--accent);
   border: 0;
   border-radius: 5px;
-  color: #fff;
+  color: var(--on-accent);
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;

@@ -4,8 +4,10 @@ import type { Confirm, Entry, EventSource, StateCause } from "@pinecall/protocol
 import type { ReactNode } from "react";
 
 import type { SupervisorMark } from "../../lib/supervisor-mark";
+import { LogRow } from "./log-row";
+import { Readings } from "./readings";
 
-/** ◆ what the app's state did here, and what moved it: a tool's result or a fact from outside. */
+/** What the app's state did here, and what moved it: a tool's result or a fact from outside. */
 export function StateRow({
   changed,
   cause,
@@ -15,68 +17,30 @@ export function StateRow({
   cause: StateCause | null;
   seq: number;
 }): ReactNode {
-  return (
-    <p className="live-mark live-mark-state">
-      <span className="live-mark-glyph">◆</span>
-      <span className="live-mark-said fixed">
-        {changed.join(", ")} ← {causeOf(cause)}
-      </span>
-      <span className="live-mark-seq fixed">{seq}</span>
-    </p>
-  );
+  return <LogRow seq={seq} kind="state" tone="state" said={`${changed.join(", ")} ← ${causeOf(cause)}`} />;
 }
 
-/** ⊙ a human at the desk: what they did to this call, and the token that says who they were. */
+/** A human at the desk: what they did to this call, and the token that says who they were. */
 export function SupervisorRow({ mark, seq }: { mark: SupervisorMark; seq: number }): ReactNode {
-  return (
-    <p className="live-mark live-mark-supervisor">
-      <span className="live-mark-glyph">⊙</span>
-      <span className="live-mark-said" title={mark.said}>
-        {mark.said}
-      </span>
-      <span className="live-mark-outcome fixed">{mark.by}</span>
-      <span className="live-mark-seq fixed">{seq}</span>
-    </p>
-  );
+  return <LogRow seq={seq} kind="supervisor" tone="supervisor" said={mark.said} meta={[mark.by]} />;
 }
 
-/** ⏳ the yes the platform asked for: pending from here until the caller granted or declined it. */
+/** The yes the platform asked for: pending from here until the caller granted or declined it. */
 export function ConfirmRow({ confirm, seq }: { confirm: Confirm; seq: number }): ReactNode {
+  const rows = [
+    { field: "tool", value: confirm.tool, unit: null },
+    { field: "audience", value: confirm.audience, unit: null },
+    ...(confirm.said == null ? [] : [{ field: "said", value: confirm.said, unit: null }]),
+    ...(confirm.reason == null ? [] : [{ field: "reason", value: confirm.reason, unit: null }]),
+  ];
   return (
-    <details className={`live-mark live-mark-confirm live-mark-confirm-${confirm.status}`}>
-      <summary className="live-mark-line">
-        <span className="live-mark-glyph">⏳</span>
-        <span className="live-mark-said">{confirm.phrase}</span>
-        <span className="live-mark-outcome">{confirm.status}</span>
-        <span className="live-mark-seq fixed">{seq}</span>
-      </summary>
-      <dl className="readings">
-        <div className="reading">
-          <dt className="reading-field fixed">tool</dt>
-          <dd className="reading-value fixed">{confirm.tool}</dd>
-        </div>
-        <div className="reading">
-          <dt className="reading-field fixed">audience</dt>
-          <dd className="reading-value fixed">{confirm.audience}</dd>
-        </div>
-        {confirm.said === undefined ? null : (
-          <div className="reading">
-            <dt className="reading-field fixed">said</dt>
-            <dd className="reading-value fixed">{confirm.said}</dd>
-          </div>
-        )}
-        {confirm.reason === undefined ? null : (
-          <div className="reading">
-            <dt className="reading-field fixed">reason</dt>
-            <dd className="reading-value fixed">{confirm.reason}</dd>
-          </div>
-        )}
-      </dl>
-    </details>
+    <LogRow seq={seq} kind="confirm" tone="confirm" said={confirm.phrase} meta={[confirm.status]}>
+      <Readings rows={rows} />
+    </LogRow>
   );
 }
 
-/** ⚡ a fact that reached the agent from outside the conversation, with where it came from. */
+/** A fact that reached the agent from outside the conversation, with where it came from. */
 export function EventRow({
   name,
   source,
@@ -89,37 +53,26 @@ export function EventRow({
   seq: number;
 }): ReactNode {
   return (
-    <details className="live-mark live-mark-event">
-      <summary className="live-mark-line">
-        <span className="live-mark-glyph">⚡</span>
-        <span className="live-mark-said fixed">{name}</span>
-        <span className="live-mark-outcome">{source}</span>
-        <span className="live-mark-seq fixed">{seq}</span>
-      </summary>
-      <pre className="live-mark-data fixed">{JSON.stringify(data, null, 2)}</pre>
-    </details>
+    <LogRow seq={seq} kind="event" tone="event" said={<span className="fixed">{name}</span>} meta={[source]}>
+      <pre className="log-data fixed">{JSON.stringify(data, null, 2)}</pre>
+    </LogRow>
   );
 }
 
 // Nothing here is dropped: a metric block, a state of the session, a prompt rewritten and a
 // participant coming and going are all in the log, and a reader who wants them opens the row.
-/** ▸ the stretch of the log that is not conversation, folded into one line until somebody looks. */
+/** The stretch of the log that is not conversation, folded into one line until somebody looks. */
 export function QuietRow({ entries }: { entries: Entry[] }): ReactNode {
   return (
-    <details className="live-mark live-mark-quiet">
-      <summary className="live-mark-line">
-        <span className="live-mark-glyph">▸</span>
-        <span className="live-mark-said">{entries.length} entries</span>
-        <span className="live-mark-seq fixed">{entries[0]?.seq}</span>
-      </summary>
-      <ul className="live-mark-quiet-list">
+    <LogRow seq={entries[0]?.seq} kind="quiet" tone="quiet" said={`${entries.length} entries`}>
+      <ul className="log-list fixed">
         {entries.map((entry) => (
-          <li className="fixed" key={`${String(entry.seq)}-${entry.type}`}>
+          <li key={`${String(entry.seq)}-${entry.type}`}>
             {entry.seq} {entry.type}
           </li>
         ))}
       </ul>
-    </details>
+    </LogRow>
   );
 }
 

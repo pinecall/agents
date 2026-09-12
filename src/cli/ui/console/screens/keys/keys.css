@@ -1,34 +1,45 @@
-/* Keys owns its own styles: one line to bring one, and the vendors under it. */
+/* Keys owns its own styles: one panel to bring one, and the vendors brought under it. */
+
+.keys-bring {
+  margin-top: 22px;
+}
 
 .keys-add {
   align-items: center;
-  display: flex;
-  gap: var(--step);
-  margin-bottom: calc(var(--step) * 2);
-}
-
-.keys-vendor {
-  width: 12rem;
-}
-
-.keys-secret {
-  width: 22rem;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 150px minmax(0, 1fr) auto;
+  padding: 14px 14px 12px;
 }
 
 .keys-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--step);
   list-style: none;
-  margin: 0;
+  margin: 22px 0 0;
   padding: 0;
 }
 
-.keys-list li {
-  border-bottom: 1px solid var(--edge);
-  display: flex;
-  gap: calc(var(--step) * 2);
-  justify-content: space-between;
-  max-width: 30rem;
-  padding-bottom: var(--step);
+.keys-one {
+  align-items: center;
+  border-bottom: 1px solid var(--edge-soft);
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 11px 16px;
+}
+
+.keys-one:last-child {
+  border-bottom: none;
+}
+
+.keys-one:hover {
+  background: var(--hover);
+}
+
+.keys-one .keys-vendor {
+  color: var(--ink);
+  font-size: 13.5px;
+}
+
+.keys-nothing {
+  margin-top: 22px;
 }

@@ -1,38 +1,71 @@
 /* The two session screens. Layout and density only — every colour comes from tokens.css.
- * A log is the one place this instrument is allowed to be dense: 12px rows, hairlines, tabular
- * numbers. The accent is spent exactly twice — on a phone call, and on the consent that authorised
- * something irreversible — because those are the two things worth interrupting a scan for. */
+ * A log is the one place this instrument is allowed to be dense: mono rows, hairlines, tabular
+ * numbers. The accent is spent on an id, on the consent that authorised something irreversible,
+ * and on the row a verdict cites — the things worth interrupting a scan for. */
+
+/* The head row: the title on the left, the way to open a call by id on the right. */
+.sessions-head {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  justify-content: space-between;
+}
 
 .by-hand {
+  align-items: center;
+  background: var(--sunk);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-control);
   display: flex;
-  gap: var(--step);
-  max-width: 48ch;
+  height: 30px;
+  overflow: hidden;
+}
+
+.by-hand-id {
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  font-size: 13px;
+  height: 100%;
+  padding: 0 10px;
+  width: 22ch;
+}
+
+.by-hand-id::placeholder {
+  color: var(--ink-faint);
+}
+
+.by-hand-id:focus {
+  outline: none;
+}
+
+.by-hand-open {
+  background: transparent;
+  border: 0;
+  border-left: 1px solid var(--edge);
+  color: var(--ink-2);
+  cursor: pointer;
+  font-size: 12.5px;
+  height: 100%;
+  padding: 0 11px;
+}
+
+.by-hand-open:hover {
+  color: var(--ink);
 }
 
 /* ── the call log's own columns ──────────────────────────────────────────── */
 
 .medium {
-  color: var(--ink-faint);
-  font-family: var(--face-fixed);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.medium-phone {
-  color: var(--accent);
+  color: var(--ink-soft);
+  font-size: 12.5px;
 }
 
 .outcome {
-  color: var(--ink-soft);
-  font-family: var(--face-fixed);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-}
-
-.outcome-caller_hung_up,
-.outcome-agent_hung_up {
   color: var(--ink);
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 .outcome-error,
@@ -40,41 +73,37 @@
   color: var(--warn);
 }
 
-/* ── the envelope: one row of labelled facts ─────────────────────────────── */
+/* ── the envelope: one row of labelled facts, hairlines between ──────────── */
 
 .facts {
+  background: var(--edge);
   border: 1px solid var(--edge);
-  border-radius: var(--radius);
-  display: flex;
-  flex-wrap: wrap;
+  border-radius: var(--radius-panel);
+  display: grid;
+  gap: 1px;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
   overflow: hidden;
 }
 
 .fact {
-  border-right: 1px solid var(--edge);
-  flex: 1 0 auto;
-  min-width: 132px;
-  padding: calc(var(--step) * 1.5) calc(var(--step) * 2);
-}
-
-.fact:last-child {
-  border-right: none;
+  background: var(--panel);
+  padding: 11px 13px;
 }
 
 .fact-key {
   color: var(--ink-faint);
   font-family: var(--face-fixed);
-  font-size: 11px;
-  letter-spacing: 0.12em;
+  font-size: 10px;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .fact-val {
   color: var(--ink);
   font-family: var(--face-fixed);
-  font-size: 12px;
+  font-size: 13.5px;
   font-variant-numeric: tabular-nums;
-  margin-top: calc(var(--step) / 2);
+  margin-top: 4px;
   overflow-wrap: anywhere;
 }
 
@@ -87,7 +116,7 @@
 .strip {
   background: var(--edge);
   border: 1px solid var(--edge);
-  border-radius: var(--radius);
+  border-radius: var(--radius-panel);
   display: grid;
   gap: 1px;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -95,15 +124,16 @@
 }
 
 .strip-cell {
-  background: var(--ground);
-  padding: calc(var(--step) * 2) calc(var(--step) * 3);
+  background: var(--panel);
+  padding: 14px 16px;
 }
 
 .strip-leg {
   color: var(--ink-faint);
   font-family: var(--face-fixed);
-  font-size: 11px;
-  letter-spacing: 0.1em;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .strip-median {
@@ -111,52 +141,57 @@
   font-size: 22px;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
-  margin-top: var(--step);
+  margin-top: 6px;
 }
 
 .strip-foot {
-  color: var(--ink-faint);
+  color: var(--ink-soft);
   display: flex;
   font-family: var(--face-fixed);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
-  gap: calc(var(--step) * 1.5);
+  gap: 12px;
   justify-content: space-between;
-  margin-top: var(--step);
+  margin-top: 6px;
 }
 
 .strip-max {
-  color: var(--ink-soft);
+  color: var(--ink-2);
 }
 
 /* ── consent — the only evidence on the screen ───────────────────────────── */
 
 .consent {
+  background: var(--panel);
   border: 1px solid var(--edge);
-  border-left: 2px solid var(--accent);
-  border-radius: var(--radius);
-  padding: calc(var(--step) * 2) calc(var(--step) * 3);
+  border-radius: var(--radius-panel);
+  box-shadow: inset 2px 0 0 var(--accent);
+  padding: 12px 16px;
 }
 
 .consent + .consent {
-  margin-top: calc(var(--step) * 1.5);
+  margin-top: 10px;
 }
 
 .consent-join {
   color: var(--accent);
+  font-size: 11.5px;
   margin: 0;
 }
 
 .consent-said {
   color: var(--ink);
-  line-height: 1.6;
-  margin: var(--step) 0 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  margin: 6px 0 0;
   max-width: 72ch;
+  text-wrap: pretty;
 }
 
 .consent-problem {
   color: var(--warn);
-  margin: var(--step) 0 0;
+  font-size: 12.5px;
+  margin: 6px 0 0;
 }
 
 .consent-problem::before {
@@ -167,7 +202,6 @@
 
 .score-list {
   display: grid;
-  gap: calc(var(--step) * 1.5);
   list-style: none;
   margin: 0;
   padding: 0;
@@ -176,17 +210,13 @@
 .score-row {
   align-items: baseline;
   display: grid;
-  gap: calc(var(--step) * 2);
+  gap: 12px;
   grid-template-columns: 16px 120px 90px minmax(0, 1fr) auto;
-  padding-top: calc(var(--step) * 1.5);
+  padding: 10px 0;
 }
 
 .score-row + .score-row {
-  border-top: 1px solid var(--edge);
-}
-
-.score-row:first-child {
-  padding-top: var(--step);
+  border-top: 1px solid var(--edge-soft);
 }
 
 .score-row-mark {
@@ -194,11 +224,11 @@
 }
 
 .score-row-pass .score-row-mark {
-  color: var(--accent);
+  color: var(--ok);
 }
 
 .score-row-fail .score-row-mark {
-  color: var(--danger);
+  color: var(--warn);
 }
 
 .score-row-na {
@@ -208,15 +238,15 @@
 .score-row-kind {
   color: var(--ink-faint);
   font-family: var(--face-fixed);
-  font-size: 11px;
-  letter-spacing: 0.08em;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .score-row-reason {
   color: var(--ink-soft);
-  font-size: 12px;
-  line-height: 1.6;
+  font-size: 12.5px;
+  line-height: 1.55;
 }
 
 .score-row-said {
@@ -226,7 +256,7 @@
 .score-row-seqs {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--step);
+  gap: 5px 7px;
 }
 
 .player {
@@ -236,18 +266,20 @@
 /* ── the log: read digit by digit beside `pinecall-runtime sessions show` ──── */
 
 .timeline {
-  border: 1px solid var(--edge);
   border-collapse: collapse;
-  border-radius: var(--radius);
-  font-size: 12px;
+  font-size: 12.5px;
   table-layout: auto;
   width: 100%;
 }
 
 .timeline td {
-  border-bottom: 1px solid var(--edge);
-  padding: calc(var(--step) / 2) var(--step);
+  border-bottom: 1px solid var(--edge-soft);
+  padding: 6px 10px;
   vertical-align: top;
+}
+
+.timeline tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .timeline .row-opens {
@@ -255,14 +287,14 @@
 }
 
 .timeline .row-opens:hover td {
-  background: var(--panel);
+  background: var(--hover);
 }
 
 /* Every cell below is this table's own: the console is one bundle, so a screen's class carries
    the thing it belongs to and never a word another screen could want.
    The row a verdict cites: the reader followed a link from a score to this one line. */
 .timeline .row-cited td {
-  background: var(--panel-2);
+  background: var(--accent-soft);
   box-shadow: inset 2px 0 var(--accent);
 }
 
@@ -272,12 +304,12 @@
 }
 
 .timeline .seq {
-  color: var(--ink-soft);
+  color: var(--ink-faint);
   width: 4em;
 }
 
 .timeline .type {
-  color: var(--ink-soft);
+  color: var(--ink-2);
   white-space: nowrap;
 }
 
@@ -304,7 +336,7 @@
 
 .timeline .chips {
   display: inline-flex;
-  margin-left: var(--step);
+  margin-left: 8px;
 }
 
 .timeline .number {

@@ -71,43 +71,43 @@ export function Keys(): ReactNode {
   return (
     <section className="page">
       <div className="page-eyebrow fixed">keys</div>
-      <h1 className="page-title">the accounts this org brought of its own</h1>
+      <h1 className="page-title">Keys</h1>
       <p className="page-lede">
         Every call of this org runs on these from the next one; every vendor nobody brought runs on
         the box's own key. Nothing reads a key back — not this page, not the CLI, not the log.
       </p>
 
-      <form className="keys-add" onSubmit={(event) => void add(event)}>
-        <input
-          className="input mono keys-vendor"
-          value={vendor}
-          placeholder="elevenlabs"
-          onChange={(event) => setVendor(event.target.value)}
-        />
-        <input
-          className="input mono keys-secret"
-          type="password"
-          value={key}
-          placeholder="the key, sent once"
-          autoComplete="off"
-          onChange={(event) => setKey(event.target.value)}
-        />
-        <button type="submit" className="button" disabled={busy || vendor.trim() === "" || key === ""}>
-          {busy ? "sending…" : "bring it"}
-        </button>
-      </form>
+      <div className="panel keys-bring">
+        <p className="panel-title">bring one</p>
+        <form className="keys-add" onSubmit={(event) => void add(event)}>
+          <input className="input" value={vendor} placeholder="elevenlabs" onChange={(event) => setVendor(event.target.value)} />
+          <input
+            className="input"
+            type="password"
+            value={key}
+            placeholder="the key, sent once"
+            autoComplete="off"
+            onChange={(event) => setKey(event.target.value)}
+          />
+          <button type="submit" className="button" disabled={busy || vendor.trim() === "" || key === ""}>
+            {busy ? "sending…" : "bring it"}
+          </button>
+        </form>
+      </div>
 
       {refused !== null && <p className="note note-warn">{refused}</p>}
 
       {vendors !== null && vendors.length === 0 && (
-        <Nothing>No provider key brought: every call runs on the keys of the box.</Nothing>
+        <div className="keys-nothing">
+          <Nothing>No provider key brought: every call runs on the keys of the box.</Nothing>
+        </div>
       )}
 
       {vendors !== null && vendors.length > 0 && (
-        <ul className="keys-list">
+        <ul className="panel keys-list">
           {vendors.map((name) => (
-            <li key={name}>
-              <span className="mono">{name}</span>
+            <li className="keys-one" key={name}>
+              <span className="keys-vendor fixed">{name}</span>
               <button type="button" className="link" onClick={() => void give(name)}>
                 give it back
               </button>

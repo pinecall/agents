@@ -1,40 +1,29 @@
 /* Evals — the run table and the score sheet, the scored calls and their evidence.
- * The palette says three things and nothing else: the accent means a judgment that held or a run
- * that is done, `--danger` means one that did not hold, `--warn` means a run that did not finish. */
+ * The palette says three things and nothing else: the ok means a judgment that held or a run that
+ * is done, `--warn` means one that did not hold or did not finish, and the accent is the id. */
 
 .ev-row {
   cursor: pointer;
 }
 
-.ev-status-done {
-  color: var(--accent);
-}
-
-.ev-status-failed {
-  color: var(--danger);
-}
-
-.ev-status-running {
-  color: var(--warn);
-}
-
-.ev-bad {
-  color: var(--danger);
-}
-
+.ev-status-done,
+.ev-held,
 .ev-delta-up {
-  color: var(--accent);
+  color: var(--ok);
 }
 
+.ev-status-failed,
+.ev-status-running,
+.ev-bad,
 .ev-delta-down {
-  color: var(--danger);
+  color: var(--warn);
 }
 
 /* ── the score sheet ─────────────────────────────────────────────────────── */
 
 .ev-detail {
   display: grid;
-  gap: calc(var(--step) * 2);
+  gap: 14px;
 }
 
 .ev-scores td {
@@ -44,24 +33,25 @@
 .ev-score {
   align-items: center;
   display: inline-flex;
-  gap: calc(var(--step) * 1.5);
+  gap: 8px;
   justify-content: flex-end;
 }
 
 .ev-score-value {
   font-family: var(--face-fixed);
+  font-size: 11.5px;
   font-variant-numeric: tabular-nums;
 }
 
 .ev-track {
-  background: var(--panel-3);
+  background: var(--sunk);
   border-radius: 2px;
   height: 4px;
   width: 96px;
 }
 
 .ev-bar {
-  background: var(--accent);
+  background: var(--ok);
   border-radius: 2px;
   display: block;
   height: 100%;
@@ -73,7 +63,8 @@
 
 .ev-reason {
   color: var(--ink-soft);
-  line-height: 1.6;
+  font-size: 12.5px;
+  line-height: 1.55;
   margin: 0;
   max-width: 48ch;
 }
@@ -82,15 +73,16 @@
 
 .ev-said .panel-body {
   display: grid;
-  gap: calc(var(--step) * 1.5);
+  gap: 10px;
 }
 
 .ev-quote {
-  border-left: 2px solid var(--edge-strong);
+  border-left: 2px solid var(--edge);
   color: var(--ink);
-  line-height: 1.6;
+  font-size: 13.5px;
+  line-height: 1.55;
   margin: 0;
-  padding-left: calc(var(--step) * 1.5);
+  padding-left: 12px;
 }
 
 a.chip:hover .chip-val {
@@ -100,39 +92,41 @@ a.chip:hover .chip-val {
 /* Run a suite: the goldens as a ticked list, the line above them. */
 .suite-lede,
 .suite-aside {
-  color: var(--ink-faint);
+  color: var(--ink-soft);
   font-size: 13px;
-  margin: 0 0 calc(var(--step) * 2);
+  margin: 0 0 14px;
   max-width: 68ch;
+  text-wrap: pretty;
 }
 
 .suite {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--step) * 2);
+  gap: 14px;
 }
 
 .suite-head {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: calc(var(--step) * 2);
+  gap: 14px;
 }
 
 .suite-check {
   align-items: center;
-  color: var(--ink-soft);
+  color: var(--ink-2);
   display: flex;
-  font-size: 12px;
-  gap: var(--step);
+  font-size: 12.5px;
+  gap: 7px;
 }
 
 .suite-field {
-  align-items: baseline;
-  color: var(--ink-faint);
+  align-items: center;
+  color: var(--ink-soft);
   display: flex;
-  font-size: 12px;
-  gap: var(--step);
+  font-family: var(--face-fixed);
+  font-size: 10.5px;
+  gap: 8px;
 }
 
 .suite-input {
@@ -142,7 +136,6 @@ a.chip:hover .chip-val {
 .suite-list {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--step) * 0.5);
   list-style: none;
   margin: 0;
   padding: 0;
@@ -150,24 +143,25 @@ a.chip:hover .chip-val {
 
 .suite-golden {
   align-items: baseline;
-  border-top: 1px solid var(--edge);
+  border-top: 1px solid var(--edge-soft);
   display: grid;
-  gap: calc(var(--step) * 2);
+  font-size: 13px;
+  gap: 14px;
   grid-template-columns: minmax(18ch, 1fr) 2fr 2fr;
-  padding: calc(var(--step) * 0.75) 0;
+  padding: 8px 0;
 }
 
 .suite-says {
-  color: var(--ink-soft);
-  font-size: 12px;
+  color: var(--ink-2);
+  font-size: 12.5px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .suite-expects {
-  color: var(--ink-faint);
-  font-size: 12px;
+  color: var(--ink-soft);
+  font-size: 12.5px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -177,14 +171,17 @@ a.chip:hover .chip-val {
 .drift-windows {
   align-items: center;
   display: flex;
-  gap: calc(var(--step) * 2);
-  margin-bottom: calc(var(--step) * 2);
+  gap: 14px;
+  margin-bottom: 14px;
 }
 
 .drift-field {
   align-items: center;
+  color: var(--ink-soft);
   display: flex;
-  gap: var(--step);
+  font-family: var(--face-fixed);
+  font-size: 10.5px;
+  gap: 8px;
 }
 
 /* Wide enough for three digits and the spinner a number input draws beside them. */
@@ -195,16 +192,16 @@ a.chip:hover .chip-val {
 .drift-broke {
   display: flex;
   flex-direction: column;
-  gap: var(--step);
+  gap: 8px;
   list-style: none;
-  margin: calc(var(--step) * 2) 0 0;
+  margin: 14px 0 0;
   padding: 0;
 }
 
 .drift-broke li {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--step);
+  gap: 8px;
 }
 
 /* The two things a person does to a judged call, beside the evidence for it. */
@@ -212,16 +209,16 @@ a.chip:hover .chip-val {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--step);
-  margin-bottom: calc(var(--step) * 2);
+  gap: 8px;
+  margin-bottom: 14px;
 }
 
 /* What a broken run left on disk: the goldens as chips, and one of them opened whole. */
 .ev-repro {
   display: flex;
   flex-direction: column;
-  gap: var(--step);
-  margin-top: calc(var(--step) * 3);
+  gap: 8px;
+  margin-top: 22px;
 }
 
 .ev-repro .chip {
@@ -229,13 +226,15 @@ a.chip:hover .chip-val {
 }
 
 .ev-asked {
-  background: var(--panel-2);
-  border-radius: var(--radius);
+  background: var(--sunk);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-control);
+  color: var(--ink-2);
   font-size: 11px;
   margin: 0;
   max-height: 26rem;
   overflow: auto;
-  padding: var(--step);
+  padding: 10px 12px;
   white-space: pre-wrap;
   word-break: break-word;
 }

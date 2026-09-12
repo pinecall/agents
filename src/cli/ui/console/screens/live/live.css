@@ -1,273 +1,318 @@
-/* One watched call: a head, the transcript, and the panels. Colour and space carry the emphasis. */
+/* One watched call: a head strip, the desk, the transcript, and the panels. Colour and space carry the emphasis. */
 
 .live {
-  border: 1px solid var(--edge);
-  border-radius: var(--radius);
   display: flex;
-  flex: 1 0 720px;
+  flex: 9999 1 440px;
   flex-direction: column;
   min-width: 0;
-  overflow: hidden;
 }
+
+.live + .live {
+  border-left: 1px solid var(--edge);
+}
+
+/* ── the head: what this call is, in the log's face ─────────────────────────── */
 
 .live-head {
   align-items: baseline;
   background: var(--panel);
   border-bottom: 1px solid var(--edge);
+  color: var(--ink-soft);
   display: flex;
   flex: none;
   flex-wrap: wrap;
-  gap: calc(var(--step) * 1.5);
-  padding: var(--step) calc(var(--step) * 1.5);
+  font-size: 11.5px;
+  gap: 8px 14px;
+  line-height: 1.5;
+  padding: 11px 16px;
+}
+
+.live-head > span {
+  white-space: nowrap;
+}
+
+.live-head b {
+  color: var(--ink-2);
+  font-weight: 400;
 }
 
 .live-call {
+  color: var(--ink);
+  font-size: 12.5px;
+}
+
+.live-status {
   color: var(--accent);
 }
 
-.live-what,
-.live-doing {
-  color: var(--ink-soft);
-}
-
-.live-line,
-.live-seq {
+.live-arrow {
   color: var(--ink-faint);
 }
 
-.live-seq {
-  margin-left: auto;
+.live-connection {
+  color: var(--ok);
 }
 
-.live-recording {
-  border-bottom: 1px solid var(--edge);
-  padding: var(--step) calc(var(--step) * 1.5);
-}
-
-.live-recording .player {
-  height: 32px;
-  width: 100%;
-}
+/* ── the middle: the recording, the rows, the words arriving ────────────────── */
 
 .live-body {
+  align-items: stretch;
   display: flex;
   flex: 1;
+  flex-wrap: wrap;
   min-height: 0;
 }
 
-/* ── the transcript ─────────────────────────────────────────────────────────── */
+.live-middle {
+  border-right: 1px solid var(--edge);
+  display: flex;
+  flex: 9999 1 360px;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.live-recording {
+  border-bottom: 1px solid var(--edge-soft);
+  padding: 9px 16px;
+}
+
+.live-recording .player {
+  display: block;
+  height: 24px;
+  width: 100%;
+}
 
 .live-timeline {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: var(--step);
+  min-height: 0;
   min-width: 0;
-  overflow: auto;
-  padding: calc(var(--step) * 2);
 }
 
-.turn {
+.live-rows {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 4px 0 0;
+}
+
+.live-foot {
+  background: var(--panel);
+  border-top: 1px solid var(--edge);
   display: flex;
   flex-direction: column;
-  gap: calc(var(--step) * 0.5);
+  gap: 5px;
+  padding: 10px 16px;
 }
 
-.turn-said {
-  margin: 0;
-  max-width: 68ch;
-}
-
-.turn-user .turn-said {
-  color: var(--ink);
-}
-
-.turn-agent .turn-said {
-  color: var(--accent);
-}
-
-.turn-chips {
-  align-items: baseline;
-  color: var(--ink-faint);
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--step);
-}
-
-.turn-speech,
-.turn-flag {
-  color: var(--ink-faint);
-}
-
-.live-chip {
-  display: inline-flex;
-  gap: 4px;
-}
-
-.live-chip-field {
-  color: var(--ink-faint);
-}
-
-.live-chip-value {
+.live-foot-line {
   color: var(--ink-soft);
+  font-size: 13.5px;
+  margin: 0;
 }
 
-.turn-blocks-summary,
-.live-panel-blocks-summary,
-.live-mark-line {
-  color: var(--ink-faint);
+.live-foot-said {
+  color: var(--ink-2);
+}
+
+.live-foot-caret {
+  animation: blink 1s step-end infinite;
+  background: var(--ink-soft);
+  display: inline-block;
+  height: 12px;
+  margin-left: 3px;
+  vertical-align: middle;
+  width: 1px;
+}
+
+/* ── the rows: seq, kind, words ─────────────────────────────────────────────── */
+
+.log-row {
+  border-top: 1px solid var(--edge-soft);
+}
+
+.log-row > .log-line,
+.log-row:not(details) {
+  align-items: baseline;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 34px 92px minmax(0, 1fr);
+  padding: 9px 16px 9px 8px;
+}
+
+.log-line {
   cursor: pointer;
-  display: flex;
-  gap: var(--step);
   list-style: none;
 }
 
-.turn-block-name {
-  color: var(--ink-soft);
-  font-size: 12px;
-  font-weight: 400;
-  margin: var(--step) 0 4px;
+.log-line::-webkit-details-marker {
+  display: none;
 }
 
-.interim {
+.log-seq {
   color: var(--ink-faint);
-  margin: 0;
-  max-width: 68ch;
-}
-
-/* ── the rows between the turns ─────────────────────────────────────────────── */
-
-.live-mark {
-  align-items: baseline;
-  color: var(--ink-soft);
-  display: flex;
-  gap: var(--step);
-  margin: 0;
-}
-
-.live-mark-tool,
-.live-mark-confirm,
-.live-mark-event,
-.live-mark-quiet {
-  display: block;
-}
-
-.live-mark-glyph {
-  flex: none;
-}
-
-.live-mark-said {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* The result of a tool and the verdict of a confirmation share the line with the seq: both give
-   way rather than push it off the edge. */
-.live-mark-outcome {
-  color: var(--ink-faint);
-  flex: none;
-  max-width: 32ch;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.live-mark-seq {
-  color: var(--ink-faint);
-  flex: none;
-  min-width: 4ch;
+  font-size: 11px;
   text-align: right;
 }
 
-.live-mark-state {
-  color: var(--ink-soft);
+.log-kind {
+  color: var(--ink-2);
+  font-size: 11px;
 }
 
-/* A human stepping into the call reads in the accent: it is the one thing here nobody scripted. */
-.live-mark-supervisor {
-  color: var(--accent);
+.log-text {
+  min-width: 0;
 }
 
-.live-mark-supervisor .live-mark-outcome {
-  color: var(--accent);
-}
-
-.live-mark-confirm-pending .live-mark-outcome {
-  color: var(--accent);
-}
-
-.live-mark-tool-failed .live-mark-outcome {
+.log-said {
   color: var(--ink);
+  display: block;
+  font-size: 13.5px;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
-.live-mark-data {
+.log-said .fixed {
+  font-size: 12.5px;
+}
+
+.log-who {
   color: var(--ink-soft);
+}
+
+.log-meta {
+  color: var(--ink-soft);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 10.5px;
+  gap: 5px 7px;
+  padding: 6px 0 0;
+}
+
+.log-chip {
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  color: var(--ink-2);
+  padding: 1px 5px;
+}
+
+.log-failed {
+  color: var(--accent);
+}
+
+/* The app's state moving and a human stepping in are the two things nobody scripted: they wear
+   the accent, as a ground and as a bar. A confirmation that held reads in the ok. */
+.log-row-state,
+.log-row-supervisor {
+  background: var(--accent-soft);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.log-row-state .log-kind,
+.log-row-supervisor .log-kind {
+  color: var(--accent);
+}
+
+.log-row-confirm .log-kind {
+  color: var(--ok);
+}
+
+.log-row-quiet .log-kind,
+.log-row-quiet .log-said {
+  color: var(--ink-faint);
+}
+
+/* What opens under a row sits in the words' column. */
+.log-more {
+  padding: 0 16px 10px calc(8px + 34px + 12px + 92px + 12px);
+}
+
+.log-data {
+  color: var(--ink-2);
   margin: 0;
   overflow-x: auto;
 }
 
-.live-mark-quiet-list {
-  color: var(--ink-faint);
+.log-list {
+  color: var(--ink-soft);
   list-style: none;
   margin: 0;
-  padding: 0 0 0 calc(var(--step) * 3);
+  padding: 0;
+}
+
+.log-block-name {
+  color: var(--ink-soft);
+  font-weight: 400;
+  margin: 8px 0 4px;
 }
 
 /* ── the panels ─────────────────────────────────────────────────────────────── */
 
 .live-panels {
-  background: var(--panel);
-  border-left: 1px solid var(--edge);
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  gap: calc(var(--step) * 2);
+  background: var(--panel-2);
+  flex: 1 1 292px;
+  max-width: 360px;
+  min-width: 250px;
   overflow: auto;
-  padding: calc(var(--step) * 2);
-  width: 320px;
+}
+
+.live-panel {
+  border-bottom: 1px solid var(--edge);
+  padding: 12px 14px;
 }
 
 .live-panel-name {
   color: var(--ink-faint);
-  font-size: 12px;
+  font-family: var(--face-fixed);
+  font-size: 10.5px;
   font-weight: 400;
-  letter-spacing: 0.08em;
-  margin: 0 0 var(--step);
+  letter-spacing: 0.06em;
+  margin: 0 0 9px;
 }
 
 .live-panel-empty,
 .live-panel-line {
+  color: var(--ink-soft);
+  font-family: var(--face-fixed);
+  font-size: 11.5px;
+  line-height: 1.9;
+  margin: 0 0 9px;
+}
+
+.live-panel-blocks-summary {
   color: var(--ink-faint);
-  margin: 0 0 var(--step);
+  cursor: pointer;
+  font-size: 11px;
+  margin-top: 8px;
 }
 
 .readings {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 7px;
   margin: 0;
 }
 
 .reading {
   align-items: baseline;
   display: flex;
-  gap: var(--step);
+  gap: 10px;
   justify-content: space-between;
 }
 
 .reading-field {
-  color: var(--ink-faint);
+  color: var(--ink-soft);
   flex: none;
+  font-size: 11.5px;
 }
 
 /* A value may be a whole JSON document: it keeps its lines and takes the width the row has left,
-   rather than the minimum a shrunk flex item would settle on in a 320px aside. */
+   rather than the minimum a shrunk flex item would settle on in a narrow aside. */
 .reading-value {
-  color: var(--ink);
+  color: var(--ink-2);
   flex: 1;
+  font-size: 11.5px;
   margin: 0;
   min-width: 0;
   overflow-wrap: anywhere;
@@ -280,52 +325,132 @@
   color: var(--ink-faint);
 }
 
-/* A state field's value is JSON and wraps; its name and who may see it stay on the line above. */
+/* STATE: the field, then its value and who may see it — `pii` in the accent, because it is masked. */
 .state-fields {
   display: flex;
   flex-direction: column;
-  gap: var(--step);
+  gap: 7px;
   margin: 0;
+}
+
+.state-field {
+  align-items: baseline;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
 }
 
 .state-field-name {
   color: var(--ink-soft);
-  display: flex;
-  gap: var(--step);
-  justify-content: space-between;
+  flex: none;
+  font-size: 11.5px;
 }
 
 .state-field-value {
-  color: var(--ink);
+  color: var(--ink-2);
+  font-size: 11.5px;
   margin: 0;
+  min-width: 0;
   overflow-wrap: anywhere;
+  text-align: right;
 }
 
 .seen-by {
   color: var(--ink-faint);
 }
 
+.seen-by-pii {
+  color: var(--accent);
+}
+
+/* ROOM: who is in it, a dot each, lit while they speak. */
 .participants {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
 .participant-line {
+  align-items: center;
+  color: var(--ink-2);
   cursor: pointer;
   display: flex;
-  gap: var(--step);
+  font-size: 12.5px;
+  gap: 7px;
   list-style: none;
 }
 
+.participant-line::-webkit-details-marker {
+  display: none;
+}
+
+.participant-dot {
+  border-radius: 50%;
+  display: block;
+  flex: none;
+  height: 6px;
+  width: 6px;
+}
+
 .participant-speaking {
-  color: var(--accent);
+  background: var(--accent);
 }
 
 .participant-quiet {
-  color: var(--ink-faint);
+  background: var(--ink-faint);
 }
 
 .participant-kind {
-  color: var(--ink-faint);
+  color: var(--ink-soft);
+  font-size: 10.5px;
+}
+
+.participant-line + .log-data {
+  margin: 6px 0 0 13px;
+}
+
+/* METRICS: the medians as bars, the longest one full. */
+.live-meter {
+  align-items: center;
+  display: grid;
+  font-size: 11px;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) 52px 30px;
+}
+
+.live-meter + .live-meter {
+  margin-top: 8px;
+}
+
+.live-meter-name {
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.live-meter-track {
+  background: var(--sunk);
+  border-radius: 2px;
+  display: block;
+  height: 4px;
+  position: relative;
+}
+
+.live-meter-bar {
+  background: var(--accent);
+  border-radius: 2px;
+  bottom: 0;
+  display: block;
+  left: 0;
+  position: absolute;
+  top: 0;
+}
+
+.live-meter-value {
+  color: var(--ink-2);
+  text-align: right;
 }

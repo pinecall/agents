@@ -16,14 +16,15 @@ const NOISE_DB = 15;
 const LOSS_PERCENT = 0;
 
 /**
- * The form. It asks the console's own server, never the gateway: a simulation mounts the class of
- * the directory `pinecall ui` runs in, so only that process can start one. The call is answered
- * by its id and the page goes to it — the log is the transcript, and on a spoken line the listen
- * button beside it is the speakers `--listen` never had.
+ * The form, folded until somebody wants a caller. It asks the console's own server, never the
+ * gateway: a simulation mounts the class of the directory `pinecall run` runs in, so only that
+ * process can start one. The call is answered by its id and the page goes to it — the log is the
+ * transcript, and on a spoken line the listen button beside it is the speakers `--listen` never had.
  */
 export function SimulateForm({ agent }: { agent: string }): ReactNode {
   const credentials = useCredentials();
   const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
   const [roster, setRoster] = useState<Roster | null>(null);
   const [persona, setPersona] = useState("");
   const [voice, setVoice] = useState(false);
@@ -53,7 +54,7 @@ export function SimulateForm({ agent }: { agent: string }): ReactNode {
   }, [credentials]);
 
   if (roster === null) {
-    return refused === null ? null : <p className="note note-warn">{refused}</p>;
+    return refused === null ? null : <p className="note note-warn sim-aside">{refused}</p>;
   }
   if (roster.agent !== agent) {
     return (
@@ -92,50 +93,41 @@ export function SimulateForm({ agent }: { agent: string }): ReactNode {
   };
 
   return (
-    <form className="sim" onSubmit={(event) => void start(event)}>
-      <h2 className="call-group-name">Simulate</h2>
-      <label className="sim-field">
-        <span className="sim-label">persona</span>
-        <select className="input sim-input mono" value={persona} onChange={(event) => setPersona(event.target.value)}>
-          {roster.personas.map((one) => (
-            <option key={one.name} value={one.name}>
-              {one.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      {chosen !== undefined && <p className="sim-goal">{chosen.goal}</p>}
-      <label className="sim-check">
-        <input type="checkbox" checked={voice} onChange={(event) => setVoice(event.target.checked)} />
-        <span>voice — a real line, and you can listen</span>
-      </label>
-      <label className="sim-check">
-        <input type="checkbox" checked={judge} onChange={(event) => setJudge(event.target.checked)} />
-        <span>judge at hang-up</span>
-      </label>
-      <label className="sim-field">
-        <span className="sim-label">turns</span>
-        <input
-          className="input sim-input mono"
-          type="number"
-          min={1}
-          max={30}
-          value={turns}
-          onChange={(event) => setTurns(Number(event.target.value))}
-        />
-      </label>
-      {voice && (
-        <>
-          <label className="sim-check">
-            <input type="checkbox" checked={spoiled} onChange={(event) => setSpoiled(event.target.checked)} />
-            <span>noisy line — a TV behind the caller, packets lost</span>
+    <div className="sim">
+      <button type="button" className="sim-toggle" onClick={() => setOpen(!open)} aria-expanded={open}>
+        <span>{open ? "close" : "simulate a caller"}</span>
+        <span className="sim-toggle-mark fixed">{open ? "−" : "+"}</span>
+      </button>
+      {open && (
+        <form className="sim-fields" onSubmit={(event) => void start(event)}>
+          <label className="sim-field">
+            <span className="sim-label fixed">persona</span>
+            <select className="input" value={persona} onChange={(event) => setPersona(event.target.value)}>
+              {roster.personas.map((one) => (
+                <option key={one.name} value={one.name}>
+                  {one.name}
+                </option>
+              ))}
+            </select>
           </label>
-          {spoiled && (
-            <>
+          {chosen !== undefined && <p className="sim-goal">goal: {chosen.goal}</p>}
+          <div className="sim-pair">
+            <label className="sim-field">
+              <span className="sim-label fixed">turns</span>
+              <input
+                className="input"
+                type="number"
+                min={1}
+                max={30}
+                value={turns}
+                onChange={(event) => setTurns(Number(event.target.value))}
+              />
+            </label>
+            {voice && spoiled && (
               <label className="sim-field">
-                <span className="sim-label">noise, dB under</span>
+                <span className="sim-label fixed">noise, dB under</span>
                 <input
-                  className="input sim-input mono"
+                  className="input"
                   type="number"
                   min={0}
                   max={60}
@@ -143,10 +135,12 @@ export function SimulateForm({ agent }: { agent: string }): ReactNode {
                   onChange={(event) => setNoise(Number(event.target.value))}
                 />
               </label>
+            )}
+            {voice && spoiled && (
               <label className="sim-field">
-                <span className="sim-label">packets lost, %</span>
+                <span className="sim-label fixed">packets lost, %</span>
                 <input
-                  className="input sim-input mono"
+                  className="input"
                   type="number"
                   min={0}
                   max={100}
@@ -154,14 +148,37 @@ export function SimulateForm({ agent }: { agent: string }): ReactNode {
                   onChange={(event) => setLoss(Number(event.target.value))}
                 />
               </label>
-            </>
-          )}
-        </>
+            )}
+          </div>
+          <div className="sim-checks">
+            <Switch on={voice} turn={setVoice}>
+              voice <span className="sim-check-aside fixed">a real line, and you can listen</span>
+            </Switch>
+            <Switch on={judge} turn={setJudge}>
+              judge at hang-up
+            </Switch>
+            {voice && (
+              <Switch on={spoiled} turn={setSpoiled}>
+                noisy line <span className="sim-check-aside fixed">a TV behind the caller, packets lost</span>
+              </Switch>
+            )}
+          </div>
+          <button type="submit" className="button button-accent sim-call" disabled={starting || persona === ""}>
+            {starting ? "calling…" : "Call the agent"}
+          </button>
+          {refused !== null && <p className="note note-warn">{refused}</p>}
+        </form>
       )}
-      <button type="submit" className="button" disabled={starting || persona === ""}>
-        {starting ? "calling…" : "call"}
-      </button>
-      {refused !== null && <p className="note note-warn">{refused}</p>}
-    </form>
+    </div>
+  );
+}
+
+/** One switch: a pill with the knob on the side that is on, and what it turns on beside it. */
+function Switch({ on, turn, children }: { on: boolean; turn: (on: boolean) => void; children: ReactNode }): ReactNode {
+  return (
+    <label className="sim-check">
+      <input className="sim-switch" type="checkbox" checked={on} onChange={(event) => turn(event.target.checked)} />
+      <span>{children}</span>
+    </label>
   );
 }

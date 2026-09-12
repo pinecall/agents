@@ -4,6 +4,9 @@ import { useEffect, useRef, type ReactNode } from "react";
 
 import { words, type Line, type Mark, type Said } from "./transcript";
 
+// The column says who: the person at this machine is YOU, in the accent; the agent is the agent.
+const WHO: Record<Said["speaker"], string> = { user: "you", agent: "agent" };
+
 /** Every line so far, scrolled to the last one. Nothing here animates on a timer. */
 export function Transcript({ lines, empty }: { lines: Line[]; empty: string }): ReactNode {
   const stream = useRef<HTMLDivElement>(null);
@@ -16,7 +19,7 @@ export function Transcript({ lines, empty }: { lines: Line[]; empty: string }): 
   if (lines.length === 0) {
     return (
       <div className="stream stream-empty" ref={stream}>
-        <p className="stream-hint">{empty}</p>
+        <p className="stream-hint fixed">{empty}</p>
       </div>
     );
   }
@@ -33,7 +36,7 @@ function SaidLine({ line }: { line: Said }): ReactNode {
   const classes = ["said", `said-${line.speaker}`, line.final ? "" : "said-interim"].filter(Boolean).join(" ");
   return (
     <article className={classes}>
-      <div className="said-who">{line.speaker}</div>
+      <div className="said-who fixed">{WHO[line.speaker]}</div>
       <p className="said-text">
         {words(line.text).map((word, at) => (
           <span className="said-word" key={at}>

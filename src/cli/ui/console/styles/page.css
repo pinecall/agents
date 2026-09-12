@@ -1,11 +1,12 @@
-/* The page vocabulary every screen is built from: a head, sections, panels, tables, chips, tabs.
- * Layout only — every colour, size and step comes from tokens.css. */
+/* The page vocabulary every screen is built from: a head, sections, panels, tables, chips, tabs,
+ * the controls. Layout only — every colour, size and step comes from tokens.css. */
 
 /* ── page ────────────────────────────────────────────────────────────────── */
 
 .page {
   max-width: 1040px;
-  padding: calc(var(--step) * 3) calc(var(--step) * 2) calc(var(--step) * 8);
+  min-width: 0;
+  padding: 26px 28px 34px;
 }
 
 .page-wide {
@@ -15,16 +16,16 @@
 .page-eyebrow {
   color: var(--ink-faint);
   font-family: var(--face-fixed);
-  font-size: 11px;
-  letter-spacing: 0.14em;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .page-title {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 500;
-  letter-spacing: -0.015em;
-  margin: calc(var(--step) * 1.5) 0 0;
+  letter-spacing: -0.01em;
+  margin: 4px 0 0;
 }
 
 .page-title-fixed {
@@ -34,22 +35,23 @@
 
 .page-lede {
   color: var(--ink-soft);
-  line-height: 1.7;
-  margin: calc(var(--step) * 2) 0 0;
-  max-width: 64ch;
+  font-size: 14px;
+  margin: 6px 0 0;
+  max-width: 68ch;
+  text-wrap: pretty;
 }
 
 .section {
-  margin-top: calc(var(--step) * 6);
+  margin-top: 22px;
 }
 
 .section-title {
   color: var(--ink-faint);
   font-family: var(--face-fixed);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 400;
-  letter-spacing: 0.14em;
-  margin: 0 0 calc(var(--step) * 2);
+  letter-spacing: 0.06em;
+  margin: 0 0 10px;
   text-transform: uppercase;
 }
 
@@ -57,45 +59,56 @@
 .note {
   color: var(--ink-faint);
   font-family: var(--face-fixed);
-  font-size: 12px;
-  margin: calc(var(--step) * 1.5) 0 0;
+  font-size: 11px;
+  margin: 14px 0 0;
+  text-wrap: pretty;
 }
 
 .note + .panel {
-  margin-top: calc(var(--step) * 2);
+  margin-top: 14px;
 }
 
+/* A refusal reads in the accent, the gateway's own sentence and nothing added. */
 .note-warn {
-  color: var(--warn);
+  color: var(--accent);
 }
 
 /* ── panels ──────────────────────────────────────────────────────────────── */
 
 .panel {
+  background: var(--panel);
   border: 1px solid var(--edge);
-  border-radius: var(--radius);
+  border-radius: var(--radius-panel);
+  overflow: hidden;
 }
 
 .panel-head {
   align-items: baseline;
+  border-bottom: 1px solid var(--edge);
   display: flex;
-  gap: calc(var(--step) * 2);
+  gap: 12px;
   justify-content: space-between;
-  padding: calc(var(--step) * 2) calc(var(--step) * 3) var(--step);
+  padding: 10px 14px;
 }
 
 .panel-title {
+  color: var(--ink-faint);
   font-family: var(--face-fixed);
-  font-size: 13px;
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  margin: 0;
+  text-transform: uppercase;
 }
 
 .panel-body {
-  padding: 0 calc(var(--step) * 3) calc(var(--step) * 2);
+  font-size: 13px;
+  padding: 12px 14px;
 }
 
 .grid {
   display: grid;
-  gap: calc(var(--step) * 2);
+  gap: 14px;
 }
 
 .grid-3 {
@@ -107,23 +120,23 @@
 .badge {
   color: var(--ink-faint);
   font-family: var(--face-fixed);
-  font-size: 11px;
-  letter-spacing: 0.1em;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
 .badge-live {
-  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
   border-radius: var(--radius);
   color: var(--accent);
-  letter-spacing: 0.06em;
-  padding: 1px var(--step);
+  padding: 1px 6px;
 }
 
 .mono {
   font-family: var(--face-fixed);
-  font-size: 0.95em;
+  font-size: 0.92em;
 }
 
 .dim {
@@ -141,14 +154,15 @@
 /* ── tables — the one place density is the point ─────────────────────────── */
 
 .table-wrap {
+  background: var(--panel);
   border: 1px solid var(--edge);
-  border-radius: var(--radius);
+  border-radius: var(--radius-panel);
   overflow-x: auto;
 }
 
 .table {
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 13px;
   width: 100%;
 }
 
@@ -156,18 +170,18 @@
   border-bottom: 1px solid var(--edge);
   color: var(--ink-faint);
   font-family: var(--face-fixed);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 400;
-  letter-spacing: 0.12em;
-  padding: calc(var(--step) * 1.5) calc(var(--step) * 2);
+  letter-spacing: 0.06em;
+  padding: 9px 16px;
   text-align: left;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
 .table td {
-  border-bottom: 1px solid var(--edge);
-  padding: calc(var(--step) * 1.5) calc(var(--step) * 2);
+  border-bottom: 1px solid var(--edge-soft);
+  padding: 11px 16px;
   vertical-align: baseline;
 }
 
@@ -176,23 +190,30 @@
 }
 
 .table tbody tr:hover td {
-  background: var(--panel);
+  background: var(--hover);
 }
 
 .table td.num,
 .table th.num {
   font-family: var(--face-fixed);
+  font-size: 11.5px;
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
 
+/* An id is the accent: it is the one cell that opens something. */
 .table td.id {
-  color: var(--ink-soft);
   font-family: var(--face-fixed);
+  font-size: 12px;
+}
+
+.table td.id .link {
+  color: var(--accent);
+  font-size: 12px;
 }
 
 tr.is-open td {
-  background: var(--panel-2);
+  background: var(--selected);
 }
 
 /* ── key/value readouts inside a panel ───────────────────────────────────── */
@@ -204,20 +225,16 @@ tr.is-open td {
 
 .kv td {
   font-family: var(--face-fixed);
-  font-size: 12px;
-  padding: var(--step) 0;
-}
-
-.kv tr + tr td {
-  border-top: 1px solid var(--edge);
+  font-size: 11.5px;
+  padding: 4px 0;
 }
 
 .kv-key {
-  color: var(--ink-faint);
+  color: var(--ink-soft);
 }
 
 .kv-val {
-  color: var(--ink-soft);
+  color: var(--ink-2);
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
@@ -227,85 +244,90 @@ tr.is-open td {
 .chips {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--step);
+  gap: 5px 7px;
 }
 
 .chip {
   align-items: baseline;
   border: 1px solid var(--edge);
   border-radius: var(--radius);
+  color: var(--ink-2);
   display: inline-flex;
   font-family: var(--face-fixed);
-  font-size: 11px;
-  gap: calc(var(--step) / 2);
-  padding: 1px var(--step);
+  font-size: 10.5px;
+  gap: 4px;
+  padding: 1px 5px;
 }
 
 .chip-key {
-  color: var(--ink-faint);
+  color: var(--ink-soft);
 }
 
 .chip-val {
-  color: var(--ink-soft);
+  color: var(--ink-2);
   font-variant-numeric: tabular-nums;
 }
 
-/* ── tabs ────────────────────────────────────────────────────────────────── */
+/* ── tabs: one segmented control in a sunk field ─────────────────────────── */
 
 .tabs {
-  border-bottom: 1px solid var(--edge);
-  display: flex;
-  flex-wrap: wrap;
-  gap: calc(var(--step) / 2);
-  margin-top: calc(var(--step) * 3);
+  background: var(--sunk);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-control);
+  display: inline-flex;
+  height: 28px;
+  margin-top: 22px;
+  overflow: hidden;
 }
 
-/* A tab is a button with the browser's chrome taken off: the active rule lands ON the strip's
-   hairline, not under it. */
 .tab {
   background: none;
   border: none;
-  border-bottom: 2px solid transparent;
-  border-radius: var(--radius) var(--radius) 0 0;
+  border-right: 1px solid var(--edge);
   color: var(--ink-soft);
   cursor: pointer;
   font-family: var(--face-fixed);
-  font-size: 12px;
-  line-height: 1.5;
-  margin-bottom: -1px;
-  padding: var(--step) calc(var(--step) * 1.5);
+  font-size: 11.5px;
+  height: 100%;
+  padding: 0 10px;
+}
+
+.tab:last-child {
+  border-right: none;
 }
 
 .tab:hover {
-  background: var(--panel-2);
   color: var(--ink);
 }
 
 .tab:focus-visible {
-  outline: 1px solid var(--accent);
   outline-offset: -2px;
 }
 
 .tab.is-active {
-  border-bottom-color: var(--accent);
+  background: var(--selected);
   color: var(--ink);
 }
 
-/* ── buttons and links ───────────────────────────────────────────────────── */
+/* ── buttons, inputs and links ───────────────────────────────────────────── */
 
 .button {
-  background: none;
-  border: 1px solid var(--edge-strong);
-  border-radius: var(--radius);
-  color: var(--ink-soft);
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-control);
+  color: var(--ink-2);
   cursor: pointer;
-  font-family: var(--face-fixed);
-  font-size: 12px;
-  padding: var(--step) calc(var(--step) * 1.5);
+  display: inline-flex;
+  font-size: 12.5px;
+  gap: 7px;
+  height: 28px;
+  padding: 0 10px;
+  white-space: nowrap;
 }
 
 .button:hover:not(:disabled) {
-  border-color: var(--ink-faint);
+  border-color: var(--ink);
   color: var(--ink);
 }
 
@@ -314,13 +336,37 @@ tr.is-open td {
   opacity: 0.4;
 }
 
+/* The one filled button a screen has: the move the screen exists for. */
+.button-accent {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+  font-weight: 500;
+  height: 30px;
+  padding: 0 14px;
+}
+
+.button-accent:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
 .input {
-  background: none;
-  border: 1px solid var(--edge-strong);
-  border-radius: var(--radius);
+  background: var(--sunk);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-control);
+  color: var(--ink-2);
+  font-size: 12.5px;
+  min-width: 0;
+  padding: 5px 8px;
+}
+
+.input:focus {
   color: var(--ink);
-  font-size: 12px;
-  padding: calc(var(--step) * 0.5) var(--step);
+}
+
+.input::placeholder {
+  color: var(--ink-faint);
 }
 
 .link {
@@ -329,7 +375,7 @@ tr.is-open td {
   color: var(--ink-soft);
   cursor: pointer;
   font-family: var(--face-fixed);
-  font-size: 12px;
+  font-size: 11.5px;
   padding: 0;
 }
 
@@ -340,9 +386,8 @@ tr.is-open td {
 /* ── empty states — honest, and they name what fills them ────────────────── */
 
 .empty {
-  border-top: 1px solid var(--edge);
   max-width: 72ch;
-  padding-top: calc(var(--step) * 3);
+  padding-top: 8px;
 }
 
 .empty-title {
@@ -353,24 +398,9 @@ tr.is-open td {
 
 .empty-body {
   color: var(--ink-soft);
-  line-height: 1.75;
-  margin: calc(var(--step) * 2) 0 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  margin: 8px 0 0;
+  text-wrap: pretty;
 }
 
-.empty-cmd {
-  border: 1px solid var(--edge);
-  border-radius: var(--radius);
-  color: var(--ink-soft);
-  display: block;
-  font-family: var(--face-fixed);
-  font-size: 12px;
-  margin-top: calc(var(--step) * 2);
-  overflow-x: auto;
-  padding: calc(var(--step) * 1.5) calc(var(--step) * 2);
-  white-space: pre;
-}
-
-.empty-cmd::before {
-  color: var(--ink-faint);
-  content: "$ ";
-}

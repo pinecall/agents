@@ -1,9 +1,10 @@
-/** The rail: the agent's screens and the organization's, each drawn only when the key opens it. */
+/** The rail: the agent's screens and the gateway's, each drawn only when the key opens it. */
 
 import type { ReactNode } from "react";
 import { NavLink } from "react-router";
 
 import { opens } from "../lib/scopes";
+import { useHeldAgents } from "../lib/use-held-agents";
 import { useScopes } from "../lib/whoami";
 import "./rail.css";
 
@@ -19,7 +20,7 @@ const AGENT_SCREENS = [
   { path: "evals", name: "Evals" },
 ] as const;
 
-// The org's layer: what is true across every agent. Agents first, because it is where `/` lands.
+// The gateway's layer: what is true across every agent. Agents first, because it is where `/` lands.
 const ORG_SCREENS = [
   { path: "", key: "agents", name: "Agents" },
   { path: "live", key: "live", name: "Live" },
@@ -34,33 +35,42 @@ export function Rail({ agent }: { agent: string }): ReactNode {
   // Until whoami answers, every scope: nothing flickers off and back on when the key turns out
   // to open it. What the key does not open is then not drawn, so no click meets a 403.
   const scopes = useScopes();
+  const held = useHeldAgents().agents.length;
   const open = (screen: string): boolean => scopes === null || opens(scopes, screen);
   const linked = ({ isActive }: { isActive: boolean }): string =>
     isActive ? "rail-link rail-link-here" : "rail-link";
+  // The one count the rail knows without a stream: how many agents the gateway holds right now.
+  const hint = (screen: string): string => (screen === "agents" && held > 0 ? String(held) : "");
 
   return (
     <>
       {agent !== "" && (
         <div className="rail-group">
-          <div className="rail-label rail-label-path fixed">{agent}</div>
-          {AGENT_SCREENS.filter((screen) => open(screen.path)).map((screen) => (
-            <NavLink key={screen.path} to={`/a/${agent}/${screen.path}`} className={linked}>
-              {screen.name}
-            </NavLink>
-          ))}
+          <p className="rail-label fixed">{agent}</p>
+          <div className="rail-links">
+            {AGENT_SCREENS.filter((screen) => open(screen.path)).map((screen) => (
+              <NavLink key={screen.path} to={`/a/${agent}/${screen.path}`} className={linked}>
+                <span>{screen.name}</span>
+              </NavLink>
+            ))}
+          </div>
         </div>
       )}
       <div className="rail-group">
-        <div className="rail-label fixed">Organization</div>
-        {ORG_SCREENS.filter((screen) => open(screen.key)).map((screen) => (
-          <NavLink key={screen.key} to={`/${screen.path}`} end={screen.path === ""} className={linked}>
-            {screen.name}
-          </NavLink>
-        ))}
+        <p className="rail-label fixed">Gateway</p>
+        <div className="rail-links">
+          {ORG_SCREENS.filter((screen) => open(screen.key)).map((screen) => (
+            <NavLink key={screen.key} to={`/${screen.path}`} end={screen.path === ""} className={linked}>
+              <span>{screen.name}</span>
+              <span className="rail-hint fixed">{hint(screen.key)}</span>
+            </NavLink>
+          ))}
+        </div>
       </div>
       <div className="rail-foot fixed">
-        <div>web · whatsapp · phone</div>
-        <div>one agent, three doors</div>
+        web · whatsapp · phone
+        <br />
+        <span className="rail-foot-line">one agent, three doors</span>
       </div>
     </>
   );

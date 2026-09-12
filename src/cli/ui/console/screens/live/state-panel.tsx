@@ -27,15 +27,17 @@ export function StatePanel({
       <h3 className="live-panel-name">STATE</h3>
       {names.length === 0 ? <p className="live-panel-empty">The app has declared no state yet.</p> : null}
       <dl className="state-fields">
-        {names.map((name) => (
-          <div className="state-field" key={name}>
-            <dt className="state-field-name fixed">
-              {name}
-              <span className="seen-by">{seenBy(fields[name], declared[name])}</span>
-            </dt>
-            <dd className="state-field-value fixed">{said(fields[name])}</dd>
-          </div>
-        ))}
+        {names.map((name) => {
+          const seen = seenBy(fields[name], declared[name]);
+          return (
+            <div className="state-field" key={name}>
+              <dt className="state-field-name fixed">{name}</dt>
+              <dd className="state-field-value fixed">
+                {said(fields[name])} <span className={seen === "pii" ? "seen-by seen-by-pii" : "seen-by"}>{seen}</span>
+              </dd>
+            </div>
+          );
+        })}
       </dl>
     </section>
   );
@@ -46,7 +48,7 @@ export function StatePanel({
 // comes from the agent's own config door (docs/protocol/projections.md).
 function seenBy(value: unknown, declared: Visibility | undefined): string {
   if (value === MASK) {
-    return "pii masked";
+    return "pii";
   }
   return declared === "public" ? "public" : BY_DEFAULT;
 }

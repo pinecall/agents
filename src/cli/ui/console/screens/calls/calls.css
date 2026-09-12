@@ -1,127 +1,270 @@
-/* Calls owns its own styles: the list on the left, and as much room as there is for what is live. */
+/* Calls owns its own styles: the list on the left, edge to edge, and as much room as there is for what is live. */
 
 .calls {
+  align-items: stretch;
   display: flex;
-  gap: calc(var(--step) * 3);
-  height: 100%;
+  flex: 1;
+  flex-wrap: wrap;
   min-height: 0;
 }
 
 .calls-aside {
+  border-bottom: 1px solid var(--edge);
   border-right: 1px solid var(--edge);
   display: flex;
-  flex: none;
+  flex: 1 1 244px;
   flex-direction: column;
-  gap: calc(var(--step) * 3);
-  overflow: auto;
-  padding-right: calc(var(--step) * 2);
-  width: calc(var(--rail) - var(--step) * 2);
+  max-width: 300px;
+  min-width: 220px;
 }
 
-.call-list {
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--step) * 2);
-}
+/* ── simulate: a caller made up on the spot, folded until somebody wants one ─ */
 
-/* Simulate: one narrow form, the same type as the list under it. */
 .sim {
+  background: var(--panel);
   border-bottom: 1px solid var(--edge);
+  padding: 12px 14px;
+}
+
+.sim-toggle {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  color: var(--ink-2);
+  cursor: pointer;
+  display: flex;
+  font-size: 13px;
+  gap: 8px;
+  justify-content: space-between;
+  padding: 7px 10px;
+  text-align: left;
+  width: 100%;
+}
+
+.sim-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.sim-toggle-mark {
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.sim-fields {
   display: flex;
   flex-direction: column;
-  gap: var(--step);
-  padding-bottom: calc(var(--step) * 2);
+  gap: 9px;
+  padding: 11px 0 2px;
 }
 
 .sim-field {
-  align-items: baseline;
   display: flex;
-  gap: var(--step);
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .sim-label {
-  color: var(--ink-faint);
-  font-size: 12px;
-}
-
-.sim-input {
-  width: 60%;
-}
-
-.sim-check {
-  align-items: center;
   color: var(--ink-soft);
-  display: flex;
-  font-size: 12px;
-  gap: var(--step);
+  font-size: 10.5px;
+}
+
+.sim-pair {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr 1fr;
 }
 
 .sim-goal,
 .sim-aside {
-  color: var(--ink-faint);
+  color: var(--ink-soft);
   font-size: 12px;
   margin: 0;
+  text-wrap: pretty;
+}
+
+.sim-aside {
+  padding: 12px 14px;
+}
+
+.sim-checks {
+  color: var(--ink-2);
+  display: flex;
+  flex-direction: column;
+  font-size: 12.5px;
+  gap: 6px;
+}
+
+.sim-check {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 7px;
+}
+
+.sim-check-aside {
+  color: var(--ink-faint);
+  font-size: 10.5px;
+}
+
+/* A switch, not a tick box: a pill with the knob on the side that is on. */
+.sim-switch {
+  appearance: none;
+  background: var(--sunk);
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  cursor: pointer;
+  flex: none;
+  height: 15px;
+  margin: 0;
+  position: relative;
+  width: 26px;
+}
+
+.sim-switch::after {
+  background: var(--ink-faint);
+  border-radius: 50%;
+  content: "";
+  height: 9px;
+  left: 2px;
+  position: absolute;
+  top: 2px;
+  width: 9px;
+}
+
+.sim-switch:checked {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+}
+
+.sim-switch:checked::after {
+  background: var(--accent);
+  left: 13px;
+}
+
+.sim-call {
+  margin-top: 2px;
+  width: 100%;
+}
+
+/* ── the list: a strip saying it is live, then LIVE and RECENT ───────────── */
+
+.call-list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .call-list-standing {
-  color: var(--ink-faint);
+  align-items: center;
+  border-bottom: 1px solid var(--edge-soft);
+  color: var(--ink-soft);
+  display: flex;
+  font-size: 10.5px;
+  gap: 8px;
+  justify-content: space-between;
   margin: 0;
+  padding: 9px 14px;
 }
 
-.call-group {
+.call-list-live {
+  align-items: center;
   display: flex;
-  flex-direction: column;
+  gap: 6px;
+}
+
+.call-list-dot {
+  animation: pulse 1.6s ease-in-out infinite;
+  background: var(--accent);
+  border-radius: 50%;
+  display: block;
+  height: 6px;
+  width: 6px;
+}
+
+.call-list-asked {
+  color: var(--ink-faint);
+}
+
+.call-list-nothing {
+  padding: 12px 14px;
+}
+
+.call-groups {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
 }
 
 .call-group-name {
   color: var(--ink-faint);
-  font-size: 12px;
+  font-size: 10.5px;
   font-weight: 400;
-  letter-spacing: 0.08em;
-  margin: 0 0 var(--step);
+  letter-spacing: 0.06em;
+  margin: 0;
+  padding: 11px 14px 6px;
   text-transform: uppercase;
 }
 
+.call-group + .call-group .call-group-name {
+  padding-top: 16px;
+}
+
 .call-line {
-  align-items: baseline;
+  align-items: center;
   border-left: 2px solid transparent;
-  color: var(--ink-soft);
-  display: flex;
-  gap: var(--step);
-  padding: calc(var(--step) * 0.75) var(--step);
+  border-top: 1px solid var(--edge-soft);
+  color: var(--ink-2);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  padding: 9px 14px 9px 12px;
 }
 
 .call-line:hover {
-  color: var(--ink);
+  background: var(--hover);
 }
 
 .call-line-here {
+  background: var(--selected);
   border-left-color: var(--accent);
-  color: var(--accent);
 }
 
 .call-line-glyph {
-  flex: none;
+  color: var(--ink-soft);
 }
 
 .call-line-who {
-  flex: 1;
+  font-size: 13px;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.call-group-live .call-line-who {
+  color: var(--ink);
+}
+
 .call-line-when {
   color: var(--ink-faint);
-  flex: none;
+  font-size: 11.5px;
+}
+
+.call-group-live .call-line-when {
+  color: var(--accent);
 }
 
 /* Two live calls sit side by side and neither of them shrinks below what a transcript needs. */
 .calls-watching {
   display: flex;
-  flex: 1;
-  gap: calc(var(--step) * 2);
+  flex: 9999 1 440px;
   min-width: 0;
   overflow-x: auto;
+}
+
+.calls-watching .nothing {
+  padding: 26px 28px;
 }

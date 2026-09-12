@@ -4,44 +4,31 @@ import type { ToolRun } from "@pinecall/protocol";
 import type { ReactNode } from "react";
 
 import { seconds } from "../../lib/metrics";
+import { LogRow } from "./log-row";
+import { Readings } from "./readings";
 
-/** One ⚙ row. Running until the result lands; then what came back, or what went wrong. */
+/** One tool row. Running until the result lands; then what came back, or what went wrong. */
 export function ToolRow({ run, seq }: { run: ToolRun; seq: number }): ReactNode {
+  const rows = [
+    { field: "arguments", value: JSON.stringify(run.arguments, null, 2), unit: null },
+    ...(there(run.output) ? [{ field: "output", value: JSON.stringify(run.output, null, 2), unit: null }] : []),
+    ...(there(run.error) ? [{ field: "error", value: run.error, unit: null }] : []),
+    ...(there(run.duration_s) ? [{ field: "duration_s", value: seconds(run.duration_s), unit: null }] : []),
+  ];
   return (
-    <details className={`live-mark live-mark-tool live-mark-tool-${run.status}`}>
-      <summary className="live-mark-line">
-        <span className="live-mark-glyph">⚙</span>
-        <span className="live-mark-said fixed">
+    <LogRow
+      seq={seq}
+      kind="tool"
+      tone="tool"
+      said={
+        <span className="fixed">
           {run.name}({argumentsOf(run)})
         </span>
-        <span className="live-mark-outcome">{outcomeOf(run)}</span>
-        <span className="live-mark-seq fixed">{seq}</span>
-      </summary>
-      <dl className="readings">
-        <div className="reading">
-          <dt className="reading-field fixed">arguments</dt>
-          <dd className="reading-value fixed">{JSON.stringify(run.arguments, null, 2)}</dd>
-        </div>
-        {!there(run.output) ? null : (
-          <div className="reading">
-            <dt className="reading-field fixed">output</dt>
-            <dd className="reading-value fixed">{JSON.stringify(run.output, null, 2)}</dd>
-          </div>
-        )}
-        {!there(run.error) ? null : (
-          <div className="reading">
-            <dt className="reading-field fixed">error</dt>
-            <dd className="reading-value fixed">{run.error}</dd>
-          </div>
-        )}
-        {!there(run.duration_s) ? null : (
-          <div className="reading">
-            <dt className="reading-field fixed">duration_s</dt>
-            <dd className="reading-value fixed">{seconds(run.duration_s)}</dd>
-          </div>
-        )}
-      </dl>
-    </details>
+      }
+      meta={[<span className={run.status === "failed" ? "log-failed" : ""}>{outcomeOf(run)}</span>]}
+    >
+      <Readings rows={rows} />
+    </LogRow>
   );
 }
 

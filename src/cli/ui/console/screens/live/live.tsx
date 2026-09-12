@@ -1,4 +1,4 @@
-/** One call being watched: its head, the transcript in the middle, and the four panels beside it. */
+/** One call being watched: its head, the desk, the transcript in the middle, and the four panels beside it. */
 
 import type { ReactNode } from "react";
 
@@ -25,31 +25,39 @@ export function Live({ call }: { call: string }): ReactNode {
   const recorded = recordingIn(summaryOf(watched.entries));
   return (
     <article className="live">
-      <header className="live-head">
-        <span className="live-call fixed">{call}</span>
-        <span className="live-what">{howItStands(state.channel, state.direction, state.status)}</span>
-        <span className="live-line fixed">
-          {state.from} → {state.to}
+      <header className="live-head fixed">
+        <span className="live-call">{call}</span>
+        <span>
+          {[state.channel, state.direction].filter((said) => said !== null).join(" · ")}
+          {(state.channel !== null || state.direction !== null) && " · "}
+          <span className="live-status">{state.status}</span>
         </span>
-        <span className="live-doing">
-          {state.agent_state ?? "—"} · {state.user_state ?? "—"}
+        {(state.from !== null || state.to !== null) && (
+          <span>
+            {state.from} <span className="live-arrow">→</span> {state.to}
+          </span>
+        )}
+        <span>
+          agent <b>{state.agent_state ?? "—"}</b> · user <b>{state.user_state ?? "—"}</b>
         </span>
-        <span className="live-seq fixed">
-          seq {state.seq} · {watched.error ?? watched.connection}
+        <span>
+          seq {state.seq} · <span className="live-connection">{watched.error ?? watched.connection}</span>
         </span>
-        <Supervise call={call} live={state.status !== "ended"} />
       </header>
-      {recorded !== null && (
-        <div className="live-recording">
-          <Player call={call} />
-        </div>
-      )}
+      <Supervise call={call} live={state.status !== "ended"} />
       <div className="live-body">
-        <Timeline entries={watched.entries} state={state} />
+        <div className="live-middle">
+          {recorded !== null && (
+            <div className="live-recording">
+              <Player call={call} />
+            </div>
+          )}
+          <Timeline entries={watched.entries} state={state} />
+        </div>
         <aside className="live-panels">
           <StatePanel fields={state.app_state} declared={declared} />
-          <PromptPanel prompt={state.prompt} />
           <RoomPanel room={state.room} from={state.from} />
+          <PromptPanel prompt={state.prompt} />
           <MetricsPanel metrics={state.metrics} entries={watched.entries} />
         </aside>
       </div>
@@ -60,8 +68,4 @@ export function Live({ call }: { call: string }): ReactNode {
 // The pointer to the audio rides the summary, near the end of a finished call's log.
 function summaryOf(entries: Entry[]): Record<string, unknown> | undefined {
   return [...entries].reverse().find((entry) => entry.type === "call.summary")?.data;
-}
-
-function howItStands(channel: string | null, direction: string | null, status: string): string {
-  return [channel, direction, status].filter((said) => said !== null).join(" · ");
 }

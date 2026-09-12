@@ -1,4 +1,4 @@
-/** The supervisor's moves on one call: listen in, whisper or speak, take the line, transfer, end. */
+/** The desk under the head of a watched call: listen in, whisper or say, take the line, transfer, end. */
 
 import { useState, type ReactNode } from "react";
 
@@ -7,74 +7,101 @@ import { useSupervise, type Supervising } from "../../lib/use-supervise";
 import "./supervise.css";
 
 // One box, two things to do with a sentence: tell the agent something the caller never hears, or
-// put it in the agent's mouth verbatim. The toggle says which, so there is no second input to read.
+// put it in the agent's mouth verbatim. The segment says which, so there is no second input to read.
 type Mode = "whisper" | "say";
 const ASKS: Record<Mode, string> = {
-  whisper: "whisper to the agent",
-  say: "say it to the caller, verbatim",
+  whisper: "the agent is told this — the caller never hears it",
+  say: "the agent says this to the caller, verbatim",
 };
 
-// Nothing here draws the state of the call: what a move did is in the log, in the timeline beside
-// this panel, as its own supervisor.* line. The only thing the panel knows is who holds the line.
+// Nothing here draws the state of the call: what a move did is in the log, in the timeline under
+// this strip, as its own supervisor.* line. The only thing the desk knows is who holds the line.
 export function Supervise({ call, live }: { call: string; live: boolean }): ReactNode {
   const ear = useListen(call);
   const desk = useSupervise(call);
   const refused = ear.error ?? desk.error;
   return (
-    <div className="supervise">
-      <Listen ear={ear} live={live} />
-      {live && <Desk desk={desk} />}
-      {refused !== null && <span className="supervise-refused fixed">{refused}</span>}
-    </div>
+    <>
+      <div className="live-desk">
+        <Listen ear={ear} live={live} />
+        {live && <Desk desk={desk} />}
+      </div>
+      {refused !== null && <p className="live-refused fixed">{refused}</p>}
+    </>
   );
 }
 
-// Three states, three labels: not in the room yet, in it and reading, in it and hearing.
+// Four states, one button with a dot: off, joining, in the room reading, in the room hearing.
 function Listen({ ear, live }: { ear: ReturnType<typeof useListen>; live: boolean }): ReactNode {
   if (!live) {
     return (
-      <button className="supervise-move" type="button" disabled title="the call is over: read its log, or play its recording">
+      <Move disabled dot="off" title="the call is over: read its log, or play its recording">
         listen
-      </button>
+      </Move>
     );
   }
   switch (ear.listening) {
     case "off":
     case "failed":
       return (
-        <button className="supervise-move supervise-can" type="button" onClick={() => void ear.join()}>
+        <Move dot="off" onClick={() => void ear.join()}>
           listen
-        </button>
+        </Move>
       );
     case "joining":
       return (
-        <button className="supervise-move" type="button" disabled>
+        <Move disabled dot="warm">
           joining…
-        </button>
+        </Move>
       );
     case "muted":
       return (
         <>
-          <button className="supervise-move supervise-can" type="button" onClick={() => ear.hear(true)}>
+          <Move dot="warm" onClick={() => ear.hear(true)}>
             hear it
-          </button>
-          <button className="supervise-move supervise-can" type="button" onClick={() => void ear.leave()}>
+          </Move>
+          <Move dot="warm" onClick={() => void ear.leave()}>
             stop
-          </button>
+          </Move>
         </>
       );
     case "on":
       return (
         <>
-          <button className="supervise-move supervise-live" type="button" onClick={() => ear.hear(false)}>
+          <Move dot="on" onClick={() => ear.hear(false)}>
             listening · mute
-          </button>
-          <button className="supervise-move supervise-can" type="button" onClick={() => void ear.leave()}>
+          </Move>
+          <Move dot="warm" onClick={() => void ear.leave()}>
             stop
-          </button>
+          </Move>
         </>
       );
   }
+}
+
+/** One move of the desk: a bordered button, with a dot when it stands for the ear. */
+function Move({
+  dot,
+  armed = false,
+  disabled = false,
+  title,
+  onClick,
+  children,
+}: {
+  dot?: "off" | "warm" | "on";
+  armed?: boolean;
+  disabled?: boolean;
+  title?: string;
+  onClick?: () => void;
+  children: ReactNode;
+}): ReactNode {
+  const tone = dot === "on" ? "desk-move desk-move-on" : dot === "warm" || armed ? "desk-move desk-move-armed" : "desk-move";
+  return (
+    <button type="button" className={tone} disabled={disabled} title={title} onClick={onClick}>
+      {dot !== undefined && <span className={`desk-dot desk-dot-${dot}`} aria-hidden />}
+      {children}
+    </button>
+  );
 }
 
 // The five verbs that change a call. Two of them are irreversible, so neither goes out on a stray
@@ -103,56 +130,57 @@ function Desk({ desk }: { desk: Supervising }): ReactNode {
 
   return (
     <>
-      <button
-        className="supervise-move supervise-can"
-        type="button"
-        onClick={() => setMode(mode === "whisper" ? "say" : "whisper")}
-        title="the same box, told to the agent or spoken to the caller"
-      >
-        {mode}
-      </button>
-      <input
-        className="supervise-text"
-        onChange={(typed) => setText(typed.target.value)}
-        onKeyDown={(key) => {
-          if (key.key === "Enter") send();
-        }}
-        placeholder={ASKS[mode]}
-        value={text}
-      />
-      <button
-        className={desk.holding ? "supervise-move supervise-live" : "supervise-move supervise-can"}
-        type="button"
-        onClick={() => void (desk.holding ? desk.release() : desk.takeOver())}
-      >
-        {desk.holding ? "hand back" : "take over"}
-      </button>
-      {to === null ? (
-        <button className="supervise-move supervise-can" type="button" onClick={() => setTo("")}>
-          transfer
-        </button>
-      ) : (
+      <div className="desk-box" role="group" aria-label="whisper or say">
+        {(["whisper", "say"] as const).map((one) => (
+          <button
+            key={one}
+            type="button"
+            className={one === mode ? "desk-mode desk-mode-here fixed" : "desk-mode fixed"}
+            onClick={() => setMode(one)}
+            aria-pressed={one === mode}
+          >
+            {one}
+          </button>
+        ))}
         <input
-          className="supervise-to fixed"
-          onChange={(typed) => setTo(typed.target.value)}
+          className="desk-text"
+          onChange={(typed) => setText(typed.target.value)}
           onKeyDown={(key) => {
-            if (key.key === "Enter") sendTransfer();
-            if (key.key === "Escape") setTo(null);
+            if (key.key === "Enter") send();
           }}
-          placeholder="+59899000000"
-          value={to}
+          placeholder={ASKS[mode]}
+          value={text}
         />
+      </div>
+      <Move armed={desk.holding} onClick={() => void (desk.holding ? desk.release() : desk.takeOver())}>
+        {desk.holding ? "hand back" : "take over"}
+      </Move>
+      {to === null ? (
+        <Move onClick={() => setTo("")}>transfer</Move>
+      ) : (
+        <span className="desk-to fixed">
+          <input
+            className="desk-to-number"
+            autoFocus
+            onChange={(typed) => setTo(typed.target.value)}
+            onKeyDown={(key) => {
+              if (key.key === "Enter") sendTransfer();
+              if (key.key === "Escape") setTo(null);
+            }}
+            placeholder="+34"
+            value={to}
+          />
+        </span>
       )}
-      <button
-        className={ending ? "supervise-move supervise-danger" : "supervise-move supervise-can"}
-        type="button"
+      <Move
+        armed={ending}
         onClick={() => {
           if (ending) void desk.end();
           setEnding(!ending);
         }}
       >
         {ending ? "end · sure?" : "end"}
-      </button>
+      </Move>
     </>
   );
 }

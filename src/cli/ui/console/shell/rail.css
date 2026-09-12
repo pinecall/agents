@@ -1,43 +1,62 @@
-/* The rail. The screen you are on is the one in the accent; there is no other selected thing. */
+/* The rail. The screen you are on wears the accent bar and the selected ground; nothing else is lit. */
 
 .rail-group {
-  margin-bottom: calc(var(--step) * 6);
+  padding: 14px 12px 6px;
 }
 
+/* A group is labelled in the log's face, upper case: the slug it acts on, or GATEWAY. */
 .rail-label {
   color: var(--ink-faint);
-  letter-spacing: 0.12em;
-  padding: 0 calc(var(--step) * 3) calc(var(--step) * 1.5);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  margin: 0 0 8px;
+  padding: 0 9px;
   text-transform: uppercase;
 }
 
-/* The agent's group is labelled with the slug it acts on: an identifier, not a heading. */
-.rail-label-path {
-  color: var(--ink-soft);
-  letter-spacing: 0.04em;
-  text-transform: none;
+.rail-links {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
 .rail-link {
   align-items: center;
   border-left: 2px solid transparent;
+  border-radius: 0 5px 5px 0;
   color: var(--ink-soft);
   display: flex;
-  gap: calc(var(--step) * 1.5);
-  padding: var(--step) calc(var(--step) * 3);
+  font-size: 13.5px;
+  gap: 8px;
+  justify-content: space-between;
+  padding: 6px 9px;
 }
 
 .rail-link:hover {
-  color: var(--ink);
+  background: var(--hover);
 }
 
 .rail-link-here {
+  background: var(--selected);
   border-left-color: var(--accent);
   color: var(--ink);
 }
 
-.rail-foot {
+/* What the screen would show, counted: how many agents, how many live. Empty when nothing is. */
+.rail-hint {
   color: var(--ink-faint);
+  font-size: 10px;
+}
+
+.rail-foot {
+  border-top: 1px solid var(--edge);
+  color: var(--ink-soft);
+  font-size: 10.5px;
   line-height: 1.8;
-  padding: 0 calc(var(--step) * 3);
+  margin-top: auto;
+  padding: 14px 21px 16px;
+}
+
+.rail-foot-line {
+  color: var(--ink-faint);
 }

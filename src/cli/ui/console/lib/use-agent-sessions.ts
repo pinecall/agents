@@ -9,7 +9,8 @@ import { useCredentials } from "./credentials";
 // A call's own log is a stream; the list of an agent's calls is not — a call that starts writes
 // into its own log, and the agent's own log never names it. So this asks the door again on a clock
 // slow enough to be free and fast enough that a call that rings shows up while somebody watches.
-const EVERY_MS = 3000;
+/** How often the list asks the gateway again: the strip above it says so. */
+export const EVERY_MS = 3000;
 
 /** The agent's calls, newest first, and whatever the door refused with. */
 export interface AgentSessions {

@@ -1,4 +1,4 @@
-/** The header strip: where you are on the left; the agent, the world, whose, and the theme on the right. */
+/** The header strip: the mark and where you are on the left; the agent, the world, whose, and the theme on the right. */
 
 import { Fragment, useState, type ReactNode } from "react";
 import { useLocation } from "react-router";
@@ -13,22 +13,28 @@ export function Header({ agent }: { agent: string }): ReactNode {
   // Under an agent the path is /a/<agent>/<screen>; on an org screen it is /<screen> or nothing.
   const crumbs = agent === "" ? ["fleet", ...segments] : ["fleet", agent, ...segments.slice(2)];
   return (
-    <div className="head">
-      <div className="head-crumbs fixed">
+    <>
+      <div className="brand">
+        <img className="brand-mark" src="/logo-mark.png" alt="" />
+        <span className="brand-name fixed">
+          pinecall <span className="brand-sep">/</span> <span className="brand-kind">console</span>
+        </span>
+      </div>
+      <nav className="head-crumbs fixed" aria-label="Where you are">
         {crumbs.map((crumb, index) => (
           <Fragment key={`${index}-${crumb}`}>
             {index > 0 && <span className="head-sep">/</span>}
             {index === crumbs.length - 1 ? <b>{crumb}</b> : <span>{crumb}</span>}
           </Fragment>
         ))}
-      </div>
+      </nav>
       <div className="head-right">
         <AgentSelect agent={agent} />
         <WorldToggle />
         <Whose />
         <ThemeToggle />
       </div>
-    </div>
+    </>
   );
 }
 

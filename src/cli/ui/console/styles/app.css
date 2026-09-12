@@ -18,7 +18,7 @@ body {
   background: var(--ground);
   color: var(--ink);
   font-family: var(--face);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 400;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
@@ -29,6 +29,14 @@ a {
   text-decoration: none;
 }
 
+/* A control wears the page's face, never the browser's. */
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
 /* Focus is visible everywhere — this is an operator's tool, it gets driven by keyboard. */
 :focus-visible {
   outline: 1px solid var(--accent);
@@ -36,13 +44,35 @@ a {
 }
 
 ::selection {
-  background: var(--accent-soft);
+  background: var(--accent-line);
 }
 
 /* A seq, a call id and a duration are read digit by digit; they get the fixed face everywhere. */
 .fixed {
   font-family: var(--face-fixed);
   font-size: 12px;
+}
+
+/* The two motions the canvas has: a live dot breathing, and a caret blinking. */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
 }
 
 /* Scrollbars belong to the instrument too. */
@@ -62,5 +92,5 @@ a {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--edge-strong);
+  background: var(--ink-faint);
 }

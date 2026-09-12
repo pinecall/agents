@@ -20,13 +20,3 @@ export function Readings({ rows }: { rows: Reading[] }): ReactNode {
     </dl>
   );
 }
-
-/** One measurement small enough to ride on a turn: the field's name and its value, side by side. */
-export function Chip({ reading }: { reading: Reading }): ReactNode {
-  return (
-    <span className="live-chip">
-      <span className="live-chip-field fixed">{reading.field}</span>
-      <span className="live-chip-value fixed">{reading.value}</span>
-    </span>
-  );
-}

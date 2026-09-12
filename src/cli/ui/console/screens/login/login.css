@@ -5,45 +5,53 @@
   display: flex;
   height: 100%;
   justify-content: center;
+  padding: 28px;
 }
 
 .login-card {
+  background: var(--panel);
   border: 1px solid var(--edge);
-  border-radius: var(--radius);
+  border-radius: var(--radius-panel);
   display: flex;
   flex-direction: column;
-  gap: var(--step);
-  padding: calc(var(--step) * 3);
+  gap: 10px;
+  padding: 22px;
   width: 22rem;
 }
 
+/* The same wordmark the header wears. */
 .login-brand {
-  color: var(--ink-soft);
-  font-size: 12px;
-  letter-spacing: 0.06em;
-  margin-bottom: var(--step);
-  text-transform: uppercase;
+  color: var(--ink);
+  font-family: var(--face-fixed);
+  font-size: 12.5px;
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
 }
 
 .login-field {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--step) * 0.5);
+  gap: 4px;
 }
 
 .login-label {
   color: var(--ink-soft);
-  font-size: 11px;
+  font-family: var(--face-fixed);
+  font-size: 10.5px;
 }
 
 .login-refused {
-  color: var(--warn, var(--ink));
-  font-size: 12px;
-  margin: var(--step) 0 0;
+  color: var(--accent);
+  font-family: var(--face-fixed);
+  font-size: 11.5px;
+  margin: 4px 0 0;
+  text-wrap: pretty;
 }
 
 .login-hint {
   color: var(--ink-faint);
+  font-family: var(--face-fixed);
   font-size: 11px;
-  margin: var(--step) 0 0;
+  margin: 4px 0 0;
+  text-wrap: pretty;
 }

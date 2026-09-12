@@ -1,82 +1,79 @@
-/* The frame: a brand cell, a header strip, the rail, and one scrolling work surface. */
+/* The frame: a header strip across the top, the rail, and one scrolling work surface beside it. */
 
 .shell {
-  display: grid;
-  grid-template-areas:
-    "brand head"
-    "rail  screen";
-  grid-template-columns: var(--rail) 1fr;
-  grid-template-rows: var(--head) 1fr;
-  height: 100%;
-}
-
-.shell-brand {
-  align-items: center;
-  border-bottom: 1px solid var(--edge);
-  border-right: 1px solid var(--edge);
   display: flex;
-  gap: var(--step);
-  grid-area: brand;
-  padding: 0 calc(var(--step) * 3);
+  flex-direction: column;
+  height: 100%;
 }
 
 .shell-head {
+  align-items: center;
+  background: var(--panel);
   border-bottom: 1px solid var(--edge);
-  grid-area: head;
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 18px;
+  min-height: var(--head);
+  padding: 0 16px;
+}
+
+.shell-body {
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(0, var(--rail)) minmax(0, 1fr);
+  min-height: 0;
 }
 
 .shell-rail {
+  background: var(--panel-2);
   border-right: 1px solid var(--edge);
-  grid-area: rail;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
   overflow-y: auto;
-  padding: calc(var(--step) * 4) 0 calc(var(--step) * 6);
 }
 
+/* The screen pads itself: a table screen breathes at 26px 28px, and Calls runs edge to edge. */
 .shell-screen {
-  grid-area: screen;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   overflow: auto;
-  padding: calc(var(--step) * 3) calc(var(--step) * 4) calc(var(--step) * 8);
 }
 
-/* ── the brand, and the header beside it ─────────────────────────────────── */
+/* ── the brand, and the crumbs beside it ─────────────────────────────────── */
+
+.brand {
+  align-items: center;
+  display: flex;
+  flex: none;
+  gap: 9px;
+}
 
 .brand-mark {
-  background: var(--accent);
-  border-radius: 1px;
-  height: 7px;
-  width: 7px;
+  display: block;
+  height: 18px;
 }
 
 .brand-name {
-  font-family: var(--face-fixed);
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 12.5px;
   letter-spacing: -0.01em;
 }
 
-.brand-kind {
+.brand-sep {
   color: var(--ink-faint);
-  font-family: var(--face-fixed);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
 }
 
-.head {
-  align-items: center;
-  display: flex;
-  gap: calc(var(--step) * 3);
-  height: 100%;
-  justify-content: space-between;
-  padding: 0 calc(var(--step) * 4);
+.brand-kind {
+  color: var(--ink-soft);
 }
 
 .head-crumbs {
   align-items: center;
   color: var(--ink-soft);
   display: flex;
-  gap: var(--step);
+  gap: 7px;
   min-width: 0;
 }
 
@@ -93,42 +90,51 @@
 .head-right {
   align-items: center;
   display: flex;
-  gap: calc(var(--step) * 2);
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-left: auto;
 }
 
 .head-whose {
-  color: var(--ink-faint);
-  font-size: 11px;
+  color: var(--ink-soft);
+  font-size: 11.5px;
 }
 
-/* One hairline glyph, the weight of the crumbs beside it — a switch, not a button. */
+/* A bordered pill the height of the crumbs, with the dot that says which theme this is. */
 .theme-toggle {
   align-items: center;
-  background: none;
-  border: none;
-  color: var(--ink-faint);
+  background: transparent;
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  color: var(--ink-soft);
   cursor: pointer;
-  display: flex;
-  justify-content: center;
-  line-height: 0;
-  padding: calc(var(--step) / 2);
+  display: inline-flex;
+  font-size: 11px;
+  gap: 7px;
+  height: 26px;
+  padding: 0 9px;
 }
 
 .theme-toggle:hover {
+  border-color: var(--ink);
   color: var(--ink);
 }
 
-.theme-toggle svg {
-  stroke-width: 1.5;
+.theme-dot {
+  background: var(--ink);
+  border-radius: 50%;
+  display: block;
+  height: 8px;
+  width: 8px;
 }
 
-/* ── the agent selector, and the two worlds ─────────────────────────────── */
+/* ── the agent selector, and the two worlds: the same pill as the theme's ─── */
 
 .agent-select {
   align-items: center;
   color: var(--ink-faint);
   display: flex;
-  gap: var(--step);
+  gap: 8px;
 }
 
 .agent-select-label {
@@ -137,12 +143,14 @@
 }
 
 .agent-select-control {
-  background: var(--sunk);
+  background: transparent;
   border: 1px solid var(--edge);
   border-radius: 6px;
   color: var(--ink-soft);
+  cursor: pointer;
+  font-size: 11px;
   height: 26px;
-  padding: 0 var(--step);
+  padding: 0 9px;
 }
 
 .agent-select-control:hover {
@@ -153,7 +161,7 @@
 .world {
   align-items: center;
   display: flex;
-  gap: var(--step);
+  gap: 8px;
 }
 
 /* Two words in one pill, the one lit being the world on screen. The other is a turn, not a tab. */
@@ -162,17 +170,17 @@
   border: 1px solid var(--edge);
   border-radius: 6px;
   display: inline-flex;
+  height: 26px;
   overflow: hidden;
 }
 
 .world-option {
   background: none;
   border: none;
-  color: var(--ink-faint);
+  color: var(--ink-soft);
   cursor: pointer;
-  font-family: var(--face-fixed);
   font-size: 11px;
-  height: 24px;
+  height: 100%;
   padding: 0 9px;
 }
 
@@ -193,12 +201,4 @@
   color: var(--accent);
   font-size: 11px;
   max-width: 32ch;
-}
-
-.theme-dot {
-  background: var(--ink);
-  border-radius: 50%;
-  display: block;
-  height: 8px;
-  width: 8px;
 }

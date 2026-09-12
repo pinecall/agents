@@ -9,15 +9,22 @@ import { rowsOf, type Row } from "./timeline-rows";
 import { ToolRow } from "./tool-run";
 import { TurnRow } from "./turn";
 
-/** Every row of one call. The interim words are not a row: they are the line at the bottom. */
+/** Every row of one call. The interim words are not a row: they are the strip at the foot. */
 export function Timeline({ entries, state }: { entries: Entry[]; state: State }): ReactNode {
+  const saying = state.live.user !== null || state.live.agent !== null;
   return (
     <div className="live-timeline">
-      {rowsOf(entries, state).map((row) => (
-        <RowOf key={`${row.kind}-${String(row.seq)}`} row={row} state={state} />
-      ))}
-      <Interim said={state.live.user} whose="user" />
-      <Interim said={state.live.agent} whose="agent" />
+      <div className="live-rows">
+        {rowsOf(entries, state).map((row) => (
+          <RowOf key={`${row.kind}-${String(row.seq)}`} row={row} state={state} />
+        ))}
+      </div>
+      {saying && (
+        <div className="live-foot">
+          <Interim said={state.live.user} whose="user" />
+          <Interim said={state.live.agent} whose="agent" />
+        </div>
+      )}
     </div>
   );
 }
@@ -25,7 +32,7 @@ export function Timeline({ entries, state }: { entries: Entry[]; state: State })
 function RowOf({ row, state }: { row: Row; state: State }): ReactNode {
   switch (row.kind) {
     case "turn":
-      return <TurnRow turn={row.turn} metrics={state.metrics} />;
+      return <TurnRow turn={row.turn} seq={row.seq} metrics={state.metrics} />;
     case "tool":
       return <ToolRow run={row.run} seq={row.seq} />;
     case "state":
@@ -45,11 +52,13 @@ function RowOf({ row, state }: { row: Row; state: State }): ReactNode {
   }
 }
 
-// The words on screen right now, from the reducer's own `live`: grey while they are still a guess,
-// gone the moment the turn they belong to is final.
+// The words on screen right now, from the reducer's own `live`: a caret while they are still
+// arriving, gone the moment the turn they belong to is final.
 function Interim({ said, whose }: { said: string | null; whose: string }): ReactNode {
-  if (said === null) {
-    return null;
-  }
-  return <p className={`interim interim-${whose}`}>{said}</p>;
+  return (
+    <p className="live-foot-line">
+      {whose} <span className="live-foot-said">{said ?? "…"}</span>
+      {said !== null && <span className="live-foot-caret" aria-hidden />}
+    </p>
+  );
 }

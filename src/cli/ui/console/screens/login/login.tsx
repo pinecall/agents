@@ -34,7 +34,7 @@ export function Login({ base, onSigned }: { base: string; onSigned: (signed: Sig
   return (
     <div className="login">
       <form className="login-card" onSubmit={(event) => void submit(event)}>
-        <div className="login-brand">pinecall · console</div>
+        <div className="login-brand">pinecall / console</div>
         <label className="login-field">
           <span className="login-label">org</span>
           <input className="input" value={org} onChange={(event) => setOrg(event.target.value)} autoComplete="organization" required />
@@ -47,7 +47,7 @@ export function Login({ base, onSigned }: { base: string; onSigned: (signed: Sig
           <span className="login-label">password</span>
           <input className="input" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required />
         </label>
-        <button className="button" type="submit" disabled={busy}>
+        <button className="button button-accent" type="submit" disabled={busy}>
           {busy ? "signing in…" : "sign in"}
         </button>
         {refused !== null && <p className="login-refused">{refused}</p>}

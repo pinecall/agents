@@ -303,7 +303,7 @@ The class talked to **in writing**, in the browser, on the call's own log — `p
 so a breakpoint in a `@tool` is reachable in the terminal serving it.
 
 - **Opening**: `as` (a phone number, a customer id — or nobody; it files the call under a contact so memory has a name) and `from` — the call's own opening, or **the state one of this directory's goldens declares** (a conversation opened part-way through). `start a chat` → the call id lands in the URL.
-- **In the call**: the same Live panel as Calls, plus a composer — `say`, and `hang up` as a button, never a navigation: hanging up seals the log and runs the judges, and leaving the page would keep the socket open. After hang-up it lands on the session.
+- **In the call**: the turns as bubbles — yours on the right, the agent's on the left, a tool the model called between them in the log's face — read from the call's own log (the same rows `screens/live/timeline-rows.ts` builds), with the whole call (panels, desk) one link away on Calls; plus a composer — `say`, and `hang up` as a button, never a navigation: hanging up seals the log and runs the judges, and leaving the page would keep the socket open. After hang-up it lands on the session.
 - Needs the agent's directory: without it, whose directory this console runs in.
 
 ## 7e. Keys — `/keys` (org level)
