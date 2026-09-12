@@ -26,7 +26,7 @@ the same agent is in their own corner, and neither of you takes the other's.
 | the agent | the org's: one holder, the box's machine key | **yours**: one per person. CI's, on a key naming nobody, is the org's own, and a person holding none falls back to it |
 | `pinecall run` | refused on a person's key | yours |
 | web and chat (`pinecall chat`, the console's talk) | the org's agent | your own |
-| a phone or WhatsApp number | the org's | **the org's, shared**: it rings where it was claimed — [the line](#the-line) |
+| a phone or WhatsApp number | the org's | **the org's, shared**: a call lands in the corner of whoever's phone dialled it, else on [the line](#the-line) |
 | a contact's memory | production's facts | development's facts, apart |
 | the knowledge base | the one the telephone answers from | yours; `knowledge push` replaces this one |
 | the quotas | the org's | the org's — agents, seats, facts, chunks and numbers are counted over both worlds |
@@ -125,17 +125,32 @@ Berna and Carla both run `tienda-sur`. Each `pinecall run` holds it in its own c
 call writes Berna's development memory and nobody else's. Neither can hold production: the box
 does. Both count against the plan once, because a slug is one agent however many corners hold it.
 
-### The line
+### Which phone is yours
 
 The org's development **number** is one door — a number exists once in a world — so a call at it
-rings in **one** terminal, and which one is claimed rather than assumed. With one developer that
-is not a decision: the first `pinecall run` to hold the agent answers its ring and the word never
-appears. With two it matters, because the alternative is a call answered in a colleague's
-scrollback with nothing on either screen saying so.
+rings in **one** terminal. Which one is answered by the phone that dialled:
+
+```console
+$ pinecall line from +59899111111
+calls from +59899111111 reach this terminal
+```
+
+Said once, and from then on every call Berna makes to the development number lands in Berna's
+agent and every call Carla makes lands in Carla's — at the same time, with no coordination between
+them. A phone is a **person's** and not an agent's, so it works on every agent they hold. The
+gateway keeps it beside its live table and not in a row, because it is only meaningful next to a
+socket: a developer who is running nothing has no corner for a call to land in. Every `pinecall
+run` says it again, so a restarted gateway learns it back.
+
+### The line
+
+And a call from a number nobody said was theirs — a customer, a colleague's phone, a test from
+somewhere else — still has to reach somebody. That is the **line**. With one developer it is not a
+decision: the first `pinecall run` to hold the agent answers it and the word never appears.
 
 ```console
 $ pinecall line
-rings in berna@tiendasur.uy · `pinecall line claim` takes it
+rings in berna@tiendasur.uy · `pinecall line from <+your-number>` routes yours, or `claim` takes it
 
 $ pinecall line claim
 rings in this terminal · also running: berna@tiendasur.uy
@@ -158,9 +173,9 @@ Web and chat need none of this. They name the agent AND the person, so they alwa
 - **`PINECALL_API_KEY` is exported.** It is read before the row `signup` or `login` kept, so the
   next verb answers for another org and reads as the sign-up having failed. Both verbs say so on
   stderr; `unset` it. `pinecall whoami` says which key a verb would use and in which world.
-- **The number answered somebody else's laptop.** The development number is the org's and rings
-  in one place: somebody holds [the line](#the-line). `pinecall line` says who, and `claim` takes
-  it. Web and chat are yours; only the telephone is shared.
+- **The number answered somebody else's laptop.** You never told it which phone is yours, so the
+  call fell through to whoever holds [the line](#the-line). `pinecall line from +<your number>`,
+  once, and it stops happening. Web and chat are yours already; only the telephone is shared.
 - **`knowledge push` "did nothing" to production.** It replaced your development base, which is
   the right thing. Promote with the machine's key.
 
@@ -169,5 +184,6 @@ Web and chat need none of this. They name the agent AND the person, so they alwa
 `POST /v1/signup` · `POST /v1/login` · `POST /v1/login/env` (the same person's key in the other
 world) · the four under `/v1/login/pairings` (signing a terminal in) · `GET`/`POST /v1/keys`,
 `POST /v1/keys/{fingerprint}/revoke` · `GET`/`POST /v1/members`, `PATCH /v1/members/{id}` ·
-`POST /v1/invitations/{token}` · `GET`/`POST`/`DELETE /v1/agents/{slug}/line`. Shapes and
+`POST /v1/invitations/{token}` · `GET`/`POST`/`DELETE /v1/agents/{slug}/line` ·
+`PUT`/`DELETE /v1/line/from`. Shapes and
 refusals: the runtime's `docs/protocol/people.md` and `gateway-api.md` §1, §5, §7, §8.

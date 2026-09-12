@@ -32,7 +32,7 @@ compiled `dist/cli/index.js` and needs no loader.
 | [`sessions`](#sessions) | the calls this agent has run, and one of them whole | yes |
 | [`runs`](#runs) | the suites: list, show, diff, promote a call, watch the drift | yes |
 | [`pipeline`](#pipeline) | what it hears, decides and speaks with, and the five knobs | yes |
-| [`line`](#line) | whose terminal the org's shared development number rings in | yes |
+| [`line`](#line) | which phone is yours, and whose terminal a call from anybody else's rings in | yes |
 | [`personas`](#personas) | the synthetic callers in `test/personas` | for `try` |
 | [`knowledge`](#knowledge) | the base the agent answers from: push, list, drop, eval | yes |
 | [`memory`](#memory) | what memory kept about a contact, forgetting it, and recall's golden | yes |
@@ -130,18 +130,35 @@ A `pinecall run` in a directory with no personas answers `simulate` with a sente
 ## `line`
 
 ```
-pinecall line [claim | release] [agent.tsx]
+pinecall line [from <+number> | forget | claim | release] [agent.tsx]
 ```
 
-**An org shares one development number, and a number rings in one place.** With one developer
-that is not a decision: the first `pinecall run` to hold the agent answers its ring, and you never
-learn the word. With three, it used to be whoever restarted last — so you would dial the number to
-test your change and be answered in a colleague's scrollback, with nothing on either screen saying
-so. Now the ring lands on the agent's **line**, and taking it is a thing you do on purpose.
+**An org shares one development number, and a number rings in one place.** With one developer that
+is not a decision: the first `pinecall run` to hold the agent answers its ring and you never learn
+the word. With three it used to be whoever restarted last — so you would dial the number to test
+your change and be answered in a colleague's scrollback, with nothing on either screen saying so.
+
+**Say which phone is yours, once.** Then every call you make lands in your own agent: no claim, no
+coordination, three of you testing at the same time.
+
+```console
+$ pinecall line from +59899111111
+calls from +59899111111 reach this terminal
+```
+
+A phone is a **person's** and not an agent's, so it works in whatever directory you are standing
+in and on every agent you hold. It is remembered for that gateway and re-sent by every `pinecall
+run` — the gateway keeps it beside its live table and not in a row, because it is only meaningful
+next to a socket: a developer running nothing has no corner for a call to land in. `forget` undoes
+it. A number that is not in E.164 form is refused with the shape in the sentence, and an org's own
+key is refused outright: it names nobody, so there is no *their own agent* to reach.
+
+**And for a call from a number nobody said was theirs** — a customer, a colleague's phone — there
+is the **line**:
 
 ```console
 $ pinecall line
-rings in berna@clinica.test · `pinecall line claim` takes it
+rings in berna@clinica.test · `pinecall line from <+your-number>` routes yours, or `claim` takes it
 
 $ pinecall line claim
 rings in this terminal · also running: berna@clinica.test
@@ -150,8 +167,8 @@ rings in this terminal · also running: berna@clinica.test
 `release` gives it up, and whoever else is still running the agent picks it up — which is also
 what happens on its own when the terminal holding it closes. A claim on an agent this terminal is
 not running is refused: a ring lands on the line, so a corner with no app in it would take the
-call and drop it. Production has one corner and the box holds it, so there is nothing to claim
-there; `pinecall run` prints the line only for an agent that answers at a number at all.
+call and drop it. Production has one corner and the box holds it, so there is nothing to route or
+claim there; `pinecall run` prints the line only for an agent that answers at a number at all.
 
 ## `chat`
 
@@ -631,7 +648,7 @@ code can call — over HTTP, in any language, with the same key.
 | `keys` | `GET`·`POST /v1/keys`, `POST /v1/keys/{fingerprint}/revoke` |
 | `providers` | `PUT`·`DELETE`·`GET /v1/provider-keys[/{vendor}]` |
 | `callbacks` | `GET /v1/callbacks[?agent=&after=]` |
-| `line` | `GET`·`POST`·`DELETE /v1/agents/{slug}/line` |
+| `line` | `GET`·`POST`·`DELETE /v1/agents/{slug}/line`, `PUT`·`DELETE /v1/line/from` |
 | `login` | `POST /v1/login/pairings`, `GET …/{code}/key` — then `GET /v1/whoami` to prove what it got |
 | `whoami` | `GET /v1/whoami` |
 | `ui` | all of the above, plus its own `ui/*` doors on 127.0.0.1 |

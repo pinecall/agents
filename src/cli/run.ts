@@ -10,7 +10,8 @@ import type { Agent as AgentClass } from "../agent/agent.js";
 import { showMachine } from "./machine.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
-import { describing, theLine } from "./line.js";
+import { gatewayFor } from "./credentials.js";
+import { callsFrom, describing, theLine } from "./line.js";
 import { instanceFor, load, mountOptions } from "./load.js";
 import { asked, Refused, type Door } from "./testing/gateway.js";
 import { chattingFrom, type Chatting } from "./ui/chatting.js";
@@ -171,8 +172,27 @@ export function whyNoConsole(refused: unknown): string {
 // worth failing the run over: a gateway that refuses says so on its own line and the app runs on.
 async function onceUp(door: Door, slug: string, rings: boolean): Promise<string[]> {
   const said = [await consoleLine(door, slug)];
-  if (rings) said.push(await lineLine(door, slug));
+  if (rings) {
+    // The gateway keeps whose phone is whose beside its live table and not in a row, because it
+    // is only meaningful next to a socket. So every connect says it again: a restarted gateway,
+    // or one this terminal has never told, learns it here rather than routing the person's own
+    // test call into a colleague's terminal.
+    await sayWhoCallsFromHere(door);
+    said.push(await lineLine(door, slug));
+  }
   return said;
+}
+
+/** Re-send the phone `pinecall line from` remembered for this gateway. Silent: it is upkeep. */
+async function sayWhoCallsFromHere(door: Door): Promise<void> {
+  const kept = gatewayFor(door.url)?.calling;
+  if (kept === undefined) return;
+  try {
+    await callsFrom(door, kept);
+  } catch {
+    // A gateway too old for the door, or a key that opens no `app` here: neither is worth a line
+    // in front of a person who did not ask for one. `pinecall line` says the truth when they do.
+  }
 }
 
 /** Whether this agent answers at a number at all: with no number there is no ring to land. */
