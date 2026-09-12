@@ -10,6 +10,7 @@ import type { Agent as AgentClass } from "../agent/agent.js";
 import { showMachine } from "./machine.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
+import { describing, theLine } from "./line.js";
 import { instanceFor, load, mountOptions } from "./load.js";
 import { asked, Refused, type Door } from "./testing/gateway.js";
 import { chattingFrom, type Chatting } from "./ui/chatting.js";
@@ -109,13 +110,16 @@ export async function run(argv: string[]): Promise<number> {
     if (values.events === true) return await stream(pc, mounted.agent.onAny.bind(mounted.agent));
 
     if (values.ui !== true) {
+      const doors = doorsOf(mounted.options.routes);
       const line = connectedLine({
         slug: mounted.slug,
         url,
         tools: mounted.options.tools?.length ?? 0,
-        doors: doorsOf(mounted.options.routes),
+        doors,
       });
-      return await plain(pc, mounted.agent.onAny.bind(mounted.agent), mounted.slug, url, line, () => consoleLine(door, mounted.slug));
+      return await plain(pc, mounted.agent.onAny.bind(mounted.agent), mounted.slug, url, line, () =>
+        onceUp(door, mounted.slug, rings(mounted.options.routes)),
+      );
     }
 
     // Which call the `s` key renders: the newest one, so the prompt on screen is the prompt of the
@@ -160,6 +164,31 @@ export function whyNoConsole(refused: unknown): string {
     return refused.status === NO_SUCH_DOOR ? OLDER_GATEWAY : `the gateway answered ${refused.status}`;
   }
   return refused instanceof Error ? refused.message : String(refused);
+}
+
+// What is only true once the socket is up: the console's URL, and — when the agent answers at a
+// number — whose terminal that number rings in. Both are asked of the gateway, and neither is
+// worth failing the run over: a gateway that refuses says so on its own line and the app runs on.
+async function onceUp(door: Door, slug: string, rings: boolean): Promise<string[]> {
+  const said = [await consoleLine(door, slug)];
+  if (rings) said.push(await lineLine(door, slug));
+  return said;
+}
+
+/** Whether this agent answers at a number at all: with no number there is no ring to land. */
+export function rings(routes: RouteInput[] | undefined): boolean {
+  return (routes ?? []).some((route) => route.number !== null && route.number !== undefined);
+}
+
+// A number exists once in a world: in production the box answers it, and in development the org
+// shares one and it rings where it was claimed. Printed here because the moment a second
+// developer starts is the moment they need to know they did NOT take the calls.
+async function lineLine(door: Door, slug: string): Promise<string> {
+  try {
+    return `line     ${describing(await theLine(door, slug))}`;
+  } catch (refused) {
+    return `line     not available: ${whyNoConsole(refused)}`;
+  }
 }
 
 async function consoleLine(door: Door, slug: string): Promise<string> {
@@ -226,7 +255,7 @@ async function plain(
   slug: string,
   url: string,
   connected: string,
-  console: () => Promise<string>,
+  after: () => Promise<string[]>,
 ): Promise<number> {
   let screen = screenFor(slug, url);
   listen((event) => {
@@ -238,7 +267,7 @@ async function plain(
   // gateway that refused it must leave its own refusal as the last thing on the screen.
   await pc.connect();
   process.stdout.write(`${connected}\n`);
-  process.stdout.write(`${await console()}\n`);
+  for (const said of await after()) process.stdout.write(`${said}\n`);
   await forever();
   return 0;
 }
