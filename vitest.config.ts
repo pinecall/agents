@@ -24,16 +24,17 @@ export default defineConfig({
         test: {
           name: "pinecall",
           include: ["test/**/*.test.ts", "test/**/*.test.tsx"],
-          exclude: ["test/cli/ui/console/**"],
+          exclude: ["test/cli/ui/console/**", "test/cli/ui/pages/**"],
         },
       },
       {
-        // The console's tests run in node and read files: what they prove is an absence, not a
-        // rendering. Bernardo's rule stands — there are no UI suites here; `tsc` against the DOM
-        // and a clean build are the gates.
+        // The browser pages' tests run in node and read files: what they prove is an absence, not
+        // a rendering. Bernardo's rule stands — there are no UI suites here; `tsc` against the DOM
+        // and a clean build are the gates. `pages/` is what holds for both, `console/` is one
+        // page's own.
         test: {
-          name: "console",
-          include: ["test/cli/ui/console/**/*.test.ts"],
+          name: "pages",
+          include: ["test/cli/ui/console/**/*.test.ts", "test/cli/ui/pages/**/*.test.ts"],
         },
       },
     ],

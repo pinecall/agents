@@ -19,5 +19,5 @@
   "include": ["src"],
   // The console is a browser program with a build of its own: vite bundles it and
   // tsconfig.console.json checks it against the DOM. tsc must neither emit it nor type it as node.
-  "exclude": ["src/cli/ui/console"]
+  "exclude": ["src/cli/ui/shared", "src/cli/ui/console", "src/cli/ui/admin"]
 }
