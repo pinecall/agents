@@ -11,23 +11,24 @@ import "./login.css";
  * The one screen shown with no key. A `pinecall run` prints a URL with a one-use code that skips
  * it (lib/login.ts); a person opening the console cold types the three things a member has. The
  * refusal is the gateway's sentence, verbatim: one for every wrong thing, by design. Where the
- * gateway is Pinecall's cloud, the card turns over into a sign-up (signup.tsx); on a box of its
- * own there is nothing to turn to, since its operator is who makes orgs and invites people.
+ * gateway opens sign-ups (`signup` in /.well-known/pinecall, off unless its operator set it), the
+ * card turns over into one (signup.tsx) and `/signup` opens on that side; where it does not,
+ * there is nothing to turn to, because somebody there makes the org and invites people.
  */
-export function Login({ base, cloud, onSigned }: { base: string; cloud: boolean; onSigned: (signed: Signed) => void }): ReactNode {
-  const [signingUp, setSigningUp] = useState(false);
+export function Login({ base, signup, start = "signin", onSigned }: { base: string; signup: boolean; start?: "signin" | "signup"; onSigned: (signed: Signed) => void }): ReactNode {
+  const [signingUp, setSigningUp] = useState(start === "signup");
   return (
     <div className="login">
-      {signingUp && cloud ? (
+      {signingUp && signup ? (
         <SignUp base={base} onSigned={onSigned} onSignInInstead={() => setSigningUp(false)} />
       ) : (
-        <SignIn base={base} cloud={cloud} onSigned={onSigned} onSignUpInstead={() => setSigningUp(true)} />
+        <SignIn base={base} signup={signup} onSigned={onSigned} onSignUpInstead={() => setSigningUp(true)} />
       )}
     </div>
   );
 }
 
-function SignIn({ base, cloud, onSigned, onSignUpInstead }: { base: string; cloud: boolean; onSigned: (signed: Signed) => void; onSignUpInstead: () => void }): ReactNode {
+function SignIn({ base, signup, onSigned, onSignUpInstead }: { base: string; signup: boolean; onSigned: (signed: Signed) => void; onSignUpInstead: () => void }): ReactNode {
   const [org, setOrg] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -69,7 +70,7 @@ function SignIn({ base, cloud, onSigned, onSignUpInstead }: { base: string; clou
         <p className="login-hint">
           Invited and no password yet? Open the link in your invitation first. Running the agent here? <span className="fixed">pinecall run</span> prints a URL that signs you in.
         </p>
-        {cloud && (
+        {signup && (
           <p className="login-hint">
             New here? <button type="button" className="link login-switch" onClick={onSignUpInstead}>create an account</button> — forty-five minutes on us, no card.
           </p>

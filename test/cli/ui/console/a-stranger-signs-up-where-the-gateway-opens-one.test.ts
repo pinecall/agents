@@ -1,4 +1,4 @@
-/** The console offers a sign-up only where the gateway says it is the cloud, and reads the door's answer as a login's. */
+/** The console offers a sign-up only where the gateway says it opens one, and reads the door's answer as a login's. */
 
 import { expect, test } from "vitest";
 
@@ -33,15 +33,22 @@ function answering(status: number, body: unknown): { asked: { url: string; body:
   return { asked };
 }
 
-test("discovery reads {version, cloud}, and a gateway that does not say is a box", async () => {
+test("discovery reads {version, cloud, signup}, and the way in is drawn off signup, never off cloud", async () => {
+  answering(200, { version: "0.0.0", cloud: false, signup: true });
+  expect((await discover("/")).signup).toBe(true);
+  // A cloud with sign-ups closed offers none: two facts, and the console acts on the second.
+  answering(200, { version: "0.0.0", cloud: true, signup: false });
+  expect((await discover("/")).signup).toBe(false);
+  // A gateway too old to say, one that 404s, one that never answers: no sign-up offered. The
+  // wrong guess this way offers nothing; the other would offer a door that refuses.
   answering(200, { version: "0.0.0", cloud: true });
-  expect((await discover("/")).cloud).toBe(true);
+  expect((await discover("/")).signup).toBe(false);
   answering(404, { detail: "nothing here" });
-  expect((await discover("/")).cloud).toBe(false);
+  expect((await discover("/")).signup).toBe(false);
   globalThis.fetch = (async () => {
     throw new TypeError("network");
   }) as typeof fetch;
-  expect((await discover("/")).cloud).toBe(false);
+  expect((await discover("/")).signup).toBe(false);
 });
 
 test("a sign-up knocks at /v1/signup naming this device and is read as a login's answer", async () => {

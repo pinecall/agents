@@ -19,10 +19,13 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   every verb that connects works straight after. The password is typed in silence or read from
   stdin, never a flag. It prints a console link that signs a browser in once. Both it and `login`
   now say out loud when an exported `PINECALL_API_KEY` would shadow the key they just kept.
-- **Sign-up from the console, on the cloud.** The login card asks `GET /.well-known/pinecall`
-  once and, where the gateway says `cloud`, offers "create an account": the org's name (its
-  address made from it and shown), the person, their password — `POST /v1/signup`, the free
-  trial, the first key held like a login's. A box of its own shows no such side.
+- **Sign-up from the console, where its gateway opens one.** The login card asks
+  `GET /.well-known/pinecall` once and, where the gateway answers `signup` (off unless its
+  operator set `PINECALL_SIGNUP` — never read off `cloud`), offers "create an account": the org's
+  name (its address made from it and shown), the person, their password — `POST /v1/signup`, the
+  free trial, the first key held like a login's. `/signup` opens that side directly, so a site in
+  front of the gateway links here rather than posting to the door from another origin. A gateway
+  that opens none shows no such side.
 - **The console's org layer.** Before anybody picks an agent: Live (every call up across the org,
   repainted as `GET /v1/events` says the floor changed), Sessions across every agent, Numbers,
   Team (invite, change, the invitation token shown once), Usage. An agent selector in the header,

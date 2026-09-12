@@ -10,9 +10,10 @@ import { slugOf } from "./slug";
 const SHORTEST_PASSWORD = 12;
 
 /**
- * The other side of the login card, shown where `/.well-known/pinecall` says `cloud`. The gateway
- * makes the org on the free trial with this person as its admin and answers their first key, which
- * the tab keeps exactly as a login's. The refusal is the gateway's sentence, verbatim.
+ * The other side of the login card, shown where `/.well-known/pinecall` says `signup`, and opened
+ * directly by `/signup` so a site in front of this gateway can link to it. The gateway makes the
+ * org on the free trial with this person as its admin and answers their first key, which the tab
+ * keeps exactly as a login's. The refusal is the gateway's sentence, verbatim.
  */
 export function SignUp({ base, onSigned, onSignInInstead }: { base: string; onSigned: (signed: Signed) => void; onSignInInstead: () => void }): ReactNode {
   const [name, setName] = useState("");

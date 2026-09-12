@@ -29,18 +29,32 @@ if (root === null) {
 // reload, a bookmark or a screenshot never carries it.
 const LOGIN = "login";
 
-/** What the tab starts as: the world it looks at, the key it holds for it, if any, and whose gateway this is. */
+// The console's own sign-up screen, linkable from anywhere: a site in front of this gateway
+// sends people HERE rather than posting to /v1/signup from its own origin. It is a path and not
+// a route, because the router only runs once there is a key — with none, the login card is the
+// whole page, and this says which of its two sides opens.
+const SIGNUP_PATH = "/signup";
+
+/** What the tab starts as: the world it looks at, the key it holds, whether this gateway opens a sign-up, and whether one was asked for. */
 interface Start {
   world: World;
   key: string | null;
-  cloud: boolean;
+  signup: boolean;
+  wantsSignup: boolean;
 }
 
 /** The key this tab starts with: spent from `?login=` (which also names the world), or kept. */
 async function theKeyToStartWith(): Promise<Start> {
   // Asked once, with no key, so a cold login knows whether there is a sign-up to offer.
-  const { cloud } = await discover(BASE);
+  const { signup } = await discover(BASE);
   const address = new URL(window.location.href);
+  // `/signup` is answered by the login card, not by the router, so it is taken out of the address
+  // before anything renders — a person who lands there already holding a key goes to the console.
+  const wantsSignup = address.pathname === SIGNUP_PATH;
+  if (wantsSignup) {
+    address.pathname = "/";
+    window.history.replaceState(null, "", address.toString());
+  }
   const code = address.searchParams.get(LOGIN);
   if (code !== null) {
     address.searchParams.delete(LOGIN);
@@ -49,14 +63,14 @@ async function theKeyToStartWith(): Promise<Start> {
       const signed = await loginWithCode(BASE, code);
       keepKey(signed.env, signed.key);
       keepWorld(signed.env);
-      return { world: signed.env, key: signed.key, cloud };
+      return { world: signed.env, key: signed.key, signup, wantsSignup };
     } catch {
       // A code spent already, or expired: the person logs in the long way, and is told nothing
       // a stranger who found the URL would not be.
     }
   }
   const world = keptWorld();
-  return { world, key: keptKey(world), cloud };
+  return { world, key: keptKey(world), signup, wantsSignup };
 }
 
 /** The app, or the login until there is a key: one component, so a dead key falls back to login. */
@@ -91,7 +105,8 @@ function Console({ startingWith }: { startingWith: Start }): ReactNode {
     return (
       <Login
         base={BASE}
-        cloud={startingWith.cloud}
+        signup={startingWith.signup}
+        start={startingWith.wantsSignup ? "signup" : "signin"}
         onSigned={(signed) => {
           keepKey(signed.env, signed.key);
           keepWorld(signed.env);

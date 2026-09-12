@@ -403,11 +403,14 @@ about the page is a containment decision:
   that touches storage). `pinecall run` mints a one-use code standing for its key and prints
   `/a/<agent>?login=<code>`; the page spends it for a key of its own and takes it out of the
   address bar before rendering (`main.tsx`, `lib/login.ts`). Cold, it asks for org, email and
-  password (`screens/login/`) — and where `GET /.well-known/pinecall` says `cloud`
-  (`lib/discovery.ts`, asked once with no key), the card turns over into a sign-up: the org's
+  password (`screens/login/`) — and where `GET /.well-known/pinecall` says **`signup`**
+  (`lib/discovery.ts`, asked once with no key; off unless the gateway's operator set
+  `PINECALL_SIGNUP`, and never read off `cloud`), the card turns over into a sign-up: the org's
   name, whose address is made from it (`screens/login/slug.ts`), the person, their password;
   `POST /v1/signup` makes the org on the free trial and answers the first key in a login's shape,
-  so the tab holds it the same way. A box of its own shows no such side. `test/cli/ui/console/the-key-is-never-in-the-page.test.ts` pins it:
+  so the tab holds it the same way. **`/signup` opens that side directly**, which is how a site in
+  front of this gateway links to it instead of posting to the door from its own origin — the one
+  reason the runtime would have needed a CORS header, and the reason it needs none. `test/cli/ui/console/the-key-is-never-in-the-page.test.ts` pins it:
   one file reaches `sessionStorage`, none reaches `localStorage`, only `lib/api.ts` writes the
   `authorization` header, and the bundle carries no key and no key's name.
 - **Nothing rides a URL.** The log stream is `fetch` reading `text/event-stream` by hand
