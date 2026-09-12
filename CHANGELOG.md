@@ -7,6 +7,10 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **Sign-up from the console, on the cloud.** The login card asks `GET /.well-known/pinecall`
+  once and, where the gateway says `cloud`, offers "create an account": the org's name (its
+  address made from it and shown), the person, their password — `POST /v1/signup`, the free
+  trial, the first key held like a login's. A box of its own shows no such side.
 - **The console's org layer.** Before anybody picks an agent: Live (every call up across the org,
   repainted as `GET /v1/events` says the floor changed), Sessions across every agent, Numbers,
   Team (invite, change, the invitation token shown once), Usage. An agent selector in the header,
