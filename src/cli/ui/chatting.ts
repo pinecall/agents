@@ -23,8 +23,8 @@ const A_CALL_OPENS_WITHIN_MS = 20_000;
 // directory `pinecall ui` was typed in.
 const NOT_THIS_DIRECTORY = (asked: string, here: string | null): string =>
   here === null
-    ? `no agent class in this directory: run \`pinecall ui\` where ${asked}'s agent.tsx is`
-    : `this console runs in ${here}'s directory: to chat with ${asked}, run \`pinecall ui\` there`;
+    ? `no agent class in this directory: run \`pinecall run\` where ${asked}'s agent.tsx is`
+    : `this process runs in ${here}'s directory: to chat with ${asked}, run \`pinecall run\` there`;
 
 const NO_CALL = "the gateway took the socket but wrote no entry: nothing to read";
 const NOT_OPEN = (call: string): string => `${call} is not a chat this console opened`;
@@ -74,7 +74,7 @@ export interface Lines {
 }
 
 /**
- * One `Chatting` for the life of a `pinecall ui`. The class is mounted here once, on the first
+ * One `Chatting` for the life of a `pinecall run`. The class is mounted here once, on the first
  * call the page opens, exactly as `pinecall chat` mounts it — so a breakpoint in a @tool is
  * reachable from the terminal that typed `ui` — and every turn typed in the browser goes down that
  * same socket. The page reads the call off the log like any other; nothing here keeps a transcript.

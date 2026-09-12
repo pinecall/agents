@@ -36,8 +36,8 @@ export interface Remembering {
 
 const NOT_THIS_DIRECTORY = (asked: string, here: string | null): string =>
   here === null
-    ? `no agent class in this directory: run \`pinecall ui\` where ${asked}'s agent.tsx is`
-    : `this console runs in ${here}'s directory: to run ${asked}'s memory goldens, run \`pinecall ui\` there`;
+    ? `no agent class in this directory: run \`pinecall run\` where ${asked}'s agent.tsx is`
+    : `this process runs in ${here}'s directory: to run ${asked}'s memory goldens, run \`pinecall run\` there`;
 
 /** The pieces a run is built from, named so a test can hand in its own. */
 export interface Pieces {
@@ -50,7 +50,7 @@ export interface Pieces {
 }
 
 /**
- * One `Remembering` for the life of a `pinecall ui`. Both goldens are FILES of this directory —
+ * One `Remembering` for the life of a `pinecall run`. Both goldens are FILES of this directory —
  * `memory/golden.json` and `test/memory` — so only the process standing in it can run them, and
  * both are the very ones `pinecall memory eval` and `pinecall remember` run. The models are the
  * gateway's, as they always were: this process sends questions and cases, never a key.

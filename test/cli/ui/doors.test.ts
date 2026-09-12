@@ -2,7 +2,8 @@
 
 import { describe, expect, it } from "vitest";
 
-import { ownDoors } from "../../../src/cli/ui/doors.js";
+import { DevRefused } from "../../../src/client/index.js";
+import { devHandler, ownDoors, ownVerbs } from "../../../src/cli/ui/doors.js";
 import { Refusal, refusedAs } from "../../../src/cli/ui/refusal.js";
 import { Refused } from "../../../src/cli/testing/gateway.js";
 
@@ -42,5 +43,40 @@ describe("what a refusal becomes", () => {
       detail: "the gateway answered 503: this gateway keeps no knowledge",
     });
     expect(refusedAs(new Error("the socket closed"))).toEqual({ status: 500, detail: "the socket closed" });
+  });
+});
+
+describe("the table by verb, as pinecall run answers the gateway", () => {
+  const chatting = {
+    roster: async () => ({ agent: "clinica-norte", states: [] }),
+    start: async (asked: unknown) => {
+      if ((asked as { agent: string }).agent !== "clinica-norte") throw new Refusal(409, "this process runs in clinica-norte's directory");
+      return { call: "c" };
+    },
+    say: async () => ({ call: "c" }),
+    end: async () => ({ call: "c" }),
+    close: async () => undefined,
+  };
+
+  it("registers one verb per thing the terminal handed in, and nothing for what it did not", () => {
+    expect(Object.keys(ownVerbs({ chatting })).sort()).toEqual(["chat.end", "chat.roster", "chat.say", "chat.start"]);
+    expect(ownVerbs({})).toEqual({});
+  });
+
+  it("answers a verb with the module's result, and refuses with the module's status and sentence", async () => {
+    const handler = devHandler(ownVerbs({ chatting }));
+    expect(await handler("chat.roster", {})).toEqual({ agent: "clinica-norte", states: [] });
+    await expect(handler("chat.start", { agent: "tienda-sur" })).rejects.toMatchObject({
+      status: 409,
+      detail: "this process runs in clinica-norte's directory",
+    });
+  });
+
+  it("refuses a verb nothing in this directory answers, as a 404 that names it", async () => {
+    const handler = devHandler(ownVerbs({ chatting }));
+    const refused = await handler("goldens.run", {}).catch((failed: unknown) => failed);
+    expect(refused).toBeInstanceOf(DevRefused);
+    expect((refused as DevRefused).status).toBe(404);
+    expect((refused as DevRefused).detail).toContain("goldens.run");
   });
 });

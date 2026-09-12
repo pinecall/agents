@@ -1,8 +1,8 @@
 // One agent an app speaks for: what it declares, what it does with a tool call, who listens.
 
-import { eventOf, type AgentConfig, type Camel, type CommandData, type CommandType, type Entry, type EventType, type Route, type ToolSpec } from "@pinecall/protocol";
+import { eventOf, type AgentConfig, type Camel, type CommandData, type CommandType, type DevVerb, type Entry, type EventType, type Route, type ToolSpec } from "@pinecall/protocol";
 import { Call, CallBook, type CallGateway } from "./calls.js";
-import { PinecallError, Refused } from "./frames.js";
+import { DevRefused, PinecallError, Refused } from "./frames.js";
 import { Listeners, asError, camelEvent, type AnyListener, type CamelEvent, type Listener, type Payload } from "./listeners.js";
 
 /** A door the agent answers. `number` is null for a channel that has none, which is what web is. */
@@ -39,6 +39,16 @@ export interface AgentGateway {
 
 const ANSWER_MS = 10_000;
 
+/**
+ * What answers a console's ask of this process: the verb, and the body the console sent as the
+ * verb's own shape. It resolves with the verb's answer, or throws a `DevRefused` to refuse with a
+ * status and a sentence; anything else thrown reaches the console as a 500 with its message.
+ */
+export type DevHandler = (verb: DevVerb, data: Record<string, unknown>) => Promise<Record<string, unknown>>;
+
+// A process that registered no handler is a plain app, and a console asking it is told so.
+const NO_DEV_HANDLER = "this process answers no dev verbs: it is not a `pinecall run` in the agent's directory";
+
 type Waiter = { type: EventType; id: string; settle: (data: unknown) => void; refuse: (error: Error) => void };
 
 /**
@@ -59,6 +69,7 @@ export class Agent implements CallGateway {
   #config: Camel<AgentConfig>;
   #takesUnclaimed: boolean;
   #app: string | undefined;
+  #dev: DevHandler | undefined;
 
   constructor(
     readonly slug: string,
@@ -99,6 +110,15 @@ export class Agent implements CallGateway {
     return this.#listeners.onAny(listener);
   }
 
+  /**
+   * Answer a console's asks of this process — `dev.request`, relayed by the gateway. Only the
+   * process standing in the agent's directory has one: `pinecall run` registers it, a plain app
+   * never does, and a console asking a plain app is told so.
+   */
+  onDev(handler: DevHandler): void {
+    this.#dev = handler;
+  }
+
   /** Replace the tools and their code. The next `configure` carries the new declaration. */
   declare(tools: Tool[]): void {
     this.#tools.clear();
@@ -136,6 +156,10 @@ export class Agent implements CallGateway {
     call?.take(event);
     this.#listeners.emit(event, call);
     this.gateway.seen(event, call);
+    if (event.type === "dev.request") {
+      this.#onDevRequest(event.data);
+      return;
+    }
     if (call !== null) {
       this.#onToolCall(event, call);
       this.calls.forget(call);
@@ -183,6 +207,28 @@ export class Agent implements CallGateway {
         // afterwards. Printing it as well would report a refusal the app made on purpose twice.
         const error = asError(failed);
         call.toolResult({ callId, name, error: error.message, durationS: (Date.now() - started) / 1000 });
+      }
+    })();
+  }
+
+  // ── a console's ask ─────────────────────────────────────────────────────────
+
+  // The gateway relayed a console's ask down this socket. Whatever the handler does — an answer,
+  // a refusal, a throw — becomes one dev.answer against the gateway's own id, because a door
+  // that never gets one waits two minutes and says so to a person.
+  #onDevRequest(asked: Payload<"dev.request">): void {
+    const { id, verb, data } = asked;
+    void (async () => {
+      try {
+        if (this.#dev === undefined) throw new DevRefused(501, NO_DEV_HANDLER);
+        const result = await this.#dev(verb, data);
+        this.command("dev.answer", null, { id, result });
+      } catch (failed) {
+        const refused =
+          failed instanceof DevRefused
+            ? { status: failed.status, detail: failed.detail }
+            : { status: 500, detail: asError(failed).message };
+        this.command("dev.answer", null, { id, refused });
       }
     })();
   }

@@ -6,6 +6,15 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Changed
+- **`pinecall run` answers the console for its directory.** A written call to the class, the
+  personas and a simulation, the goldens and a suite, the knowledge folder and its golden, the
+  memory goldens, a promoted candidate, drift and the reproductions are asked of the gateway,
+  which relays them to the `pinecall run` holding the agent (`dev.request` → `dev.answer`). The
+  console's screens no longer call `pinecall ui`'s own `/ui/*` server for any of it; the sentence
+  for another directory's agent now says `pinecall run`. `Agent.onDev` and `DevRefused` join the
+  client's surface.
+
 ### Added
 - **A chat can open part-way through.** The Chat screen offers the states this directory's goldens
   declare, which is `pinecall chat --state` by name; a conversation that opens in one gets a mount
