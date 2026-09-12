@@ -6,7 +6,7 @@ import { notOpened, opens, SCOPE_OF } from "../../../../src/cli/ui/console/lib/s
 
 // The gateway's closed set (runtime types/key.py). A screen gated by a word outside it would be a
 // screen nobody could ever open.
-const KEY_SCOPES = ["app", "calls", "talk", "supervise", "pipeline", "knowledge", "memory", "evals", "numbers", "keys", "team", "usage"];
+const KEY_SCOPES = ["app", "calls", "talk", "supervise", "pipeline", "knowledge", "memory", "evals", "numbers", "keys", "providers", "team", "usage"];
 
 test("every gated screen names a scope the gateway has", () => {
   for (const [screen, scope] of Object.entries(SCOPE_OF)) {

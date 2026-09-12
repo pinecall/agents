@@ -17,7 +17,8 @@ selection in memory.
 | `/live` | Live — every call up on the floor, whichever agent has it |
 | `/sessions` | Sessions — every agent's finished calls, one table, each naming its agent |
 | `/numbers` | Numbers — the org's carrier, which number reaches which agent, and one more imported or bought |
-| `/keys` | Keys — the provider accounts this org brought |
+| `/keys` | Keys — the API keys this org's machines run on |
+| `/providers` | Providers — the vendor accounts this org brought |
 | `/team` | Team — the org's people, invited and changed |
 | `/usage` | Usage — what the org consumed, totals then rows |
 | `/a/:agent/talk` | Talk |
@@ -41,7 +42,7 @@ The shell carries, on every screen:
   it or mints one for the same person (`POST /v1/login/env`), and shows the gateway's refusal when a machine key tries;
 - one switch: a light/dark toggle that lives as long as the tab;
 - a rail with two groups — the agent's eight screens (Talk, Chat, Calls, Sessions, Pipeline, Knowledge, Memory, Evals), under
-  the agent's slug; and `Organization` with `Agents`, `Live`, `Sessions`, `Numbers`, `Keys`, `Team`, `Usage` — every screen drawn
+  the agent's slug; and `Organization` with `Agents`, `Live`, `Sessions`, `Numbers`, `Keys`, `Providers`, `Team`, `Usage` — every screen drawn
   only when the key's `scopes` open it (`talk`, `calls`, `pipeline`, `knowledge`, `memory`, `evals`, `numbers`, `keys`, `team`,
   `usage`), so no click meets a 403 — plus a fixed foot: `web · whatsapp · phone` / `one agent, three doors`;
 - when a screen has nothing to show it says so **in a sentence, never a spinner** (`shell/nothing.tsx`).
@@ -63,7 +64,8 @@ has to replace (see the plan). Gateway doors:
 | `POST /v1/tokens` · `POST /v1/calls/{call}/listen` · `POST /v1/calls/{call}/supervise` | Talk, listen, the desk |
 | `POST /v1/calls/{call}/verbs` | the desk's six verbs |
 | `GET /v1/whoami` | the header |
-| `GET/PUT/DELETE /v1/provider-keys[/{vendor}]` | Keys |
+| `GET/POST /v1/keys`, `POST /v1/keys/{fingerprint}/revoke` | Keys |
+| `GET/PUT/DELETE /v1/provider-keys[/{vendor}]` | Providers |
 | `GET /v1/knowledge` · `DELETE /v1/knowledge/{base}` | Knowledge (push and golden go through the CLI's server) |
 | `GET/DELETE /v1/contacts/{contact}/memory` | Memory |
 | `POST /v1/evals/replay/{call}` | Sessions ▸ one: re-check a call by code |
@@ -308,7 +310,16 @@ so a breakpoint in a `@tool` is reachable in the terminal serving it.
 
 ## 7e. Keys — `/keys` (org level)
 
-The provider accounts this org brought of its own; every vendor nobody brought runs on the box's key.
+The API keys this org's machines run on. A key a person holds by being logged in does not hold an
+agent in production — the process on the box does — so the key that answers the org's numbers is
+issued here.
+
+- **Issue one for a machine**: a label (`prod server`) and a world; it holds the app socket and nothing else, and names nobody. The key comes back **once**, in a card that says so, and is kept by nothing.
+- **The list**: label · world · whose (`a machine` when nobody) · scopes, each live row with `revoke`; a revoked row stays, dimmed, because the calls it wrote name it. Empty: *No key of this org yet: the first one is what a deploy runs on.*
+
+## 7e′. Providers — `/providers` (org level)
+
+The vendor accounts this org brought of its own; every vendor nobody brought runs on the box's key.
 
 - **Bring one**: vendor (e.g. `elevenlabs`) + the key, `type=password`, sent once; the field empties the moment it left. **Nothing reads a key back** — not this page, not the CLI, not the log.
 - **The list**: vendor names only, each with `give it back`. Empty: *No provider key brought: every call runs on the keys of the box.*

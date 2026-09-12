@@ -1,0 +1,45 @@
+/* Providers owns its own styles: one panel to bring one, and the vendors brought under it. */
+
+.providers-bring {
+  margin-top: 22px;
+}
+
+.providers-add {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 150px minmax(0, 1fr) auto;
+  padding: 14px 14px 12px;
+}
+
+.providers-list {
+  list-style: none;
+  margin: 22px 0 0;
+  padding: 0;
+}
+
+.providers-one {
+  align-items: center;
+  border-bottom: 1px solid var(--edge-soft);
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 11px 16px;
+}
+
+.providers-one:last-child {
+  border-bottom: none;
+}
+
+.providers-one:hover {
+  background: var(--hover);
+}
+
+.providers-one .providers-vendor {
+  color: var(--ink);
+  font-size: 13.5px;
+}
+
+.providers-nothing {
+  margin-top: 22px;
+}

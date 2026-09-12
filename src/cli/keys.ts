@@ -1,56 +1,89 @@
-/** `pinecall keys add | rm | list`: the provider keys this org brought of its own, never read back. */
+/** `pinecall keys issue | list | revoke`: the API keys this org's machines run on, shown once. */
+
+import { parseArgs } from "node:util";
 
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
-import { aLineOfStdin, typedInSilence } from "./secret.js";
 import { asked, type Door } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
 
-const USAGE = `usage: pinecall keys add <vendor>     the key on stdin, never on the command line
-       pinecall keys rm <vendor>
-       pinecall keys list`;
+const USAGE = `usage: pinecall keys issue --label "<what it is for>" [--env production|development] [--scope <scope>]…
+       pinecall keys list
+       pinecall keys revoke <fingerprint>`;
+
+// The doors, on this terminal's own key. An org issues its own: the operator's /v1/ops/orgs door
+// is the box's way in and a tenant never holds its key. runtime docs/protocol/gateway-api.md §7.
+const KEYS = "/v1/keys";
+
+// The one sentence that matters here. It is printed under every key issued, because the table
+// keeps the sha256 and no door, here or anywhere, reads one back.
+const PRINTED_ONCE = "copy it now: the gateway keeps the fingerprint, and the key is never shown again";
+
+// What a key with no label is in the listing. The column is still a column.
+const NO_LABEL = "—";
+
+const REVOKED = "revoked";
+const LIVE = "live";
 
 export const group: Group = {
-  purpose: "add | rm | list the provider keys this org brought of its own",
+  purpose: "issue | list | revoke the API keys this org's machines run on",
   usage: `${USAGE}
 
-  A key added here is this org's own account with that vendor, and every call of this org runs
-  on it from the next one; every vendor nobody brought runs on the box's own key. add reads the
-  key from stdin — typed with nothing echoed on a terminal, one piped line off one — and never
-  from a flag: argv is visible in \`ps\` to every user on the box, and a key pasted as an argument
-  is a key in the shell history. rm gives that vendor back to the box's key.
+  A key issued here is a MACHINE's: a server, a CI job, a box. It names nobody — people get
+  keys by logging in — and it holds \`app\` in production unless --scope says otherwise, which
+  is the shape a deployment has. Your own key does not hold \`app\` in production: a deployed
+  agent is held by the process somebody put on a box, not by whoever is logged in.
 
-  No door a person reads ever answers with a provider key: list prints the vendors and nothing
-  else, not a value, not a prefix, not a fingerprint. The one door that does read a key back is
-  the worker's — GET /v1/agents/<slug>/provider-keys, an org's own keys to an org's own process,
-  on that org's key — and it is the whole reason the vault exists. A key that was lost is set
-  again.`,
+  So this is the last step before a deploy: issue one, put it in the box's environment as
+  PINECALL_API_KEY, and that \`pinecall run\` is the one that answers your numbers.
+
+  issue prints the key once and never again. list prints fingerprints, labels, worlds, whose
+  each is and whether it is revoked — never a key. revoke takes a fingerprint as list prints it;
+  the row and its history stay, so the calls it wrote stay readable. A key may not issue a scope
+  it does not itself open.`,
   run,
 };
 
-/** What the verb can be told besides the argv: where to print, which environment, and the key. */
-export interface Bringing {
+/** What the verb can be told besides the argv: where to print, and which environment. */
+export interface Issuing {
   out?: NodeJS.WritableStream;
   err?: NodeJS.WritableStream;
   env?: NodeJS.ProcessEnv;
-  /** How the key arrives. A test hands one in rather than driving a terminal. */
-  key?: () => Promise<string>;
 }
 
-/** Read the sub-verb and do it: one key up, one key gone, or the vendors this org brought. */
-export async function run(argv: string[], how: Bringing = {}): Promise<number> {
+/** One row of the listing, as the gateway answers it: the fingerprint, and never the key. */
+interface Listed {
+  fingerprint: string;
+  label: string | null;
+  env: string;
+  scopes: string[];
+  subject: string | null;
+  name: string | null;
+  created_at: string;
+  revoked_at: string | null;
+}
+
+/** What the issuing door answers: the key, the once, and the row it was written under. */
+interface Issued {
+  key: string;
+  key_id: string;
+  label: string | null;
+  env: string;
+  scopes: string[];
+}
+
+/** Read the sub-verb and do it: one key minted, the org's keys listed, or one stopped. */
+export async function run(argv: string[], how: Issuing = {}): Promise<number> {
   const out = how.out ?? process.stdout;
   const err = how.err ?? process.stderr;
-  const [verb, vendor] = argv;
+  const verb = argv[0];
   const door = theDoor(how.env ?? process.env, err);
-  if (door === undefined) return 2;
+  if (door === undefined) return 1;
   try {
-    if (verb === "add" && vendor !== undefined) return await add(door, vendor, how.key, out, err);
-    if (verb === "rm" && vendor !== undefined) return await remove(door, vendor, out);
+    if (verb === "issue") return await issue(argv.slice(1), door, out, err);
     if (verb === "list") return await list(door, out);
+    if (verb === "revoke") return await revoke(argv[1], door, out, err);
   } catch (refused) {
-    // The gateway's own sentence, as it was said: "no vendor named 11labs; this build runs: …"
-    // names the fix, and nothing here knows better. It never carries the key back.
     err.write(`${refusal(refused)}\n`);
     return 1;
   }
@@ -58,46 +91,66 @@ export async function run(argv: string[], how: Bringing = {}): Promise<number> {
   return 2;
 }
 
-// The key never touches the argv and never reaches a log: it is read here, sent once, and the
-// only thing printed afterwards is the vendor it was stored under.
-async function add(
+/** Mint one, print it once, and say what it opens — so the next paste is into the right box. */
+async function issue(
+  argv: string[],
   door: Door,
-  vendor: string,
-  given: (() => Promise<string>) | undefined,
   out: NodeJS.WritableStream,
   err: NodeJS.WritableStream,
 ): Promise<number> {
-  const key = (await (given ?? (() => aKeyFor(vendor, out)))()).trim();
-  if (key === "") {
-    err.write("no key was given: nothing was brought\n");
+  const { values } = parseArgs({
+    args: argv,
+    options: {
+      label: { type: "string" },
+      env: { type: "string" },
+      scope: { type: "string", multiple: true },
+    },
+  });
+  if (values.label === undefined) {
+    err.write(`${USAGE}\n`);
+    err.write("missing: --label, because a key you can tell apart is a key you will revoke\n");
     return 2;
   }
-  await asked(door, pathFor(vendor), { method: "PUT", body: { key } });
-  out.write(`${vendor}\n`);
+  const body: Record<string, unknown> = { label: values.label };
+  if (values.env !== undefined) body["env"] = values.env;
+  if (values.scope !== undefined) body["scopes"] = values.scope;
+  const made = await asked<Issued>(door, KEYS, { method: "POST", body });
+  out.write(`${made.key}\n`);
+  out.write(`  ${made.env} · ${made.label ?? NO_LABEL} · ${made.scopes.join(" · ")}\n`);
+  out.write(`  ${PRINTED_ONCE}\n`);
   return 0;
 }
 
-async function remove(door: Door, vendor: string, out: NodeJS.WritableStream): Promise<number> {
-  await asked(door, pathFor(vendor), { method: "DELETE" });
-  out.write(`${vendor}\n`);
-  return 0;
-}
-
+/** Every key of the org, oldest first, as fingerprints — the word `revoke` takes. */
 async function list(door: Door, out: NodeJS.WritableStream): Promise<number> {
-  const brought = await asked<{ vendors: string[] }>(door, "/v1/provider-keys");
-  if (brought.vendors.length === 0) {
-    out.write("no provider key brought: every call runs on the keys of the box\n");
+  const rows = await asked<Listed[]>(door, KEYS);
+  if (rows.length === 0) {
+    out.write("no key of this org: `pinecall keys issue --label \"…\"` mints the first\n");
     return 0;
   }
-  for (const vendor of brought.vendors) out.write(`${vendor}\n`);
+  for (const row of rows) out.write(`${aLine(row)}\n`);
   return 0;
 }
 
-/** Typed with nothing echoed when a person is there, and one piped line when nobody is. */
-async function aKeyFor(vendor: string, out: NodeJS.WritableStream): Promise<string> {
-  return process.stdin.isTTY === true ? await typedInSilence(`${vendor} key: `, out) : await aLineOfStdin();
+/** Stop one key. A fingerprint that is not this org's is the 404 a stranger's is. */
+async function revoke(
+  fingerprint: string | undefined,
+  door: Door,
+  out: NodeJS.WritableStream,
+  err: NodeJS.WritableStream,
+): Promise<number> {
+  if (fingerprint === undefined) {
+    err.write(`${USAGE}\n`);
+    return 2;
+  }
+  await asked(door, `${KEYS}/${encodeURIComponent(fingerprint)}/revoke`, { method: "POST" });
+  out.write(`revoked ${fingerprint}\n`);
+  return 0;
 }
 
-function pathFor(vendor: string): string {
-  return `/v1/provider-keys/${encodeURIComponent(vendor)}`;
+/** One row as a terminal reads it: what it is, where it opens, whose it is, and its standing. */
+export function aLine(row: Listed): string {
+  const whose = row.name ?? (row.subject === null ? "a machine" : row.subject);
+  const standing = row.revoked_at === null ? LIVE : REVOKED;
+  return `${row.fingerprint.slice(0, 12)}  ${row.env.padEnd(11)} ${(row.label ?? NO_LABEL).padEnd(20)} ${whose.padEnd(14)} ${standing}`;
 }

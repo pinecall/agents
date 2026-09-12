@@ -11,6 +11,7 @@ import { Chat } from "./screens/chat";
 import { Evals } from "./screens/evals";
 import { FloorLive, FloorSessions } from "./screens/floor";
 import { Keys } from "./screens/keys";
+import { Providers } from "./screens/providers";
 import { Knowledge } from "./screens/knowledge";
 import { Memory } from "./screens/memory";
 import { Numbers } from "./screens/numbers";
@@ -35,6 +36,7 @@ export const router = createBrowserRouter(
         { path: "sessions", element: <FloorSessions /> },
         { path: "numbers", element: <Numbers /> },
         { path: "keys", element: <Keys /> },
+        { path: "providers", element: <Providers /> },
         { path: "team", element: <Team /> },
         { path: "usage", element: <Usage /> },
       ],

@@ -1,36 +1,45 @@
-/** Keys: the provider accounts this org brought of its own, and the ones it runs on the box's. */
+/** Keys: the API keys this org's machines run on — issued here, shown once, revoked from a row. */
 
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 
 import { GatewayError } from "../../lib/api";
 import { useCredentials } from "../../lib/credentials";
 import { Nothing } from "../../shell/nothing";
-import { addKey, readVendors, removeKey } from "./door";
+import { issueKey, readKeys, revokeKey, type Issued, type Listed } from "./door";
 import "./keys.css";
 
+// The shape a deployment has, and the default this form opens on: the key a server runs on holds
+// the app socket and nothing else. The other worlds and scopes are a choice, made out loud.
+const HOLDING = "app";
+const PRODUCTION = "production";
+const DEVELOPMENT = "development";
+
+// What a key with no person on it is. Every key issued here is one: people get keys by logging in.
+const A_MACHINE = "a machine";
+
 /**
- * The screen. A key typed here goes to this machine's own loopback, is signed by the terminal that
- * serves this page and sent once — exactly the path `pinecall keys add` takes, which reads it off
- * stdin for the same reason a flag is refused there: argv is visible to every user on the box.
- * No door a person reads answers with a provider key — the one that does is the worker's, an
- * org's own keys to its own process — so this page lists vendors and nothing more. A key that was
- * lost is set again.
+ * The screen.
+ *
+ * Your own key does not hold `app` in production — a deployed agent is held by the process
+ * somebody put on a box, not by whoever is logged in — so this is where the key that box runs on
+ * comes from. It is shown once, by the card below, and kept by nothing: the table has its sha256.
  */
 export function Keys(): ReactNode {
   const credentials = useCredentials();
-  const [vendors, setVendors] = useState<string[] | null>(null);
-  const [vendor, setVendor] = useState("");
-  const [key, setKey] = useState("");
+  const [rows, setRows] = useState<Listed[] | null>(null);
+  const [label, setLabel] = useState("");
+  const [env, setEnv] = useState(PRODUCTION);
   const [busy, setBusy] = useState(false);
+  const [minted, setMinted] = useState<Issued | null>(null);
   const [refused, setRefused] = useState<string | null>(null);
 
-  const reread = async (): Promise<void> => setVendors(await readVendors(credentials));
+  const reread = async (): Promise<void> => setRows(await readKeys(credentials));
 
   useEffect(() => {
     let gone = false;
-    readVendors(credentials).then(
-      (brought) => {
-        if (!gone) setVendors(brought);
+    readKeys(credentials).then(
+      (kept) => {
+        if (!gone) setRows(kept);
       },
       (failed: unknown) => {
         if (!gone) setRefused(failed instanceof Error ? failed.message : String(failed));
@@ -41,15 +50,13 @@ export function Keys(): ReactNode {
     };
   }, [credentials]);
 
-  const add = async (event: FormEvent): Promise<void> => {
+  const issue = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
     setBusy(true);
     setRefused(null);
     try {
-      await addKey(credentials, vendor.trim(), key);
-      // Out of the page the moment it is out of this process: nothing here keeps it to show later.
-      setKey("");
-      setVendor("");
+      setMinted(await issueKey(credentials, { label: label.trim(), env, scopes: [HOLDING] }));
+      setLabel("");
       await reread();
     } catch (failed) {
       setRefused(failed instanceof GatewayError ? failed.message : String(failed));
@@ -58,10 +65,10 @@ export function Keys(): ReactNode {
     }
   };
 
-  const give = async (name: string): Promise<void> => {
+  const stop = async (fingerprint: string): Promise<void> => {
     setRefused(null);
     try {
-      await removeKey(credentials, name);
+      await revokeKey(credentials, fingerprint);
       await reread();
     } catch (failed) {
       setRefused(failed instanceof GatewayError ? failed.message : String(failed));
@@ -73,48 +80,79 @@ export function Keys(): ReactNode {
       <div className="page-eyebrow fixed">keys</div>
       <h1 className="page-title">Keys</h1>
       <p className="page-lede">
-        Every call of this org runs on these from the next one; every vendor nobody brought runs on
-        the box's own key. Nothing reads a key back — not this page, not the CLI, not the log.
+        The keys this org's machines run on. A key you hold by being logged in does not hold an
+        agent in production — the process on the box does — so the one that answers your numbers is
+        issued here, exported in that box's environment, and revoked from its row when it is over.
       </p>
 
-      <div className="panel keys-bring">
-        <p className="panel-title">bring one</p>
-        <form className="keys-add" onSubmit={(event) => void add(event)}>
-          <input className="input" value={vendor} placeholder="elevenlabs" onChange={(event) => setVendor(event.target.value)} />
+      <div className="panel keys-issue">
+        <p className="panel-title">issue one for a machine</p>
+        <form className="keys-form" onSubmit={(event) => void issue(event)}>
           <input
             className="input"
-            type="password"
-            value={key}
-            placeholder="the key, sent once"
-            autoComplete="off"
-            onChange={(event) => setKey(event.target.value)}
+            value={label}
+            placeholder="prod server"
+            onChange={(event) => setLabel(event.target.value)}
           />
-          <button type="submit" className="button" disabled={busy || vendor.trim() === "" || key === ""}>
-            {busy ? "sending…" : "bring it"}
+          <select className="input" value={env} onChange={(event) => setEnv(event.target.value)}>
+            <option value={PRODUCTION}>production</option>
+            <option value={DEVELOPMENT}>development</option>
+          </select>
+          <button type="submit" className="button" disabled={busy || label.trim() === ""}>
+            {busy ? "issuing…" : "issue"}
           </button>
         </form>
+        <p className="note">It will hold the app socket and nothing else, and name nobody.</p>
       </div>
 
-      {refused !== null && <p className="note note-warn">{refused}</p>}
-
-      {vendors !== null && vendors.length === 0 && (
-        <div className="keys-nothing">
-          <Nothing>No provider key brought: every call runs on the keys of the box.</Nothing>
+      {minted !== null && (
+        <div className="panel keys-minted">
+          <p className="panel-title">{minted.label} · {minted.env}</p>
+          <code className="keys-clear fixed">{minted.key}</code>
+          <p className="note note-warn">
+            Copy it now: the gateway keeps the fingerprint, and this key is never shown again.
+          </p>
+          <button type="button" className="link" onClick={() => setMinted(null)}>
+            done
+          </button>
         </div>
       )}
 
-      {vendors !== null && vendors.length > 0 && (
+      {refused !== null && <p className="note note-warn">{refused}</p>}
+
+      {rows !== null && rows.length === 0 && (
+        <div className="keys-nothing">
+          <Nothing>No key of this org yet: the first one is what a deploy runs on.</Nothing>
+        </div>
+      )}
+
+      {rows !== null && rows.length > 0 && (
         <ul className="panel keys-list">
-          {vendors.map((name) => (
-            <li className="keys-one" key={name}>
-              <span className="keys-vendor fixed">{name}</span>
-              <button type="button" className="link" onClick={() => void give(name)}>
-                give it back
-              </button>
-            </li>
+          {rows.map((row) => (
+            <Row key={row.fingerprint} row={row} stop={stop} />
           ))}
         </ul>
       )}
     </section>
+  );
+}
+
+/** One key as a person reads it: what it is for, where it opens, whose it is, and its standing. */
+function Row({ row, stop }: { row: Listed; stop: (fingerprint: string) => Promise<void> }): ReactNode {
+  const revoked = row.revoked_at !== null;
+  return (
+    <li className={revoked ? "keys-one keys-gone" : "keys-one"}>
+      <span className="keys-label">{row.label ?? row.fingerprint.slice(0, 12)}</span>
+      <span className="keys-env fixed">{row.env}</span>
+      <span className="keys-whose">{row.name ?? A_MACHINE}</span>
+      <span className="keys-scopes fixed">{row.scopes.join(" · ")}</span>
+      {revoked ? (
+        <span className="keys-standing">revoked</span>
+      ) : (
+        <button type="button" className="link" onClick={() => void stop(row.fingerprint)}>
+          revoke
+        </button>
+      )}
+    </li>
   );
 }

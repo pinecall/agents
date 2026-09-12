@@ -27,6 +27,7 @@ const ORG_SCREENS = [
   { path: "sessions", key: "sessions", name: "Sessions" },
   { path: "numbers", key: "numbers", name: "Numbers" },
   { path: "keys", key: "keys", name: "Keys" },
+  { path: "providers", key: "providers", name: "Providers" },
   { path: "team", key: "team", name: "Team" },
   { path: "usage", key: "usage", name: "Usage" },
 ] as const;

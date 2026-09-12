@@ -20,6 +20,17 @@ const PROMPT = "Password (12 characters at least): ";
 // org's slug, the member and a one-use code for a browser. runtime docs/protocol/people.md.
 const SIGNUP = "/v1/signup";
 
+// The same person's key in the other world. The sign-up answers a production one — every door of
+// the org, and not `app`, because a deployed agent is held by a machine — and a terminal is a
+// laptop: what it keeps is the development key, which is the world `pinecall run` answers in.
+const THE_OTHER_WORLD = "/v1/login/env";
+const DEVELOPMENT = "development";
+
+// Said when the second world could not be minted: the org exists and the production key is kept,
+// so nothing is lost, but `run` will be refused until the person holds a development key.
+const ONE_WORLD_ONLY = (url: string): string =>
+  `kept the production key: ${url} would not mint a development one, and \`pinecall run\` needs it`;
+
 // Whether that door is open here is the gateway's own fact, asked before anything else: a person
 // should not type a password for a door that will refuse it. The gateway's refusal names the
 // setting; this says the same thing before the typing rather than after.
@@ -44,9 +55,11 @@ export const group: Group = {
   The gateway is ${CLOUD_URL} unless another is named. The password is asked for without
   echoing it, or read from one line of stdin with --password-stdin.
 
-  The key it answers is kept in ~/.pinecall/credentials (0600) under that gateway, exactly as
-  \`pinecall login\` keeps one, so every verb that connects finds it straight after and nothing
-  has to be exported. It also prints a console link that signs this browser in, once.
+  What this terminal keeps is the DEVELOPMENT key, in ~/.pinecall/credentials (0600) under that
+  gateway, so \`pinecall run\` and \`pinecall chat\` work straight after and nothing has to be
+  exported: a laptop is where things are written. The console link it prints signs the browser
+  in to production, which is where the org's numbers, people and usage are. What answers a
+  production number is a key issued for a machine — \`pinecall keys issue\` — and never a laptop.
 
   A gateway that is a box of its own takes no sign-up and says so: there, an operator makes the
   org and invites you, and you arrive with \`pinecall login\`.`,
@@ -105,7 +118,9 @@ export async function signup(argv: string[], how: Making = {}): Promise<number> 
     return 1;
   }
   const environment = how.env ?? process.env;
-  writeGateway(url, { api_key: made.key, org: made.org }, pinecallHome(environment));
+  const laptop = await theDevelopmentKey(url, made.key);
+  if (laptop === undefined) err.write(`${ONE_WORLD_ONLY(url)}\n`);
+  writeGateway(url, { api_key: laptop ?? made.key, org: made.org }, pinecallHome(environment));
   out.write(`${madeLine(made, url)}\n`);
   out.write(`console  ${url.replace(/\/$/, "")}/?login=${encodeURIComponent(made.code)}   (opens within five minutes, once)\n`);
   const shadowed = shadowedByEnv(environment);
@@ -113,8 +128,26 @@ export async function signup(argv: string[], how: Making = {}): Promise<number> 
   return 0;
 }
 
+/**
+ * The development key, or nothing at all.
+ *
+ * A refusal here is not the sign-up failing: the org is made and its production key is in hand.
+ * So it is answered as an absence and said on stderr, rather than thrown over an org that exists.
+ */
+async function theDevelopmentKey(url: string, key: string): Promise<string | undefined> {
+  try {
+    const minted = await asked<{ key: string }>({ url, apiKey: key }, THE_OTHER_WORLD, {
+      method: "POST",
+      body: { env: DEVELOPMENT },
+    });
+    return minted.key;
+  } catch {
+    return undefined;
+  }
+}
+
 /** The one line that says what now exists and that this terminal is holding its key. */
 export function madeLine(made: SignedUp, url: string): string {
   const who = made.name === null ? "its admin" : made.name;
-  return `created org ${made.slug} on ${url} — signed in as ${who}, key kept in ~/.pinecall/credentials`;
+  return `created org ${made.slug} on ${url} — signed in as ${who}, development key kept in ~/.pinecall/credentials`;
 }

@@ -1,15 +1,32 @@
-/* Keys owns its own styles: one panel to bring one, and the vendors brought under it. */
+/* Keys owns its own styles: the form that issues one, the key shown once, and the rows kept. */
 
-.keys-bring {
+.keys-issue {
   margin-top: 22px;
 }
 
-.keys-add {
+.keys-form {
   align-items: center;
   display: grid;
   gap: 10px;
-  grid-template-columns: 150px minmax(0, 1fr) auto;
-  padding: 14px 14px 12px;
+  grid-template-columns: minmax(0, 1fr) 150px auto;
+  padding: 14px 14px 6px;
+}
+
+.keys-issue .note {
+  margin: 0;
+  padding: 0 14px 12px;
+}
+
+.keys-minted {
+  margin-top: 16px;
+  padding: 14px 16px 12px;
+}
+
+.keys-clear {
+  display: block;
+  overflow-wrap: anywhere;
+  padding: 10px 0 2px;
+  user-select: all;
 }
 
 .keys-list {
@@ -23,7 +40,7 @@
   border-bottom: 1px solid var(--edge-soft);
   display: grid;
   gap: 16px;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) 100px 130px minmax(0, 1fr) auto;
   padding: 11px 16px;
 }
 
@@ -35,11 +52,28 @@
   background: var(--hover);
 }
 
-.keys-one .keys-vendor {
-  color: var(--ink);
-  font-size: 13.5px;
+.keys-gone {
+  opacity: 0.55;
+}
+
+.keys-scopes,
+.keys-env {
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.keys-standing {
+  color: var(--ink-soft);
+  font-size: 12px;
 }
 
 .keys-nothing {
   margin-top: 22px;
+}
+
+@media (max-width: 720px) {
+  .keys-form,
+  .keys-one {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
