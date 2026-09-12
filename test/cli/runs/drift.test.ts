@@ -165,6 +165,7 @@ function notJudged(): Judged {
 function line(call: string, endedAt: number, said: { live?: boolean } = {}): SessionLine {
   return {
     call,
+    agent: "clinica-norte",
     live: said.live ?? false,
     last_seq: 125,
     status: "ended",

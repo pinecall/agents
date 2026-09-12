@@ -14,6 +14,7 @@ function collected(): { stream: NodeJS.WritableStream; text(): string } {
 const A_CALL = {
   call: "call_e824ce7a",
   live: false,
+  agent: "clinica-norte",
   last_seq: 58,
   status: "ended",
   channel: "web",
