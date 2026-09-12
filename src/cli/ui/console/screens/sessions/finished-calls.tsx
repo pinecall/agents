@@ -1,4 +1,4 @@
-/** Sessions: every conversation this agent has had, newest first, in one dense table. */
+/** Sessions: every conversation this agent has had, newest first, in one dense table — and the table itself. */
 
 import type { SessionLine } from "@pinecall/protocol";
 import type { FormEvent, ReactNode } from "react";
@@ -51,61 +51,75 @@ export function Sessions(): ReactNode {
 
       {error !== null && <p className="note note-warn">{error}</p>}
 
-      {rows.length > 0 ? (
-        <section className="section">
-          <div className="table-wrap">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>session</th>
-                  <th>channel</th>
-                  <th>from</th>
-                  <th>started</th>
-                  <th>duration</th>
-                  <th>outcome</th>
-                  <th>score</th>
-                  <th className="num">cost</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <Row key={row.line.call} agent={agent} row={row} />
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="note">
-            {rows.length} session{rows.length === 1 ? "" : "s"} · the same rows{" "}
-            <code className="mono">pinecall-runtime sessions list</code> prints
-          </p>
-        </section>
-      ) : (
-        <section className="section">
-          <div className="empty">
-            <p className="empty-title">No session recorded yet</p>
-            <div className="empty-body">
-              <p>
-                The log is append-only and written during the call, so a session appears here the moment one
-                ends — from the browser, from <code className="mono">pinecall chat</code>, or from the telephone.
-              </p>
-            </div>
-          </div>
-        </section>
-      )}
+      <SessionTable rows={rows} />
     </div>
   );
 }
 
+/**
+ * The table itself, drawn by this screen and by the org's Sessions (screens/floor): the same
+ * eight columns, plus the agent's when the rows span agents. A row is a link into the log that
+ * produced it, under the agent that handled it — which the line itself names now.
+ */
+export function SessionTable({ rows, withAgent = false }: { rows: Scored[]; withAgent?: boolean }): ReactNode {
+  if (rows.length === 0) {
+    return (
+      <section className="section">
+        <div className="empty">
+          <p className="empty-title">No session recorded yet</p>
+          <div className="empty-body">
+            <p>
+              The log is append-only and written during the call, so a session appears here the moment one
+              ends — from the browser, from <code className="mono">pinecall chat</code>, or from the telephone.
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+  return (
+    <section className="section">
+      <div className="table-wrap">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>session</th>
+              {withAgent && <th>agent</th>}
+              <th>channel</th>
+              <th>from</th>
+              <th>started</th>
+              <th>duration</th>
+              <th>outcome</th>
+              <th>score</th>
+              <th className="num">cost</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <Row key={row.line.call} row={row} withAgent={withAgent} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="note">
+        {rows.length} session{rows.length === 1 ? "" : "s"} · the same rows{" "}
+        <code className="mono">pinecall-runtime sessions list</code> prints
+      </p>
+    </section>
+  );
+}
+
 /** One call: identity, medium, envelope, and the two numbers that judge and price it. */
-function Row({ agent, row }: { agent: string; row: Scored }): ReactNode {
+function Row({ row, withAgent }: { row: Scored; withAgent: boolean }): ReactNode {
   const { line } = row;
   return (
     <tr>
       <td className="id">
-        <Link to={`/a/${agent}/sessions/${line.call}`} className="link">
+        <Link to={`/a/${line.agent}/sessions/${line.call}`} className="link">
           {line.call}
         </Link>
       </td>
+      {withAgent && <td className="mono dim">{line.agent}</td>}
       <td>
         <span className={`medium medium-${line.channel ?? "none"}`}>{line.channel ?? "—"}</span>
       </td>

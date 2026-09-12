@@ -423,6 +423,9 @@ about the page is a containment decision:
 | `evals/` | every run this agent's suites scored, the diff between two runs, and what each finished call was sealed with |
 | `pipeline/` | the three providers of a voice turn, the anatomy of a turn as a waterfall, and the overrides an operator may change between two calls |
 | `talk/` | a person reaches the agent from this tab, with this browser's microphone |
+| `floor/` | the org's layer: every live call across its agents (`/live`, off `GET /v1/sessions` and the floor's stream `GET /v1/events`), and every agent's finished calls in one table with an agent column (`/sessions`, the very `SessionTable` an agent's screen draws) |
+| `numbers/` · `team/` · `usage/` | which number reaches which agent in this world and who typed it (`GET /v1/numbers`); the org's people, invited with a token shown once and changed in place (`/v1/members`); what the org consumed, totals then rows in the runtime's own field names (`GET /v1/usage`) |
+| the shell | an agent selector (`GET /v1/agents`), the Production / Development toggle — one key per world in the tab, the other minted for the same person by `POST /v1/login/env` (`lib/world.tsx`, `lib/session-key.ts`) — and a rail gated by the key's scopes off `GET /v1/whoami` (`lib/scopes.ts`, `lib/whoami.tsx`): a screen the key does not open is not drawn |
 
 Its own laws. Three are held by a test of their own: vite bundles every screen's stylesheet into
 one file, so **a class name is global** whatever directory it was written in

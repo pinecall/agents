@@ -1,31 +1,58 @@
-/* The front page: the fleet's agents, one line each, and nothing else on the screen. */
+/* The front page: the org's agents, one line each in a panel, and nothing else on the screen. */
 
 .agents {
-  max-width: 40rem;
+  max-width: 760px;
 }
 
 .agents-title {
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  margin: 0 0 6px;
+}
+
+.agents-lede {
   color: var(--ink-soft);
-  font-size: 12px;
-  font-weight: 400;
+  font-size: 14px;
+  margin: 0 0 20px;
+}
+
+.agents-table {
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-panel);
+  overflow: hidden;
+}
+
+.agents-head {
+  border-bottom: 1px solid var(--edge);
+  color: var(--ink-faint);
+  display: grid;
+  font-size: 10.5px;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) auto;
   letter-spacing: 0.06em;
-  margin: 0 0 calc(var(--step) * 2);
-  text-transform: uppercase;
+  padding: 9px 16px;
 }
 
 .agents-one {
-  align-items: baseline;
-  border-bottom: 1px solid var(--edge);
-  display: flex;
-  gap: calc(var(--step) * 2);
-  justify-content: space-between;
-  padding: var(--step) 0;
+  align-items: center;
+  border-bottom: 1px solid var(--edge-soft);
+  color: var(--ink);
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 13px 16px;
+}
+
+.agents-one:last-child {
+  border-bottom: none;
+}
+
+.agents-one:hover {
+  background: var(--hover);
 }
 
 .agents-channels {
   color: var(--ink-soft);
-}
-
-.agents-one:hover {
-  background: var(--panel);
 }

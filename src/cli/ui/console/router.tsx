@@ -9,17 +9,21 @@ import { Agents } from "./screens/agents";
 import { Calls } from "./screens/calls";
 import { Chat } from "./screens/chat";
 import { Evals } from "./screens/evals";
+import { FloorLive, FloorSessions } from "./screens/floor";
 import { Keys } from "./screens/keys";
 import { Knowledge } from "./screens/knowledge";
 import { Memory } from "./screens/memory";
+import { Numbers } from "./screens/numbers";
 import { Pipeline } from "./screens/pipeline";
 import { Session, Sessions } from "./screens/sessions";
 import { Talk } from "./screens/talk";
+import { Team } from "./screens/team";
+import { Usage } from "./screens/usage";
 import { Shell } from "./shell/shell";
 
 // The URL is the state: which agent, which screen, and later which call. Nothing the console holds
-// in memory decides what is on screen, so a reload lands on exactly the same thing. The base is
-// the path `pinecall ui` opened the console at, and the router never sees it.
+// in memory decides what is on screen, so a reload lands on exactly the same thing. The org's
+// screens sit at the root; an agent's under /a/<slug>.
 export const router = createBrowserRouter(
   [
     {
@@ -27,7 +31,12 @@ export const router = createBrowserRouter(
       element: <Shell />,
       children: [
         { index: true, element: <Agents /> },
+        { path: "live", element: <FloorLive /> },
+        { path: "sessions", element: <FloorSessions /> },
+        { path: "numbers", element: <Numbers /> },
         { path: "keys", element: <Keys /> },
+        { path: "team", element: <Team /> },
+        { path: "usage", element: <Usage /> },
       ],
     },
     {

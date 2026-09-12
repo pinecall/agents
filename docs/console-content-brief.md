@@ -13,8 +13,13 @@ selection in memory.
 
 | URL | screen |
 |---|---|
-| `/` | Agents — the fleet's list |
+| `/` | Agents — the org's list, in this world |
+| `/live` | Live — every call up on the floor, whichever agent has it |
+| `/sessions` | Sessions — every agent's finished calls, one table, each naming its agent |
+| `/numbers` | Numbers — which number reaches which agent, and who typed it |
 | `/keys` | Keys — the provider accounts this org brought |
+| `/team` | Team — the org's people, invited and changed |
+| `/usage` | Usage — what the org consumed, totals then rows |
 | `/a/:agent/talk` | Talk |
 | `/a/:agent/chat[/:call]` | Chat — the class talked to in writing |
 | `/a/:agent/calls` | Calls, watching every live call at once |
@@ -30,11 +35,15 @@ The shell carries, on every screen:
 
 - a brand mark and the two words `pinecall` / `console`;
 - a breadcrumb, built from the path: `fleet / <agent> / <screen>`, last segment emphasised;
-- **whose gateway this is**: the org, key id and label off `GET /v1/whoami` — never the key;
+- **whose console this is**: the org, the key id and the label or the person's name off `GET /v1/whoami` — never the key;
+- **an agent selector** (`GET /v1/agents`, the key's world), which carries you to the same screen of another agent;
+- **the Production / Development toggle**: one key per world in the tab; turning to the other world uses the key kept for
+  it or mints one for the same person (`POST /v1/login/env`), and shows the gateway's refusal when a machine key tries;
 - one switch: a light/dark toggle that lives as long as the tab;
 - a rail with two groups — the agent's eight screens (Talk, Chat, Calls, Sessions, Pipeline, Knowledge, Memory, Evals), under
-  the agent's slug; and `Gateway` with `Agents` and `Keys` in it — plus a fixed foot: `web · whatsapp · phone` /
-  `one agent, three doors`;
+  the agent's slug; and `Organization` with `Agents`, `Live`, `Sessions`, `Numbers`, `Keys`, `Team`, `Usage` — every screen drawn
+  only when the key's `scopes` open it (`talk`, `calls`, `pipeline`, `knowledge`, `memory`, `evals`, `numbers`, `keys`, `team`,
+  `usage`), so no click meets a 403 — plus a fixed foot: `web · whatsapp · phone` / `one agent, three doors`;
 - when a screen has nothing to show it says so **in a sentence, never a spinner** (`shell/nothing.tsx`).
 
 Data reaches it through the gateway's doors, one stream shape, and — today — a second server: the
@@ -304,13 +313,28 @@ The provider accounts this org brought of its own; every vendor nobody brought r
 - **Bring one**: vendor (e.g. `elevenlabs`) + the key, `type=password`, sent once; the field empties the moment it left. **Nothing reads a key back** — not this page, not the CLI, not the log.
 - **The list**: vendor names only, each with `give it back`. Empty: *No provider key brought: every call runs on the keys of the box.*
 
+## 7f. The org's layer — `/live`, `/sessions`, `/numbers`, `/team`, `/usage`
+
+Before anybody picks an agent. **Live**: every call still going across the org (`GET /v1/sessions`
+filtered to `live`, re-asked on a clock and the moment `GET /v1/events` says the floor changed), a row per
+call — channel mark, agent, who, status, id — linking into that agent's Calls. Empty: *Nothing live right
+now. Leave this open — a call that reaches any agent shows up here as it rings.* **Sessions**: the very
+table §5 draws, plus an `agent` column, off `GET /v1/sessions`. **Numbers**: number · channel · agent ·
+world · source (`operator` typed it, `app` declared it) off `GET /v1/numbers`; empty names the operator's
+verb `pinecall-runtime routes add <number> <agent> --org <org>`. **Team**: every member (name, email, role,
+agents, status) off `GET /v1/members`; an invite form (`POST /v1/members`) whose answer's token is shown
+ONCE with the sentence that it is never shown again; role and agents edited in place, and one move on the
+standing — disable, or bring back — never `active` by hand (`PATCH /v1/members/{id}`). **Usage**: the totals
+(calls, minutes, messages, tokens in and out, characters, judge calls, cost) then every metered row with its
+call linked, off `GET /v1/usage`, in the runtime's own field names; empty: *Nothing metered yet: the first
+call to end writes the first row.*
+
 ## 8. Doors that exist and have no screen
 
 Everything below is already an authenticated door of the same gateway; nothing on it is drawn today.
 They are the honest candidates for a console that grows:
 
-- **Numbers / routes** — `GET /v1/routes`, and on the operator API `GET/POST /ops/routes`, `DELETE /ops/routes/{number}`: which number reaches which agent.
-- **Orgs, keys, quotas, usage** — `/ops/orgs`, `/ops/orgs/{org}/keys`, `POST /ops/keys/{fingerprint}/revoke`, `PUT /ops/orgs/{org}/quotas` (`minutes · messages · agents · concurrent_calls · memory_facts · knowledge_chunks`), `GET /ops/usage`.
+- **The operator's tables** — `/ops/orgs`, `/ops/orgs/{org}/keys`, `POST /ops/keys/{fingerprint}/revoke`, `PUT /ops/orgs/{org}/quotas` (`minutes · messages · agents · concurrent_calls · memory_facts · knowledge_chunks`), `GET /ops/usage`, `GET/POST /ops/routes`: the box's key, never a tenant's.
 - **Provider keys** — `GET/PUT/DELETE /ops/orgs/{org}/provider-keys/{vendor}`, and per agent `GET /v1/agents/{slug}/provider-keys`: managed vs BYOK, never the value.
 - **Whoami** — `GET /v1/whoami`: the org, the key id, the label.
 - **The agent's own declaration** — `GET /v1/agents/{slug}/config`: the tools it declares, their stages (`read · write · irreversible`), the state fields and their visibility, the events it accepts. Only the visibility half is read today.

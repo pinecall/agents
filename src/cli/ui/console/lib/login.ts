@@ -1,11 +1,11 @@
-/** The two ways a browser gets a key of its own: a one-use code `pinecall run` printed, or a person's password. */
+/** The ways a browser gets a key of its own: a one-use code `pinecall run` printed, a person's password, or the other world. */
 
 import { z } from "zod";
 
-import { answered } from "./api";
+import { answered, post, type Credentials } from "./api";
 
 // What POST /v1/login answers, in the one shape a key travels in. The key is read once and kept
-// by lib/session-key.ts; the rest is what the header shows.
+// by lib/session-key.ts under the world it opens; the rest is what the header shows.
 const SignedSchema = z.object({
   key: z.string(),
   key_id: z.string(),
@@ -30,6 +30,14 @@ export async function loginWithCode(base: string, code: string): Promise<Signed>
 /** A person's own login: their org, their email, their password. */
 export async function loginWithPassword(base: string, who: { org: string; email: string; password: string }): Promise<Signed> {
   return login(base, { ...who, device: THIS_DEVICE });
+}
+
+/**
+ * The same person, the other world: their key mints a sibling with the same scopes in the world
+ * named. A machine key is refused there in a sentence — an org's own key opens one world.
+ */
+export async function loginToWorld(credentials: Credentials, env: Signed["env"]): Promise<Signed> {
+  return SignedSchema.parse(await post(credentials, "/v1/login/env", { env }));
 }
 
 async function login(base: string, body: unknown): Promise<Signed> {

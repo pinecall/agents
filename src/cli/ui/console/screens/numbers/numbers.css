@@ -1,0 +1,84 @@
+/* Numbers: a head, one panel of rows, and a note naming the operator's verb. */
+
+.numbers {
+  max-width: 940px;
+  padding: 26px 28px;
+}
+
+.numbers-title {
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  margin: 0 0 6px;
+}
+
+.numbers-lede {
+  color: var(--ink-soft);
+  font-size: 14px;
+  margin: 0 0 20px;
+}
+
+.numbers-panel {
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-panel);
+  overflow: auto;
+}
+
+.numbers-row {
+  align-items: center;
+  border-bottom: 1px solid var(--edge-soft);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 170px 92px minmax(0, 1fr) 110px 84px;
+  min-width: 640px;
+  padding: 11px 16px;
+}
+
+.numbers-row:last-child {
+  border-bottom: none;
+}
+
+.numbers-row-head {
+  border-bottom-color: var(--edge);
+  color: var(--ink-faint);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  padding: 9px 16px;
+}
+
+.numbers-channel {
+  color: var(--ink-soft);
+  font-size: 12.5px;
+}
+
+.numbers-dim {
+  color: var(--ink-soft);
+}
+
+.numbers-operator {
+  color: var(--accent);
+}
+
+.numbers-note {
+  color: var(--ink-faint);
+  font-size: 11px;
+  margin: 14px 0 0;
+  text-wrap: pretty;
+}
+
+.numbers-cmd {
+  color: var(--ink-soft);
+}
+
+.numbers-empty {
+  border-top: 1px solid var(--edge);
+  max-width: 72ch;
+  padding-top: 24px;
+}
+
+.numbers-empty-title {
+  font-size: 15px;
+  font-weight: 500;
+  margin: 0;
+}

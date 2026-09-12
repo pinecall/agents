@@ -1,14 +1,16 @@
-/** The header strip: where you are on the left, and the one switch the console has on the right. */
+/** The header strip: where you are on the left; the agent, the world, whose, and the theme on the right. */
 
 import { Fragment, useState, type ReactNode } from "react";
 import { useLocation } from "react-router";
 
+import { AgentSelect } from "./agent-select";
 import { currentTheme, toggleTheme, type Theme } from "./theme";
 import { Whose } from "./whose";
+import { WorldToggle } from "./world-toggle";
 
 export function Header({ agent }: { agent: string }): ReactNode {
   const segments = useLocation().pathname.split("/").filter(Boolean);
-  // Under an agent the path is /a/<agent>/<screen>; on a fleet screen it is /<screen> or nothing.
+  // Under an agent the path is /a/<agent>/<screen>; on an org screen it is /<screen> or nothing.
   const crumbs = agent === "" ? ["fleet", ...segments] : ["fleet", agent, ...segments.slice(2)];
   return (
     <div className="head">
@@ -21,6 +23,8 @@ export function Header({ agent }: { agent: string }): ReactNode {
         ))}
       </div>
       <div className="head-right">
+        <AgentSelect agent={agent} />
+        <WorldToggle />
         <Whose />
         <ThemeToggle />
       </div>
@@ -28,39 +32,20 @@ export function Header({ agent }: { agent: string }): ReactNode {
   );
 }
 
-/** A hairline glyph that flips the console between daylight and dark, for as long as the tab lives. */
+/** The switch that flips the console between daylight and dark, for as long as the tab lives. */
 function ThemeToggle(): ReactNode {
   const [theme, setTheme] = useState<Theme>(() => currentTheme());
   const goingTo: Theme = theme === "dark" ? "light" : "dark";
   return (
     <button
       type="button"
-      className="theme-toggle"
+      className="theme-toggle fixed"
       onClick={() => setTheme(toggleTheme())}
       aria-label={`Switch to ${goingTo} theme`}
       title={goingTo}
     >
-      {theme === "dark" ? <Sun /> : <Moon />}
+      <span className="theme-dot" aria-hidden />
+      {theme}
     </button>
-  );
-}
-
-function Sun(): ReactNode {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden>
-      <circle cx="12" cy="12" r="4" />
-      <path
-        strokeLinecap="round"
-        d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"
-      />
-    </svg>
-  );
-}
-
-function Moon(): ReactNode {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden>
-      <path strokeLinejoin="round" d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z" />
-    </svg>
   );
 }
