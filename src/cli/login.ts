@@ -3,6 +3,7 @@
 import { parseArgs } from "node:util";
 
 import { pinecallHome, writeGateway } from "./credentials.js";
+import { shadowedByEnv } from "./env.js";
 import type { Group } from "./groups.js";
 import { aLineOfStdin, typedInSilence } from "./secret.js";
 import { refusal, whoIs, type Who } from "./whoami.js";
@@ -60,8 +61,11 @@ export async function login(argv: string[], how: Signing = {}): Promise<number> 
     err.write(`${refusal(refused)}\n`);
     return 1;
   }
-  writeGateway(url, { api_key: key, org: who.org }, pinecallHome(how.env ?? process.env));
+  const environment = how.env ?? process.env;
+  writeGateway(url, { api_key: key, org: who.org }, pinecallHome(environment));
   out.write(`logged in to ${url} as org ${who.org}\n`);
+  const shadowed = shadowedByEnv(environment);
+  if (shadowed !== undefined) err.write(`${shadowed}\n`);
   return 0;
 }
 

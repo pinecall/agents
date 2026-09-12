@@ -81,6 +81,20 @@ export function ignoringApiKey(url: string): string {
   return `ignoring PINECALL_API_KEY: the local gateway at ${url} honours its dev key only`;
 }
 
+/**
+ * What a verb that just KEPT a key owes the person when the environment will win over it.
+ *
+ * `doorFrom` reads PINECALL_API_KEY before the credentials file, so a key exported in this shell
+ * shadows the row `login` or `signup` has just written, silently — and the next verb answers for
+ * another org, which reads as the sign-up having failed. Said once, where it is still cheap to fix.
+ */
+export function shadowedByEnv(env: NodeJS.ProcessEnv): string | undefined {
+  return env["PINECALL_API_KEY"] === undefined
+    ? undefined
+    : "note: PINECALL_API_KEY is exported in this shell and is read first, so it is the key the "
+      + "next verb will send. `unset PINECALL_API_KEY` to use the one just kept.";
+}
+
 /** The first line a verb that connects prints: which gateway, and where its key was found. */
 export function doorLine(door: Open): string {
   return `gateway ${door.url} · key from ${door.source}`;

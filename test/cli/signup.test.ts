@@ -142,3 +142,28 @@ describe("signing up", () => {
     expect(kept).not.toContain(A_PASSWORD);
   });
 });
+
+describe("the key it kept, and what would shadow it", () => {
+  it("says out loud that an exported key is read before the row just written", async () => {
+    const err = written();
+
+    await signup([cloud.url, ...WHO], {
+      out: written().stream,
+      err: err.stream,
+      env: { PINECALL_HOME: home, PINECALL_API_KEY: "pk_another_orgs_key_exported_here" },
+      password: async () => A_PASSWORD,
+    });
+
+    expect(err.text()).toContain("PINECALL_API_KEY is exported");
+    expect(err.text()).toContain("unset PINECALL_API_KEY");
+    expect(gatewayFor(cloud.url, home)).toMatchObject({ api_key: A_KEY });
+  });
+
+  it("says nothing when no key is exported to shadow it", async () => {
+    const err = written();
+
+    await signup([cloud.url, ...WHO], { out: written().stream, err: err.stream, env: { PINECALL_HOME: home }, password: async () => A_PASSWORD });
+
+    expect(err.text()).toBe("");
+  });
+});
