@@ -1,5 +1,6 @@
-// `pinecall login` and `pinecall whoami`: the key proved at the gateway before it is kept, the
-// row written where the next verb looks, and the one thing that must never be printed — the key.
+// `pinecall login` and `pinecall whoami`: the three a person knows turned into a key at the
+// gateway, that key proved before it is kept, the row written where the next verb looks, and the
+// one thing that must never be printed — the key.
 
 import { mkdtempSync, readFileSync } from "node:fs";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
@@ -13,16 +14,29 @@ import { login } from "../../src/cli/login.js";
 import { describing, refusal, run as whoami } from "../../src/cli/whoami.js";
 import { written } from "./said.js";
 
-const A_KEY = "pk_the_orgs_own_key_nobody_will_deploy";
+const A_KEY = "pk_the_key_this_gateway_minted_for_ana";
 
-/** A gateway with one door: /v1/whoami, which knows one key and refuses every other. */
+// The three Ana knows. Nobody else's three open this gateway.
+const ORG = "clinica";
+const EMAIL = "ana@clinica.test";
+const PASSWORD = "beachway";
+
+// The one sentence the real door answers for a wrong org, a wrong email or a wrong password.
+const NOBODY = "no member of clinica answers to that email and password";
+
+/**
+ * A gateway with the two doors `login` knocks at: `/v1/login`, which mints Ana's key for the three
+ * she typed, and `/v1/whoami`, which knows that key and refuses every other.
+ */
 class FakeGateway {
   readonly heard: (string | undefined)[] = [];
+  /** Every body `/v1/login` was sent, so a test can read what the terminal actually asked for. */
+  readonly asked: Record<string, unknown>[] = [];
   #server!: Server;
   url = "";
 
   async open(): Promise<void> {
-    this.#server = createServer((request, response) => this.#answer(request, response));
+    this.#server = createServer((request, response) => void this.#answer(request, response));
     await new Promise<void>((bound) => this.#server.listen(0, "127.0.0.1", bound));
     this.url = `http://127.0.0.1:${(this.#server.address() as AddressInfo).port}`;
   }
@@ -32,23 +46,54 @@ class FakeGateway {
     await new Promise<void>((closed) => this.#server.close(() => closed()));
   }
 
-  #answer(request: IncomingMessage, response: ServerResponse): void {
+  async #answer(request: IncomingMessage, response: ServerResponse): Promise<void> {
     this.heard.push(request.headers.authorization);
+    if (request.url === "/v1/login") return this.#mint(await bodyOf(request), response);
     if (request.headers.authorization !== `Bearer ${A_KEY}`) {
-      response.writeHead(401, { "content-type": "application/json" });
-      response.end(JSON.stringify({ detail: "this door takes an API key" }));
-      return;
+      return refuse(response, 401, "this door takes an API key");
     }
-    response.writeHead(200, { "content-type": "application/json" });
-    response.end(JSON.stringify({ org: "clinica", key_id: "k_1", label: "the laptop", env: "development" }));
+    said(response, { org: ORG, key_id: "k_1", label: "the laptop", env: "development" });
   }
+
+  #mint(body: Record<string, unknown>, response: ServerResponse): void {
+    this.asked.push(body);
+    if (body.org !== ORG || body.email !== EMAIL || body.password !== PASSWORD) {
+      return refuse(response, 401, NOBODY);
+    }
+    said(response, { key: A_KEY, key_id: "k_1", org: ORG, env: body.env, label: body.device });
+  }
+}
+
+async function bodyOf(request: IncomingMessage): Promise<Record<string, unknown>> {
+  let text = "";
+  for await (const chunk of request) text += String(chunk);
+  return JSON.parse(text) as Record<string, unknown>;
+}
+
+function said(response: ServerResponse, body: unknown): void {
+  response.writeHead(200, { "content-type": "application/json" });
+  response.end(JSON.stringify(body));
+}
+
+function refuse(response: ServerResponse, status: number, detail: string): void {
+  response.writeHead(status, { "content-type": "application/json" });
+  response.end(JSON.stringify({ detail }));
 }
 
 const gateway = new FakeGateway();
 let home = "";
 
+/** A terminal with Ana at it: the two words in the open, the password in silence. */
+function ana(password = PASSWORD): { aloud: (prompt: string) => Promise<string>; secret: () => Promise<string> } {
+  return {
+    aloud: (prompt: string) => Promise.resolve(prompt.startsWith("org") ? ORG : EMAIL),
+    secret: () => Promise.resolve(password),
+  };
+}
+
 beforeEach(async () => {
   gateway.heard.length = 0;
+  gateway.asked.length = 0;
   home = mkdtempSync(join(tmpdir(), "pinecall-home-"));
   await gateway.open();
 });
@@ -58,16 +103,49 @@ afterEach(async () => {
 });
 
 describe("logging in to a gateway", () => {
-  it("proves the key there, keeps it, and names the org rather than the key", async () => {
+  it("asks for the three a person knows and keeps the key the gateway mints for them", async () => {
     const out = written();
 
-    const code = await login([gateway.url], { out: out.stream, env: { PINECALL_HOME: home }, key: async () => A_KEY });
+    const code = await login([gateway.url], { out: out.stream, env: { PINECALL_HOME: home }, ...ana() });
 
     expect(code).toBe(0);
     expect(out.text()).toBe(`logged in to ${gateway.url} as org clinica · development\n`);
-    expect(out.text()).not.toContain(A_KEY);
-    expect(gateway.heard).toEqual([`Bearer ${A_KEY}`]);
     expect(gatewayFor(gateway.url, home)).toMatchObject({ api_key: A_KEY, org: "clinica" });
+  });
+
+  it("asks for a key of this laptop's own world, labelled as the terminal it was typed at", async () => {
+    await login([gateway.url], { out: written().stream, env: { PINECALL_HOME: home }, ...ana() });
+
+    expect(gateway.asked).toEqual([
+      { org: ORG, email: EMAIL, password: PASSWORD, env: "development", device: "cli" },
+    ]);
+  });
+
+  it("proves the minted key at whoami before keeping it, and prints neither it nor the password", async () => {
+    const out = written();
+
+    await login([gateway.url], { out: out.stream, env: { PINECALL_HOME: home }, ...ana() });
+
+    expect(gateway.heard).toEqual([undefined, `Bearer ${A_KEY}`]);
+    expect(out.text()).not.toContain(A_KEY);
+    expect(out.text()).not.toContain(PASSWORD);
+  });
+
+  it("takes the two that are not secrets as flags, and asks only for the password", async () => {
+    const asked: string[] = [];
+
+    const code = await login([gateway.url, "--org", ORG, "--email", EMAIL], {
+      out: written().stream,
+      env: { PINECALL_HOME: home },
+      aloud: (prompt: string) => {
+        asked.push(prompt);
+        return Promise.resolve("");
+      },
+      secret: () => Promise.resolve(PASSWORD),
+    });
+
+    expect(code).toBe(0);
+    expect(asked).toEqual([]);
   });
 
   it("keeps nothing when the gateway refuses, and prints the gateway's own sentence", async () => {
@@ -76,11 +154,11 @@ describe("logging in to a gateway", () => {
     const code = await login([gateway.url], {
       err: err.stream,
       env: { PINECALL_HOME: home },
-      key: async () => "pk_a_key_this_gateway_never_issued",
+      ...ana("not the one she chose"),
     });
 
     expect(code).toBe(1);
-    expect(err.text()).toBe("the gateway answered 401: this door takes an API key\n");
+    expect(err.text()).toBe(`the gateway answered 401: ${NOBODY}\n`);
     expect(gatewayFor(gateway.url, home)).toBeUndefined();
   });
 
@@ -88,21 +166,37 @@ describe("logging in to a gateway", () => {
     const err = written();
 
     expect(await login([], { err: err.stream, env: { PINECALL_HOME: home } })).toBe(2);
-    expect(err.text()).toBe("usage: pinecall login <gateway-url> [--key-stdin]\n");
+    expect(err.text()).toBe("usage: pinecall login <gateway-url> [--org <slug>] [--email <you@…>] [--key-stdin]\n");
   });
 
-  it("keeps nothing when nothing was typed", async () => {
+  it("keeps nothing, and asks the gateway nothing, when nothing was typed", async () => {
     const err = written();
 
-    const code = await login([gateway.url], { err: err.stream, env: { PINECALL_HOME: home }, key: async () => "  " });
+    const code = await login([gateway.url], {
+      err: err.stream,
+      env: { PINECALL_HOME: home },
+      aloud: () => Promise.resolve("  "),
+      secret: () => Promise.resolve(""),
+    });
 
     expect(code).toBe(2);
     expect(err.text()).toContain("nothing was kept");
     expect(gateway.heard).toEqual([]);
   });
 
+  it("says nobody is there rather than 'nothing was typed' when no terminal is attached", async () => {
+    const err = written();
+
+    const code = await login([gateway.url], { err: err.stream, env: { PINECALL_HOME: home } });
+
+    expect(code).toBe(2);
+    expect(err.text()).toContain("there is nobody to ask");
+    expect(err.text()).toContain("--key-stdin");
+    expect(gateway.heard).toEqual([]);
+  });
+
   it("writes the key once, in a file nobody else can read", async () => {
-    await login([gateway.url], { out: written().stream, env: { PINECALL_HOME: home }, key: async () => A_KEY });
+    await login([gateway.url], { out: written().stream, env: { PINECALL_HOME: home }, ...ana() });
 
     const kept = readFileSync(join(home, "credentials"), "utf8");
     expect(kept.split(A_KEY)).toHaveLength(2);
