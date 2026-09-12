@@ -7,6 +7,12 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **Numbers, the whole screen.** The org's carrier brought from the console — a Twilio account,
+  verified once, or a SIP peer with its own networks — shown by kind and account and never a
+  secret, replaced or forgotten; a number imported from what that account owns, picked from a
+  list, or bought on the box's account by country and area code; every write preceded by the
+  gateway's own plan (`?dry_run=true`) drawn step by step and confirmed by a second click; a
+  bought number marked; one let go from its row. Before this the screen only listed.
 - **`pinecall signup`.** The one verb that needs no key: it makes an org on Pinecall's cloud
   (`https://box.pinecall.io` unless another gateway is named) with you as its admin on the free
   trial, and keeps the key it is answered in `~/.pinecall/credentials` exactly as `login` does, so
