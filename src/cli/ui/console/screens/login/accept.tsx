@@ -1,19 +1,19 @@
 /** Accepting an invitation: the person the link names chooses a password, and this tab gets their first key. */
 
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 
 import { GatewayError } from "../../../shared/api";
+import { discovered } from "../../../shared/the-floor";
 import { acceptInvitation, type Signed } from "../../lib/login";
-import "./login.css";
-
-// The runtime's own floor for a password (auth/passwords.py): said here so a person is told before
-// the round trip, and refused by the gateway in its own words if a shorter one gets through.
-const AT_LEAST = 12;
 
 /**
- * The card a person sees when they open the link an admin sent them. It knows their token from the
- * URL and nothing else about them — not their name, not their email — because the token IS the
- * right, and a card that showed whose it was would tell a stranger who found the link.
+ * The card a person sees when they open the link an admin sent them.
+ *
+ * It knows their token from the URL and nothing else about them — not their name, not their email
+ * — because the token IS the right, and a card that showed whose it was would tell a stranger who
+ * found the link. How long a password must be is the BOX's rule and not this page's: it is read
+ * off `/.well-known/pinecall`, which takes no key, so the card says the rule this gateway actually
+ * enforces rather than a number copied here that drifts the day an operator moves it.
  */
 export function Accept({
   base,
@@ -26,8 +26,19 @@ export function Accept({
 }): ReactNode {
   const [password, setPassword] = useState("");
   const [again, setAgain] = useState("");
+  const [floor, setFloor] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [refused, setRefused] = useState<string | null>(null);
+
+  useEffect(() => {
+    let gone = false;
+    void discovered(base).then((said) => {
+      if (!gone) setFloor(said.min_password);
+    });
+    return () => {
+      gone = true;
+    };
+  }, [base]);
 
   const submit = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
@@ -47,40 +58,52 @@ export function Accept({
   };
 
   return (
-    <div className="login">
-      <form className="login-card" onSubmit={(event) => void submit(event)}>
-        <div className="login-brand">pinecall / console</div>
-        <p className="login-hint">
-          You were invited. Choose the password you will sign in with; the link opens once and dies in a week.
+    <div className="way">
+      <form className="way-card" onSubmit={(event) => void submit(event)}>
+        <div className="way-mark">
+          <b>pinecall</b> <span>/</span> console
+        </div>
+        <h1 className="way-title">Choose your password</h1>
+        <p className="way-lede">
+          You were invited. This link opens once and dies in a week; the password you pick here is
+          the one you will sign in with from now on.
         </p>
-        <label className="login-field">
-          <span className="login-label">password · {AT_LEAST} characters at least</span>
-          <input
-            className="input"
-            type="password"
-            value={password}
-            minLength={AT_LEAST}
-            onChange={(event) => setPassword(event.target.value)}
-            autoComplete="new-password"
-            autoFocus
-            required
-          />
-        </label>
-        <label className="login-field">
-          <span className="login-label">again</span>
-          <input
-            className="input"
-            type="password"
-            value={again}
-            onChange={(event) => setAgain(event.target.value)}
-            autoComplete="new-password"
-            required
-          />
-        </label>
-        <button className="button button-accent" type="submit" disabled={busy}>
+
+        <div className="way-fields">
+          <label className="way-field">
+            <span className="way-label">
+              password
+              {floor !== null && floor > 0 && <span>{floor} characters at least</span>}
+            </span>
+            <input
+              className="way-input"
+              type="password"
+              value={password}
+              minLength={floor ?? undefined}
+              onChange={(event) => setPassword(event.target.value)}
+              autoComplete="new-password"
+              autoFocus
+              required
+            />
+          </label>
+          <label className="way-field">
+            <span className="way-label">again</span>
+            <input
+              className="way-input"
+              type="password"
+              value={again}
+              onChange={(event) => setAgain(event.target.value)}
+              autoComplete="new-password"
+              required
+            />
+          </label>
+        </div>
+
+        <button className="way-go" type="submit" disabled={busy}>
           {busy ? "joining…" : "join"}
         </button>
-        {refused !== null && <p className="login-refused">{refused}</p>}
+
+        {refused !== null && <p className="way-refused">{refused}</p>}
       </form>
     </div>
   );

@@ -1,0 +1,174 @@
+/* The card both pages show before anybody is in: a sign-in, an invitation accepted, an ops key.
+ *
+ * It is one stylesheet because it is one moment — a stranger, one panel, nothing else on screen —
+ * and because the two pages must not drift apart at the only screen a person meets cold. The
+ * page's own name goes in the eyebrow; everything below it is the same.
+ */
+
+.way {
+  align-items: center;
+  background: var(--ground);
+  display: flex;
+  justify-content: center;
+  min-height: 100%;
+  padding: 32px 20px;
+}
+
+.way-card {
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-panel);
+  display: flex;
+  flex-direction: column;
+  max-width: 25rem;
+  padding: 28px 28px 24px;
+  width: 100%;
+}
+
+/* The wordmark, with the page it is the door to. Mono, because it is a name and not prose. */
+.way-mark {
+  align-items: baseline;
+  color: var(--ink-faint);
+  display: flex;
+  font-family: var(--face-fixed);
+  font-size: 11.5px;
+  gap: 6px;
+  letter-spacing: 0.02em;
+  margin-bottom: 20px;
+}
+
+.way-mark b {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.way-title {
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  margin: 0 0 6px;
+}
+
+/* Prose, in the reading face and a readable size: this is the one screen that has to explain
+   itself to somebody who has never seen the product. */
+.way-lede {
+  color: var(--ink-soft);
+  font-size: 13.5px;
+  line-height: 1.55;
+  margin: 0 0 22px;
+  text-wrap: pretty;
+}
+
+.way-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.way-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.way-label {
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* A hint sits beside its label, never under the field, so the rule is read before the typing. */
+.way-label span {
+  color: var(--ink-faint);
+  font-family: var(--face-fixed);
+  font-size: 11px;
+  font-weight: 400;
+  margin-left: 6px;
+}
+
+/* Taller than a table's input, and edged in the ink that means "there when you look" rather than
+   in a hairline: at this size a filled box with an almost invisible border reads as DISABLED, and
+   this is the one screen where somebody who has never seen the product has to find the fields. */
+.way-input {
+  background: var(--sunk);
+  border: 1px solid var(--ink-faint);
+  border-radius: var(--radius-control);
+  color: var(--ink);
+  font-family: var(--face);
+  font-size: 14px;
+  height: 38px;
+  padding: 0 11px;
+  width: 100%;
+}
+
+.way-input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.way-input::placeholder {
+  color: var(--ink-faint);
+}
+
+.way-go {
+  align-items: center;
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  border-radius: var(--radius-control);
+  color: var(--ground);
+  cursor: pointer;
+  display: inline-flex;
+  font-family: var(--face);
+  font-size: 14px;
+  font-weight: 500;
+  height: 38px;
+  justify-content: center;
+  margin-top: 22px;
+  width: 100%;
+}
+
+.way-go:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.way-go:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+/* The gateway's own sentence, verbatim. Accent, because a refusal is the one thing on this card
+   that matters the moment it appears. */
+.way-refused {
+  border-left: 2px solid var(--accent);
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 18px 0 0;
+  padding-left: 10px;
+  text-wrap: pretty;
+}
+
+/* What to do when this card is not the way in for you. Under a rule, in the reading face. */
+.way-else {
+  border-top: 1px solid var(--edge-soft);
+  color: var(--ink-soft);
+  display: flex;
+  flex-direction: column;
+  font-size: 12.5px;
+  gap: 8px;
+  line-height: 1.5;
+  margin-top: 24px;
+  padding-top: 18px;
+  text-wrap: pretty;
+}
+
+.way-else p {
+  margin: 0;
+}
+
+.way-else code {
+  color: var(--ink-2);
+  font-family: var(--face-fixed);
+  font-size: 12px;
+}

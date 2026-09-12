@@ -2,6 +2,7 @@
 
 @import "./tokens.css";
 @import "./page.css";
+@import "./way-in.css";
 
 * {
   box-sizing: border-box;
