@@ -7,7 +7,8 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { builtNames, groupFor, groupNames, main } from "../../src/cli/index.js";
-import { connectedLine, consoleUrl, doorsOf, run } from "../../src/cli/run.js";
+import { Refused } from "../../src/cli/testing/gateway.js";
+import { connectedLine, consoleUrl, doorsOf, run, whyNoConsole } from "../../src/cli/run.js";
 
 const GATEWAY = "https://box.pinecall.io";
 
@@ -58,6 +59,17 @@ describe("the console's URL `pinecall run` prints", () => {
       "https://box.pinecall.io/a/clinica-norte?login=lc_abc",
     );
     expect(consoleUrl(GATEWAY, "tienda sur", "lc_a/b")).toBe("https://box.pinecall.io/a/tienda%20sur?login=lc_a%2Fb");
+  });
+
+  it("says a gateway with no login-code door is an old one, and what to do about it", () => {
+    // The one status that means something a person can act on: there is no such door, so the
+    // gateway predates this CLI. A long-running dev gateway is how anybody meets it.
+    const older = whyNoConsole(new Refused(404, "Not Found"));
+    expect(older).toContain("older than this CLI");
+    expect(older).toContain("Restart it");
+    // Anything else is the gateway's own answer, unembellished: the CLI is guessing at nothing.
+    expect(whyNoConsole(new Refused(403, "nope"))).toBe("the gateway answered 403");
+    expect(whyNoConsole(new Error("connect ECONNREFUSED"))).toBe("connect ECONNREFUSED");
   });
 });
 
