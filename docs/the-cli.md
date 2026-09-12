@@ -394,9 +394,10 @@ pinecall signup [<gateway-url>] --org <slug> --email <you@…> --person "<your n
                 [--name "<Org Name>"] [--password-stdin]
 ```
 
-The one verb that needs no key, because it is the one that gets you the first. It makes the org on
-Pinecall's cloud with you as its admin, on the free trial — forty-five minutes on us, no card — and
-keeps the key it is answered exactly where `login` keeps one, so the next verb just works. The
+The one verb that needs no key, because it is the one that gets you the first. It makes the org
+with you as its admin — what the org may do is whatever the people who run that gateway decided for
+a new one: on a box of your own, everything; on a hosted one, its trial — and keeps the key it is
+answered exactly where `login` keeps one, so the next verb just works. The
 gateway is `https://box.pinecall.io` unless another is named. The password is asked for without
 echoing it, or read from one line of stdin with `--password-stdin`; it is never a flag, because a
 flag is shell history.

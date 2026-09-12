@@ -39,7 +39,8 @@ export const group: Group = {
   purpose: "make an org on Pinecall's cloud and keep its first key",
   usage: `${USAGE}
 
-  Makes the org, with you as its admin, on the free trial: forty-five minutes on us, no card.
+  Makes the org with you as its admin. What it may do is whatever the people who run that
+  gateway decided for a new one: on a box of your own, everything; on a hosted one, its trial.
   The gateway is ${CLOUD_URL} unless another is named. The password is asked for without
   echoing it, or read from one line of stdin with --password-stdin.
 
