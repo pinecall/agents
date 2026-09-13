@@ -2,7 +2,7 @@
 
 import type { TheLine } from "@pinecall/protocol";
 
-import { writeCalling } from "./credentials.js";
+import { callsFrom as keptOnTheProfile } from "./profiles.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { load } from "./load.js";
@@ -51,13 +51,13 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
       return 2;
     }
     const said = await callsFrom(door, number);
-    writeCalling(door.url, number);
+    keptOnTheProfile(number);
     out.write(`${calling(said.calling)}\n`);
     return 0;
   }
   if (verb === "forget") {
     const said = await forgetCallsFrom(door);
-    writeCalling(door.url, undefined);
+    keptOnTheProfile(undefined);
     out.write(`${forgotten(said.forgot)}\n`);
     return 0;
   }

@@ -6,6 +6,7 @@ import type { AddressInfo } from "node:net";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { run } from "../../src/cli/pipeline.js";
+import { pointingAt } from "./home.js";
 import { written } from "./said.js";
 
 const A_KEY = "pk_the_orgs_key";
@@ -83,7 +84,7 @@ afterEach(async () => {
 });
 
 function environment(): NodeJS.ProcessEnv {
-  return { PINECALL_URL: gateway.url, PINECALL_API_KEY: A_KEY };
+  return pointingAt(gateway.url, A_KEY);
 }
 
 describe("what the agent runs on", () => {

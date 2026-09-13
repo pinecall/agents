@@ -3,6 +3,7 @@
 import { describe, expect, it } from "vitest";
 
 import { lineOf, money, onOneLine, run, scoreLines, seconds } from "../../src/cli/sessions.js";
+import { pointingAt } from "./home.js";
 
 // A stream that keeps what was written, so a test reads the CLI's output as a string.
 function collected(): { stream: NodeJS.WritableStream; text(): string } {
@@ -107,14 +108,10 @@ describe("the small stuff", () => {
 describe("the verb itself", () => {
   it("says what it needs when no agent can be found and none was named", async () => {
     const err = collected();
-    const kept = process.env["PINECALL_URL"];
-    process.env["PINECALL_URL"] = "http://127.0.0.1:1";
-    process.env["PINECALL_API_KEY"] = "pk_test";
+    const env = pointingAt("http://127.0.0.1:1", "pk_test");
 
-    const code = await run([], { err: err.stream, out: collected().stream });
+    const code = await run([], { err: err.stream, out: collected().stream, env });
 
-    if (kept === undefined) delete process.env["PINECALL_URL"];
-    else process.env["PINECALL_URL"] = kept;
     expect(code).toBe(2);
     expect(err.text()).toContain("name the agent");
   });

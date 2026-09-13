@@ -10,9 +10,9 @@ import type { Agent as AgentClass } from "../agent/agent.js";
 import { showMachine } from "./machine.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
-import { gatewayFor } from "./credentials.js";
 import { callsFrom, describing, theLine } from "./line.js";
 import { connectedLine, doorsOf, whereThisLanded } from "./connected.js";
+import { callingFrom } from "./profiles.js";
 import { instanceFor, load, mountOptions } from "./load.js";
 import { asked, Refused, type Door } from "./testing/gateway.js";
 import { chattingFrom, type Chatting } from "./ui/chatting.js";
@@ -187,7 +187,7 @@ async function onceUp(door: Door, slug: string, rings: boolean): Promise<string[
 
 /** Re-send the phone `pinecall line from` remembered for this gateway. Silent: it is upkeep. */
 async function sayWhoCallsFromHere(door: Door): Promise<void> {
-  const kept = gatewayFor(door.url)?.calling;
+  const kept = callingFrom();
   if (kept === undefined) return;
   try {
     await callsFrom(door, kept);

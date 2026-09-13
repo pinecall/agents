@@ -52,7 +52,7 @@ console  https://box.pinecall.io/?login=lc_…   (opens within five minutes, onc
    `pinecall run` is the one that answers the org's numbers, and nothing else can.
 4. **Promote knowledge.** A `knowledge push` from your laptop replaced your development base. The
    production base is the same push made with the machine's key:
-   `PINECALL_API_KEY=<the machine's> pinecall knowledge push`, from CI or from whoever holds it.
+   `pinecall knowledge push --profile prod`, from CI or from whoever holds it.
 5. **Revoke what is over.** `pinecall keys list` shows fingerprints, never keys; `pinecall keys
    revoke <fingerprint>` stops one. The row stays, because the calls it wrote name it.
 
@@ -89,7 +89,7 @@ What it keeps is that machine's **development** key. The console's toggle is how
 looks at production; `pinecall keys issue` is how a box gets one.
 
 A machine has no browser and no person: `--key-stdin` reads a key from one line of stdin, and in
-a container there is no login at all — `PINECALL_API_KEY` in the environment is the same thing.
+a container `pinecall login --key-stdin` writes the same profile, with `PINECALL_HOME` saying where.
 
 ## The team
 
@@ -170,9 +170,9 @@ Web and chat need none of this. They name the agent AND the person, so they alwa
 - **`this key does not open app: it opens …`** on `pinecall run` — you are on a production key.
   A person's never opens `app` there; issue a machine key (`pinecall keys issue`) and run on that,
   or log in to development.
-- **`PINECALL_API_KEY` is exported.** It is read before the row `signup` or `login` kept, so the
-  next verb answers for another org and reads as the sign-up having failed. Both verbs say so on
-  stderr; `unset` it. `pinecall whoami` says which key a verb would use and in which world.
+- **A verb answered for an org you did not expect.** It cannot be an export any more — the CLI
+  reads none — so it is the active profile. `pinecall config` says which one, `pinecall use`
+  moves it, and `pinecall whoami` says which key that is and in which world.
 - **The number answered somebody else's laptop.** You never told it which phone is yours, so the
   call fell through to whoever holds [the line](#the-line). `pinecall line from +<your number>`,
   once, and it stops happening. Web and chat are yours already; only the telephone is shared.

@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CallScore, SessionLine } from "@pinecall/protocol";
 
 import { driftOf, finishedBetween, linesOf, secondsOf, type Asked, type Judged } from "../../../src/cli/runs/drift.js";
+import { pointingAt } from "../home.js";
 import { run } from "../../../src/cli/runs/index.js";
 import { onStderr, written } from "../said.js";
 
@@ -79,8 +80,7 @@ describe("the delta between two windows", () => {
 
 describe("the verb, against a gateway holding the forced regression", () => {
   it("exits non-zero and prints the three seqs", async () => {
-    vi.stubEnv("PINECALL_API_KEY", "");
-    vi.stubEnv("PINECALL_DEV_KEY", "dev");
+    aProfile();
     aGateway();
     const said = written();
 
@@ -92,16 +92,14 @@ describe("the verb, against a gateway holding the forced regression", () => {
   });
 
   it("holds the night when nothing dropped further than the threshold allows", async () => {
-    vi.stubEnv("PINECALL_API_KEY", "");
-    vi.stubEnv("PINECALL_DEV_KEY", "dev");
+    aProfile();
     aGateway({ broken: 0 });
 
     expect(await run(["drift", "--agent", "clinica-norte"], written().stream)).toBe(0);
   });
 
   it("asks for the agent it watches rather than guessing one", async () => {
-    vi.stubEnv("PINECALL_API_KEY", "");
-    vi.stubEnv("PINECALL_DEV_KEY", "dev");
+    aProfile();
     const complained = onStderr();
 
     const code = await run(["drift"], written().stream);
@@ -112,8 +110,7 @@ describe("the verb, against a gateway holding the forced regression", () => {
   });
 
   it("refuses a baseline that is not longer than the window, which would dilute the drop", async () => {
-    vi.stubEnv("PINECALL_API_KEY", "");
-    vi.stubEnv("PINECALL_DEV_KEY", "dev");
+    aProfile();
     const complained = onStderr();
 
     const code = await run(["drift", "--agent", "x", "--window", "30d", "--baseline", "7d"], written().stream);
@@ -184,6 +181,13 @@ function line(call: string, endedAt: number, said: { live?: boolean } = {}): Ses
 
 // A gateway with two doors: the agent's calls, and each call's own last entry. The window holds
 // ten judged calls of which `broken` broke; the baseline holds ten that all held.
+// The verb needs a door before it knocks; `fetch` is stubbed below, so which gateway it is does
+// not matter — only that this machine knows one at all.
+function aProfile(): void {
+  const home = pointingAt("http://127.0.0.1:1", "pk_nobody_will_ever_deploy_this")["PINECALL_HOME"]!;
+  vi.stubEnv("PINECALL_HOME", home);
+}
+
 function aGateway(said: { broken?: number } = {}): void {
   const howMany = said.broken ?? 4;
   const now = Date.now() / 1000;

@@ -6,7 +6,7 @@ import { parseArgs } from "node:util";
 import { openInABrowser } from "./browser.js";
 import { pinecallHome, writeGateway } from "./credentials.js";
 import { nameFor, readConfig, writeProfile } from "./profiles.js";
-import { CLOUD_URL, shadowedByEnv } from "./env.js";
+import { CLOUD_URL } from "./env.js";
 import type { Group } from "./groups.js";
 import { aLineOfStdin } from "./secret.js";
 import { asked } from "./testing/gateway.js";
@@ -36,8 +36,10 @@ export const group: Group = {
   answer in a world of your own and never in the one your customers call.
 
   --key-stdin reads a KEY from one line of stdin instead, for a machine: a server, a CI job, a
-  container. That is what \`pinecall keys issue\` mints, and in a container there is no login at
-  all — PINECALL_API_KEY in the environment is the same thing.`,
+  container. That is what \`pinecall keys issue\` mints, and it writes the same profile — so a
+  machine and a person hold a key the same way, in a 0600 file read once rather than in an
+  environment every child process and every \`ps\` can read. PINECALL_HOME says where that file
+  goes, and it is the only variable this CLI reads.`,
   run: login,
 };
 
@@ -94,8 +96,6 @@ export async function login(argv: string[], how: Signing = {}): Promise<number> 
   writeProfile(name, { url, key, org: orgOf(who), env: who.env }, home);
   writeGateway(url, { api_key: key, org: orgOf(who) }, home);
   out.write(`▸ ${name} · ${url} · org ${orgOf(who)} · ${who.env}\n`);
-  const shadowed = shadowedByEnv(environment);
-  if (shadowed !== undefined) err.write(`${shadowed}\n`);
   return 0;
 }
 

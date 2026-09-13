@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { gatewayFor, writeGateway } from "../../src/cli/credentials.js";
+import { writeProfile } from "../../src/cli/profiles.js";
 import { CLOUD_URL } from "../../src/cli/env.js";
 import { login, signingIn, theGateway } from "../../src/cli/login.js";
 import { describing, refusal, run as whoami } from "../../src/cli/whoami.js";
@@ -192,13 +193,13 @@ describe("which gateway a login without one is for", () => {
 
 describe("whoami", () => {
   it("prints the gateway, where the key came from, and what the gateway says the key is", async () => {
-    writeGateway(gateway.url, { api_key: A_KEY, org: "clinica" }, home);
+    writeProfile("test", { url: gateway.url, key: A_KEY, org: "clinica" }, home);
     const out = written();
 
-    const code = await whoami([], out.stream, written().stream, { PINECALL_HOME: home, PINECALL_URL: gateway.url });
+    const code = await whoami([], out.stream, written().stream, { PINECALL_HOME: home });
 
     expect(code).toBe(0);
-    expect(out.text()).toBe(`gateway ${gateway.url} · key from credentials\norg clinica · key k_1 · development · the laptop\n`);
+    expect(out.text()).toBe(`gateway ${gateway.url} · key from profile\norg clinica · key k_1 · development · the laptop\n`);
     expect(out.text()).not.toContain("org_98889a61509c");
     expect(out.text()).not.toContain(A_KEY);
   });
@@ -206,11 +207,9 @@ describe("whoami", () => {
   it("leaves with a one when the key it found opens nothing, in the gateway's words", async () => {
     const err = written();
 
-    const code = await whoami([], written().stream, err.stream, {
-      PINECALL_HOME: home,
-      PINECALL_URL: gateway.url,
-      PINECALL_API_KEY: "pk_a_key_this_gateway_never_issued",
-    });
+    writeProfile("test", { url: gateway.url, key: "pk_a_key_this_gateway_never_issued" }, home);
+
+    const code = await whoami([], written().stream, err.stream, { PINECALL_HOME: home });
 
     expect(code).toBe(1);
     expect(err.text()).toBe("the gateway answered 401: this door takes an API key\n");
