@@ -31,7 +31,7 @@ compiled `dist/cli/index.js` and needs no loader.
 | [`eval`](#eval) | ring 3: one real call re-checked by code | yes |
 | [`sessions`](#sessions) | the calls this agent has run, and one of them whole | yes |
 | [`runs`](#runs) | the suites: list, show, diff, promote a call, watch the drift | yes |
-| [`pipeline`](#pipeline) | what it hears, decides and speaks with, and the five knobs | yes |
+| [`pipeline`](#pipeline) | what it hears, decides and speaks with, and the six knobs | yes |
 | [`line`](#line) | which phone is yours, and whose terminal a call from anybody else's rings in | yes |
 | [`personas`](#personas) | the synthetic callers in `test/personas` | for `try` |
 | [`knowledge`](#knowledge) | the base the agent answers from: push, list, drop, eval | yes |
@@ -39,7 +39,7 @@ compiled `dist/cli/index.js` and needs no loader.
 | [`remember`](#remember) | the extraction goldens: what a hang-up makes of a call | yes |
 | [`supervise`](#supervise) | listen in on a live call and move on it | yes |
 | [`keys`](#keys) | the API keys this org's machines run on: issue, list, revoke | yes |
-| [`providers`](#providers) | the provider keys this org brought of its own | yes |
+| [`providers`](#providers) | every vendor this build runs, and the keys this org brought | yes |
 | [`signup`](#signup) | an org on Pinecall's cloud, and its first key kept here | no, it makes one |
 | [`login`](#login) · [`whoami`](#whoami) | the key, once, and which one is being used | yes |
 
@@ -356,8 +356,8 @@ nothing.
 
 ```
 pinecall pipeline [--agent <slug>] [--json]
-pinecall pipeline set [--stt x] [--llm x] [--voice x] [--tts-model x] [--greeting '…']
-pinecall pipeline clear [stt|llm|voice|tts-model|greeting …]
+pinecall pipeline set [--stt x] [--llm x] [--tts x] [--voice x] [--tts-model x] [--greeting '…']
+pinecall pipeline clear [stt|llm|tts|voice|tts-model|greeting …]
 ```
 
 ```console
@@ -374,12 +374,16 @@ clinica-norte · 9 calls
 ```
 
 The three legs as the **next** call would be built, with `← turned` beside any knob an operator has
-moved. `set` turns one for every call from the next one, held by the gateway and not by a deploy —
-`--llm anthropic/claude-haiku-4-5` names the vendor and the model, `--llm claude-haiku-4-5` keeps
-whichever vendor is in use. A knob nobody names is left exactly as it stands, because the door
-takes the whole set and this verb reads it back before it sends. `clear` gives one back to what the
-app declared; with no name, all five. There is no blank value: an empty voice once silenced a whole
-line of calls.
+moved. `set` turns one for every call from the next one, held by the gateway and not by a deploy. A
+model knob reads three ways: `--llm anthropic/claude-haiku-4-5` names both, `--llm cartesia` names a
+**vendor** and keeps that vendor's own default model, and `--llm claude-haiku-4-5` keeps whichever
+vendor is in use. `--tts` is the vendor that speaks — the stage that could not be moved until it
+existed — and `--voice` beside it is then that vendor's own id for a voice, in that vendor's own
+shape. `pinecall providers` lists every vendor a knob may name.
+
+A knob nobody names is left exactly as it stands, because the door takes the whole set and this
+verb reads it back before it sends. `clear` gives one back to what the app declared; with no name,
+all six. There is no blank value: an empty voice once silenced a whole line of calls.
 
 ## `supervise`
 
@@ -426,10 +430,29 @@ fingerprint that is not this org's is refused as one that is nobody's.
 ## `providers`
 
 ```
+pinecall providers                  # every vendor this build runs
 pinecall providers add <vendor>     # the key on stdin, never on the command line
 pinecall providers rm <vendor>
-pinecall providers list
+pinecall providers list             # only the ones this org brought
 ```
+
+```console
+$ pinecall providers --does tts
+vendor        does         standing   variable              also known as
+livekit       llm,stt,tts  ready                            inference lk
+cartesia      stt,tts      no key     CARTESIA_API_KEY
+elevenlabs    stt,tts      ready      ELEVEN_API_KEY        11labs eleven elevenlab
+rime          tts          no key     RIME_API_KEY
+speechmatics  stt,tts      no plugin  SPEECHMATICS_API_KEY
+```
+
+With nothing after it: every vendor this build runs — forty-five, every one LiveKit ships a plugin
+for, plus `livekit` itself, which is LiveKit Inference and fronts most of them on the box's own
+project with no vendor key at all. `standing` is the one word for what each is still waiting for:
+`ready` is the only one that runs a call, `no plugin` and `no key` are the operator's to fix, and
+`its own` is a vendor whose credentials are a chain or a pair and never one key anybody could
+bring. Any of these names — or any of its aliases — is what `pipeline set --stt`, `--llm` and
+`--tts` take, and what an agent declares.
 
 A key added here is this org's own account with that vendor, and every call of this org runs on it
 from the next one; every vendor nobody brought runs on the box's own key. `add` reads the key from
@@ -646,7 +669,7 @@ code can call — over HTTP, in any language, with the same key.
 | `memory` | `GET`·`DELETE /v1/contacts/{contact}/memory`, `POST /v1/contacts/memory/eval` |
 | `remember` | `POST /v1/agents/{slug}/memory/extraction` |
 | `keys` | `GET`·`POST /v1/keys`, `POST /v1/keys/{fingerprint}/revoke` |
-| `providers` | `PUT`·`DELETE`·`GET /v1/provider-keys[/{vendor}]` |
+| `providers` | `GET /v1/providers` · `PUT`·`DELETE`·`GET /v1/provider-keys[/{vendor}]` |
 | `callbacks` | `GET /v1/callbacks[?agent=&after=]` |
 | `line` | `GET`·`POST`·`DELETE /v1/agents/{slug}/line`, `PUT`·`DELETE /v1/line/from` |
 | `login` | `POST /v1/login/pairings`, `GET …/{code}/key` — then `GET /v1/whoami` to prove what it got |

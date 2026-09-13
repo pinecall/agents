@@ -10,26 +10,29 @@ import { refusal } from "./whoami.js";
 
 const USAGE = [
   "usage: pinecall pipeline [--agent <slug>] [--json]",
-  "       pinecall pipeline set [--stt x] [--llm x] [--voice x] [--tts-model x] [--greeting '…']",
-  "       pinecall pipeline clear [stt|llm|voice|tts-model|greeting …]",
+  "       pinecall pipeline set [--stt x] [--llm x] [--tts x] [--voice x] [--tts-model x] [--greeting '…']",
+  "       pinecall pipeline clear [stt|llm|tts|voice|tts-model|greeting …]",
 ].join("\n");
 
 export const group: Group = {
-  purpose: "what the agent hears, decides and speaks with, and the five knobs an operator turns",
+  purpose: "what the agent hears, decides and speaks with, and the six knobs an operator turns",
   usage: `${USAGE}
 
   With nothing after it: the three legs of the pipeline as the NEXT call would be built — the
   vendor, the model and the one knob worth showing — what the class declared as its opening, the
-  medians livekit measured over the agent's recent calls, and which of the five knobs is turned.
+  medians livekit measured over the agent's recent calls, and which of the six knobs is turned.
 
-  set turns a knob for every call from the next one, held by the gateway and not by a deploy:
-  \`--llm anthropic/claude-haiku-4-5\` names the vendor and the model, \`--llm claude-haiku-4-5\`
-  keeps whichever vendor is in use. A knob nobody names here is left exactly as it stands.
+  set turns a knob for every call from the next one, held by the gateway and not by a deploy. A
+  model knob reads three ways: \`--llm anthropic/claude-haiku-4-5\` names both, \`--llm cartesia\`
+  names a VENDOR and keeps that vendor's own default model, and \`--llm claude-haiku-4-5\` keeps
+  whichever vendor is in use. \`--tts\` is the vendor that speaks, and the voice beside it is then
+  that vendor's own id. A knob nobody names here is left exactly as it stands.
 
-  clear gives a knob back to what the app declared. With no name it gives back all five. There is
+  clear gives a knob back to what the app declared. With no name it gives back all six. There is
   no blank value: an empty voice once silenced a whole line of calls, and the door refuses one.
 
-  The same five knobs are the Pipeline screen of \`pinecall ui\`, over the same two doors.`,
+  \`pinecall providers\` lists every vendor a knob may name and what each one still wants; the same
+  six knobs are the Pipeline screen of \`pinecall ui\`, over the same two doors.`,
   run,
 };
 
@@ -41,9 +44,10 @@ interface Stage {
   language: string | null;
 }
 
-/** The five knobs. A knob left out of a PUT is not overridden at all. */
+/** The six knobs. A knob left out of a PUT is not overridden at all. */
 interface Overridden {
   voice: string | null;
+  tts: string | null;
   tts_model: string | null;
   stt: string | null;
   llm: string | null;
@@ -75,6 +79,7 @@ interface Report {
 const KNOBS: Record<string, keyof Overridden> = {
   stt: "stt",
   llm: "llm",
+  tts: "tts",
   voice: "voice",
   "tts-model": "tts_model",
   greeting: "greeting",
@@ -98,6 +103,7 @@ export async function run(argv: string[], how: Turning = {}): Promise<number> {
       json: { type: "boolean", default: false },
       stt: { type: "string" },
       llm: { type: "string" },
+      tts: { type: "string" },
       voice: { type: "string" },
       "tts-model": { type: "string" },
       greeting: { type: "string" },
@@ -117,7 +123,7 @@ export async function run(argv: string[], how: Turning = {}): Promise<number> {
     if (verb === "clear") return said(await cleared(door, agent, named), values.json === true, out);
   } catch (refused) {
     // The gateway's own sentence: it is the one that knows this build's vendors and this build's
-    // voices, and a knob refused here says which of the five it was and what it may be.
+    // voices, and a knob refused here says which of the six it was and what it may be.
     err.write(`${refusal(refused)}\n`);
     return 1;
   }
@@ -188,7 +194,7 @@ export function linesOf(report: Report): string[] {
   const lines = [`${report.agent} · ${calls}`, ""];
   lines.push(`  hears     ${stageLine(report.hears)}${turnedAt(report, "stt")}`);
   lines.push(`  decides   ${stageLine(report.decides)}${turnedAt(report, "llm")}`);
-  lines.push(`  speaks    ${stageLine(report.speaks)}${turnedAt(report, "voice", "tts_model")}`);
+  lines.push(`  speaks    ${stageLine(report.speaks)}${turnedAt(report, "tts", "voice", "tts_model")}`);
   const opening = openingLine(report);
   if (opening !== "") lines.push("", `  greeting  ${opening}${turnedAt(report, "greeting")}`);
   if (report.medians.length > 0) {

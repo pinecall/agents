@@ -25,6 +25,9 @@ interface Heard {
 class FakeGateway {
   readonly heard: Heard[] = [];
   vendors: string[] = [];
+  // What GET /v1/providers answers: the whole catalogue, which is a different door from the
+  // three key doors and the only one that says anything about a vendor nobody brought.
+  catalogue: unknown = { providers: [], defaults: {}, voices: [] };
   refuse: { status: number; detail: string } | undefined;
   #server!: Server;
   url = "";
@@ -47,6 +50,7 @@ class FakeGateway {
     this.heard.push({ method: request.method ?? "", path: request.url ?? "", body: text === "" ? null : JSON.parse(text) });
     if (request.headers.authorization !== `Bearer ${A_KEY}`) return this.#said(response, 401, { detail: "this door takes an API key" });
     if (this.refuse !== undefined) return this.#said(response, this.refuse.status, { detail: this.refuse.detail });
+    if (request.url === "/v1/providers") return this.#said(response, 200, this.catalogue);
     if (request.method === "GET") return this.#said(response, 200, { vendors: this.vendors });
     return this.#said(response, 204, null);
   }
@@ -175,6 +179,54 @@ describe("taking one back and reading the names", () => {
   });
 });
 
+describe("the catalogue", () => {
+  it("prints every vendor this build runs, with what each one still wants", async () => {
+    const out = written();
+    gateway.catalogue = {
+      providers: [
+        { name: "elevenlabs", does: ["stt", "tts"], standing: "ready", env: "ELEVEN_API_KEY", aliases: ["11labs"] },
+        { name: "cartesia", does: ["stt", "tts"], standing: "no key", env: "CARTESIA_API_KEY", aliases: [] },
+        { name: "aws", does: ["llm"], standing: "its own", env: null, aliases: ["bedrock"] },
+      ],
+      defaults: { llm: "anthropic", stt: "soniox", tts: "elevenlabs" },
+      voices: ["carolina"],
+    };
+
+    const code = await run([], { out: out.stream, env });
+
+    expect(code).toBe(0);
+    const said = out.text();
+    expect(said).toContain("elevenlabs");
+    expect(said).toContain("11labs");
+    expect(said).toContain("no key");
+    expect(said).toContain("its own");
+    expect(said).toContain("3 vendors · ours: llm anthropic · stt soniox · tts elevenlabs");
+  });
+
+  it("narrows to one modality, and refuses a word that is not one", async () => {
+    const out = written();
+    const err = written();
+    gateway.catalogue = {
+      providers: [
+        { name: "elevenlabs", does: ["stt", "tts"], standing: "ready", env: "ELEVEN_API_KEY", aliases: [] },
+        { name: "anthropic", does: ["llm"], standing: "ready", env: "ANTHROPIC_API_KEY", aliases: [] },
+      ],
+      defaults: { llm: "anthropic", stt: "soniox", tts: "elevenlabs" },
+      voices: [],
+    };
+
+    expect(await run(["--does", "tts"], { out: out.stream, env })).toBe(0);
+    // The table, not the footer: `ours: llm anthropic` names it there and always will.
+    const table = out.text().split("\n\n")[0] ?? "";
+    expect(table).toContain("elevenlabs");
+    expect(table).not.toContain("anthropic");
+    expect(out.text()).toContain("1 vendors");
+
+    expect(await run(["--does", "singing"], { err: err.stream, env })).toBe(2);
+    expect(err.text()).toContain("no modality called singing");
+  });
+});
+
 describe("what it will not do", () => {
   it("prints the usage on a sub-verb it does not have, and knocks at no door", async () => {
     const err = written();
@@ -182,7 +234,7 @@ describe("what it will not do", () => {
     const code = await run(["drop", "elevenlabs"], { err: err.stream, env });
 
     expect(code).toBe(2);
-    expect(err.text()).toContain("usage: pinecall providers add <vendor>");
+    expect(err.text()).toContain("pinecall providers add <vendor>");
     expect(gateway.heard).toEqual([]);
   });
 
