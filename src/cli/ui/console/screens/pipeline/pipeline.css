@@ -187,6 +187,21 @@
   grid-column: 1 / -1;
 }
 
+/* A stage is two controls over one value: the vendor from the gateway's list, and the model beside
+   it. The vendor is the wider of the two because its names are long and a model is often empty. */
+.ctl-stage {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  min-width: 0;
+}
+
+@media (max-width: 760px) {
+  .ctl-stage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .ctl-label {
   color: var(--ink-soft);
   font-family: var(--face-fixed);

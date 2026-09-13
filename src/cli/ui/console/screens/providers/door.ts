@@ -1,8 +1,11 @@
-/** The Providers screen's doors: which vendors this org brought of its own, one added, one given back. */
+/** The Providers screen's doors: the catalog this build runs, and the keys this org brought of its own. */
 
 import { z } from "zod";
 
 import { drop, put, read, type Credentials } from "../../../shared/api";
+
+export { readCatalogue } from "../../lib/catalogue";
+export type { Catalogue, Provider } from "../../lib/catalogue";
 
 // This door answers vendor NAMES, and that is the whole of what a screen may know — not a value,
 // not a prefix, not a fingerprint. The one door that reads a key back is the worker's, and a page

@@ -56,11 +56,13 @@ export function Pipeline(): ReactNode {
               declared={{
                 stt: `${report.hears.vendor}/${report.hears.model ?? ""}`,
                 llm: `${report.decides.vendor}/${report.decides.model ?? ""}`,
+                tts: report.speaks.vendor,
                 voice: report.speaks.voice_id ?? "",
                 tts_model: report.speaks.model ?? "",
                 greeting: greetingLine(report.greeting),
               }}
               voices={report.voices}
+              providers={report.providers}
               saving={saving}
               error={error}
               onTurn={turn}

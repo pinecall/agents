@@ -3,6 +3,7 @@
 import { z } from "zod";
 
 import { put, read, type Credentials } from "../../../shared/api";
+import { ProviderSchema } from "../../lib/catalogue";
 import { MEASURES } from "../../lib/metrics";
 
 // The shapes are read here and nowhere else in the console, the way lib/doors.ts holds the two the
@@ -16,9 +17,12 @@ export const StageSchema = z.object({
 });
 export type Stage = z.infer<typeof StageSchema>;
 
-/** The five knobs an operator may turn. A knob left out of a PUT stops being overridden. */
+/** The six knobs an operator may turn. A knob left out of a PUT stops being overridden. */
 export const OverriddenSchema = z.object({
   voice: z.string().nullable(),
+  // `tts` is the vendor that speaks, written like the other two: `cartesia`, or `cartesia/sonic-3`.
+  // It is the newest of the six, and the speaking stage was the one an operator could not move.
+  tts: z.string().nullable(),
   tts_model: z.string().nullable(),
   stt: z.string().nullable(),
   llm: z.string().nullable(),
@@ -55,6 +59,9 @@ export const ReportSchema = z.object({
   // The names the voice knob may be turned to, off the runtime's one voices table. The console
   // keeps no list of its own: a name this build does not curate is an id no vendor answers for.
   voices: z.array(z.string()),
+  // Every vendor each stage could be turned onto, with whether this box can run it — the same rows
+  // GET /v1/providers answers, so the two screens cannot disagree about what exists.
+  providers: z.array(ProviderSchema),
   calls: z.int(),
   medians: z.array(MeasuredSchema),
   unavailable_reasons: z.record(z.string(), z.string()),
