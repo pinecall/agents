@@ -125,7 +125,7 @@ describe("las horas sobre la mesa", () => {
     expect(block(promptOf(agent), "view")).not.toContain("Horas libres, en orden:");
 
     agent.startIn({ ...STATES[0]!.state, stage: "choose", patient: { name: "Ana García", phone: "+34 600 000 001" } });
-    await agent.freeSlots("martes");
+    await agent.freeSlots("martes", "medicina de familia");
 
     const dynamic = block(promptOf(agent), "view");
     expect(agent.slots.length).toBeGreaterThan(0);
@@ -156,7 +156,7 @@ describe("la clase y la vista dicen lo mismo sobre el día que nombra el pacient
     agent.startIn(CASES[0]!.state);
     const dynamic = block(promptOf(agent), "view");
 
-    expect(toolNamed(agent, "freeSlots")?.spec.description).toContain("EN CUANTO el paciente nombre un día");
+    expect(toolNamed(agent, "freeSlots")?.spec.description).toContain("EN CUANTO tengas las dos cosas");
     expect(dynamic).toContain("consulta SIEMPRE la agenda de ese día");
     // Y la vista sigue diciendo qué hacer cuando todavía no ha nombrado ningún día: son dos
     // ramas, no una regla que sustituye a la otra.

@@ -22,6 +22,8 @@ export class CallWorld implements HookCall {
   readonly contact: string;
   readonly from?: string;
   readonly channel?: string;
+  /** The day this call opened, `YYYY-MM-DD`. What a prompt — and an agenda — means by today. */
+  readonly today?: string;
   readonly room: Room;
   readonly history = new History();
 
@@ -42,6 +44,7 @@ export class CallWorld implements HookCall {
     this.contact = line.contact;
     if (line.from !== undefined) this.from = line.from;
     if (line.channel !== undefined) this.channel = line.channel;
+    if (line.today !== undefined) this.today = line.today;
     this.room = new Room(out);
   }
 

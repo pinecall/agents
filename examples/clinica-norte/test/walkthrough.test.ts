@@ -75,7 +75,7 @@ it("recorre identificar, ofrecer y reservar, y dice que no cuando la agenda dice
   await settled();
   expect(offered()).toEqual(["freeSlots"]);
 
-  calls("freeSlots", { day: "martes" });
+  calls("freeSlots", { day: "martes", specialty: "medicina de familia" });
   await expect.poll(results).toHaveLength(2);
   await settled();
   // El modelo ve dos horas; el estado guarda las cuatro, y por eso puede ofrecer una tercera.
@@ -84,8 +84,8 @@ it("recorre identificar, ofrecer y reservar, y dice que no cuando la agenda dice
   expect(instance.slots.length).toBeGreaterThan(2);
   expect(offered()).toEqual(["freeSlots", "propose", "book"]);
 
-  const taken = instance.slots.find((slot) => slot.when.includes(REFUSED_HOUR));
-  calls("book", { chosen: taken!.when });
+  const taken = instance.slots.find((slot) => new Date(slot.startsAt).getHours() === REFUSED_HOUR);
+  calls("book", { slot: taken!.id });
   await expect.poll(results).toHaveLength(3);
   await settled();
   // El "no" llega al modelo como texto, no como una excepción, y el estado sigue sin reserva.
@@ -93,7 +93,7 @@ it("recorre identificar, ofrecer y reservar, y dice que no cuando la agenda dice
   expect(instance.booking).toBeUndefined();
   expect(offered()).toEqual(["freeSlots", "propose", "book"]);
 
-  calls("book", { chosen: instance.slots[0]!.when });
+  calls("book", { slot: instance.slots[0]!.id });
   await expect.poll(results).toHaveLength(4);
   await settled();
   expect(instance.stage).toBe("done");

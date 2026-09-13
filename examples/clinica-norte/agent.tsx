@@ -2,7 +2,17 @@
 
 import { Agent, tool, type Call, type MemoryOp, type Stages } from "pinecall";
 
-import { agendaFor, loose, NotOnTheTable, type Booking, type Patient, type Slot, type FakeAgenda } from "./lib/agenda.js";
+import {
+  NotADay,
+  NotOnTheTable,
+  agendaFor,
+  dayNamed,
+  loose,
+  type Booking,
+  type FakeAgenda,
+  type Patient,
+  type Slot,
+} from "./lib/agenda.js";
 import { crmFor } from "./lib/crm.js";
 
 /**
@@ -57,6 +67,10 @@ export default class ClinicaNorte extends Agent {
   // vacío tiene que poder recibir undefined.
   patient?: Patient | undefined;
   slots: Slot[] = [];
+  /** La fecha que se está mirando, `YYYY-MM-DD`: el día que el paciente nombró, ya resuelto. */
+  day?: string;
+  /** Para qué es la cita. Un hueco de dermatología no sirve para una lumbalgia. */
+  specialty?: string;
   // La hora que está sobre la mesa esperando el sí, y la que ya quedó reservada. Son dos momentos
   // distintos de la conversación y el prompt tiene que poder decir en cuál va.
   proposed?: Slot | undefined;
@@ -110,22 +124,31 @@ export default class ClinicaNorte extends Agent {
   }
 
   /**
-   * Consulta la agenda real de un día concreto y devuelve las horas que quedan libres ese día, cada una con su médico.
-   * Llámala EN CUANTO el paciente nombre un día o lo dé a entender —«el martes», «¿y el jueves?», «el domingo por la
-   * mañana»— y antes de preguntarle nada más.
+   * Consulta la agenda real de un día para una especialidad, y devuelve los huecos que quedan libres, cada uno con su
+   * identificador, su hora y el profesional que lo atiende.
+   * `day` es el día como lo dijo el paciente —«el martes», «mañana», «el jueves»—; aquí se resuelve a una fecha.
+   * `specialty` es para qué es la cita: «dermatología», «fisioterapia», «medicina de familia»… Si no sabes cuál pedir,
+   * pregúntaselo al paciente antes de llamar; un hueco de una especialidad no sirve para otra, y este centro no tiene
+   * una agenda general. Llámala EN CUANTO tengas las dos cosas y antes de preguntarle nada más.
    * Es la única fuente de horas que existe: ninguna hora puede decirse en voz alta si no ha salido de aquí. Llámala también
    * cuando la ficha del paciente ya tenga cita ese día, y también cuando creas que el centro cierra ese día —un día sin
    * agenda devuelve la lista vacía, y esa lista vacía ES la respuesta que hay que darle—. No devuelve precios ni
    * información del centro.
    */
   @tool({ stage: ["choose", "book"], preview: 2 })
-  async freeSlots(day: string): Promise<Slot[]> {
-    this.slots = await this.agenda().free(day);
+  async freeSlots(day: string, specialty: string): Promise<Slot[]> {
+    // El día se resuelve a una FECHA aquí, no en la cabeza del modelo: «el martes» dicho un
+    // viernes es una fecha y sólo una, y una cita sin fecha no es una cita.
+    const date = dayNamed(day, this.today());
+    if (!date) throw new NotADay(day);
+    this.day = date;
+    this.slots = await this.agenda().free(date, specialty);
     // Mirar otro día retira lo que hubiera sobre la mesa: la hora propuesta era de la lista
     // anterior y ya no está entre las que se pueden reservar.
     this.proposed = undefined;
     // Qué día fue el que volvió vacío, para que la vista pueda nombrarlo.
     this.dayWithNoHours = this.slots.length > 0 ? undefined : day;
+    this.specialty = specialty;
     // Un día sin horas devuelve a elegir día: la fase dice en qué punto va la conversación, y sin
     // horas sobre la mesa no hay nada que reservar.
     this.stage = this.slots.length > 0 ? "book" : "choose";
@@ -133,29 +156,31 @@ export default class ClinicaNorte extends Agent {
   }
 
   /**
-   * Deja sobre la mesa la hora que el paciente acaba de elegir de las que le has leído, para poder leérsela entera y
-   * pedirle su confirmación. Llámala en cuanto se refiera a una de ellas, la nombre entera o no: «la de las cuatro»,
-   * «esa», «la primera», «la de la tarde» son todas ella eligiendo. Pásale la hora como se la leíste tú, no como la dijo
-   * él. Esto NO reserva nada: reservar es book, y sólo después de que diga que sí.
+   * Deja sobre la mesa el hueco que el paciente acaba de elegir de los que le has leído, para poder leérselo entero y
+   * pedirle su confirmación. Llámala en cuanto se refiera a uno de ellos, lo nombre entero o no: «la de las cuatro»,
+   * «esa», «la primera», «la de la tarde» son todas él eligiendo. Pásale el IDENTIFICADOR del hueco —el `id` que te dio
+   * freeSlots, tal cual—, nunca la hora en palabras: dos huecos pueden ser a la misma hora con distinto profesional, y
+   * entonces la hora no dice cuál de los dos. Esto NO reserva nada: reservar es book, y sólo después de que diga que sí.
    */
   @tool({ stage: "book", when: (s) => s.slots.length > 0 })
-  propose(chosen: string): Slot {
+  propose(slot: string): Slot {
     // Sin este campo la vista no sabe en qué turno va: dice «repítesela y pregunta» tanto antes de
     // la lectura como después del sí, y un modelo que la obedece al pie de la letra vuelve a leerla
     // en vez de reservar (2026-09-08, gpt-5.4-mini). La hora se resuelve como en `book`, contra las
     // que están sobre la mesa, para que lo propuesto sea siempre algo reservable.
-    const slot = this.offered(chosen);
-    if (!slot) throw new NotOnTheTable(chosen, this.slots);
-    this.proposed = slot;
-    return slot;
+    const found = this.offered(slot);
+    if (!found) throw new NotOnTheTable(slot, this.slots);
+    this.proposed = found;
+    return found;
   }
 
   /**
    * Reserva de verdad, en la agenda de la clínica, la hora que el paciente acaba de confirmar. Llámala sólo cuando le hayas
-   * leído una hora entera —día, hora y médico— le hayas preguntado si se la confirmas, y él conteste que sí: «sí»,
+   * leído una hora entera —día, hora y profesional— le hayas preguntado si se la confirmas, y él conteste que sí: «sí»,
    * «confírmemela», «adelante», «perfecto». Que diga que una hora le viene bien NO es todavía ese sí: eso es elegirla, y
-   * para eso está propose. Cuando el sí ya ha llegado no se la vuelvas a leer ni le preguntes otra vez. Nunca con una hora
-   * que la agenda no haya devuelto.
+   * para eso está propose. Cuando el sí ya ha llegado no se la vuelvas a leer ni le preguntes otra vez.
+   * Se le pasa el IDENTIFICADOR del hueco, el mismo que a propose. Nunca uno que la agenda no haya devuelto en esta
+   * llamada: lo que reserves es lo que el paciente se lleva, y la agenda no acepta nada que no haya ofrecido.
    */
   @tool({
     stage: "book",
@@ -163,25 +188,25 @@ export default class ClinicaNorte extends Agent {
     when: (s) => s.slots.length > 0,
     // Un recibo, no una pregunta: la plataforma lo lee DESPUÉS de que la reserva ocurrió, así que
     // «¿Lo confirmo?» se oye cuando ya está confirmada. docs/writing-an-agent.md.
-    confirm: "Reservado: el {{result.when}} con {{result.doctor}}.",
+    confirm: "Reservado: {{result.when}} con {{result.professional}}, {{result.specialty}}.",
   })
-  async book(chosen: string): Promise<Booking> {
+  async book(slot: string): Promise<Booking> {
     // El modelo elige diciendo la hora, no rellenando una ficha. Pedirle un `Slot` entero fue el
     // primer diseño y una golden lo tumbó: se inventaba `{day, time, doctor}` y la agenda recibía
     // un hueco que nunca ofreció. Aquí la hora tiene que ser una de las que están sobre la mesa —
     // que es la regla que el prefijo estático dice con palabras, sostenida por el código.
-    const slot = this.offered(chosen);
-    if (!slot) throw new NotOnTheTable(chosen, this.slots);
+    const chosen = this.offered(slot);
+    if (!chosen) throw new NotOnTheTable(slot, this.slots);
     // La agenda escribe primero y el estado después: si el hueco se ocupó entre mirar y reservar,
     // el paciente no puede quedarse con una hora suya en el estado ni en el prompt.
-    const booking = await this.agenda().book(this.patient!, slot);
-    this.slot = slot;
+    const booking = await this.agenda().book(this.patient!, chosen);
+    this.slot = chosen;
     this.booking = booking;
     // Reservada, ya no está esperando nada. Una reserva que la agenda rechaza no llega aquí y deja
     // la hora sobre la mesa, que es lo que el paciente sigue teniendo delante.
     this.proposed = undefined;
     this.stage = "done";
-    this.collapse(`Reservado ${slot.when} con ${slot.doctor}, confirmado por el paciente.`);
+    this.collapse(`Reservado ${chosen.when} con ${chosen.professional}, confirmado por el paciente.`);
     this.log("appointment.booked", this.booking);
     return this.booking;
   }
@@ -257,9 +282,13 @@ export default class ClinicaNorte extends Agent {
         <p>Horas libres, en orden:</p>
         {this.slots.map((slot) => (
           <p>
-            {slot.when} con {slot.doctor}
+            {slot.id} — {slot.when} con {slot.professional} ({slot.specialty})
           </p>
         ))}
+        <p>
+          Al paciente le dices el día, la hora y el profesional; a propose y a book les pasas el
+          identificador de la izquierda, tal cual. Nunca uno que no esté en esta lista.
+        </p>
         {this.call.channel === "phone" ? (
           <p>Ofrece como máximo dos de estas horas y pregunta cuál prefiere.</p>
         ) : (
@@ -288,7 +317,8 @@ export default class ClinicaNorte extends Agent {
             medias, así que la vista dice cuál de los dos turnos es. */}
         {this.proposed && (
           <p>
-            Le estás proponiendo {this.proposed.when} con {this.proposed.doctor}. Léesela entera si
+            Le estás proponiendo {this.proposed.when} con {this.proposed.professional}
+            (identificador {this.proposed.id}). Léesela entera si
             todavía no lo has hecho y espera su respuesta. Cuando conteste que sí a esa hora,
             llama a book con ella en ese mismo turno, sin repetírsela otra vez ni volver a
             preguntar. Si dice que no, o nombra una hora distinta, llama a propose con la nueva.
@@ -307,11 +337,19 @@ export default class ClinicaNorte extends Agent {
 
   // El paciente repite la hora como se la han leído, o solo un trozo de ella: "las cuatro de la
   // tarde" por "martes a las cuatro de la tarde". Se acepta si una contiene a la otra.
-  private offered(said: string): Slot | undefined {
-    const wanted = loose(said);
-    return this.slots.find((slot) => {
-      const own = loose(slot.when);
-      return own === wanted || own.includes(wanted) || wanted.includes(own);
-    });
+  // Exacto o nada. Comparar el texto de la hora fue el diseño anterior y fallaba de las dos
+  // maneras: dos huecos a la misma hora con distinto profesional eran indistinguibles —un
+  // paciente pidió las cinco con Diego Cabrera y la agenda le dio las cinco con la doctora
+  // Vidal (2026-09-13, llamada real)— y un reconocedor que oye «la de la suegra» donde se dijo
+  // «la de las nueve» dejaba la llamada sin forma de identificar nada. Un id no se parece a otro.
+  // El día en que transcurre la llamada, que es contra el que se resuelve «el martes». La
+  // plataforma lo pone en la línea; sin él —una prueba suelta— vale el del reloj de la máquina.
+  private today(): string {
+    return this.call.today ?? new Date().toISOString().slice(0, 10);
+  }
+
+  private offered(id: string): Slot | undefined {
+    const wanted = loose(id);
+    return this.slots.find((slot) => loose(slot.id) === wanted);
   }
 }

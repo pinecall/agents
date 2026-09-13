@@ -10,17 +10,37 @@ export interface Patient {
   doctor?: string | undefined;
 }
 
-/** Un hueco libre, con el nombre del profesional que lo atiende. */
+/**
+ * Un hueco libre de la agenda.
+ *
+ * `id` es lo ÚNICO que `book` acepta, y es opaco a propósito: un id no se puede «casi acertar».
+ * Antes un hueco era `{ when: "martes a las diez", doctor: "la doctora Vidal" }` y se reservaba
+ * repitiendo la frase, así que reservar era comparar texto — y comparar texto salió mal de las dos
+ * maneras posibles. Un paciente eligió las cinco con Diego Cabrera y la agenda le dio las cinco con
+ * la doctora Vidal, porque la comparación miraba la hora y no el nombre (2026-09-13, llamada real).
+ * Y cuando el reconocedor oyó «la de la suegra» donde el paciente dijo «la de las nueve», no había
+ * nada más con lo que identificar el hueco y la llamada se atascó pidiéndole que repitiera.
+ *
+ * `startsAt` es la cita de verdad: fecha y hora con zona. «martes a las diez» no dice qué martes.
+ * `when` es cómo se lee en voz alta, derivado de `startsAt` para que nadie lo escriba a mano.
+ */
 export interface Slot {
+  id: string;
+  /** ISO 8601 con zona. Esto es la cita; todo lo demás es cómo se cuenta. */
+  startsAt: string;
+  /** Cómo se dice por teléfono. Derivado de `startsAt`, nunca tecleado. */
   when: string;
-  doctor: string;
+  professional: string;
+  specialty: string;
 }
 
 /** Una cita ya reservada: la referencia es lo que viaja en el SMS. */
 export interface Booking {
   id: string;
+  startsAt: string;
   when: string;
-  doctor: string;
+  professional: string;
+  specialty: string;
 }
 
 /** La agenda dijo que no. Es un fallo del sistema de la clínica, no del modelo. */
@@ -32,22 +52,41 @@ export class AgendaRefused extends Error {
 }
 
 /**
- * El modelo pidió una hora que la agenda no ha ofrecido. El mensaje lleva las que sí están sobre
- * la mesa, porque lo lee el propio modelo y con la lista delante corrige en el mismo turno.
+ * El modelo pidió un hueco que la agenda no ha ofrecido. El mensaje lleva los que sí están sobre
+ * la mesa, con su id, porque lo lee el propio modelo y con la lista delante corrige en el turno.
  */
 export class NotOnTheTable extends Error {
   constructor(said: string, offered: Slot[]) {
-    const free = offered.map((slot) => slot.when).join("; ") || "ninguna";
-    super(`"${said}" no está entre las horas libres. Están libres: ${free}.`);
+    const free = offered.map((slot) => `${slot.id} (${slot.when}, ${slot.professional})`).join("; ");
+    super(`"${said}" no es uno de los huecos libres. Están libres: ${free || "ninguno"}.`);
     this.name = "NotOnTheTable";
+  }
+}
+
+/** Lo que el paciente dijo no nombra ningún día. El modelo lo lee y vuelve a preguntar. */
+export class NotADay extends Error {
+  constructor(said: string) {
+    super(`"${said}" no nombra un día. Pregúntale qué día le viene bien y vuelve a llamar.`);
+    this.name = "NotADay";
+  }
+}
+
+/** La especialidad que se pidió no se pasa aquí. El mensaje nombra las que sí. */
+export class NoSuchSpecialty extends Error {
+  constructor(said: string) {
+    super(`"${said}" no es una especialidad de este centro. Están: ${specialties().join(", ")}.`);
+    this.name = "NoSuchSpecialty";
   }
 }
 
 // La hora que el sistema de la clínica rechaza siempre. Existe para que el camino del "no" sea
 // tan comprobable como el del "sí": sin ella, ningún test vería nunca fallar una reserva.
-export const REFUSED_HOUR = "13:00";
+export const REFUSED_HOUR = 13;
 
 const REFUSAL = "ese hueco acaba de ocuparse";
+
+// La zona del centro. Una cita sin zona es una cita que cambia de hora al cruzar una frontera.
+const TIMEZONE = "+02:00";
 
 // Las fichas. Los teléfonos son los del rango de pruebas de España, y la cita actual es la que el
 // paciente llama para cambiar: la clínica no tiene pacientes sin cita en este ejemplo.
@@ -57,38 +96,84 @@ const PATIENTS: Patient[] = [
   { id: "p-1043", name: "Marta Ruiz", phone: "+34 600 000 003", cita: "miércoles a las seis de la tarde", doctor: "la doctora Vidal" },
 ];
 
-// El cuadro de huecos por día de la semana. Todos los días ofrecen un hueco a las 13:00 porque esa
-// es la hora que la agenda rechaza al reservar: está libre al mirar y ocupada al escribir, que es
-// exactamente la carrera que se da en una agenda real.
-const FREE: Record<string, Slot[]> = {
-  lunes: [
-    { when: "lunes a las nueve", doctor: "el doctor Sáez" },
-    { when: "lunes a las once y media", doctor: "la doctora Vidal" },
-    { when: `lunes a las ${REFUSED_HOUR}`, doctor: "el doctor Sáez" },
-    { when: "lunes a las cinco de la tarde", doctor: "la doctora Vidal" },
-  ],
-  martes: [
-    { when: "martes a las diez", doctor: "la doctora Vidal" },
-    { when: `martes a las ${REFUSED_HOUR}`, doctor: "el doctor Sáez" },
-    { when: "martes a las cuatro de la tarde", doctor: "la doctora Vidal" },
-    { when: "martes a las siete y media de la tarde", doctor: "el doctor Ferrán" },
-  ],
-  miércoles: [
-    { when: "miércoles a las ocho y media", doctor: "el doctor Ferrán" },
-    { when: `miércoles a las ${REFUSED_HOUR}`, doctor: "la doctora Vidal" },
-    { when: "miércoles a las seis de la tarde", doctor: "el doctor Sáez" },
-  ],
-  jueves: [
-    { when: "jueves a las nueve y cuarto", doctor: "la doctora Vidal" },
-    { when: `jueves a las ${REFUSED_HOUR}`, doctor: "el doctor Ferrán" },
-    { when: "jueves a las siete de la tarde", doctor: "la doctora Vidal" },
-  ],
-  viernes: [
-    { when: "viernes a las diez y media", doctor: "el doctor Sáez" },
-    { when: `viernes a las ${REFUSED_HOUR}`, doctor: "la doctora Vidal" },
-  ],
-  sábado: [{ when: "sábado a las once", doctor: "el doctor Ferrán" }],
+/**
+ * El cuadro del centro, el mismo que está escrito en `knowledge/clinica.md`. Que esté aquí es el
+ * arreglo: la agenda tenía tres nombres y ninguna especialidad mientras el knowledge tenía nueve
+ * profesionales con la suya, así que un paciente que pedía fisioterapia recibía las horas de otro
+ * y el modelo cosía las dos fuentes él solo, cambiándole el nombre al hueco que le habían dado.
+ */
+interface Clinician {
+  professional: string;
+  specialty: string;
+  /** Los días que pasa consulta, como los nombra el centro. */
+  days: readonly string[];
+  /** Las horas en punto o y media en que empieza cada hueco suyo, en formato 24h. */
+  hours: readonly number[];
+}
+
+const CLINICIANS: readonly Clinician[] = [
+  { professional: "la doctora Elena Vidal", specialty: "medicina de familia", days: ["lunes", "martes", "miércoles", "jueves", "viernes"], hours: [9, 11.5, 13, 17] },
+  { professional: "el doctor Ramón Sáez", specialty: "medicina interna", days: ["lunes", "martes", "miércoles", "jueves"], hours: [9.5, 12, 13] },
+  { professional: "el doctor Pau Ferrán", specialty: "traumatología", days: ["lunes", "miércoles", "viernes"], hours: [8.5, 10, 13] },
+  { professional: "la doctora Nuria Bastos", specialty: "pediatría", days: ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado"], hours: [9, 11] },
+  { professional: "el doctor Ignacio Peralta", specialty: "cardiología", days: ["martes", "jueves"], hours: [10, 16] },
+  { professional: "la doctora Carmen Olmos", specialty: "dermatología", days: ["lunes", "miércoles", "viernes"], hours: [9, 13, 17] },
+  { professional: "la doctora Silvia Nadal", specialty: "ginecología", days: ["martes", "miércoles", "jueves"], hours: [10, 12.5] },
+  { professional: "el doctor Andrés Quiroga", specialty: "psicología clínica", days: ["lunes", "martes", "miércoles", "jueves"], hours: [16, 18] },
+  { professional: "Marta León", specialty: "fisioterapia", days: ["lunes", "martes", "miércoles", "jueves", "viernes"], hours: [9, 13, 16] },
+  { professional: "Diego Cabrera", specialty: "fisioterapia", days: ["lunes", "martes", "miércoles", "jueves", "viernes"], hours: [11.5, 17] },
+];
+
+/** Las especialidades que este centro atiende, una vez cada una, en el orden del cuadro. */
+export function specialties(): string[] {
+  return [...new Set(CLINICIANS.map((one) => one.specialty))];
+}
+
+const WEEKDAYS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"] as const;
+
+// Cómo se dice una hora por teléfono. La agenda las tiene en punto y y media, que es como las da
+// un centro: nadie cita a las 9:07.
+const SAID: Record<number, string> = {
+  0: "doce de la noche", 8: "ocho", 9: "nueve", 10: "diez", 11: "once", 12: "doce",
+  13: "una de la tarde", 14: "dos de la tarde", 15: "tres de la tarde", 16: "cuatro de la tarde",
+  17: "cinco de la tarde", 18: "seis de la tarde", 19: "siete de la tarde", 20: "ocho de la tarde",
 };
+
+/** La hora como se lee en voz alta: "nueve y media", "cinco de la tarde". */
+function spoken(hour: number): string {
+  const whole = Math.floor(hour);
+  const said = SAID[whole] ?? `${whole}`;
+  return hour === whole ? said : `${said} y media`;
+}
+
+/**
+ * El día que el paciente nombró, como fecha. «lunes» es el próximo lunes, «mañana» es mañana, y
+ * una fecha ya escrita se toma tal cual. Devuelve undefined cuando no nombró ningún día.
+ */
+export function dayNamed(said: string, today: string): string | undefined {
+  const wanted = loose(said);
+  const base = new Date(`${today}T12:00:00${TIMEZONE}`);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(said.trim())) return said.trim();
+  if (wanted === "hoy") return today;
+  if (wanted === "manana") return dayAfter(base, 1);
+  if (wanted === "pasado manana") return dayAfter(base, 2);
+  const asked = WEEKDAYS.findIndex((name) => loose(name) === wanted.replace(/^el /, ""));
+  if (asked < 0) return undefined;
+  // El próximo de ese nombre, y hoy no cuenta: quien dice «el martes» un martes quiere el siguiente.
+  const ahead = (asked - base.getDay() + 7) % 7 || 7;
+  return dayAfter(base, ahead);
+}
+
+function dayAfter(base: Date, days: number): string {
+  const moved = new Date(base);
+  moved.setDate(moved.getDate() + days);
+  return moved.toISOString().slice(0, 10);
+}
+
+/** El nombre del día de una fecha, como lo dice el centro. */
+function weekdayOf(date: string): string {
+  return WEEKDAYS[new Date(`${date}T12:00:00${TIMEZONE}`).getDay()] ?? "";
+}
 
 // El teléfono se dice de mil maneras y se teclea de otras mil. Compararlos por sus dígitos es lo
 // único honesto: "+34 600 000 001", "600000001" y "600 00 00 01" son la misma ficha.
@@ -98,12 +183,12 @@ function digits(phone: string): string {
 
 /**
  * Lo dicho por teléfono, comparable: sin tildes, sin mayúsculas y sin espacios de sobra. Sirve
- * para un nombre y para una hora, que entran igual de habladas y salen igual de escritas.
+ * para un nombre y para una especialidad, que entran igual de habladas y salen igual de escritas.
  */
 export function loose(name: string): string {
   return name
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
     .trim();
 }
@@ -140,21 +225,56 @@ export class FakeAgenda {
     return real === said || real.startsWith(`${said} `) ? found : undefined;
   }
 
-  /** Los huecos libres de un día, en el orden en que la clínica los ofrece. */
-  async free(day: string): Promise<Slot[]> {
-    const key = loose(day);
-    const found = Object.entries(FREE).find(([name]) => loose(name) === key);
-    return (found?.[1] ?? []).filter((slot) => !this.booked.has(slot.when));
+  /**
+   * Los huecos libres de un día para una especialidad, en el orden en que la clínica los ofrece.
+   * La especialidad no es opcional: un hueco de dermatología no sirve para una lumbalgia, y era
+   * justo eso lo que el modelo tenía que adivinar antes.
+   */
+  async free(date: string, specialty: string): Promise<Slot[]> {
+    const wanted = loose(specialty);
+    if (!specialties().some((one) => loose(one) === wanted)) throw new NoSuchSpecialty(specialty);
+    const weekday = weekdayOf(date);
+    const slots: Slot[] = [];
+    for (const one of CLINICIANS) {
+      if (loose(one.specialty) !== wanted || !one.days.includes(weekday)) continue;
+      for (const hour of one.hours) slots.push(slotAt(date, hour, one));
+    }
+    return slots
+      .filter((slot) => !this.booked.has(slot.id))
+      .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
   }
 
-  /** Reserva un hueco. Rechaza siempre el de las 13:00: alguien lo cogió antes. */
+  /** Reserva un hueco por su id. Rechaza siempre el de las 13:00: alguien lo cogió antes. */
   async book(patient: Patient, slot: Slot): Promise<Booking> {
-    if (slot.when.includes(REFUSED_HOUR) || this.booked.has(slot.when)) {
+    if (new Date(slot.startsAt).getHours() === REFUSED_HOUR || this.booked.has(slot.id)) {
       throw new AgendaRefused(REFUSAL);
     }
-    this.booked.add(slot.when);
-    return { id: `CN-${patient.id.slice(2)}`, when: slot.when, doctor: slot.doctor };
+    this.booked.add(slot.id);
+    return {
+      id: `CN-${patient.id.slice(2)}`,
+      startsAt: slot.startsAt,
+      when: slot.when,
+      professional: slot.professional,
+      specialty: slot.specialty,
+    };
   }
+}
+
+/**
+ * Un hueco concreto. El id lleva la fecha, la hora y el profesional, así que dos huecos distintos
+ * no pueden compartirlo y uno inventado no existe en la lista: la comparación es exacta o no es.
+ */
+function slotAt(date: string, hour: number, one: Clinician): Slot {
+  const whole = Math.floor(hour);
+  const minutes = hour === whole ? "00" : "30";
+  const initials = loose(one.professional).replace(/[^a-z ]/g, "").split(" ").filter(Boolean).slice(-2).map((word) => word[0]).join("");
+  return {
+    id: `s-${date.replace(/-/g, "")}-${String(whole).padStart(2, "0")}${minutes}-${initials}`,
+    startsAt: `${date}T${String(whole).padStart(2, "0")}:${minutes}:00${TIMEZONE}`,
+    when: `el ${weekdayOf(date)} a las ${spoken(hour)}`,
+    professional: one.professional,
+    specialty: one.specialty,
+  };
 }
 
 // Una agenda por llamada, colgada de la instancia que la atiende y no de un campo suyo: `state.ts`
