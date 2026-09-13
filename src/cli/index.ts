@@ -5,11 +5,12 @@ import { realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
 import { helpFor, PLANNED, plannedGroup, type Group } from "./groups.js";
+import { withoutTheProfileFlag } from "./profiles.js";
 
 // The order this table is written is the order the help prints: run and chat first, because
 // they are what a person types on the first day, and the planned groups after, in the design's
 // order. run is rails server and chat is rails console — see docs/decisions/tenant-cli.md.
-const BUILT = ["run", "chat", "prompt", "test", "simulate", "eval", "sessions", "runs", "pipeline", "line", "personas", "knowledge", "memory", "remember", "supervise", "keys", "providers", "callbacks", "signup", "login", "whoami"] as const;
+const BUILT = ["run", "chat", "prompt", "test", "simulate", "eval", "sessions", "runs", "pipeline", "line", "personas", "knowledge", "memory", "remember", "supervise", "keys", "providers", "callbacks", "signup", "login", "whoami", "config", "use"] as const;
 
 /** Everything `pinecall` answers to, built and planned alike, in the order help prints them. */
 export function groupNames(): string[] {
@@ -30,7 +31,9 @@ export async function main(
   out: NodeJS.WritableStream = process.stdout,
   err: NodeJS.WritableStream = process.stderr,
 ): Promise<number> {
-  const [name, ...rest] = argv;
+  // `--profile <name>` belongs to no group: it says which gateway this one command goes to, and
+  // every group would otherwise have to parse it. Out of argv here, before anybody sees it.
+  const [name, ...rest] = withoutTheProfileFlag(argv);
   if (name === undefined || name === "--help" || name === "-h" || name === "help") {
     out.write(usage());
     return name === undefined ? 2 : 0;
@@ -82,6 +85,13 @@ export async function groupFor(name: string, out: NodeJS.WritableStream = proces
   if (name === "signup") return (await import("./signup.js")).group;
   if (name === "login") return (await import("./login.js")).group;
   if (name === "whoami") return (await import("./whoami.js")).group;
+  if (name === "config") return (await import("./config.js")).group;
+  // The same module under the word a person reaches for. `use` is `config <name>` and nothing
+  // else — two verbs would be two places deciding what a profile is.
+  if (name === "use") {
+    const config = await import("./config.js");
+    return { ...config.group, run: config.use };
+  }
   const planned = PLANNED[name];
   return planned === undefined ? undefined : plannedGroup(name, planned, out);
 }
@@ -110,7 +120,9 @@ export function usage(): string {
     "  providers add | rm | list the provider keys this org brought of its own",
     "  callbacks the numbers people left when every seat was taken: who to call back",
     "  signup    make an org on Pinecall's cloud and keep its first key",
-    "  login     sign in to a gateway once; the key is kept in ~/.pinecall/credentials",
+    "  login     sign in to a gateway once; the key is kept as a profile in ~/.pinecall",
+    "  config    the gateways this machine knows, and which one the next verb goes to",
+    "  use       point the next verb at another gateway: `pinecall use box`",
     "  whoami    which gateway, which org, which world, and where this terminal's key came from",
     "",
   ];

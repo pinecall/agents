@@ -1,6 +1,7 @@
 /** Where the CLI is pointed and what opens the door: the one place that decides both, for every verb. */
 
 import { devGateway, gatewayFor, normalised, pinecallHome, theOnlyGateway } from "./credentials.js";
+import { profileFor, theChosenProfile } from "./profiles.js";
 
 /** The gateway a developer runs on their own machine, which is where `pinecall run` starts. */
 export const DEFAULT_URL = "http://localhost:8080";
@@ -9,7 +10,7 @@ export const DEFAULT_URL = "http://localhost:8080";
 export const CLOUD_URL = "https://box.pinecall.io";
 
 /** Where the key came from, so a verb can say it and a person can check it without grepping. */
-export type Source = "dev-file" | "env" | "credentials" | "dev-env" | "none";
+export type Source = "profile" | "dev-file" | "env" | "credentials" | "dev-env" | "none";
 
 /** What the resolution found: the gateway, the key if there is one, and where the key came from. */
 export interface Found {
@@ -35,7 +36,22 @@ export interface Open {
  * local gateway's when that is the gateway we are talking to, then PINECALL_API_KEY, then the row
  * `pinecall login` kept, then PINECALL_DEV_KEY. See docs/decisions/tenant-cli.md.
  */
-export function doorFrom(env: NodeJS.ProcessEnv = process.env, home: string = pinecallHome(env)): Found {
+export function doorFrom(
+  env: NodeJS.ProcessEnv = process.env,
+  home: string = pinecallHome(env),
+  profile?: string,
+): Found {
+  // The profile is the whole answer: one file, one name, both questions — which gateway and which
+  // key — settled by the thing a person chose out loud with `pinecall login` or `pinecall use`,
+  // and by `--profile` when a verb names another for this one command.
+  //
+  // `PINECALL_URL` and `PINECALL_API_KEY` are still read UNDER it, for one release, because half
+  // the CLI's own tests hand a verb its key that way and there was nothing else to hand it one
+  // with until this file existed. They go with those tests.
+  const chosen = profileFor(profile, home);
+  if (chosen !== undefined && (profile !== undefined || nothingIsExported(env))) {
+    return { url: chosen.url, apiKey: chosen.key, source: "profile" };
+  }
   const local = devGateway(home);
   const url = env["PINECALL_URL"] ?? local?.url ?? theOnlyGateway(home) ?? DEFAULT_URL;
   // A gateway started on a dev key honours that key and no other, so a real org key exported in
@@ -57,12 +73,17 @@ export function doorFrom(env: NodeJS.ProcessEnv = process.env, home: string = pi
   return { url, apiKey: undefined, source: "none" };
 }
 
+/** Whether this shell says anything about which gateway or which key: the one-release exception. */
+function nothingIsExported(env: NodeJS.ProcessEnv): boolean {
+  return env["PINECALL_API_KEY"] === undefined && env["PINECALL_URL"] === undefined;
+}
+
 /** The gateway a verb knocks at, or nothing once it has said why it cannot: every verb's first act. */
 export function theDoor(
   env: NodeJS.ProcessEnv = process.env,
   err: NodeJS.WritableStream = process.stderr,
 ): Open | undefined {
-  const found = doorFrom(env);
+  const found = doorFrom(env, pinecallHome(env), theChosenProfile());
   if (found.ignoring !== undefined) err.write(`${found.ignoring}\n`);
   if (found.apiKey === undefined) {
     err.write(`${noKey(found.url)}\n`);

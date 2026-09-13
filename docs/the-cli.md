@@ -52,16 +52,26 @@ CLI is still a design, and a verb leaves that table in the commit that writes it
 
 ## Where the gateway and the key come from
 
-One resolution order, in `src/cli/env.ts`, for every verb:
+**One profile.** `~/.pinecall/config.json` holds the gateways this machine knows, by name, and
+which one is in hand; `pinecall login` writes one, `pinecall use` moves the mark, `--profile <name>`
+points one command somewhere else. Both questions — which gateway, which key — are that one answer.
 
-1. **the URL** — `PINECALL_URL`, then the local gateway's own file (`~/.pinecall/dev`), then the
-   single gateway `pinecall login` kept when there is exactly one, then `http://localhost:8080`;
-2. **the key** — if that URL *is* the local dev gateway, its own dev key, and an exported
-   `PINECALL_API_KEY` is ignored **out loud**: a gateway started on a dev key honours that key and
-   no other, and being refused with a bare `403` and no sentence in it cost this project an
-   afternoon twice;
-3. otherwise `PINECALL_API_KEY`, then the `credentials` row for that URL, then `PINECALL_DEV_KEY`;
-4. nothing at all — the verb prints `pinecall login <url>` and exits 2.
+```console
+$ pinecall config
+▸ box      https://box.pinecall.io  pinecall · development
+  local    http://127.0.0.1:8080
+```
+
+There is nothing to export and no order to remember. A machine with no browser — CI, a container —
+writes a profile off stdin instead: `pinecall login --key-stdin <url> < key`, with `PINECALL_HOME`
+saying where the file goes. A key in a 0600 file read once beats one every `ps` and every child
+process can see.
+
+Two things are still read under the profile, for one release: `PINECALL_URL` and
+`PINECALL_API_KEY`, because half of this CLI's own tests hand a verb its key that way and there
+was nothing else to hand it one with until the profile existed. They go with those tests. The
+third, `~/.pinecall/dev`, is the local gateway's own word about where it is and which key it
+honours — read every time, written never — and it goes with the dev key itself.
 
 Every verb that connects opens by printing `gateway <url> · key from <source>`. **`env | grep
 PINECALL` is the first thing to run when a door refuses you and will not say why.**
@@ -526,10 +536,12 @@ yours to type and the gateway is its judge; a bad one comes back as a sentence, 
 never registers you: it ships inside every self-hosted runtime, and a registration form there would
 be one flag away from open registration on somebody else's box.
 
-## `login` · `whoami`
+## `login` · `config` · `use` · `whoami`
 
 ```
-pinecall login [gateway-url] [--key-stdin]
+pinecall login [gateway-url] [--as <profile>] [--key-stdin]
+pinecall config
+pinecall use <profile>
 pinecall whoami
 ```
 
@@ -547,22 +559,36 @@ open this to sign in:
 https://box.pinecall.io/cli?c=cli_…
 
 waiting…
-logged in to https://box.pinecall.io as org clinica · development
+▸ box · https://box.pinecall.io · org clinica · development
 ```
 
 **With no URL it is `https://box.pinecall.io`, and it says so** in the line above the link, so a
 person who meant their own box sees the assumption before anything is kept. The word in the link
 dies in ten minutes and on first collection; a terminal on a server with no browser prints the same
-link and you open it from wherever you are. The key is kept in `~/.pinecall/credentials` (0600)
-under that URL, proved at `/v1/whoami` first, and after it every verb finds it by itself.
+link and you open it from wherever you are. The key is kept as a **profile** in
+`~/.pinecall/config.json` (0600), named after the gateway's host — `--as` names it yourself —
+proved at `/v1/whoami` before it is written, and made the active one. After that every verb finds
+it by itself, and `pinecall use` is how you point them somewhere else:
+
+```console
+$ pinecall config
+▸ box      https://box.pinecall.io  clinica · development
+  stg      https://stg.acme.io      clinica · production
+
+$ pinecall use stg
+▸ stg
+```
+
+`config` prints no key. What a listing may say about one is that it is there.
 
 **The key it keeps is this laptop's development key.** `pinecall run` and `pinecall chat` answer in
 a world of your own and never in the one your customers call — the console's toggle is the same
 person looking the other way ([worlds-and-teams.md](worlds-and-teams.md)).
 
 `--key-stdin` reads a **key** from one line of stdin instead, for a machine: a server, a CI job, a
-container. That is what `pinecall keys issue` mints, and in a container there is no login at all —
-`PINECALL_API_KEY` in the environment is the same thing.
+container. That is what `pinecall keys issue` mints, and it writes the same profile — so a machine
+and a person hold their key the same way, in a 0600 file read once, and not in an environment
+every child process and every `ps` can read. `PINECALL_HOME` says where that file goes.
 
 ```console
 $ pinecall whoami
