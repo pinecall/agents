@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent, type ReactNode } from "react";
 
-import { READY, doing, standing, type Modality, type Provider } from "../../lib/catalogue";
+import { doing, type Modality, type Provider } from "../../lib/catalogue";
 import type { Overridden } from "./door";
 
 // Until this form listed the catalog, the only way to move a stage onto another vendor was to
@@ -185,7 +185,7 @@ function Stage({
         {offered.map((one) => (
           <option key={one.name} value={one.name}>
             {one.name}
-            {standing(one) === READY ? "" : ` — ${standing(one)}`}
+            {one.ready ? "" : ` — ${one.standing}`}
           </option>
         ))}
       </select>

@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 
 import { GatewayError } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
-import { MODALITIES, READY, doing, said, standing, type Catalogue, type Modality, type Provider } from "../../lib/catalogue";
+import { MODALITIES, doing, said, type Catalogue, type Modality, type Provider } from "../../lib/catalogue";
 import { addKey, readCatalogue, readVendors, removeKey } from "./door";
 import "./providers.css";
 
@@ -146,7 +146,6 @@ export function Providers(): ReactNode {
 // One vendor: its name, the jobs it can do, what it is waiting for, and — only when this org
 // brought its own key — the one link that gives it back to the box.
 function Row({ provider, brought, onGiveBack }: { provider: Provider; brought: boolean; onGiveBack: () => void }): ReactNode {
-  const state = standing(provider);
   return (
     <li className="providers-one">
       <div className="providers-who">
@@ -155,7 +154,7 @@ function Row({ provider, brought, onGiveBack }: { provider: Provider; brought: b
         {provider.aliases.length > 0 && <span className="providers-aliases fixed">also {provider.aliases.join(" · ")}</span>}
       </div>
       <span className="providers-does fixed">{provider.does.join(" ")}</span>
-      <span className={state === READY ? "providers-state providers-state-on" : "providers-state"}>{state}</span>
+      <span className={provider.ready ? "providers-state providers-state-on" : "providers-state"}>{provider.standing}</span>
       {brought ? (
         <button type="button" className="link" onClick={onGiveBack}>
           give it back
