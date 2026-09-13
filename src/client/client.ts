@@ -23,8 +23,13 @@ export interface PinecallOptions {
 /**
  * One app's connection to Pinecall.
  *
- * `PINECALL_URL` and `PINECALL_API_KEY` are the two things it needs and it will not guess either:
- * a client pointed at a host nobody named would fail later, in a place the app cannot read.
+ * The gateway and the key are given, and this class reads NOTHING from the environment.
+ *
+ * It used to fall back to `PINECALL_URL` and `PINECALL_API_KEY`, and that second name was the
+ * problem: v1's SDK exports it too, so a shell that still had v1's key live handed this client
+ * another org's key and every call it made agreed — silently, because the name was the same.
+ * Where a program keeps its own secret is the program's business; guessing at one is not this
+ * class's, and a client pointed at a host nobody named fails later, where the app cannot read it.
  */
 export class Pinecall implements AgentGateway {
   // `sdk` is the wire's field name for who is registering, so it is this object's too.
@@ -39,10 +44,9 @@ export class Pinecall implements AgentGateway {
   readonly #connection: Connection;
 
   constructor(options: PinecallOptions = {}) {
-    const url = options.url ?? process.env["PINECALL_URL"];
-    const apiKey = options.apiKey ?? process.env["PINECALL_API_KEY"];
+    const { url, apiKey } = options;
     if (url === undefined || apiKey === undefined) {
-      throw new PinecallError("PINECALL_URL and PINECALL_API_KEY: one of them is not set");
+      throw new PinecallError("new Pinecall({ url, apiKey }): one of the two was not given");
     }
     this.url = url;
     this.apiKey = apiKey;
