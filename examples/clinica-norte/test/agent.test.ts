@@ -21,6 +21,11 @@ import {
 import ClinicaNorte from "../agent.js";
 import { agendaFor, REFUSED_HOUR, type Slot } from "../lib/agenda.js";
 
+// La especialidad con la que se prueba reservar: la doctora Vidal pasa consulta todos los días
+// laborables, así que hay huecos suyos el martes y el jueves, y uno a las 13:00 que la agenda
+// rechaza siempre — que es el camino del "no" que este bloque necesita.
+const LA_ESPECIALIDAD = "medicina de familia";
+
 // El fuente de la clase, para que los tipos de los parámetros sobrevivan al transpilador: sin él,
 // `day: string` es un argumento sin tipo y el esquema no puede decir nada de él.
 const SOURCE = readFileSync(fileURLToPath(new URL("../agent.tsx", import.meta.url)), "utf8");
@@ -99,14 +104,14 @@ describe("ofrecer horas", () => {
   });
 
   it("el modelo ve dos horas y el campo se las queda todas", async () => {
-    const seen = (await call("freeSlots", { day: "martes" })) as Slot[];
+    const seen = (await call("freeSlots", { day: "martes", specialty: LA_ESPECIALIDAD })) as Slot[];
     expect(seen).toHaveLength(2);
     expect(clinica.slots.length).toBeGreaterThan(2);
     expect(clinica.slots[0]).toEqual(seen[0]);
   });
 
   it("un día sin agenda deja el estado vacío en vez de inventarse una hora", async () => {
-    const seen = (await call("freeSlots", { day: "domingo" })) as Slot[];
+    const seen = (await call("freeSlots", { day: "domingo", specialty: LA_ESPECIALIDAD })) as Slot[];
     expect(seen).toEqual([]);
     expect(clinica.slots).toEqual([]);
     // Sin horas sobre la mesa no hay nada que reservar: la fase vuelve a la de elegir el día.
@@ -117,12 +122,12 @@ describe("ofrecer horas", () => {
 describe("reservar", () => {
   beforeEach(async () => {
     await call("findPatient", { name: "Ana García", phone: ANA });
-    await call("freeSlots", { day: "martes" });
+    await call("freeSlots", { day: "martes", specialty: LA_ESPECIALIDAD });
   });
 
   it("una hora que la agenda rechaza deja la reserva sin hacer y lo dice", async () => {
-    const taken = clinica.slots.find((slot) => slot.when.includes(REFUSED_HOUR));
-    await expect(call("book", { chosen: taken!.when })).rejects.toThrow("ese hueco acaba de ocuparse");
+    const taken = clinica.slots.find((slot) => new Date(slot.startsAt).getHours() === REFUSED_HOUR);
+    await expect(call("book", { slot: taken!.id })).rejects.toThrow("ese hueco acaba de ocuparse");
     expect(clinica.booking).toBeUndefined();
     expect(clinica.slot).toBeUndefined();
     expect(clinica.stage).toBe("book");
@@ -132,38 +137,38 @@ describe("reservar", () => {
     // La primera hora del martes, la misma que reserva el test de más abajo: cada instancia tiene
     // su propia agenda, así que lo que se reserva aquí no le falta a nadie.
     const free = clinica.slots[0] as Slot;
-    await call("propose", { chosen: free.when });
+    await call("propose", { slot: free.id });
     expect(clinica.proposed).toEqual(free);
     expect(clinica.booking).toBeUndefined();
     expect(clinica.stage).toBe("book");
 
-    await call("book", { chosen: free.when });
+    await call("book", { slot: free.id });
     expect(clinica.proposed).toBeUndefined();
   });
 
   it("mirar otro día retira la hora propuesta, que ya no está entre las libres", async () => {
-    await call("propose", { chosen: clinica.slots[0]!.when });
-    await call("freeSlots", { day: "jueves" });
+    await call("propose", { slot: clinica.slots[0]!.id });
+    await call("freeSlots", { day: "jueves", specialty: LA_ESPECIALIDAD });
     expect(clinica.proposed).toBeUndefined();
   });
 
   it("una hora libre queda reservada, colapsa la historia y deja el hecho en el log", async () => {
     const free = clinica.slots[0] as Slot;
-    await call("book", { chosen: free.when });
+    await call("book", { slot: free.id });
     expect(clinica.booking?.when).toBe(free.when);
     expect(clinica.stage).toBe("done");
     expect(promptOf(clinica).history).toContain("Reservado");
-    expect(await agendaFor(clinica).free("martes")).not.toContainEqual(free);
+    expect(await agendaFor(clinica).free(clinica.day!, LA_ESPECIALIDAD)).not.toContainEqual(free);
   });
 
   it("lo que una llamada reserva no le falta a la de al lado", async () => {
     // Dos modelos corren la misma golden en el mismo proceso: sin una agenda por llamada, el
     // segundo pedía la hora que el primero acababa de llevarse y la agenda le decía que no.
     const free = clinica.slots[0] as Slot;
-    await call("book", { chosen: free.when });
+    await call("book", { slot: free.id });
 
     const otra = seal(new ClinicaNorte());
-    expect(await agendaFor(otra).free("martes")).toContainEqual(free);
+    expect(await agendaFor(otra).free(clinica.day!, LA_ESPECIALIDAD)).toContainEqual(free);
   });
 });
 
@@ -176,22 +181,22 @@ describe("las cuatro fases", () => {
     expect(clinica.stage).toBe("choose");
     expect(names()).toEqual(["freeSlots"]);
 
-    await call("freeSlots", { day: "jueves" });
+    await call("freeSlots", { day: "jueves", specialty: LA_ESPECIALIDAD });
     expect(clinica.stage).toBe("book");
     expect(names()).toEqual(["freeSlots", "propose", "book"]);
 
-    await call("book", { chosen: clinica.slots[0]!.when });
+    await call("book", { slot: clinica.slots[0]!.id });
     expect(clinica.stage).toBe("done");
     expect(names()).toEqual([]);
   });
 
   it("book pide las dos cosas: la fase y horas sobre la mesa", async () => {
     await call("findPatient", { name: "Ana García", phone: ANA });
-    await call("freeSlots", { day: "jueves" });
+    await call("freeSlots", { day: "jueves", specialty: LA_ESPECIALIDAD });
     expect(names()).toContain("book");
 
     // La fase sigue siendo book y la tool desaparece igual: el predicado es la otra mitad.
-    await call("freeSlots", { day: "domingo" });
+    await call("freeSlots", { day: "domingo", specialty: LA_ESPECIALIDAD });
 
     expect(names()).not.toContain("book");
   });
@@ -207,7 +212,7 @@ describe("las cuatro fases", () => {
     const book = clinica.tools().find((spec) => spec.name === "book");
     expect(book?.side_effect).toBe("irreversible");
     // Un recibo y no una pregunta: se lee DESPUÉS de que la reserva ocurrió.
-    expect(book?.confirm).toBe("Reservado: el {{result.when}} con {{result.doctor}}.");
+    expect(book?.confirm).toBe("Reservado: {{result.when}} con {{result.professional}}, {{result.specialty}}.");
     // Proponer no toca la agenda: el gate no tiene nada que leer antes de dejarla pasar, y por eso
     // el modelo puede llamarla en el mismo turno en que el paciente nombra la hora.
     const propose = clinica.tools().find((spec) => spec.name === "propose");
@@ -239,13 +244,13 @@ describe("la view", () => {
 
   it("ofrece dos horas por teléfono y cinco por escrito, con las mismas horas en el estado", async () => {
     await call("findPatient", { name: "Ana García", phone: ANA });
-    await call("freeSlots", { day: "martes" });
+    await call("freeSlots", { day: "martes", specialty: LA_ESPECIALIDAD });
     expect(dynamic()).toContain("como máximo dos");
 
     // La misma clase por la otra puerta: la llamada que atiende es lo único que cambia.
     const escrita = onA("web");
     await runTool(escrita, toolNamed(escrita, "findPatient") as ToolDeclaration, { name: "Ana García", phone: ANA });
-    await runTool(escrita, toolNamed(escrita, "freeSlots") as ToolDeclaration, { day: "martes" });
+    await runTool(escrita, toolNamed(escrita, "freeSlots") as ToolDeclaration, { day: "martes", specialty: LA_ESPECIALIDAD });
     expect(dynamic(escrita)).toContain("hasta cinco horas");
   });
 
@@ -262,7 +267,7 @@ describe("la view", () => {
 
   it("mientras nada está sobre la mesa manda repetir la hora, preguntar y proponerla", async () => {
     await call("findPatient", { name: "Ana García", phone: ANA });
-    await call("freeSlots", { day: "martes" });
+    await call("freeSlots", { day: "martes", specialty: LA_ESPECIALIDAD });
     const text = dynamic();
     expect(text).toContain("todavía no la reserva");
     expect(text).toContain("Llama a book solo después de que te haya dicho que sí");
@@ -274,10 +279,13 @@ describe("la view", () => {
 
   it("con una hora propuesta la nombra entera y manda reservar sin volver a preguntar", async () => {
     await call("findPatient", { name: "Ana García", phone: ANA });
-    await call("freeSlots", { day: "martes" });
-    await call("propose", { chosen: "las cuatro de la tarde" });
+    await call("freeSlots", { day: "martes", specialty: LA_ESPECIALIDAD });
+    // Por id, que es lo único que identifica un hueco: dos a la misma hora con distinto
+    // profesional son dos huecos, y una frase no sabe cuál de los dos.
+    const elegida = clinica.slots[0] as Slot;
+    await call("propose", { slot: elegida.id });
     const text = dynamic();
-    expect(text).toContain("Le estás proponiendo martes a las cuatro de la tarde con la doctora Vidal");
+    expect(text).toContain(`Le estás proponiendo ${elegida.when} con ${elegida.professional}`);
     expect(text).toContain("llama a book con ella en ese mismo turno");
     expect(text).toContain("sin repetírsela otra vez ni volver a preguntar");
     // Y la de antes se va: las dos juntas son la contradicción que dejaba la llamada sin reserva.
@@ -286,8 +294,8 @@ describe("la view", () => {
 
   it("cierra con el SMS cuando ya hay reserva", async () => {
     await call("findPatient", { name: "Ana García", phone: ANA });
-    await call("freeSlots", { day: "viernes" });
-    await call("book", { chosen: clinica.slots[0]!.when });
+    await call("freeSlots", { day: "viernes", specialty: LA_ESPECIALIDAD });
+    await call("book", { slot: clinica.slots[0]!.id });
     expect(dynamic()).toContain("le llega un SMS");
   });
 });
