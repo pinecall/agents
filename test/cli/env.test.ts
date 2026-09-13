@@ -35,16 +35,18 @@ describe("which gateway this terminal is pointed at", () => {
     expect(door({}).url).toBe(DEFAULT_URL);
   });
 
+  // The file a local gateway leaves is read as a profile called `local`, every time and written
+  // never: it moves with whichever port that gateway opened on, and vanishes when it stops.
   it("is the running gateway's own, found without anybody exporting anything", () => {
     aLocalGateway();
 
-    expect(door({})).toEqual({ url: LOCAL, apiKey: A_DEV_KEY, source: "dev-file" });
+    expect(door({})).toEqual({ url: LOCAL, apiKey: A_DEV_KEY, source: "profile" });
   });
 
   it("is the one gateway `pinecall login` kept, when there is exactly one and nothing runs here", () => {
     writeGateway("https://box.pinecall.io", { api_key: AN_ORG_KEY, org: "clinica" }, home);
 
-    expect(door({})).toEqual({ url: "https://box.pinecall.io", apiKey: AN_ORG_KEY, source: "credentials" });
+    expect(door({})).toEqual({ url: "https://box.pinecall.io", apiKey: AN_ORG_KEY, source: "profile" });
   });
 
   it("is the default again when two gateways were logged in to: choosing is PINECALL_URL's job", () => {

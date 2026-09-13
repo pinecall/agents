@@ -107,7 +107,7 @@ describe("signing a terminal in through a browser", () => {
 
     expect(code).toBe(0);
     expect(out.text()).toContain(signingIn(gateway.url, A_WORD));
-    expect(out.text()).toContain(`logged in to ${gateway.url} as org clinica · development`);
+    expect(out.text()).toContain(`· ${gateway.url} · org clinica · development`);
     expect(out.text()).not.toContain("org_98889a61509c");
     expect(gatewayFor(gateway.url, home)).toMatchObject({ api_key: A_KEY, org: "clinica" });
   });

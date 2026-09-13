@@ -5,6 +5,7 @@ import { parseArgs } from "node:util";
 
 import { openInABrowser } from "./browser.js";
 import { pinecallHome, writeGateway } from "./credentials.js";
+import { nameFor, readConfig, writeProfile } from "./profiles.js";
 import { CLOUD_URL, shadowedByEnv } from "./env.js";
 import type { Group } from "./groups.js";
 import { aLineOfStdin } from "./secret.js";
@@ -59,7 +60,7 @@ export async function login(argv: string[], how: Signing = {}): Promise<number> 
   const { values, positionals } = parseArgs({
     args: argv,
     allowPositionals: true,
-    options: { "key-stdin": { type: "boolean", default: false } },
+    options: { "key-stdin": { type: "boolean", default: false }, as: { type: "string" } },
   });
   const { url, assumed } = theGateway(positionals[0]);
   if (assumed !== undefined) out.write(`${assumed}\n`);
@@ -82,10 +83,17 @@ export async function login(argv: string[], how: Signing = {}): Promise<number> 
     return 1;
   }
   const environment = how.env ?? process.env;
-  // The slug and not the id, in the file as on the line: a person opening `credentials` to see
-  // which org a gateway is has to read a word they recognise.
-  writeGateway(url, { api_key: key, org: orgOf(who) }, pinecallHome(environment));
-  out.write(`logged in to ${url} as org ${orgOf(who)} · ${who.env}\n`);
+  const home = pinecallHome(environment);
+  // The slug and not the id, in the file as on the line: a person opening the config to see which
+  // org a gateway is has to read a word they recognise.
+  //
+  // It is kept twice on purpose, for exactly one release: `config.json` is what every verb reads
+  // now, and `credentials` is what v1's CLI on this same machine still reads. The second write
+  // goes with the second half of this change.
+  const name = values.as ?? nameFor(url, readConfig(home));
+  writeProfile(name, { url, key, org: orgOf(who), env: who.env }, home);
+  writeGateway(url, { api_key: key, org: orgOf(who) }, home);
+  out.write(`▸ ${name} · ${url} · org ${orgOf(who)} · ${who.env}\n`);
   const shadowed = shadowedByEnv(environment);
   if (shadowed !== undefined) err.write(`${shadowed}\n`);
   return 0;
