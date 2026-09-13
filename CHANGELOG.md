@@ -6,6 +6,21 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Changed
+- **A free slot in `clinica-norte` has an id, a real date and a specialty.** Reserving used to
+  mean repeating a phrase back — a slot was `{ when: "martes a las diez", doctor: "…" }` and
+  `book` took the sentence — so choosing was comparing text, and text comparison failed both ways
+  it can: two slots at the same hour with different professionals were indistinguishable (a caller
+  picked five o'clock with one physiotherapist and was booked with a different doctor), and a
+  recogniser that mishears the hour left nothing to identify a slot by at all. `book` and
+  `propose` now take the id the agenda gave, and nothing else. `startsAt` carries the date and the
+  zone, because "martes a las diez" does not say which Tuesday. And `freeSlots` asks what the
+  appointment is FOR: the agenda held three names and no specialties while the knowledge base
+  described nine professionals with theirs, so the model was left to join the two itself.
+- **Talk is two columns.** The door and the words on the left, the call's own log on the right,
+  instead of the log stacked underneath: a person talking to an agent and the log of that same
+  call were never both on screen without scrolling. Stacks again under a laptop's width.
+
 ### Added
 - **The console accepts an invitation.** `/invitations/<token>` is a card where the person the
   link names chooses their password and takes their first key; until now the Team screen showed
