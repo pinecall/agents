@@ -12,6 +12,7 @@ import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { gatewayFor } from "./credentials.js";
 import { callsFrom, describing, theLine } from "./line.js";
+import { connectedLine, doorsOf, whereThisLanded } from "./connected.js";
 import { instanceFor, load, mountOptions } from "./load.js";
 import { asked, Refused, type Door } from "./testing/gateway.js";
 import { chattingFrom, type Chatting } from "./ui/chatting.js";
@@ -117,6 +118,7 @@ export async function run(argv: string[]): Promise<number> {
         url,
         tools: mounted.options.tools?.length ?? 0,
         doors,
+        ...(await whereThisLanded(door)),
       });
       return await plain(pc, mounted.agent.onAny.bind(mounted.agent), mounted.slug, url, line, () =>
         onceUp(door, mounted.slug, rings(mounted.options.routes)),
@@ -221,37 +223,6 @@ async function consoleLine(door: Door, slug: string): Promise<string> {
 }
 
 /** What `run` knows about the agent it just registered: everything the one line names. */
-export interface Connected {
-  slug: string;
-  url: string;
-  tools: number;
-  doors: string[];
-}
-
-/**
- * The one line `pinecall run` prints when the socket is up.
- *
- * Three things a person needs and nothing this process had to invent: who registered, which
- * gateway took it, and what the class declared. It names no page: the gateway serves none. An
- * agent that declared no door prints no `doors` at all rather than an empty one.
- */
-export function connectedLine(agent: Connected): string {
-  const said = [
-    agent.slug,
-    `connected to ${agent.url}`,
-    `tools ${agent.tools}`,
-  ];
-  if (agent.doors.length > 0) said.push(`doors ${agent.doors.join(", ")}`);
-  return said.join(" · ");
-}
-
-/** Each door the class declared, as the line names it: the channel, and its number when it has one. */
-export function doorsOf(routes: RouteInput[] | undefined): string[] {
-  return (routes ?? []).map((route) =>
-    route.number === null || route.number === undefined ? route.channel : `${route.channel} ${route.number}`,
-  );
-}
-
 type Listen = (listener: (event: CamelEvent) => void) => () => void;
 
 function instanceOf(mounted: Mounted, call: string | undefined): AgentClass | undefined {
