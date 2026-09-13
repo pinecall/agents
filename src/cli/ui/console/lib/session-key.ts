@@ -9,6 +9,9 @@
 // Which world the tab is looking at is kept beside them, so a reload lands on the same one.
 export type World = "production" | "development";
 
+/** Both of them, named once: anything that acts on every world reads this and not a literal. */
+export const WORLDS: readonly World[] = ["production", "development"];
+
 const KEPT_UNDER = "pinecall.key";
 const WORLD_UNDER = "pinecall.world";
 
@@ -25,6 +28,18 @@ export function keepKey(world: World, key: string): void {
 /** Forget one world's key: it died under the page, or the person left. */
 export function forgetKey(world: World): void {
   window.sessionStorage.removeItem(`${KEPT_UNDER}.${world}`);
+}
+
+/**
+ * Forget every world's key: the person is leaving, not switching.
+ *
+ * BOTH, and that is the point. A person holds a key per world and the toggle mints the second one
+ * from the first, so forgetting only the one on screen leaves the other sitting in this tab — and
+ * one toggle walks straight back in as the same person, which is not what anybody means by
+ * signing out.
+ */
+export function forgetEveryKey(): void {
+  for (const world of WORLDS) forgetKey(world);
 }
 
 /** The world this tab was looking at, or production when it never said. */

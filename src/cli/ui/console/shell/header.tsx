@@ -5,6 +5,7 @@ import { useLocation } from "react-router";
 
 import { Brand, Crumbs, ThemeToggle } from "../../shared/frame";
 import { AgentSelect } from "./agent-select";
+import { Leave } from "./leave";
 import { Whose } from "./whose";
 import { WorldToggle } from "./world-toggle";
 
@@ -20,6 +21,7 @@ export function Header({ agent }: { agent: string }): ReactNode {
         <AgentSelect agent={agent} />
         <WorldToggle />
         <Whose />
+        <Leave />
         <ThemeToggle />
       </div>
     </>

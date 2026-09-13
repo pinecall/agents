@@ -417,7 +417,9 @@ The console is served at `/`. Everything about the page is a containment decisio
 
 - **The org key never reaches the browser.** The page holds a PERSON's scoped key, minted for it
   at login and kept in `sessionStorage` for the tab's life (`lib/session-key.ts`, the one file
-  that touches storage). `pinecall run` mints a one-use code standing for its key and prints
+  that touches storage). Signing out (`shell/leave.tsx`, `lib/leaving.tsx`) forgets EVERY world's
+  key, not the one on screen: the toggle mints the second from the first, so one left behind is a
+  way back in as the same person. `pinecall run` mints a one-use code standing for its key and prints
   `/a/<agent>?login=<code>`; the page spends it for a key of its own and takes it out of the
   address bar before rendering (`main.tsx`, `lib/login.ts`). Cold, it asks for org, email and
   password (`screens/login/`). Opened from an invitation link — `/invitations/<token>`, the one an
@@ -455,7 +457,7 @@ The console is served at `/`. Everything about the page is a containment decisio
 | `talk/` | a person reaches the agent from this tab, with this browser's microphone |
 | `floor/` | the org's layer: every live call across its agents (`/live`, off `GET /v1/sessions` and the floor's stream `GET /v1/events`), and every agent's finished calls in one table with an agent column (`/sessions`, the very `SessionTable` an agent's screen draws) |
 | `numbers/` · `team/` · `usage/` | **numbers, whole**: the org's carrier — a Twilio account or a SIP peer — brought, shown by kind and account and never a secret, replaced or forgotten (`/v1/carrier`, `carrier.tsx`); the doors it answers with who put each there and a bought one marked (`GET /v1/numbers`), one let go (`DELETE /v1/numbers/{number}`); and one added, two ways — imported from what the carrier owns (`GET /v1/numbers/available`, `POST /v1/numbers`) or bought on the box's account (`POST /v1/numbers/buy`) — **always the plan first** (`?dry_run=true`, the gateway's own steps shown in its words) and the same request again on confirm (`adding.tsx`); the org's people, invited with a token shown once and changed in place (`/v1/members`); what the org consumed, totals then rows in the runtime's own field names (`GET /v1/usage`) |
-| the shell | an agent selector (`GET /v1/agents`), the Production / Development toggle — one key per world in the tab, the other minted for the same person by `POST /v1/login/env` (`lib/world.tsx`, `lib/session-key.ts`) — and a rail gated by the key's scopes off `GET /v1/whoami` (`lib/scopes.ts`, `lib/whoami.tsx`): a screen the key does not open is not drawn |
+| the shell | an agent selector (`GET /v1/agents`), a way out (`shell/leave.tsx`), the Production / Development toggle — one key per world in the tab, the other minted for the same person by `POST /v1/login/env` (`lib/world.tsx`, `lib/session-key.ts`) — and a rail gated by the key's scopes off `GET /v1/whoami` (`lib/scopes.ts`, `lib/whoami.tsx`): a screen the key does not open is not drawn |
 
 **What it looks like** is the design canvas, translated: `styles/tokens.css` is the one file
 allowed to hold a hex and carries the canvas's palette under the console's names (`--ground`,

@@ -8,7 +8,8 @@ import { onUnauthorized } from "../shared/api";
 import { BASE } from "./lib/base";
 import { CredentialsProvider } from "../shared/credentials";
 import { loginToWorld, loginWithCode, type Signed } from "./lib/login";
-import { forgetKey, keepKey, keepWorld, keptKey, keptWorld, type World } from "./lib/session-key";
+import { LeavingProvider } from "./lib/leaving";
+import { forgetEveryKey, forgetKey, keepKey, keepWorld, keptKey, keptWorld, type World } from "./lib/session-key";
 import { WhoamiProvider } from "./lib/whoami";
 import { WorldProvider } from "./lib/world";
 import { router } from "./router";
@@ -94,6 +95,13 @@ function Console({ startingWith }: { startingWith: Start }): ReactNode {
   );
   const worlds = useMemo(() => ({ world, turnTo }), [world, turnTo]);
 
+  // Every world's key, not the one on screen — see forgetEveryKey. Nothing else in this page may
+  // reach storage (lib/session-key.ts), so there is nowhere else a key could still be.
+  const leave = useCallback((): void => {
+    forgetEveryKey();
+    setKey(null);
+  }, []);
+
   const signed = (proof: Signed): void => {
     keepKey(proof.env, proof.key);
     keepWorld(proof.env);
@@ -122,7 +130,9 @@ function Console({ startingWith }: { startingWith: Start }): ReactNode {
     <CredentialsProvider value={{ base: BASE, key }}>
       <WhoamiProvider>
         <WorldProvider value={worlds}>
-          <RouterProvider router={router} />
+          <LeavingProvider value={leave}>
+            <RouterProvider router={router} />
+          </LeavingProvider>
         </WorldProvider>
       </WhoamiProvider>
     </CredentialsProvider>

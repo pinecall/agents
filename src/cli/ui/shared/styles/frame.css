@@ -101,8 +101,10 @@
   font-size: 11.5px;
 }
 
-/* A bordered pill the height of the crumbs, with the dot that says which theme this is. */
-.theme-toggle {
+/* A bordered pill the height of the crumbs. The theme one carries the dot that says which
+   theme this is; the other is the way out. */
+.theme-toggle,
+.head-leave {
   align-items: center;
   background: transparent;
   border: 1px solid var(--edge);
@@ -116,7 +118,8 @@
   padding: 0 9px;
 }
 
-.theme-toggle:hover {
+.theme-toggle:hover,
+.head-leave:hover {
   border-color: var(--ink);
   color: var(--ink);
 }
