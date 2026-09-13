@@ -40,24 +40,16 @@ describe("what a person reads", () => {
 });
 
 describe("what eval needs before it can ask", () => {
-  // The environment AND the machine's ~/.pinecall: with neither, the refusal names the gateway
-  // it would have knocked at and the verb that keeps a key for it.
+  // A home with no profile in it is what a machine that has never logged in looks like, and the
+  // refusal names the gateway it would have knocked at and the verb that keeps a key for it.
   it("names the gateway and `pinecall login` when this terminal holds no key at all", async () => {
-    const previous = {
-      api: process.env["PINECALL_API_KEY"],
-      dev: process.env["PINECALL_DEV_KEY"],
-      home: process.env["PINECALL_HOME"],
-    };
-    delete process.env["PINECALL_API_KEY"];
-    delete process.env["PINECALL_DEV_KEY"];
+    const previous = { home: process.env["PINECALL_HOME"] };
     process.env["PINECALL_HOME"] = mkdtempSync(join(tmpdir(), "pinecall-home-"));
     const said = onStderr();
 
     const code = await run(["CA_8f4a2c"]);
 
     said.restore();
-    if (previous.api !== undefined) process.env["PINECALL_API_KEY"] = previous.api;
-    if (previous.dev !== undefined) process.env["PINECALL_DEV_KEY"] = previous.dev;
     if (previous.home === undefined) delete process.env["PINECALL_HOME"];
     else process.env["PINECALL_HOME"] = previous.home;
     expect(code).toBe(2);

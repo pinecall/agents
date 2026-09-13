@@ -185,27 +185,22 @@ describe("signing up", () => {
   });
 });
 
-describe("the key it kept, and what would shadow it", () => {
-  it("says out loud that an exported key is read before the row just written", async () => {
+describe("the key it kept", () => {
+  // There was a test here for the sentence signup printed when a key was exported in the shell:
+  // it was read BEFORE the row that had just been written, so the next verb answered for another
+  // org and it read as the sign-up having failed. Nothing is read before the profile now, so
+  // there is nothing to warn about — the warning went with the source.
+  it("keeps the key as a profile, whatever this shell happens to have exported", async () => {
     const err = written();
 
     await signup([cloud.url, ...WHO], {
       out: written().stream,
       err: err.stream,
-      env: { PINECALL_HOME: home, PINECALL_API_KEY: "pk_another_orgs_key_exported_here" },
+      env: { PINECALL_HOME: home, PINECALL_API_KEY: "a name this CLI no longer reads" },
       password: async () => A_PASSWORD,
     });
 
-    expect(err.text()).toContain("PINECALL_API_KEY is exported");
-    expect(err.text()).toContain("unset PINECALL_API_KEY");
+    expect(err.text()).not.toContain("PINECALL_API_KEY");
     expect(gatewayFor(cloud.url, home)).toMatchObject({ api_key: A_LAPTOPS_KEY });
-  });
-
-  it("says nothing when no key is exported to shadow it", async () => {
-    const err = written();
-
-    await signup([cloud.url, ...WHO], { out: written().stream, err: err.stream, env: { PINECALL_HOME: home }, password: async () => A_PASSWORD });
-
-    expect(err.text()).toBe("");
   });
 });

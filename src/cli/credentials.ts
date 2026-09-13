@@ -64,18 +64,6 @@ export function gatewayFor(url: string, home: string = pinecallHome()): GatewayE
   return readCredentials(home).gateways[normalised(url)];
 }
 
-/**
- * The one gateway this person logged in to, when there is exactly one.
- *
- * `pinecall login <url>` once, then `pinecall run` with nothing exported: a person with a single
- * gateway should not have to say its name every time. Two gateways is a choice, and a choice is
- * PINECALL_URL's to make — this answers nothing then, rather than guessing between them.
- */
-export function theOnlyGateway(home: string = pinecallHome()): string | undefined {
-  const urls = Object.keys(readCredentials(home).gateways);
-  return urls.length === 1 ? urls[0] : undefined;
-}
-
 /** Keep one gateway's key, the rest of the file untouched, and the file readable by nobody else. */
 export function writeGateway(
   url: string,

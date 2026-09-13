@@ -35,7 +35,7 @@ export const group: Group = {
   agent is held by the process somebody put on a box, not by whoever is logged in.
 
   So this is the last step before a deploy: issue one, put it in the box's environment as
-  PINECALL_API_KEY, and that \`pinecall run\` is the one that answers your numbers.
+  \`pinecall login --key-stdin\`, and that \`pinecall run\` is the one that answers your numbers.
 
   issue prints the key once and never again. list prints fingerprints, labels, worlds, whose
   each is and whether it is revoked — never a key. revoke takes a fingerprint as list prints it;

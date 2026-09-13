@@ -67,11 +67,11 @@ writes a profile off stdin instead: `pinecall login --key-stdin <url> < key`, wi
 saying where the file goes. A key in a 0600 file read once beats one every `ps` and every child
 process can see.
 
-Two things are still read under the profile, for one release: `PINECALL_URL` and
-`PINECALL_API_KEY`, because half of this CLI's own tests hand a verb its key that way and there
-was nothing else to hand it one with until the profile existed. They go with those tests. The
-third, `~/.pinecall/dev`, is the local gateway's own word about where it is and which key it
-honours — read every time, written never — and it goes with the dev key itself.
+Nothing else is read. `PINECALL_API_KEY`, `PINECALL_URL` and `PINECALL_DEV_KEY` are gone from
+this CLI — the first of those is v1's variable too, and a shell that still had v1's key exported
+pointed every verb at another org with every line reading the same. One source left under the
+profile: `~/.pinecall/dev`, the local gateway's own word about where it is and which key it
+honours, read every time and written never. It goes with the dev key itself.
 
 Every verb that connects opens by printing `gateway <url> · key from <source>`. **`env | grep
 PINECALL` is the first thing to run when a door refuses you and will not say why.**
@@ -490,7 +490,7 @@ One line each — when, the agent, the number, the channel, who took it — olde
 (`callback.requested`, on the agent's log); dialing back is your app's.
 
 ```
-gateway https://box.pinecall.io · key from PINECALL_API_KEY
+gateway https://box.pinecall.io · key from profile
 2026-09-11 19:20  clinica-norte  +34600000000  phone  via overflow on call_9f2c…
 2026-09-11 19:22  clinica-norte  +34611111111  web    via the widget
 ```
@@ -520,12 +520,12 @@ created org tienda-sur on https://box.pinecall.io — signed in as Ana, developm
 console  https://box.pinecall.io/?login=lc_…   (opens within five minutes, once)
 
 $ pinecall whoami
-gateway https://box.pinecall.io · key from credentials
+gateway https://box.pinecall.io · key from profile
 org org_4ad95a171a72 · key k_8dcc… · development · cli
 ```
 
-If `PINECALL_API_KEY` is exported in the shell, it is read *before* the row just kept, so the verb
-says so on stderr rather than letting the next verb answer for another org.
+Nothing this shell exports can point a verb anywhere else: the profile is the whole answer, and
+`pinecall config` says which one is in hand.
 
 The verb asks `GET /.well-known/pinecall` before anything else, so a gateway that opens no sign-up
 is named **before** you type a password rather than after: its operator opens them with
@@ -593,7 +593,7 @@ every child process and every `ps` can read. `PINECALL_HOME` says where that fil
 ```console
 $ pinecall whoami
 gateway http://127.0.0.1:8080 · key from dev-file
-org default · key dev · development · PINECALL_DEV_KEY
+org default · key dev · development · the local gateway
 ```
 
 ---
@@ -616,8 +616,8 @@ agent's slug unless `--base` says otherwise, and the class names it with `docs =
 **The base you push is your key's world's.** A push with the development key a login keeps
 replaces the development base — what your own `pinecall run` answers from — and never the one the
 telephone answers from. Promoting is the same push made with the key the box runs on
-([`keys`](#keys)): `PINECALL_API_KEY=<the machine's> pinecall knowledge push`. `list` and `drop`
-read the same world.
+([`keys`](#keys)): keep it as a profile of its own — `pinecall login --key-stdin <url> < key
+--as prod` — and push with `--profile prod`. `list` and `drop` read the same world.
 
 ```console
 $ pinecall knowledge push

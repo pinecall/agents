@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { ExtractionGolden, ExtractionRun } from "@pinecall/protocol";
 
 import { CASES, extracted, linesOf, NO_CASES, run } from "../../src/cli/remember.js";
+import { pointingAt } from "./home.js";
 import { casesIn } from "../../src/cli/testing/goldens.js";
 import { onStderr } from "./said.js";
 
@@ -115,7 +116,7 @@ describe("what remember needs before it can ask", () => {
     const previous = process.cwd();
     process.chdir(mkdtempSync(join(tmpdir(), "pinecall-empty-")));
 
-    const code = await run([], { env: { PINECALL_URL: gateway.url, PINECALL_API_KEY: A_KEY } });
+    const code = await run([], { env: pointingAt(gateway.url, A_KEY) });
 
     process.chdir(previous);
     said.restore();

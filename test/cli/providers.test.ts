@@ -6,6 +6,7 @@ import type { AddressInfo } from "node:net";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { run } from "../../src/cli/providers.js";
+import { pointingAt, pointingNowhere } from "./home.js";
 import { written } from "./said.js";
 
 const A_KEY = "pk_the_orgs_own_key";
@@ -74,7 +75,7 @@ beforeEach(async () => {
   gateway.vendors = [];
   gateway.refuse = undefined;
   await gateway.open();
-  env = { PINECALL_URL: gateway.url, PINECALL_API_KEY: A_KEY };
+  env = pointingAt(gateway.url, A_KEY);
 });
 
 afterEach(async () => {
@@ -249,10 +250,10 @@ describe("what it will not do", () => {
   it("says where to get a key before it knocks, when this terminal holds none", async () => {
     const err = written();
 
-    const code = await run(["list"], { err: err.stream, env: { PINECALL_URL: gateway.url } });
+    const code = await run(["list"], { err: err.stream, env: pointingNowhere() });
 
     expect(code).toBe(2);
-    expect(err.text()).toContain(`no key for ${gateway.url}`);
+    expect(err.text()).toContain("pinecall login");
     expect(gateway.heard).toEqual([]);
   });
 });

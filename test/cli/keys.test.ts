@@ -6,6 +6,7 @@ import type { AddressInfo } from "node:net";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { run } from "../../src/cli/keys.js";
+import { pointingAt } from "./home.js";
 import { written } from "./said.js";
 
 const A_KEY = "pk_the_persons_own_key";
@@ -65,7 +66,7 @@ beforeEach(async () => {
   gateway.rows = [];
   gateway.refuse = undefined;
   await gateway.open();
-  env = { PINECALL_URL: gateway.url, PINECALL_API_KEY: A_KEY };
+  env = pointingAt(gateway.url, A_KEY);
 });
 
 afterEach(async () => {

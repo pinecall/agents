@@ -9,6 +9,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { markdownUnder, pushedLine, run , scoreLines } from "../../src/cli/knowledge.js";
+import { pointingAt } from "./home.js";
 import { written } from "./said.js";
 
 const A_KEY = "pk_the_orgs_own_key";
@@ -75,7 +76,7 @@ beforeEach(async () => {
   gateway.bases = [];
   gateway.refuse = undefined;
   await gateway.open();
-  env = { PINECALL_URL: gateway.url, PINECALL_API_KEY: A_KEY, PINECALL_HOME: mkdtempSync(join(tmpdir(), "pinecall-home-")) };
+  env = pointingAt(gateway.url, A_KEY);
   docs = mkdtempSync(join(tmpdir(), "pinecall-docs-"));
   mkdirSync(join(docs, "seguros"));
   writeFileSync(join(docs, "tarifas.md"), "# Tarifas\n\nRevisión, cuarenta euros.\n");

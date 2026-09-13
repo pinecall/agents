@@ -151,12 +151,32 @@ export function activate(name: string, home: string = pinecallHome()): boolean {
   return true;
 }
 
+/** The phone this person calls FROM at the gateway in hand, so a ring reaches their own agent. */
+export function callingFrom(home: string = pinecallHome()): string | undefined {
+  return profileFor(theChosenProfile(), home)?.calling;
+}
+
+/** Say which phone is yours here, or take it back. False when there is no profile to write it on. */
+export function callsFrom(number: string | undefined, home: string = pinecallHome()): boolean {
+  const config = readConfig(home);
+  const name = theChosenProfile() ?? config.active;
+  if (name === undefined || config.profiles[name] === undefined) return false;
+  const { calling: _was, ...rest } = config.profiles[name];
+  return amend(name, number === undefined ? rest : { ...rest, calling: number }, home, true);
+}
+
 /** Change one field of a profile without touching its key: what `line from` writes. */
-export function amend(name: string, fields: Partial<Profile>, home: string = pinecallHome()): boolean {
+export function amend(
+  name: string,
+  fields: Partial<Profile>,
+  home: string = pinecallHome(),
+  whole = false,
+): boolean {
   const config = readConfig(home);
   const profile = config.profiles[name];
   if (profile === undefined) return false;
-  config.profiles[name] = { ...profile, ...fields };
+  // `whole` is how a field is REMOVED: merging cannot unset one, and `line forget` has to.
+  config.profiles[name] = whole ? ({ ...fields } as Profile) : { ...profile, ...fields };
   writeConfig(config, home);
   return true;
 }
