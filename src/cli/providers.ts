@@ -6,13 +6,19 @@ import { aLineOfStdin, typedInSilence } from "./secret.js";
 import { asked, type Door } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
 
-const USAGE = `usage: pinecall providers add <vendor>     the key on stdin, never on the command line
+const USAGE = `usage: pinecall providers [--does llm|stt|tts]  every vendor this build runs
+       pinecall providers add <vendor>     the key on stdin, never on the command line
        pinecall providers rm <vendor>
-       pinecall providers list`;
+       pinecall providers list             only the ones this org brought`;
 
 export const group: Group = {
-  purpose: "add | rm | list the provider keys this org brought of its own",
+  purpose: "every vendor this build runs, and the provider keys this org brought of its own",
   usage: `${USAGE}
+
+  With nothing after it: every vendor this build runs — what each does, every other word it
+  answers to, and the one word for what it is still waiting for on this box. \`ready\` is the only
+  one that runs a call; \`no plugin\` and \`no key\` are the operator's to fix, and \`its own\` is a
+  vendor whose credentials are a chain or a pair and never one key anybody could bring.
 
   A key added here is this org's own account with that vendor, and every call of this org runs
   on it from the next one; every vendor nobody brought runs on the box's own key. add reads the
@@ -45,6 +51,7 @@ export async function run(argv: string[], how: Bringing = {}): Promise<number> {
   const door = theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
   try {
+    if (verb === undefined || verb === "--does") return await catalogue(door, vendor, out, err);
     if (verb === "add" && vendor !== undefined) return await add(door, vendor, how.key, out, err);
     if (verb === "rm" && vendor !== undefined) return await remove(door, vendor, out);
     if (verb === "list") return await list(door, out);
@@ -91,6 +98,45 @@ async function list(door: Door, out: NodeJS.WritableStream): Promise<number> {
   }
   for (const vendor of brought.vendors) out.write(`${vendor}\n`);
   return 0;
+}
+
+const MODALITIES = ["llm", "stt", "tts"];
+
+/** One vendor as the gateway answers it: what it does, what it wants, what else it is called. */
+interface Provider {
+  name: string;
+  does: string[];
+  standing: string;
+  env: string | null;
+  aliases: string[];
+}
+
+// The whole table, one line each, in the catalog's own order. It is the answer to "can I use
+// Cartesia" — which used to be answered by typing `cartesia` into a form and being told by the
+// gateway that no such vendor existed, from a build that was one install away from having it.
+async function catalogue(
+  door: Door,
+  does: string | undefined,
+  out: NodeJS.WritableStream,
+  err: NodeJS.WritableStream,
+): Promise<number> {
+  if (does !== undefined && !MODALITIES.includes(does)) {
+    err.write(`no modality called ${does}: ${MODALITIES.join(" | ")}\n`);
+    return 2;
+  }
+  const said = await asked<{ providers: Provider[]; defaults: Record<string, string> }>(door, "/v1/providers");
+  const shown = does === undefined ? said.providers : said.providers.filter((one) => one.does.includes(does));
+  const rows = shown.map((one) => [one.name, one.does.join(","), one.standing, one.env ?? "", one.aliases.join(" ")]);
+  for (const line of asColumns([["vendor", "does", "standing", "variable", "also known as"], ...rows])) out.write(`${line}\n`);
+  const ours = Object.entries(said.defaults).map(([job, vendor]) => `${job} ${vendor}`);
+  out.write(`\n${rows.length} vendors · ours: ${ours.join(" · ")}\n`);
+  return 0;
+}
+
+/** Every column as wide as its widest value: nothing is cut to make a table line up. */
+function asColumns(rows: string[][]): string[] {
+  const widths = rows[0]!.map((_, column) => Math.max(...rows.map((row) => (row[column] ?? "").length)));
+  return rows.map((row) => row.map((value, column) => (value ?? "").padEnd(widths[column]!)).join("  ").trimEnd());
 }
 
 /** Typed with nothing echoed when a person is there, and one piped line when nobody is. */
