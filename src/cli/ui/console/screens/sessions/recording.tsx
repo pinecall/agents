@@ -38,20 +38,27 @@ export function Player({ call }: { call: string }): ReactNode {
   const [src, setSrc] = useState<string | null>(null);
   const [refused, setRefused] = useState<string | null>(null);
 
+  // `.then(onFulfilled, onRejected)` was the shape here, and a `throw` inside the FIRST handler
+  // never reaches the second one — it becomes a rejection nobody owns. So every refusal the
+  // gateway answered, which is every call that was not recorded, left this sitting at "reading
+  // the recording…" for as long as the tab stayed open. Only a network failure ever reached the
+  // handler that says so. One try/catch, as every other read in this page does.
   useEffect(() => {
     let url: string | null = null;
     let gone = false;
-    fetch(doorUrl(credentials, `/v1/calls/${call}/recording`), { headers: headersFor(credentials) }).then(
-      async (answer) => {
-        if (!answer.ok) throw new Error(`the recording answered ${answer.status}`);
+    void (async () => {
+      try {
+        const answer = await fetch(doorUrl(credentials, `/v1/calls/${call}/recording`), {
+          headers: headersFor(credentials),
+        });
+        if (!answer.ok) throw new Error(await whyNot(answer));
         url = URL.createObjectURL(await answer.blob());
         if (gone) URL.revokeObjectURL(url);
         else setSrc(url);
-      },
-      (failed: unknown) => {
+      } catch (failed) {
         if (!gone) setRefused(failed instanceof Error ? failed.message : String(failed));
-      },
-    );
+      }
+    })();
     return () => {
       gone = true;
       if (url !== null) URL.revokeObjectURL(url);
@@ -61,4 +68,18 @@ export function Player({ call }: { call: string }): ReactNode {
   if (refused !== null) return <p className="note">{refused}</p>;
   if (src === null) return <p className="note">reading the recording…</p>;
   return <audio className="player" controls preload="none" src={src} />;
+}
+
+// The gateway's own sentence, which is the whole answer: "the recording of <call> is at <path> on
+// the box that took the call, and not on this one" tells a person where to look. A status code
+// tells them nothing. The status is the fallback for a body that is not the shape we expect.
+async function whyNot(answer: Response): Promise<string> {
+  try {
+    const said: unknown = await answer.json();
+    const detail = (said as { detail?: unknown }).detail;
+    if (typeof detail === "string") return detail;
+  } catch {
+    // Not JSON, which a proxy in front of the gateway can answer with. The status is what is left.
+  }
+  return `the recording answered ${answer.status}`;
 }
