@@ -8,7 +8,8 @@ import { describe, expect, it } from "vitest";
 
 import { builtNames, groupFor, groupNames, main } from "../../src/cli/index.js";
 import { Refused } from "../../src/cli/testing/gateway.js";
-import { connectedLine, consoleUrl, doorsOf, run, whyNoConsole } from "../../src/cli/run.js";
+import { connectedLine, doorsOf } from "../../src/cli/connected.js";
+import { consoleUrl, run, whyNoConsole } from "../../src/cli/run.js";
 
 const GATEWAY = "https://box.pinecall.io";
 
@@ -40,6 +41,32 @@ describe("the line `pinecall run` prints when the socket is up", () => {
     const line = connectedLine({ slug: "tienda-sur", url: GATEWAY, tools: 0, doors: [] });
 
     expect(line).toBe("tienda-sur · connected to https://box.pinecall.io · tools 0");
+  });
+
+  // The line used to say the gateway and nothing else, and a key exported in the shell wins over
+  // the one `pinecall login` kept — so an agent could land in another org, in another world, with
+  // this line reading exactly the same. Where you are IS the key you hold, so the line says it.
+  it("says whose org took it, which world, and where the key came from", () => {
+    const line = connectedLine({
+      slug: "clinica-norte",
+      url: GATEWAY,
+      tools: 4,
+      doors: ["web"],
+      org: "acme",
+      env: "development",
+      source: "credentials",
+    });
+
+    expect(line).toBe(
+      "clinica-norte · acme · development · connected to https://box.pinecall.io"
+        + " · key from credentials · tools 4 · doors web",
+    );
+  });
+
+  it("says none of it rather than guessing when the gateway would not answer", () => {
+    const line = connectedLine({ slug: "clinica-norte", url: GATEWAY, tools: 1, doors: [], source: "env" });
+
+    expect(line).toBe("clinica-norte · connected to https://box.pinecall.io · key from env · tools 1");
   });
 
   it("reads the doors from the routes the class registered, and only those", () => {
