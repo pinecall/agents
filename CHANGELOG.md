@@ -6,6 +6,12 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Added
+- **The console signs out.** A way out beside whose console it is, which the page had none of:
+  a key is the tab's and dies with it, so closing the tab was the only way to stop being signed
+  in — no use at all to somebody who wants to come back as somebody else. It forgets every world's
+  key rather than the one on screen, because the toggle mints the second from the first.
+
 ### Changed
 - **A free slot in `clinica-norte` has an id, a real date and a specialty.** Reserving used to
   mean repeating a phrase back — a slot was `{ when: "martes a las diez", doctor: "…" }` and
