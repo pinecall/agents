@@ -19,7 +19,6 @@ test/
   personas/         one file per synthetic caller: a goal, a way of speaking, the facts they know
   prompts/          the states `pinecall prompt` is checked against
   agent.test.ts     the class as software: ring 0, no network and no model
-.env                PINECALL_URL and PINECALL_API_KEY
 tsconfig.json       { "extends": "pinecall/tsconfig.tenant.json" }
 ```
 
@@ -358,7 +357,7 @@ field and never whether it is one.
 ## Running it
 
 ```bash
-cp .env.example .env               # PINECALL_URL and PINECALL_API_KEY
+pinecall login <gateway>           # once per machine; nothing is exported, nothing is in a file you edit
 pinecall chat                      # the app in THIS terminal, and a written caller against it
 pinecall chat --as +34600123456    # the same call, from somebody memory can file it under
 pinecall prompt --state test/prompts/states.json    # what the model would read, offline

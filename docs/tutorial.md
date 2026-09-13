@@ -23,16 +23,16 @@ uv run pinecall-runtime migrate up                 the schema, and a `default` o
 uv run pinecall-runtime gateway                    the control plane, on 8080
 ```
 
-In another terminal, mint a key for your org and keep it. It is printed once and never again:
+In another terminal, sign this one in. The password is typed in a browser and never in a shell,
+and what the terminal keeps is a key of its own, labelled as this machine and revoked on its own:
 
 ```
-uv run pinecall-runtime keys issue --org default --label laptop
+pinecall login http://127.0.0.1:8080
+pinecall whoami                    # which org, which world, where the key came from
 ```
 
-```
-export PINECALL_URL=http://127.0.0.1:8080
-export PINECALL_API_KEY=pk_…
-```
+Nothing is exported. A machine with no browser — CI, a container — reads its key off stdin
+instead, and keeps the same file: `pinecall login --key-stdin <url> < key`.
 
 **On an Apple Silicon laptop TEI cannot run** — its CPU image has no arm64 build — so the embedder
 is a hosted one. Two lines, and retrieval works the same:

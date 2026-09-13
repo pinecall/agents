@@ -45,15 +45,17 @@ describe("connecting", () => {
     expect(configure?.data["config"]).toMatchObject({ language: "es", greeting: { say: "Clínica Norte, ¿en qué puedo ayudarte?" } });
   });
 
-  it("refuses to start without a url and a key", () => {
-    const had = process.env["PINECALL_API_KEY"];
-    delete process.env["PINECALL_API_KEY"];
+  // It reads nothing from the environment, so a key exported for something else — v1's SDK
+  // exports one under a name this used to read — cannot become the key an app connects with.
+  it("refuses to start without a url and a key, and looks in no environment for either", () => {
+    process.env["PINECALL_API_KEY"] = "pk_v1s_key_still_exported_in_this_shell";
+    process.env["PINECALL_URL"] = "https://somebody-elses-gateway.test";
     try {
-      expect(() => new Pinecall({ url: "http://127.0.0.1:1" })).toThrow(/PINECALL_URL/);
+      expect(() => new Pinecall({ url: "http://127.0.0.1:1" })).toThrow(/url, apiKey/);
+      expect(() => new Pinecall()).toThrow(/url, apiKey/);
     } finally {
-      if (had !== undefined) {
-        process.env["PINECALL_API_KEY"] = had;
-      }
+      delete process.env["PINECALL_API_KEY"];
+      delete process.env["PINECALL_URL"];
     }
   });
 
