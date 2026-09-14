@@ -11,7 +11,7 @@ import { FakeGateway } from "pinecall/client/testing";
 import { mount, type Mounted } from "pinecall";
 
 import ClinicaNorte from "../agent.js";
-import { REFUSED_HOUR, type Slot } from "../lib/agenda.js";
+import { hourOf, REFUSED_HOUR, type Slot } from "../lib/agenda.js";
 
 const KEY = "pk_test";
 const SLUG = "clinica-norte";
@@ -84,7 +84,7 @@ it("recorre identificar, ofrecer y reservar, y dice que no cuando la agenda dice
   expect(instance.slots.length).toBeGreaterThan(2);
   expect(offered()).toEqual(["freeSlots", "propose", "book"]);
 
-  const taken = instance.slots.find((slot) => new Date(slot.startsAt).getHours() === REFUSED_HOUR);
+  const taken = instance.slots.find((slot) => hourOf(slot.startsAt) === REFUSED_HOUR);
   calls("book", { slot: taken!.id });
   await expect.poll(results).toHaveLength(3);
   await settled();

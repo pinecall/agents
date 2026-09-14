@@ -35,6 +35,11 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   fingerprint …` for every key there was. `revoke` resolves what you typed against the org's own
   rows first: the whole hash still works, a word that names two keys is refused with both, and one
   that names none says which verb lists them.
+- **La agenda de `clinica-norte` lee la hora en la zona del centro.** `new Date(startsAt).getHours()`
+  da la hora de la MÁQUINA: en un runner en UTC el hueco de las trece era el de las once, así que
+  la regla que lo rechaza se aplicaba a otro hueco y el que dos pruebas buscaban no existía. Verde
+  en un portátil en +02:00 y rojo en CI, que es la peor forma de fallar. `hourOf(startsAt)` lo lee
+  del texto, que lleva la zona escrita.
 - **`pinecall config rm <name>`.** A profile is a key in a file and there was no way to take one
   out: a gateway that had moved and a key that had been revoked both stayed on the list for good.
   It forgets the row and takes the active mark with it rather than leaving it pointing at nothing.

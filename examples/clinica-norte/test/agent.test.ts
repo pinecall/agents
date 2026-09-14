@@ -19,7 +19,7 @@ import {
 } from "pinecall";
 
 import ClinicaNorte from "../agent.js";
-import { agendaFor, REFUSED_HOUR, type Slot } from "../lib/agenda.js";
+import { agendaFor, hourOf, REFUSED_HOUR, type Slot } from "../lib/agenda.js";
 
 // La especialidad con la que se prueba reservar: la doctora Vidal pasa consulta todos los días
 // laborables, así que hay huecos suyos el martes y el jueves, y uno a las 13:00 que la agenda
@@ -126,7 +126,7 @@ describe("reservar", () => {
   });
 
   it("una hora que la agenda rechaza deja la reserva sin hacer y lo dice", async () => {
-    const taken = clinica.slots.find((slot) => new Date(slot.startsAt).getHours() === REFUSED_HOUR);
+    const taken = clinica.slots.find((slot) => hourOf(slot.startsAt) === REFUSED_HOUR);
     await expect(call("book", { slot: taken!.id })).rejects.toThrow("ese hueco acaba de ocuparse");
     expect(clinica.booking).toBeUndefined();
     expect(clinica.slot).toBeUndefined();
