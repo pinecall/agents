@@ -7,6 +7,10 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **0.1.0, and the wire comes from the registry.** `@pinecall/protocol` is `^0.1.0` instead of
+  `workspace:*`: pnpm rewrites a workspace range to the version of the checkout next door, which
+  is not a version anyone can install. The sibling checkout stays in `pnpm-workspace.yaml` so a
+  clone of the three repos still builds both, but the dependency resolves from npm.
 - **A release is a tag, and the tag has a guard in front of it.** `release.yml` fires on `v*`:
   `guard` refuses unless the tag and `package.json` say the same number, `gates` runs the same
   `ci.yml` every push runs — a tag is not a branch, so without that the release path had no gate
