@@ -113,13 +113,16 @@ jobs:
         run: |
           uv run pinecall-runtime migrate up
           uv run pinecall-runtime gateway > "$RUNNER_TEMP/gateway.log" 2>&1 &
+          # /openapi.json and not /health: there is no health door, and the console is served at
+          # every path that is not one — so a poll at an invented path answers 200 with a page,
+          # which is a gateway that looks up before its routes are. `make health` asks the same.
           for _ in $(seq 1 30); do
-            if curl -fsS -o /dev/null "$GATEWAY/health"; then
+            if curl -fsS -o /dev/null "$GATEWAY/openapi.json"; then
               exit 0
             fi
             sleep 1
           done
-          echo "the gateway never answered /health"
+          echo "the gateway never answered /openapi.json"
           cat "$RUNNER_TEMP/gateway.log"
           exit 1
 
