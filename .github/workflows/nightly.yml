@@ -58,6 +58,20 @@ jobs:
           path: runtime
           ssh-key: ${{ secrets.RUNTIME_DEPLOY_KEY }}
 
+      # A golden is a real call, and a real call needs a provider key. Without one the suites run,
+      # make no call, and the gate three minutes later says "the run did not finish" — true, and
+      # no help at all. Said here, in the first step, in the words of what is missing.
+      - name: the two keys a real call needs
+        run: |
+          missing=
+          [ -n "$ANTHROPIC_API_KEY" ] || missing="$missing ANTHROPIC_API_KEY"
+          [ -n "$OPENAI_API_KEY" ] || missing="$missing OPENAI_API_KEY"
+          if [ -n "$missing" ]; then
+            echo "the nightly spends real money on real calls and this repository has no$missing:"
+            echo "  gh secret set <NAME> --repo pinecall/agents"
+            exit 1
+          fi
+
       # What a person does with `docker compose -f infra/compose/dev.yml up -d`, in one step.
       #
       # The schema needs BOTH extensions — `halfvec` in 0008 and 0009, a `bm25` index in 0009 — so
