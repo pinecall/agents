@@ -2,9 +2,6 @@
 
 import type { RouteInput } from "../client/index.js";
 
-import type { Open } from "./env.js";
-import { orgOf, whoIs } from "./whoami.js";
-
 export interface Connected {
   slug: string;
   url: string;
@@ -13,8 +10,8 @@ export interface Connected {
   /** Whose org took it, and which of the two worlds. Absent when the gateway would not say. */
   org?: string;
   env?: string;
-  /** Where the key came from: `credentials`, `env`, `dev-file`. Said because it is the thing that
-   * silently decides the two above — a key exported in this shell beats the one `login` kept. */
+  /** Which profile's key opened the door. Said because it is the thing that decides the two
+   * above, and because it used to be decided by whatever was exported in the shell. */
   source?: string;
 }
 
@@ -39,24 +36,6 @@ export function connectedLine(agent: Connected): string {
   said.push(`tools ${agent.tools}`);
   if (agent.doors.length > 0) said.push(`doors ${agent.doors.join(", ")}`);
   return said.join(" · ");
-}
-
-/**
- * Whose org this key is and which world it opens, asked of the gateway itself.
- *
- * One request, and the socket is already up by the time it is asked, so it costs nothing a person
- * waits for. A gateway that will not answer leaves the three fields out rather than making the
- * line guess: a line that said the wrong org would be worse than one that says none.
- */
-export async function whereThisLanded(
-  door: Open,
-): Promise<{ org?: string; env?: string; source?: string }> {
-  try {
-    const who = await whoIs(door);
-    return { org: orgOf(who), env: who.env, source: door.source };
-  } catch {
-    return { source: door.source };
-  }
 }
 
 /** Each door the class declared, as the line names it: the channel, and its number when it has one. */

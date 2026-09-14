@@ -12,7 +12,7 @@ import "./keys.css";
 // the app socket and nothing else. The other worlds and scopes are a choice, made out loud.
 const HOLDING = "app";
 const PRODUCTION = "production";
-const DEVELOPMENT = "development";
+const SANDBOX = "sandbox";
 
 // What a key with no person on it is. Every key issued here is one: people get keys by logging in.
 const A_MACHINE = "a machine";
@@ -96,7 +96,7 @@ export function Keys(): ReactNode {
           />
           <select className="input" value={env} onChange={(event) => setEnv(event.target.value)}>
             <option value={PRODUCTION}>production</option>
-            <option value={DEVELOPMENT}>development</option>
+            <option value={SANDBOX}>sandbox</option>
           </select>
           <button type="submit" className="button" disabled={busy || label.trim() === ""}>
             {busy ? "issuing…" : "issue"}

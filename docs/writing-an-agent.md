@@ -366,7 +366,7 @@ pinecall run                       # the app registered and answering: the proce
                                    # and it prints the console's URL: talk, calls, sessions, evals
 ```
 
-`pinecall run` is the same process in development and in production: it runs the agent, binds no
+`pinecall run` is the same process in the sandbox and in production: it runs the agent, binds no
 port and serves no page. What a person looks at is `--ui` in the terminal, or the console.
 
 Next: [the-prompt.md](the-prompt.md) for the view, and [testing-an-agent.md](testing-an-agent.md)

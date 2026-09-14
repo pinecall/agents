@@ -1,4 +1,4 @@
-/** `pinecall chat [agent.tsx]`: the agent mounted here and the caller's side open in the same terminal. */
+/** `pinecall chat [agent]`: this directory's agent in this process, or a written call at one already held. */
 
 import { createInterface } from "node:readline";
 import { parseArgs } from "node:util";
@@ -9,7 +9,8 @@ import WebSocket from "ws";
 import { mount } from "../runtime/connect.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
-import { load, mountOptions } from "./load.js";
+import { load, mountOptions, notASlug } from "./load.js";
+import { cannotTell, ENV_FLAG, notThisWorld, standing } from "./world.js";
 import { BROKE, CALLER, lineFor } from "./view.js";
 import { firstState } from "./prompt.js";
 
@@ -17,17 +18,30 @@ const PROMPT = `${CALLER} `;
 
 export const group: Group = {
   purpose: "the app in this terminal's own process, and a prompt against it",
-  usage: `usage: pinecall chat [agent.tsx] [--as <contact>] [--state file [--case n]] [--events]
+  usage: `usage: pinecall chat [agent] [--file agent.tsx] [--as <contact>] [--state file [--case n]]
 
-  With nothing after it: the agent mounted in this process, and a written caller against it. The
-  tools run here, so a breakpoint in a @tool is reachable.
+  With nothing after it: the agent of this directory, mounted in THIS process, and a written
+  caller against it. The tools run here, so a breakpoint in a @tool is reachable.
 
+  With an agent's slug: a written call at the agent somebody is already holding — your own
+  \`pinecall run\` in another terminal, or a colleague's. Nothing is mounted here, so --state,
+  which opens a call in a class this process built, is refused.
+
+  --file <path>   which class to mount, when the directory holds more than one
+  --env <world>   the world you believe this key opens; refused when it opens the other
   --as <contact>  who is calling: the id memory files this call under (a phone number, a customer id)
   --state file    the state the call opens in — the same goldens file \`pinecall prompt\` reads
   --case n        which case of that file, when it holds several
   --events        one JSON line per log entry instead of the lines, for a pipe`,
   run,
 };
+
+// --state is applied through mount's `opening` seam, which only exists in a class THIS process
+// built. Reaching an agent somebody else is holding, there is no such seam and no honest place to
+// put the state, so it is refused rather than silently dropped.
+const NOT_YOURS_TO_OPEN =
+  "--state opens a call in a class this process mounted, and `pinecall chat <agent>` mounts none:"
+  + " drop the slug to chat the agent of this directory.";
 
 /**
  * One process, both sides: the app socket registers the agent, and `WS /v1/chat?agent=<slug>` is
@@ -36,6 +50,11 @@ export const group: Group = {
  *
  * This is `rails console`: it works with no `pinecall run` up and it works with three of them,
  * because the caller socket names THIS process's app id and the gateway serves the call from it.
+ *
+ * Named an agent instead, it mounts nothing and is only the caller's side: a written call at
+ * whatever is holding that slug — your own `run` in the other terminal, or a colleague's. The
+ * positional is a SLUG and `--file` is the file, because `--agent` meaning one thing in three
+ * verbs and the other in six was a flag nobody could read.
  */
 export async function run(argv: string[]): Promise<number> {
   const { values, positionals } = parseArgs({
@@ -45,13 +64,38 @@ export async function run(argv: string[]): Promise<number> {
       state: { type: "string" },
       case: { type: "string" },
       as: { type: "string" },
+      file: { type: "string" },
       events: { type: "boolean", default: false },
+      ...ENV_FLAG,
     },
   });
+  const reach = positionals[0];
+  const aFile = notASlug(reach);
+  if (aFile !== undefined) {
+    process.stderr.write(`${aFile}\n`);
+    return 2;
+  }
+  if (reach !== undefined && values.state !== undefined) {
+    process.stderr.write(`${NOT_YOURS_TO_OPEN}\n`);
+    return 2;
+  }
   const door = theDoor();
   if (door === undefined) return 2;
-  const loaded = await load(positionals[0]);
+  try {
+    const elsewhere = notThisWorld("chat", await standing(door), values.env);
+    if (elsewhere !== undefined) {
+      process.stderr.write(`${elsewhere}\n`);
+      return 2;
+    }
+  } catch (failed) {
+    process.stderr.write(`${cannotTell("chat", failed)}\n`);
+    return 2;
+  }
   const url = door.url;
+  if (reach !== undefined) {
+    return await talk(chatUrl(url, reach, undefined, values.as), door.apiKey, values.events === true);
+  }
+  const loaded = await load(values.file);
   const pc = new Pinecall({ url, apiKey: door.apiKey });
   // takesUnclaimed: false is the other half of the `?app=` below. Holding the agent is what makes
   // this a console; taking a call nobody named would make it a server, and a real phone call would

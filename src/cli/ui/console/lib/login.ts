@@ -11,7 +11,7 @@ const SignedSchema = z.object({
   key_id: z.string(),
   org: z.string(),
   label: z.string().nullish(),
-  env: z.enum(["production", "development"]),
+  env: z.enum(["production", "sandbox"]),
   scopes: z.array(z.string()),
   subject: z.string().nullish(),
   name: z.string().nullish(),

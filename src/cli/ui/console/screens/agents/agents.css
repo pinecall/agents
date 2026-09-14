@@ -63,3 +63,81 @@
   color: var(--ink-soft);
   font-size: 11.5px;
 }
+
+/* Whose corner each row is, and the choice of which corners to draw. Both exist only for a key
+   that is answered more than its own — an admin's, the operator's — so the grid gains a column
+   only then, and the head and the rows are told apart by the same class. */
+.agents-corners {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 14px;
+}
+
+.agents-corner {
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-control, 6px);
+  color: var(--ink-soft);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11.5px;
+  padding: 5px 10px;
+}
+
+.agents-corner:hover {
+  background: var(--hover);
+}
+
+.agents-corner-here {
+  color: var(--ink);
+  border-color: var(--ink-faint);
+}
+
+.agents-head:has(> :nth-child(3)),
+.agents-one:has(> :nth-child(3)) {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.agents-one .agents-whose {
+  color: var(--ink-soft);
+  font-size: 11.5px;
+}
+
+/* Whose corner each row is, and the choice of which corners to draw. Both exist only for a key
+   answered with more than its own — an admin's, the operator's — so the grid gains its third
+   column only when a row has one. */
+.agents-corners {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 14px;
+}
+
+.agents-corner {
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11.5px;
+  padding: 5px 10px;
+}
+
+.agents-corner:hover {
+  background: var(--hover);
+}
+
+.agents-corner-here {
+  border-color: var(--ink-faint);
+  color: var(--ink);
+}
+
+.agents-head:has(> :nth-child(3)),
+.agents-one:has(> :nth-child(3)) {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.agents-one .agents-whose {
+  color: var(--ink-soft);
+  font-size: 11.5px;
+}

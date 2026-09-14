@@ -12,18 +12,18 @@ import { asked, type Door } from "./testing/gateway.js";
 const USAGE = "usage: pinecall line [from <+number> | forget | claim | release] [agent.tsx]";
 
 // A number exists once in a world, so it rings in one place. In production that place is the box
-// and there is nothing to decide; in development an org shares ONE number and three developers
+// and there is nothing to decide; in the sandbox an org shares ONE number and three developers
 // may be running the same agent, so which terminal it rings in is claimed out loud. Alone nobody
 // claims anything — the first `pinecall run` takes it. See the runtime's docs/protocol/gateway-api.md.
 export const group: Group = {
-  purpose: "whose terminal the development number rings in",
+  purpose: "whose terminal the sandbox number rings in",
   usage: `${USAGE}
 
   With nothing after it: who is answering this agent's number right now, and who else is running
   it and could take it.
 
   \`from <+number>\` is the one you want. Say which phone is YOURS, once, and every call you make
-  to a development number reaches your own agent — no claim, no coordination, and three of you
+  to a sandbox number reaches your own agent — no claim, no coordination, and three of you
   testing at the same time. It is remembered for this gateway and re-sent by every
   \`pinecall run\`. \`forget\` undoes it.
 

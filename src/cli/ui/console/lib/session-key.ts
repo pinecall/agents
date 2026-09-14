@@ -4,13 +4,13 @@
 // and it survives a reload — which is exactly the life of a console session. Nothing else in this
 // page may reach either storage (test/cli/ui/console/the-key-is-never-in-the-page.test.ts).
 //
-// One key per WORLD. A key opens production or development and never both, so a person looking
+// One key per WORLD. A key opens production or sandbox and never both, so a person looking
 // at the other world holds a second key, minted for them by POST /v1/login/env (lib/login.ts).
 // Which world the tab is looking at is kept beside them, so a reload lands on the same one.
-export type World = "production" | "development";
+export type World = "production" | "sandbox";
 
 /** Both of them, named once: anything that acts on every world reads this and not a literal. */
-export const WORLDS: readonly World[] = ["production", "development"];
+export const WORLDS: readonly World[] = ["production", "sandbox"];
 
 const KEPT_UNDER = "pinecall.key";
 const WORLD_UNDER = "pinecall.world";
@@ -44,7 +44,7 @@ export function forgetEveryKey(): void {
 
 /** The world this tab was looking at, or production when it never said. */
 export function keptWorld(): World {
-  return window.sessionStorage.getItem(WORLD_UNDER) === "development" ? "development" : "production";
+  return window.sessionStorage.getItem(WORLD_UNDER) === "sandbox" ? "sandbox" : "production";
 }
 
 /** Remember which world the tab looks at, so a reload lands on the same one. */

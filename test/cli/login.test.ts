@@ -59,7 +59,7 @@ class FakeGateway {
       slug: "clinica",
       key_id: "k_1",
       label: "the laptop",
-      env: "development",
+      env: "sandbox",
     });
   }
 }
@@ -108,7 +108,7 @@ describe("signing a terminal in through a browser", () => {
 
     expect(code).toBe(0);
     expect(out.text()).toContain(signingIn(gateway.url, A_WORD));
-    expect(out.text()).toContain(`· ${gateway.url} · org clinica · development`);
+    expect(out.text()).toContain(`· ${gateway.url} · org clinica · sandbox`);
     expect(out.text()).not.toContain("org_98889a61509c");
     expect(gatewayFor(gateway.url, home)).toMatchObject({ api_key: A_KEY, org: "clinica" });
   });
@@ -199,7 +199,7 @@ describe("whoami", () => {
     const code = await whoami([], out.stream, written().stream, { PINECALL_HOME: home });
 
     expect(code).toBe(0);
-    expect(out.text()).toBe(`gateway ${gateway.url} · key from profile\norg clinica · key k_1 · development · the laptop\n`);
+    expect(out.text()).toBe(`gateway ${gateway.url} · key from profile\norg clinica · key k_1 · sandbox · the laptop\n`);
     expect(out.text()).not.toContain("org_98889a61509c");
     expect(out.text()).not.toContain(A_KEY);
   });

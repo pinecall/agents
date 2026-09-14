@@ -33,7 +33,7 @@ function Missing({ agent }: { agent: string }): ReactNode {
   return (
     <Nothing>
       {NOT_HELD.replace("{agent}", agent)} — this org, in this world. Check the org you signed in
-      with and the production/development toggle above, or run `pinecall run` in the app's
+      with and the production/sandbox toggle above, or run `pinecall run` in the app's
       directory.
     </Nothing>
   );

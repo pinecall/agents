@@ -11,7 +11,7 @@ const WhoseSchema = z.object({
   org: z.string(),
   key_id: z.string(),
   label: z.string().nullish(),
-  env: z.enum(["production", "development"]),
+  env: z.enum(["production", "sandbox"]),
   scopes: z.array(z.string()),
   subject: z.string().nullish(),
   name: z.string().nullish(),

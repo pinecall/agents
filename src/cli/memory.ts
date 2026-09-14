@@ -16,7 +16,7 @@ import { refusal } from "./whoami.js";
 
 const USAGE = `usage: pinecall memory <contact>
        pinecall memory forget <contact>
-       pinecall memory eval [golden.json] [--k <n>] [--agent agent.tsx]`;
+       pinecall memory eval [golden.json] [--k <n>] [--file agent.tsx]`;
 
 // The golden beside the agent that answers with those facts: the questions recall is held to, and
 // what each should have brought back. `memory/golden.json` is where `eval` looks when nobody says.
@@ -68,13 +68,13 @@ export async function run(argv: string[], how: Recalling = {}): Promise<number> 
   const { values, positionals } = parseArgs({
     args: argv,
     allowPositionals: true,
-    options: { agent: { type: "string" }, k: { type: "string" } },
+    options: { file: { type: "string" }, k: { type: "string" } },
   });
   const [verb, second] = positionals;
   const door = theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
   try {
-    if (verb === "eval") return await evaluate(door, second, values.k, values.agent, out, err);
+    if (verb === "eval") return await evaluate(door, second, values.k, values.file, out, err);
     if (verb === "forget" && second !== undefined) {
       return await forget(door, second, how.confirm ?? askOnATerminal, out);
     }

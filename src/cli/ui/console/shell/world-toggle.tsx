@@ -1,4 +1,4 @@
-/** Production / Development: which world the tab looks at, and the turn to the other one. */
+/** Production / Sandbox: which world the tab looks at, and the turn to the other one. */
 
 import { useState, type ReactNode } from "react";
 
@@ -6,7 +6,7 @@ import { GatewayError } from "../../shared/api";
 import type { World } from "../lib/session-key";
 import { useWorld } from "../lib/world";
 
-const WORLDS: readonly World[] = ["production", "development"];
+const WORLDS: readonly World[] = ["production", "sandbox"];
 
 /**
  * Two words, one of them lit. Turning needs a key for the other world: a kept one, or one the

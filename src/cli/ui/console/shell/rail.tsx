@@ -4,7 +4,9 @@ import type { ReactNode } from "react";
 
 import { RailGroup, RailLink } from "../../shared/frame";
 import { opens } from "../lib/scopes";
+import { bySlug, meIn } from "../lib/corners";
 import { useHeldAgents } from "../lib/use-held-agents";
+import { useWhoami } from "../lib/whoami";
 import { useScopes } from "../lib/whoami";
 
 // Talk first: it is the screen a person opens the console for. The rest read the same log.
@@ -35,7 +37,9 @@ export function Rail({ agent }: { agent: string }): ReactNode {
   // Until whoami answers, every scope: nothing flickers off and back on when the key turns out
   // to open it. What the key does not open is then not drawn, so no click meets a 403.
   const scopes = useScopes();
-  const held = useHeldAgents().agents.length;
+  // Agents and not corners: one slug two people are running is one agent against the plan,
+  // and a badge reading 2 beside a fleet of one would be a lie a key's reach invented.
+  const held = bySlug(useHeldAgents().agents, meIn(useWhoami())).length;
   const open = (screen: string): boolean => scopes === null || opens(scopes, screen);
   // The one count the rail knows without a stream: how many agents the gateway holds right now.
   const hint = (screen: string): string => (screen === "agents" && held > 0 ? String(held) : "");

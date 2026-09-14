@@ -19,7 +19,7 @@ export interface Profile {
   org?: string;
   /** The world it opens, likewise: printed, never trusted over what the gateway says. */
   env?: string;
-  /** The phone this person calls FROM, so a ring in development reaches their own agent. */
+  /** The phone this person calls FROM, so a ring in the sandbox reaches their own agent. */
   calling?: string;
 }
 

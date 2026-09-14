@@ -24,7 +24,7 @@ beforeEach(() => {
 
 test("a person holding both worlds' keys holds neither afterwards", () => {
   keepKey("production", "pk_live");
-  keepKey("development", "pk_dev");
+  keepKey("sandbox", "pk_dev");
 
   forgetEveryKey();
 
@@ -35,7 +35,7 @@ test("forgetting only the world on screen would leave the other one signed in", 
   // The toggle mints the second key from the first, so a key left behind is a way back in as the
   // same person — which is not what anybody means by signing out.
   keepKey("production", "pk_live");
-  keepKey("development", "pk_dev");
+  keepKey("sandbox", "pk_dev");
 
   forgetEveryKey();
 

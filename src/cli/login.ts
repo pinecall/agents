@@ -32,7 +32,7 @@ export const group: Group = {
 
   With no URL it is ${CLOUD_URL}, and it says so. Name another for your own box.
 
-  The key it keeps is this machine's DEVELOPMENT key, so \`pinecall run\` and \`pinecall chat\`
+  The key it keeps is this machine's SANDBOX key, so \`pinecall run\` and \`pinecall chat\`
   answer in a world of your own and never in the one your customers call.
 
   --key-stdin reads a KEY from one line of stdin instead, for a machine: a server, a CI job, a

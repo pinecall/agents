@@ -87,12 +87,12 @@ describe("issuing one", () => {
   });
 
   it("says which world and which scopes when the person said them", async () => {
-    await run(["issue", "--label", "ci", "--env", "development", "--scope", "app", "--scope", "knowledge"], {
+    await run(["issue", "--label", "ci", "--env", "sandbox", "--scope", "app", "--scope", "knowledge"], {
       out: written().stream,
       env,
     });
 
-    expect(gateway.heard[0]?.body).toEqual({ label: "ci", env: "development", scopes: ["app", "knowledge"] });
+    expect(gateway.heard[0]?.body).toEqual({ label: "ci", env: "sandbox", scopes: ["app", "knowledge"] });
   });
 
   it("refuses a key with no label, and knocks at no door", async () => {
@@ -120,7 +120,7 @@ describe("reading them back", () => {
   it("prints fingerprints, worlds and whose each is, and never a key", async () => {
     gateway.rows = [
       { fingerprint: "9f2c1a4b7e0d5566", label: "prod server", env: "production", scopes: ["app"], subject: null, name: null, created_at: "2026-09-01", revoked_at: null },
-      { fingerprint: "11aa22bb33cc4455", label: "laptop", env: "development", scopes: ["app"], subject: "m_1", name: "Berna", created_at: "2026-09-02", revoked_at: "2026-09-09" },
+      { fingerprint: "11aa22bb33cc4455", label: "laptop", env: "sandbox", scopes: ["app"], subject: "m_1", name: "Berna", created_at: "2026-09-02", revoked_at: "2026-09-09" },
     ];
     const out = written();
 

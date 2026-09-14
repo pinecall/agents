@@ -7,7 +7,7 @@ import type { Group } from "./groups.js";
 import { asked, type Door } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
 
-const USAGE = `usage: pinecall keys issue --label "<what it is for>" [--env production|development] [--scope <scope>]…
+const USAGE = `usage: pinecall keys issue --label "<what it is for>" [--env production|sandbox] [--scope <scope>]…
        pinecall keys list
        pinecall keys revoke <fingerprint>`;
 

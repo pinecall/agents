@@ -13,7 +13,7 @@ selection in memory.
 
 | URL | screen |
 |---|---|
-| `/` | Agents — the org's list, in this world |
+| `/` | Agents — the org's list, in this world. In the sandbox an admin sees every member's corner, whose each is, and a filter over the three |
 | `/live` | Live — every call up on the floor, whichever agent has it |
 | `/sessions` | Sessions — every agent's finished calls, one table, each naming its agent |
 | `/numbers` | Numbers — the org's carrier, which number reaches which agent, and one more imported or bought |
@@ -38,7 +38,7 @@ The shell carries, on every screen:
 - a breadcrumb, built from the path: `fleet / <agent> / <screen>`, last segment emphasised;
 - **whose console this is**: the org, the key id and the label or the person's name off `GET /v1/whoami` — never the key;
 - **an agent selector** (`GET /v1/agents`, the key's world), which carries you to the same screen of another agent;
-- **the Production / Development toggle**: one key per world in the tab; turning to the other world uses the key kept for
+- **the Production / Sandbox toggle**: one key per world in the tab; turning to the other world uses the key kept for
   it or mints one for the same person (`POST /v1/login/env`), and shows the gateway's refusal when a machine key tries;
 - one switch: a light/dark toggle that lives as long as the tab;
 - a rail with two groups — the agent's eight screens (Talk, Chat, Calls, Sessions, Pipeline, Knowledge, Memory, Evals), under

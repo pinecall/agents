@@ -7,7 +7,7 @@ import { Nothing } from "../../../shared/frame";
 import { orgs, routesOf, type Answering, type Org } from "../../lib/doors";
 import "./routes.css";
 
-const WORLDS = ["production", "development"] as const;
+const WORLDS = ["production", "sandbox"] as const;
 
 /**
  * The screen.

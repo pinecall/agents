@@ -104,9 +104,12 @@ a directory earns its place there by having a line in that table (§13).
 | `index.ts` | the dispatcher: one lazy import per group, and the whole CLI on one screen |
 | `groups.ts` | the `Group` contract, and `PLANNED` — every verb the design declares that this tree has not written |
 | `env.ts` | where the CLI is pointed and what opens the door: the one resolution order, for every verb |
+| `profiles.ts` · `config.ts` | `~/.pinecall/config.json`: every gateway this machine knows by name, the active one, and the verbs that list and switch them |
+| `world.ts` | which of the two worlds a verb works in. The KEY decides; `--env` is a person saying which they believe they hold, and the refusal when the key opens the other |
+| `connected.ts` | the one line `run` prints when the socket is up: who registered, whose org took it, which world, and where the key came from |
 | `credentials.ts` | `~/.pinecall/`: the `credentials` file (0600) and the local gateway's `dev` file |
 | `load.ts` | a tenant's `agent.tsx` (or `agent.ts`) loaded with tsx, handed its own source, and `instanceFor` — one instance with a line to answer on, for the pages that print a prompt |
-| `run.ts` · `chat.ts` · `prompt.ts` | the app, the app in this terminal, the prompt offline |
+| `run.ts` · `chat.ts` · `prompt.ts` | the app, the app in this terminal — or a written call at an agent somebody else is holding, named by slug — and the prompt offline |
 | `test.ts` · `simulate.ts` · `eval.ts` · `runs/` | ring 1, a live persona, ring 3, and what the gateway has run |
 | `knowledge.ts` · `memory.ts` | the folder pushed whole under a name, listed, dropped · one contact's facts, and the right to be forgotten. Each also holds its golden's verb: `eval` prints `recall@k` and `nDCG@10`, computed in the gateway by code with no model, and exits 1 on a miss |
 | `keys.ts` | the API keys this org's machines run on: one issued for a machine and printed once, the rows read back as fingerprints, one revoked |
@@ -363,7 +366,7 @@ prompt` must not pay for a websocket client.
 | verb | what it is | needs a gateway |
 |---|---|---|
 | `run` | the app registered and answering: **the process you deploy**. Binds no port, serves no page | yes |
-| `line` | whose terminal the org's shared development number rings in; `claim` takes it | yes |
+| `line` | whose terminal the org's shared sandbox number rings in; `claim` takes it | yes |
 | `chat` | the same app in this terminal's own process, and a written caller against it | yes |
 | `ui` | the console on 127.0.0.1 for the life of the command | yes |
 | `prompt` | the exact prompt a state would produce | **no** |
@@ -457,7 +460,7 @@ The console is served at `/`. Everything about the page is a containment decisio
 | `talk/` | a person reaches the agent from this tab, with this browser's microphone |
 | `floor/` | the org's layer: every live call across its agents (`/live`, off `GET /v1/sessions` and the floor's stream `GET /v1/events`), and every agent's finished calls in one table with an agent column (`/sessions`, the very `SessionTable` an agent's screen draws) |
 | `numbers/` · `team/` · `usage/` | **numbers, whole**: the org's carrier — a Twilio account or a SIP peer — brought, shown by kind and account and never a secret, replaced or forgotten (`/v1/carrier`, `carrier.tsx`); the doors it answers with who put each there and a bought one marked (`GET /v1/numbers`), one let go (`DELETE /v1/numbers/{number}`); and one added, two ways — imported from what the carrier owns (`GET /v1/numbers/available`, `POST /v1/numbers`) or bought on the box's account (`POST /v1/numbers/buy`) — **always the plan first** (`?dry_run=true`, the gateway's own steps shown in its words) and the same request again on confirm (`adding.tsx`); the org's people, invited with a token shown once and changed in place (`/v1/members`); what the org consumed, totals then rows in the runtime's own field names (`GET /v1/usage`) |
-| the shell | an agent selector (`GET /v1/agents`), a way out (`shell/leave.tsx`), the Production / Development toggle — one key per world in the tab, the other minted for the same person by `POST /v1/login/env` (`lib/world.tsx`, `lib/session-key.ts`) — and a rail gated by the key's scopes off `GET /v1/whoami` (`lib/scopes.ts`, `lib/whoami.tsx`): a screen the key does not open is not drawn |
+| the shell | an agent selector (`GET /v1/agents`, one row per slug — `lib/corners.ts`, because a screen is addressed by slug and the door answers in the corner the key opens), a way out (`shell/leave.tsx`), the Production / Sandbox toggle — one key per world in the tab, the other minted for the same person by `POST /v1/login/env` (`lib/world.tsx`, `lib/session-key.ts`) — and a rail gated by the key's scopes off `GET /v1/whoami` (`lib/scopes.ts`, `lib/whoami.tsx`): a screen the key does not open is not drawn |
 
 **What it looks like** is the design canvas, translated: `styles/tokens.css` is the one file
 allowed to hold a hex and carries the canvas's palette under the console's names (`--ground`,

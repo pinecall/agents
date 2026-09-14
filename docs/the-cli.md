@@ -58,7 +58,7 @@ points one command somewhere else. Both questions — which gateway, which key �
 
 ```console
 $ pinecall config
-▸ box      https://box.pinecall.io  pinecall · development
+▸ box      https://box.pinecall.io  pinecall · sandbox
   local    http://127.0.0.1:8080
 ```
 
@@ -94,17 +94,22 @@ key, it is an invitation. A key is never printed, never logged, and never put in
 ## `run`
 
 ```
-pinecall run [agent.tsx] [--ui] [--events] [--show-prompt]
+pinecall run [agent.tsx] [--env production] [--ui] [--events] [--show-prompt]
 ```
 
 The app registered on the gateway and answering: **this is the process you deploy**. Which world
-it answers in is the key's: `pinecall signup` and a login keep a development key, so a laptop's
-run holds a development agent, and what holds the production one is a key issued for a machine
+it answers in is the key's: `pinecall signup` and a login keep a sandbox key, so a laptop's
+run holds a sandbox agent, and what holds the production one is a key issued for a machine
 ([`keys`](#keys)) put in that box's environment. A key you hold by being logged in does not open
 `app` in production at all, so a `pinecall run` on it is refused there, in a sentence naming what
-the key does open. **In development the agent is held per person**: two developers of one tenant
-each run the same agent and each reaches their own, while the org's development *number* is one
-door and rings where it was claimed ([`line`](#line)). It binds no
+the key does open. **In the sandbox the agent is held per person**: two developers of one tenant
+each run the same agent and each reaches their own, while the org's sandbox *number* is one
+door and rings where it was claimed ([`line`](#line)). An admin, and whoever runs the gateway, see
+every corner of the sandbox rather than only their own — somebody has to be able to tell what the
+team is running. **`--env` asserts and never selects**: a key opens one world, so the flag is you
+saying which one you believe you hold, and `run` stops when the key disagrees. Nothing said means
+the sandbox — a deployment types `--env production`, which is the deliberate act it should be.
+It binds no
 port and serves no page — the gateway serves the console, at `/` — and nothing in this CLI answers
 a browser. One line per log entry on stdout, and under the connected line the console's URL:
 `console  https://box.pinecall.io/a/clinica-norte?login=lc_…`. The code in it is one-use and dies
@@ -113,8 +118,8 @@ and never sees this process's. Opening the console cold instead asks for org, em
 
 ```console
 $ pinecall run
-gateway http://127.0.0.1:8080 · key from dev-file
-clinica-norte · connected to http://127.0.0.1:8080 · tools 4 · doors web
+gateway http://127.0.0.1:8080 · key from profile
+clinica-norte · clinica · sandbox · connected to http://127.0.0.1:8080 · key from profile · tools 4 · doors web
 console  http://127.0.0.1:8080/a/clinica-norte?login=lc_…   (opens within five minutes, once)
 line     rings in this terminal · also running: carla@clinica.test
 › Clínica Norte, buenos días. ¿En qué puedo ayudarle?
@@ -143,7 +148,7 @@ A `pinecall run` in a directory with no personas answers `simulate` with a sente
 pinecall line [from <+number> | forget | claim | release] [agent.tsx]
 ```
 
-**An org shares one development number, and a number rings in one place.** With one developer that
+**An org shares one sandbox number, and a number rings in one place.** With one developer that
 is not a decision: the first `pinecall run` to hold the agent answers its ring and you never learn
 the word. With three it used to be whoever restarted last — so you would dial the number to test
 your change and be answered in a colleague's scrollback, with nothing on either screen saying so.
@@ -183,21 +188,32 @@ claim there; `pinecall run` prints the line only for an agent that answers at a 
 ## `chat`
 
 ```
-pinecall chat [agent.tsx] [--as <contact>] [--state file [--case n]] [--events]
+pinecall chat [agent] [--file agent.tsx] [--as <contact>] [--state file [--case n]] [--events]
 ```
 
-The same app mounted in **this** process, and a written caller against it in the same terminal.
-This is `rails console`: the tools run here, so a breakpoint in a `@tool` is reachable. It works
-with no `pinecall run` up and with three of them, because the caller socket names this process.
+With nothing after it: the agent of this directory mounted in **this** process, and a written
+caller against it in the same terminal. This is `rails console`: the tools run here, so a
+breakpoint in a `@tool` is reachable. It works with no `pinecall run` up and with three of them,
+because the caller socket names this process.
 
 ```console
 $ pinecall chat --as +34600000001
 ‹ hola, quería cambiar mi cita del jueves
 › Claro. ¿Me da su nombre completo y su teléfono?
+
+$ pinecall chat clinica-norte
 ```
 
+**The positional is an agent's slug, never a file.** Named one, `chat` mounts nothing and is only
+the caller's side: a written call at whatever is already holding that slug — your own `pinecall
+run` in the other terminal, or a colleague's, in the corner your key reaches. `--file` is how you
+name the class to mount when the directory holds more than one, and it is the same word in every
+verb that loads a file (`test`, `simulate`, `remember`, `personas`, `knowledge`, `memory`);
+`--agent` is a slug in every verb that takes one.
+
 `--as` is who is calling — the id memory files the call under. `--state file [--case n]` opens the
-call in a state: the same goldens file `prompt` reads. `--events` prints the wire instead.
+call in a state: the same goldens file `prompt` reads, and it is refused beside a slug, because
+nothing is mounted here to open. `--events` prints the wire instead.
 
 ## `prompt`
 
@@ -228,7 +244,7 @@ Eres la recepción de Clínica Norte. Hablas de usted, con frases cortas. …
 ## `test`
 
 ```
-pinecall test [paths] [--agent agent.tsx] [--model m]… [--grep x] [--watch] [--json]
+pinecall test [paths] [--file agent.tsx] [--model m]… [--grep x] [--watch] [--json]
 pinecall test --voice [--background-noise dB] [--packet-loss 0.05]
 ```
 
@@ -254,7 +270,7 @@ at that many dB under them, and `--packet-loss` drops that share of their packet
 
 ```
 pinecall simulate --persona <name> [--judge] [--turns n] [--voice] [--listen]
-                  [--background-noise dB] [--packet-loss percent] [--agent agent.tsx]
+                  [--background-noise dB] [--packet-loss percent] [--file agent.tsx]
 ```
 
 A model in the gateway plays the caller — every turn improvised from the persona's goal, its style
@@ -282,7 +298,7 @@ written call has no audio in it. `--judge` reads back the `call.score` the log s
 ## `personas`
 
 ```
-pinecall personas list | show <name> | try <name> [--agent agent.tsx]
+pinecall personas list | show <name> | try <name> [--file agent.tsx]
 ```
 
 ```console
@@ -419,7 +435,7 @@ the console's Live screen, which has a room; this is the transcript and the desk
 ## `keys`
 
 ```
-pinecall keys issue --label "prod server" [--env production|development] [--scope <scope>]…
+pinecall keys issue --label "prod server" [--env production|sandbox] [--scope <scope>]…
 pinecall keys list
 pinecall keys revoke <fingerprint>
 ```
@@ -505,7 +521,7 @@ pinecall signup [<gateway-url>] --org <slug> --email <you@…> --person "<your n
 The one verb that needs no key, because it is the one that gets you the first. It makes the org
 with you as its admin — what the org may do is whatever the people who run that gateway decided for
 a new one: on a box of your own, everything; on a hosted one, its trial. The gateway answers a
-**production** key; a terminal is a laptop, so the verb asks for the same person's **development**
+**production** key; a terminal is a laptop, so the verb asks for the same person's **sandbox**
 key and keeps that one where `login` keeps one — `run` and `chat` work straight after, in a world
 of your own ([worlds-and-teams.md](worlds-and-teams.md)). The console link it prints signs the
 browser in to production, where the org's numbers, people and usage are. The
@@ -516,12 +532,12 @@ flag is shell history.
 ```console
 $ pinecall signup --org tienda-sur --name "Tienda Sur" --email ana@tiendasur.uy --person "Ana"
 Password (12 characters at least):
-created org tienda-sur on https://box.pinecall.io — signed in as Ana, development key kept in ~/.pinecall/credentials
+created org tienda-sur on https://box.pinecall.io — signed in as Ana, sandbox key kept in ~/.pinecall/credentials
 console  https://box.pinecall.io/?login=lc_…   (opens within five minutes, once)
 
 $ pinecall whoami
 gateway https://box.pinecall.io · key from profile
-org org_4ad95a171a72 · key k_8dcc… · development · cli
+org org_4ad95a171a72 · key k_8dcc… · sandbox · cli
 ```
 
 Nothing this shell exports can point a verb anywhere else: the profile is the whole answer, and
@@ -559,7 +575,7 @@ open this to sign in:
 https://box.pinecall.io/cli?c=cli_…
 
 waiting…
-▸ box · https://box.pinecall.io · org clinica · development
+▸ box · https://box.pinecall.io · org clinica · sandbox
 ```
 
 **With no URL it is `https://box.pinecall.io`, and it says so** in the line above the link, so a
@@ -572,7 +588,7 @@ it by itself, and `pinecall use` is how you point them somewhere else:
 
 ```console
 $ pinecall config
-▸ box      https://box.pinecall.io  clinica · development
+▸ box      https://box.pinecall.io  clinica · sandbox
   stg      https://stg.acme.io      clinica · production
 
 $ pinecall use stg
@@ -581,7 +597,7 @@ $ pinecall use stg
 
 `config` prints no key. What a listing may say about one is that it is there.
 
-**The key it keeps is this laptop's development key.** `pinecall run` and `pinecall chat` answer in
+**The key it keeps is this laptop's sandbox key.** `pinecall run` and `pinecall chat` answer in
 a world of your own and never in the one your customers call — the console's toggle is the same
 person looking the other way ([worlds-and-teams.md](worlds-and-teams.md)).
 
@@ -593,7 +609,7 @@ every child process and every `ps` can read. `PINECALL_HOME` says where that fil
 ```console
 $ pinecall whoami
 gateway http://127.0.0.1:8080 · key from dev-file
-org default · key dev · development · the local gateway
+org default · key dev · sandbox · the local gateway
 ```
 
 ---
@@ -603,18 +619,18 @@ org default · key dev · development · the local gateway
 ## `knowledge`
 
 ```
-pinecall knowledge push [dir] [--base <name>] [--agent agent.tsx]
+pinecall knowledge push [dir] [--base <name>] [--file agent.tsx]
 pinecall knowledge list
 pinecall knowledge drop <base>
-pinecall knowledge eval [golden.json] [--base <name>] [--k <n>] [--agent agent.tsx]
+pinecall knowledge eval [golden.json] [--base <name>] [--k <n>] [--file agent.tsx]
 ```
 
 `push` reads every `*.md` under the directory — `./knowledge/docs` beside the agent file when none
 is named — and sends the folder **whole**: the base is replaced, never merged. The base is the
 agent's slug unless `--base` says otherwise, and the class names it with `docs = "<base>"`.
 
-**The base you push is your key's world's.** A push with the development key a login keeps
-replaces the development base — what your own `pinecall run` answers from — and never the one the
+**The base you push is your key's world's.** A push with the sandbox key a login keeps
+replaces the sandbox base — what your own `pinecall run` answers from — and never the one the
 telephone answers from. Promoting is the same push made with the key the box runs on
 ([`keys`](#keys)): keep it as a profile of its own — `pinecall login --key-stdin <url> < key
 --as prod` — and push with `--profile prod`. `list` and `drop` read the same world.
@@ -635,7 +651,7 @@ never soften a question so a change can pass.
 ```
 pinecall memory <contact>
 pinecall memory forget <contact>
-pinecall memory eval [golden.json] [--k <n>] [--agent agent.tsx]
+pinecall memory eval [golden.json] [--k <n>] [--file agent.tsx]
 ```
 
 Everything memory kept about one contact — the caller's number, or the id the app named — with the
@@ -649,7 +665,7 @@ so no contact of yours is read or written — they go to a scratch contact and a
 ## `remember`
 
 ```
-pinecall remember [paths] [--agent agent.tsx] [--grep x] [--json]
+pinecall remember [paths] [--file agent.tsx] [--grep x] [--json]
 ```
 
 The other half of memory: the **write** side. A case is one call written down — both speakers,

@@ -7,7 +7,7 @@ import type { Cost, SessionLine } from "@pinecall/protocol";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { asked, type Door } from "./testing/gateway.js";
-import { agentOfThisDirectory } from "./load.js";
+import { agentOfThisDirectory, notASlug } from "./load.js";
 import { BROKEN, HELD } from "./testing/score.js";
 import { refusal } from "./whoami.js";
 
@@ -76,6 +76,11 @@ async function listed(
   values: { agent?: string | undefined; limit?: string | undefined; json?: boolean | undefined },
   err: NodeJS.WritableStream,
 ): Promise<string[] | null> {
+  const aFile = notASlug(values.agent);
+  if (aFile !== undefined) {
+    err.write(`${aFile}\n`);
+    return null;
+  }
   const agent = values.agent ?? (await agentOfThisDirectory());
   if (agent === null || agent === undefined) {
     err.write(`${USAGE}\n  name the agent, or run this beside an agent file\n`);

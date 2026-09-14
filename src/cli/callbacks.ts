@@ -2,6 +2,7 @@
 
 import { doorLine, theDoor } from "./env.js";
 import type { Group } from "./groups.js";
+import { notASlug } from "./load.js";
 import { asked, type Door } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
 
@@ -45,6 +46,11 @@ export async function run(
   if (door === undefined) return 2;
   const query = new URLSearchParams();
   const agent = flag(argv, "--agent");
+  const aFile = notASlug(agent);
+  if (aFile !== undefined) {
+    err.write(`${aFile}\n`);
+    return 2;
+  }
   const after = flag(argv, "--after");
   if (agent !== undefined) query.set("agent", agent);
   if (after !== undefined) query.set("after", after);
