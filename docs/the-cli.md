@@ -589,6 +589,7 @@ be one flag away from open registration on somebody else's box.
 ```
 pinecall login [gateway-url] [--as <profile>] [--key-stdin]
 pinecall config
+pinecall config rm <name>
 pinecall use <profile>
 pinecall whoami
 ```
@@ -625,9 +626,16 @@ $ pinecall config
 
 $ pinecall use stg
 ▸ stg
+
+$ pinecall config rm stg
+forgot stg
 ```
 
-`config` prints no key. What a listing may say about one is that it is there.
+`config` prints no key. What a listing may say about one is that it is there. `config rm` takes a
+row out — a gateway that has moved, a key that was revoked — and takes the active mark with it
+rather than leaving it pointing at a row that is gone. It forgets the row here and nothing else:
+the key itself is stopped from the Keys screen, and a row left behind is a key somebody will trust
+tomorrow and a refusal they will read as the gateway's fault.
 
 **The key it keeps is this laptop's sandbox key.** `pinecall run` and `pinecall chat` answer in
 a world of your own and never in the one your customers call — the console's toggle is the same
