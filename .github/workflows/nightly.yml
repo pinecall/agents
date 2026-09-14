@@ -49,10 +49,13 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://pinecall:pinecall@127.0.0.1:5432/pinecall
-      # One key that needs no api_keys row. The CLI reads the same name (src/cli/env.ts), so the
-      # terminal and the gateway agree without a key ever being issued in a throwaway database.
-      PINECALL_DEV_KEY: dev
-      PINECALL_URL: http://127.0.0.1:8080
+      GATEWAY: http://127.0.0.1:8080
+      # The operator gate, so this run can mint the one key it uses. It is a throwaway database on
+      # a throwaway machine: the value is not a secret, and naming it here says what it is for.
+      PINECALL_OPS_KEY: a-key-for-one-nights-throwaway-gateway
+      # Where `pinecall login` keeps the profile every verb below reads. There is no other source:
+      # the CLI reads no environment, so a run that skipped the login would knock at nothing.
+      PINECALL_HOME: ${{ github.workspace }}/.pinecall-nightly
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
@@ -96,20 +99,32 @@ jobs:
           pnpm install --frozen-lockfile
           scripts/build
 
+      # The same three steps a person types on their own machine, which is the point: there is one
+      # runtime and no second way in. PINECALL_DEV_KEY used to stand in for all of it — one key
+      # that needed no api_keys row — and it was a bootstrap only CI and a laptop ever took.
       - name: the gateway this run talks to
         working-directory: runtime
         run: |
           uv run pinecall-runtime migrate up
           uv run pinecall-runtime gateway > "$RUNNER_TEMP/gateway.log" 2>&1 &
           for _ in $(seq 1 30); do
-            if curl -fsS -o /dev/null -H "Authorization: Bearer $PINECALL_DEV_KEY" "$PINECALL_URL/v1/routes"; then
+            if curl -fsS -o /dev/null "$GATEWAY/health"; then
               exit 0
             fi
             sleep 1
           done
-          echo "the gateway never answered /v1/routes"
+          echo "the gateway never answered /health"
           cat "$RUNNER_TEMP/gateway.log"
           exit 1
+
+      # The key goes from the minting verb into the profile down a pipe: it is never a variable, a
+      # file of its own or a line in this log. `--env sandbox` because that is where a suite runs.
+      - name: a key for this run, and the profile the CLI reads it from
+        working-directory: runtime
+        run: |
+          uv run pinecall-runtime keys issue \
+            --org default --env sandbox --label "the nightly" \
+            | node ../agents/bin/pinecall.js login --key-stdin --as nightly "$GATEWAY"
 
       # The class is mounted in this step's own process, the way a tenant runs it. A golden that
       # does not hold is not this step's business: it writes the run down and the gate below reads
@@ -146,7 +161,7 @@ jobs:
       #
       # On this job's throwaway Postgres both windows come out of tonight, so the baseline is empty
       # and the step holds by construction: a delta needs two windows that both settled something.
-      # It bites the day PINECALL_URL points at a gateway that keeps its log — see
+      # It bites the day $GATEWAY points at a gateway that keeps its log — see
       # docs/decisions/pinecall-test.md, § `runs drift`.
       - name: the drift watch on call.score
         if: always()
