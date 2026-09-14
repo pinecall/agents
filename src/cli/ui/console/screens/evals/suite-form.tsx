@@ -13,7 +13,7 @@ const LOSS_PERCENT = 0;
 
 /**
  * The form. It asks the console's own server, never the gateway: a run mounts the class of the
- * directory `pinecall ui` runs in, so only that process can start one — and it is the same suite
+ * directory `pinecall run` runs in, so only that process can start one — and it is the same suite
  * `pinecall test` runs, reported in that terminal, with every broken golden written out where the
  * verb writes it. The run's row appears in the table below as the gateway opens it.
  */

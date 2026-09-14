@@ -38,7 +38,7 @@ export interface Roster {
 
 // The console may be opened on any agent the gateway holds, but a simulation needs the CLASS —
 // mounted in this process, as `pinecall simulate` mounts it — and the class is the one in the
-// directory `pinecall ui` was typed in. Another agent's page gets the sentence, not a call.
+// directory `pinecall run` was typed in. Another agent's page gets the sentence, not a call.
 const NOT_THIS_DIRECTORY = (asked: string, here: string | null): string =>
   here === null
     ? `no agent class in this directory: run \`pinecall run\` where ${asked}'s agent.tsx is`

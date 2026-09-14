@@ -74,7 +74,7 @@ const TERMINAL_ENTRY = "call.score";
 // sessions show` sends them to a stub that prints "not built yet" and nothing else.
 const notSealed = (call: string): string =>
   `no ${TERMINAL_ENTRY} within ${JUDGING_MAY_TAKE_MS / 1000}s: read the call with ` +
-  `\`pinecall-runtime sessions show ${call}\`, or \`pinecall ui\` → Sessions`;
+  `\`pinecall sessions ${call}\`, or the console → Sessions`;
 
 /** What one simulated call left behind: where to read it, and what the judges made of it. */
 export interface Simulated {

@@ -68,7 +68,7 @@ export function Evals(): ReactNode {
             <h2 className="section-title">Run a suite</h2>
             <p className="suite-lede">
               The goldens are the agent's own files, beside its class, so the run is opened by the process that holds
-              them — the terminal that typed <code className="mono">pinecall ui</code>, exactly as{" "}
+              them — the terminal that typed <code className="mono">pinecall run</code>, exactly as{" "}
               <code className="mono">pinecall test</code> would — and scored by this gateway. Tick the ones to run; the
               run appears below the moment it opens, and every broken golden is written out where the verb writes it.
             </p>

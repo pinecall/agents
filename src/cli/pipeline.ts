@@ -32,7 +32,7 @@ export const group: Group = {
   no blank value: an empty voice once silenced a whole line of calls, and the door refuses one.
 
   \`pinecall providers\` lists every vendor a knob may name and what each one still wants; the same
-  six knobs are the Pipeline screen of \`pinecall ui\`, over the same two doors.`,
+  six knobs are the console's Pipeline screen, over the same two doors.`,
   run,
 };
 

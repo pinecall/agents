@@ -12,7 +12,7 @@ import "./memory.css";
 
 /**
  * The screen. The contact half is the gateway's two doors — read and forget — and the goldens half
- * is this process's own, because both goldens are files of the directory `pinecall ui` runs in:
+ * is this process's own, because both goldens are files of the directory `pinecall run` runs in:
  * `memory/golden.json` for what recall ranks, `test/memory` for what a hang-up makes of a call.
  */
 export function Memory(): ReactNode {

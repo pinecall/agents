@@ -204,6 +204,28 @@ describe("`ui` is not a verb of this CLI", () => {
   });
 });
 
+// Deleting a verb is not deleting the sentences that name it. `ui` was gone for four days and
+// eleven places still told people to type it — the supervise desk, `pipeline --help`, what a
+// simulation prints at the end, and the console's own Evals page, in a <code> a person reads on
+// screen. The usage table above is pinned by name; this pins the prose.
+describe("no line of this CLI tells anybody to type a verb that is gone", () => {
+  it("never says `pinecall ui`, except where it says it is gone", () => {
+    const cli = fileURLToPath(new URL("../../src/cli/", import.meta.url));
+    const guilty: string[] = [];
+
+    for (const file of sources(cli)) {
+      for (const [n, line] of readFileSync(file, "utf8").split("\n").entries()) {
+        if (!line.includes("pinecall ui")) continue;
+        // The one honest mention: the sentence that says the verb is not one.
+        if (/not a verb|no such group|is gone/.test(line)) continue;
+        guilty.push(`${file}:${n + 1}`);
+      }
+    }
+
+    expect(guilty).toEqual([]);
+  });
+});
+
 /** Every .ts under a directory, its subdirectories included. */
 function sources(directory: string): string[] {
   const found: string[] = [];
