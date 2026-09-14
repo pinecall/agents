@@ -29,6 +29,12 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   key rather than the one on screen, because the toggle mints the second from the first.
 
 ### Changed
+- **`pinecall keys revoke` takes the fingerprint `keys list` prints.** The listing shows the first
+  twelve characters, because a full sha256 is unreadable in a column, and the door matches the
+  whole hash — so revoking the word on the screen answered `404 no live key of this org has the
+  fingerprint …` for every key there was. `revoke` resolves what you typed against the org's own
+  rows first: the whole hash still works, a word that names two keys is refused with both, and one
+  that names none says which verb lists them.
 - **`~/.pinecall/dev` is gone, with the runtime's dev key.** A local gateway used to write that
   file at every start and this CLI folded it in as a profile nobody had kept — the one source that
   beat both `pinecall login` and an exported key, so a verb could land somewhere nobody chose. A

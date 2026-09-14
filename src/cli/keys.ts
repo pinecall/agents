@@ -38,8 +38,9 @@ export const group: Group = {
   \`pinecall login --key-stdin\`, and that \`pinecall run\` is the one that answers your numbers.
 
   issue prints the key once and never again. list prints fingerprints, labels, worlds, whose
-  each is and whether it is revoked — never a key. revoke takes a fingerprint as list prints it;
-  the row and its history stay, so the calls it wrote stay readable. A key may not issue a scope
+  each is and whether it is revoked — never a key. revoke takes a fingerprint as list prints it:
+  the first twelve characters, or more of them when two keys share those. The row and its history
+  stay, so the calls it wrote stay readable. A key may not issue a scope
   it does not itself open.`,
   run,
 };
@@ -132,25 +133,51 @@ async function list(door: Door, out: NodeJS.WritableStream): Promise<number> {
   return 0;
 }
 
+// The listing prints the first twelve characters, because a full sha256 is unreadable in a
+// column — so the word a person copies off the screen is NOT the word the door takes, and
+// `pinecall keys revoke <what list printed>` answered 404 for every key there was. The door stays
+// strict, and this resolves what was typed against the org's own rows before it knocks.
+const NO_SUCH_FINGERPRINT = "no key of this org begins with {said}: `pinecall keys list` prints them";
+const TWO_KEYS = "{said} names more than one key: {which}";
+
 /** Stop one key. A fingerprint that is not this org's is the 404 a stranger's is. */
 async function revoke(
-  fingerprint: string | undefined,
+  said: string | undefined,
   door: Door,
   out: NodeJS.WritableStream,
   err: NodeJS.WritableStream,
 ): Promise<number> {
-  if (fingerprint === undefined) {
+  if (said === undefined) {
     err.write(`${USAGE}\n`);
     return 2;
   }
-  await asked(door, `${KEYS}/${encodeURIComponent(fingerprint)}/revoke`, { method: "POST" });
-  out.write(`revoked ${fingerprint}\n`);
+  const rows = await asked<Listed[]>(door, KEYS);
+  const found = rows.filter((row) => row.fingerprint.startsWith(said));
+  if (found.length === 0) {
+    err.write(`${NO_SUCH_FINGERPRINT.replace("{said}", said)}\n`);
+    return 1;
+  }
+  if (found.length > 1) {
+    const which = found.map((row) => shortened(row.fingerprint)).join(" · ");
+    err.write(`${TWO_KEYS.replace("{said}", said).replace("{which}", which)}\n`);
+    return 1;
+  }
+  const whole = found[0]!.fingerprint;
+  await asked(door, `${KEYS}/${encodeURIComponent(whole)}/revoke`, { method: "POST" });
+  out.write(`revoked ${shortened(whole)}\n`);
   return 0;
 }
+
+/** The fingerprint as the listing prints it: enough to tell two keys apart, short enough to read. */
+export function shortened(fingerprint: string): string {
+  return fingerprint.slice(0, FINGERPRINT_CHARS);
+}
+
+const FINGERPRINT_CHARS = 12;
 
 /** One row as a terminal reads it: what it is, where it opens, whose it is, and its standing. */
 export function aLine(row: Listed): string {
   const whose = row.name ?? (row.subject === null ? "a machine" : row.subject);
   const standing = row.revoked_at === null ? LIVE : REVOKED;
-  return `${row.fingerprint.slice(0, 12)}  ${row.env.padEnd(11)} ${(row.label ?? NO_LABEL).padEnd(20)} ${whose.padEnd(14)} ${standing}`;
+  return `${shortened(row.fingerprint)}  ${row.env.padEnd(11)} ${(row.label ?? NO_LABEL).padEnd(20)} ${whose.padEnd(14)} ${standing}`;
 }

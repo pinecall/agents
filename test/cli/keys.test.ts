@@ -143,24 +143,52 @@ describe("reading them back", () => {
   });
 });
 
+// The listing prints twelve characters, because a full sha256 is unreadable in a column — and the
+// door matches the whole hash, so `revoke <what list printed>` answered 404 for every key there
+// was. Found by running it (2026-09-14). The word on the screen is the word that works.
 describe("stopping one", () => {
-  it("posts the revoke and says which fingerprint went", async () => {
+  const ROWS = [
+    { fingerprint: "9f2c1a4b7e0d5566", label: "prod server", env: "production", scopes: ["app"], subject: null, name: null, created_at: "2026-09-01", revoked_at: null },
+    { fingerprint: "11aa22bb33cc4455", label: "laptop", env: "sandbox", scopes: ["app"], subject: "m_1", name: "Berna", created_at: "2026-09-02", revoked_at: null },
+  ];
+
+  it("takes the fingerprint `list` prints, and sends the whole one to the door", async () => {
+    gateway.rows = ROWS;
     const out = written();
 
-    const code = await run(["revoke", "9f2c1a4b7e0d5566"], { out: out.stream, env });
+    const code = await run(["revoke", "9f2c1a4b7e0d"], { out: out.stream, env });
 
     expect(code).toBe(0);
-    expect(gateway.heard[0]).toMatchObject({ method: "POST", path: "/v1/keys/9f2c1a4b7e0d5566/revoke" });
-    expect(out.text()).toBe("revoked 9f2c1a4b7e0d5566\n");
+    expect(gateway.heard.at(-1)).toMatchObject({ method: "POST", path: "/v1/keys/9f2c1a4b7e0d5566/revoke" });
+    expect(out.text()).toBe("revoked 9f2c1a4b7e0d\n");
   });
 
-  it("says the gateway's own sentence for a fingerprint that is not this org's", async () => {
-    gateway.refuse = { status: 404, detail: "no live key of this org has the fingerprint deadbeef" };
+  it("takes the whole fingerprint too, because that is what the runtime's CLI prints", async () => {
+    gateway.rows = ROWS;
+
+    expect(await run(["revoke", "9f2c1a4b7e0d5566"], { out: written().stream, env })).toBe(0);
+    expect(gateway.heard.at(-1)).toMatchObject({ path: "/v1/keys/9f2c1a4b7e0d5566/revoke" });
+  });
+
+  it("names both when a word could be either, rather than picking one", async () => {
+    gateway.rows = [ROWS[0]!, { ...ROWS[1]!, fingerprint: "9f2c1a4bFFFFFFFF" }];
+    const err = written();
+
+    const code = await run(["revoke", "9f2c1a4b"], { err: err.stream, env });
+
+    expect(code).toBe(1);
+    expect(err.text()).toContain("9f2c1a4b7e0d");
+    expect(err.text()).toContain("9f2c1a4bFFFF");
+  });
+
+  it("says which verb lists them when no key of this org begins with that word", async () => {
+    gateway.rows = ROWS;
     const err = written();
 
     const code = await run(["revoke", "deadbeef"], { err: err.stream, env });
 
     expect(code).toBe(1);
-    expect(err.text()).toContain("no live key of this org has the fingerprint deadbeef");
+    expect(err.text()).toContain("no key of this org begins with deadbeef");
+    expect(err.text()).toContain("pinecall keys list");
   });
 });
