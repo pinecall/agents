@@ -4,7 +4,7 @@ import { parseArgs } from "node:util";
 
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
-import { agentOfThisDirectory } from "./load.js";
+import { agentOfThisDirectory, notASlug } from "./load.js";
 import { asked, type Door } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
 
@@ -111,6 +111,11 @@ export async function run(argv: string[], how: Turning = {}): Promise<number> {
   });
   const door = theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
+  const aFile = notASlug(values.agent);
+  if (aFile !== undefined) {
+    err.write(`${aFile}\n`);
+    return 2;
+  }
   const agent = values.agent ?? (await agentOfThisDirectory());
   if (agent === null || agent === undefined) {
     err.write(`${USAGE}\n  name the agent, or run this beside an agent file\n`);

@@ -53,12 +53,12 @@ describe("the line `pinecall run` prints when the socket is up", () => {
       tools: 4,
       doors: ["web"],
       org: "acme",
-      env: "development",
+      env: "sandbox",
       source: "credentials",
     });
 
     expect(line).toBe(
-      "clinica-norte · acme · development · connected to https://box.pinecall.io"
+      "clinica-norte · acme · sandbox · connected to https://box.pinecall.io"
         + " · key from credentials · tools 4 · doors web",
     );
   });

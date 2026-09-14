@@ -13,10 +13,10 @@ import { load } from "./load.js";
 import { asked, type Door } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
 
-const USAGE = `usage: pinecall knowledge push [dir] [--base <name>] [--agent agent.tsx]
+const USAGE = `usage: pinecall knowledge push [dir] [--base <name>] [--file agent.tsx]
        pinecall knowledge list
        pinecall knowledge drop <base>
-       pinecall knowledge eval [golden.json] [--base <name>] [--k <n>] [--agent agent.tsx]`;
+       pinecall knowledge eval [golden.json] [--base <name>] [--k <n>] [--file agent.tsx]`;
 
 /** Where a base is refused before a byte is sent: the three sentences both doors say. */
 export const NO_DIRECTORY = (directory: string): string => `no knowledge directory at ${directory}`;
@@ -63,16 +63,16 @@ export async function run(argv: string[], how: Pushing = {}): Promise<number> {
   const { values, positionals } = parseArgs({
     args: argv,
     allowPositionals: true,
-    options: { base: { type: "string" }, agent: { type: "string" }, k: { type: "string" } },
+    options: { base: { type: "string" }, file: { type: "string" }, k: { type: "string" } },
   });
   const [verb, ...rest] = positionals;
   const door = theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
   try {
-    if (verb === "push") return await push(door, rest[0], values.base, values.agent, out, err);
+    if (verb === "push") return await push(door, rest[0], values.base, values.file, out, err);
     if (verb === "list") return await list(door, out);
     if (verb === "drop" && rest[0] !== undefined) return await drop(door, rest[0], out);
-    if (verb === "eval") return await evaluate(door, rest[0], values.base, values.k, values.agent, out, err);
+    if (verb === "eval") return await evaluate(door, rest[0], values.base, values.k, values.file, out, err);
   } catch (refused) {
     // The gateway's own sentence, as it was said: "this gateway keeps no knowledge: it runs on
     // a dev key" names the fix, and nothing here knows better.

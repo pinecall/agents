@@ -24,7 +24,7 @@ export const CASES = "test/memory";
 
 export const NO_CASES = `no extraction goldens at ${CASES}: write one, or name the file or directory to run`;
 
-const USAGE = "usage: pinecall remember [paths] [--agent agent.tsx] [--grep x] [--json]";
+const USAGE = "usage: pinecall remember [paths] [--file agent.tsx] [--grep x] [--json]";
 
 export const group: Group = {
   purpose: "the goldens memory.remember is held to: what a call teaches, and what it never keeps",
@@ -61,7 +61,7 @@ export async function run(argv: string[], how: Running = {}): Promise<number> {
     args: argv,
     allowPositionals: true,
     options: {
-      agent: { type: "string" },
+      file: { type: "string" },
       grep: { type: "string" },
       json: { type: "boolean", default: false },
     },
@@ -77,7 +77,7 @@ export async function run(argv: string[], how: Running = {}): Promise<number> {
     err.write(`no case matched${values.grep === undefined ? "" : ` --grep ${values.grep}`}\n`);
     return 2;
   }
-  const loaded = await load(values.agent);
+  const loaded = await load(values.file);
   const pc = new Pinecall({ url: door.url, apiKey: door.apiKey });
   // takesUnclaimed: false for the reason `test` has it: this process holds the agent so the run
   // reaches THIS class, and a real call must not ring in a terminal running a suite.

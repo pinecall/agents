@@ -14,7 +14,7 @@ import { GOLDENS, goldensIn, matching, NO_GOLDENS } from "./testing/goldens.js";
 import { mountedForASuite, ranSuite } from "./testing/suite.js";
 
 const USAGE =
-  "usage: pinecall test [paths] [--agent agent.tsx] [--model m]… [--grep x] [--watch] [--json]\n" +
+  "usage: pinecall test [paths] [--file agent.tsx] [--model m]… [--grep x] [--watch] [--json]\n" +
   "       pinecall test --voice [--background-noise dB] [--packet-loss 0.05]\n";
 
 export const group: Group = {
@@ -25,7 +25,7 @@ export const group: Group = {
   broken one to .pinecall/evals/<run>/ with the requests the model answered.
 
   [paths]             files or directories of goldens; the whole of test/goldens when none
-  --agent agent.tsx   which class to mount, when the directory holds more than one
+  --file agent.tsx    which class to mount, when the directory holds more than one
   --model m           a column of the matrix: vendor/model, repeatable
   --grep x            only the goldens whose name matches
   --watch             run again whenever a file changes
@@ -72,7 +72,7 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
     args: argv,
     allowPositionals: true,
     options: {
-      agent: { type: "string" },
+      file: { type: "string" },
       model: { type: "string", multiple: true },
       grep: { type: "string" },
       watch: { type: "boolean", default: false },
@@ -89,7 +89,7 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
     return 2;
   }
 
-  const loaded = await load(values.agent);
+  const loaded = await load(values.file);
   const pc = new Pinecall({ url: door.url, apiKey: door.apiKey });
   const held = mountedForASuite(loaded, pc);
   const models = (values.model ?? []).map(modelOf).filter((model) => model !== undefined);

@@ -102,7 +102,7 @@ describe("which door a verb goes to", () => {
 
 describe("`pinecall config` and `pinecall use`", () => {
   it("prints the gateways with a mark on the one in hand, and no key", async () => {
-    writeProfile("box", { url: BOX, key: A_KEY, org: "clinica", env: "development" }, home);
+    writeProfile("box", { url: BOX, key: A_KEY, org: "clinica", env: "sandbox" }, home);
     writeProfile("stg", { url: OTHER, key: ANOTHER, org: "clinica" }, home);
     activate("box", home);
     const out = written();
@@ -110,7 +110,7 @@ describe("`pinecall config` and `pinecall use`", () => {
     expect(await run([], { out: out.stream, home })).toBe(0);
 
     expect(out.text()).toContain("▸ box");
-    expect(out.text()).toContain("clinica · development");
+    expect(out.text()).toContain("clinica · sandbox");
     expect(out.text()).not.toContain(A_KEY);
     expect(out.text()).not.toContain(ANOTHER);
   });

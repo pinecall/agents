@@ -89,6 +89,18 @@ function theAgentHere(): string {
 // The slug of the agent this terminal is standing in, read the way `run` reads it, so no two verbs
 // disagree about whose directory this is. No file here is not an error: it is a terminal outside
 // any agent's directory, and the verb that asked says what it needs instead.
+// `--agent` used to mean a SLUG in three verbs and a FILE in six, which is a flag with two
+// meanings and no way to tell which one you got. It names a slug everywhere now, and `--file` is
+// the file — so a path typed where a slug is taken is a person who learnt the old spelling, and
+// they are told the new one rather than being sent to look for an agent called "agent.tsx".
+const A_PATH = /\.tsx?$|[/\\]/;
+
+/** The refusal for a file typed where a slug is taken, or undefined when it is a slug. */
+export function notASlug(said: string | undefined): string | undefined {
+  if (said === undefined || !A_PATH.test(said)) return undefined;
+  return `an agent is named by its slug, not a file: \`--file ${said}\` names the class to load.`;
+}
+
 export async function agentOfThisDirectory(): Promise<string | null> {
   try {
     const loaded = await load();

@@ -7,12 +7,33 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **The front page says whose corner each agent is, and filters by it.** The sandbox holds one
+  agent per person, and a key that opens `team` — an admin's, the operator's — is now answered
+  every member's corner rather than only its own, so the same slug arrives several times. The page
+  gains a WHOSE column and a choice of *everything* / *mine* / *the team's*; the selector and the
+  rail's count stay one row per slug, because a screen is addressed by slug alone and the door
+  behind it answers in the corner this key opens. A developer sees none of it: there is one corner
+  and nothing to filter.
 - **The console signs out.** A way out beside whose console it is, which the page had none of:
   a key is the tab's and dies with it, so closing the tab was the only way to stop being signed
   in — no use at all to somebody who wants to come back as somebody else. It forgets every world's
   key rather than the one on screen, because the toggle mints the second from the first.
 
 ### Changed
+- **`--env` asserts which world you are in, and never selects one.** A key opens one world, so a
+  flag that CHOSE would be a flag that lies; `pinecall run --env production` says which world you
+  believe the key in hand opens, and the verb stops when it opens the other. Nothing said means
+  the sandbox — a deployment types it out loud, which is the deliberate act it should be. The run
+  asks the gateway BEFORE the socket rather than reporting where it landed after.
+- **The world things are written in is the `sandbox`, not `development`.** One word was naming a
+  world and naming "mine" at the same time, and `env: development` did not say whether it was a
+  laptop or a box.
+- **`pinecall chat [agent]` takes a slug, and `--file` takes the file.** Named an agent, chat
+  mounts nothing and is only the caller's side: a written call at whatever is already holding that
+  slug — your own `run` in the other terminal, or a colleague's. `--agent` used to mean a slug in
+  three verbs and a FILE in six, which is a flag with two meanings and no way to tell which one
+  you got: it is a slug everywhere now, and `test`, `simulate`, `remember`, `personas`,
+  `knowledge` and `memory` take `--file`. A path typed where a slug goes is told so.
 - **A free slot in `clinica-norte` has an id, a real date and a specialty.** Reserving used to
   mean repeating a phrase back — a slot was `{ when: "martes a las diez", doctor: "…" }` and
   `book` took the sentence — so choosing was comparing text, and text comparison failed both ways
@@ -50,7 +71,7 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   and what is yours against what is the org's, the path from the sign-up to the deploy, the roles
   and the seats, two developers on one agent, and the four traps. Linked from the README, the
   tutorial and the CLI page.
-- **`pinecall whoami` and `login` say the world.** `org clinica · key k_1 · development · laptop`:
+- **`pinecall whoami` and `login` say the world.** `org clinica · key k_1 · sandbox · laptop`:
   where you are is the key you hold, so the verb that says which key you hold says which world.
 - **`pinecall keys`, and a Keys screen.** `issue | list | revoke` the API keys this org's machines
   run on, and the same three in the console. A key issued there is a machine's: it holds `app` in
@@ -84,12 +105,12 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 - **The console's org layer.** Before anybody picks an agent: Live (every call up across the org,
   repainted as `GET /v1/events` says the floor changed), Sessions across every agent, Numbers,
   Team (invite, change, the invitation token shown once), Usage. An agent selector in the header,
-  a Production / Development toggle that holds one key per world and mints the other for the same
+  a Production / Sandbox toggle that holds one key per world and mints the other for the same
   person, and a rail that draws only what the key's scopes open.
 
 ### Added
-- **`pinecall line`: whose terminal the development number rings in.** An org shares one
-  development number, so with three developers on one agent it used to ring wherever somebody had
+- **`pinecall line`: whose terminal the sandbox number rings in.** An org shares one
+  sandbox number, so with three developers on one agent it used to ring wherever somebody had
   restarted last — you would dial it to test your change and be answered in a colleague's
   scrollback. The first `pinecall run` to hold an agent takes its line and a second developer
   claims it on purpose; `claim` and `release` are the two moves, and `run` prints the line under
@@ -116,15 +137,15 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   is one line, and the app runs on.
 
 ### Changed
-- **`knowledge push` and a contact's memory are your key's world's.** A push with the development
-  key a login keeps replaces the development base and never the one the telephone answers from;
-  promoting is the same push with the machine's key. A test call's facts stay in development.
+- **`knowledge push` and a contact's memory are your key's world's.** A push with the sandbox
+  key a login keeps replaces the sandbox base and never the one the telephone answers from;
+  promoting is the same push with the machine's key. A test call's facts stay in the sandbox.
   Nothing in the verbs changed — the gateway reads the world off the key it always sent.
 - **Two developers of one tenant no longer take each other's agent.** The gateway holds a
-  development agent per person, so `pinecall run` on your laptop and your colleague's are two
+  sandbox agent per person, so `pinecall run` on your laptop and your colleague's are two
   agents: each `pinecall chat`, each suite and each console reaches its own. Nothing in this CLI
   changed for it — what says whose corner you are in is the key, and `pinecall signup` and
-  `pinecall login` already keep one per person. The org's development *number* stays one door,
+  `pinecall login` already keep one per person. The org's sandbox *number* stays one door,
   answered by whichever run started last.
 - **`pinecall keys` is now `pinecall providers`.** The verb for the vendor keys an org brought
   takes the name of the scope that opens it (`providers`), and `keys` means the org's own API

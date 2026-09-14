@@ -25,7 +25,7 @@ const WHO = ["--org", "tienda-sur", "--email", "ana@tiendasur.uy", "--person", "
 class FakeCloud {
   readonly heard: { authorization: string | undefined; body: Record<string, unknown> }[] = [];
   cloud = true;
-  /** Whether this gateway mints the development key. False is an older one, or a refusal. */
+  /** Whether this gateway mints the sandbox key. False is an older one, or a refusal. */
   worlds = true;
   #server!: Server;
   url = "";
@@ -53,7 +53,7 @@ class FakeCloud {
     this.heard.push({ authorization: request.headers.authorization, body });
     if (request.url === "/v1/login/env") {
       response.writeHead(this.worlds ? 200 : 403, { "content-type": "application/json" });
-      response.end(JSON.stringify(this.worlds ? { key: A_LAPTOPS_KEY, env: "development" } : { detail: "no" }));
+      response.end(JSON.stringify(this.worlds ? { key: A_LAPTOPS_KEY, env: "sandbox" } : { detail: "no" }));
       return;
     }
     if (!this.cloud) {
@@ -96,7 +96,7 @@ afterEach(async () => {
 });
 
 describe("signing up", () => {
-  it("makes the org with no key at all, and keeps the development key for this laptop", async () => {
+  it("makes the org with no key at all, and keeps the sandbox key for this laptop", async () => {
     const out = written();
 
     const code = await signup([cloud.url, ...WHO], { out: out.stream, env: { PINECALL_HOME: home }, password: async () => A_PASSWORD });
@@ -104,7 +104,7 @@ describe("signing up", () => {
     expect(code).toBe(0);
     expect(cloud.heard[0]?.authorization).toBeUndefined();
     expect(cloud.heard[0]?.body).toMatchObject({ org: "tienda-sur", email: "ana@tiendasur.uy", person: "Ana", device: "cli" });
-    expect(cloud.heard[1]?.body).toEqual({ env: "development" });
+    expect(cloud.heard[1]?.body).toEqual({ env: "sandbox" });
     expect(gatewayFor(cloud.url, home)).toMatchObject({ api_key: A_LAPTOPS_KEY, org: "org_1" });
   });
 

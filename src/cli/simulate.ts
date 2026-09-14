@@ -22,7 +22,7 @@ import { lineFor, metricsLine } from "./view.js";
 
 const USAGE =
   "usage: pinecall simulate --persona <name> [--judge] [--turns n] [--voice] [--listen]\n" +
-  "       [--background-noise <dB under the caller>] [--packet-loss <percent>] [--agent agent.tsx]\n";
+  "       [--background-noise <dB under the caller>] [--packet-loss <percent>] [--file agent.tsx]\n";
 
 export const group: Group = {
   purpose: "a model plays one persona against the agent, live, and the call is scored at hang-up",
@@ -38,7 +38,7 @@ export const group: Group = {
   --listen            the call on this machine's speakers while it happens; turns --voice on
   --background-noise  dB under the caller: a television behind them. Spoken runs only
   --packet-loss       percent of the caller's packets that never arrive. Spoken runs only
-  --agent agent.tsx   which class to mount, when the directory holds more than one`,
+  --file agent.tsx    which class to mount, when the directory holds more than one`,
   run,
 };
 
@@ -93,7 +93,7 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
       "background-noise": { type: "string" },
       "packet-loss": { type: "string" },
       turns: { type: "string" },
-      agent: { type: "string" },
+      file: { type: "string" },
     },
   });
   const listen = values.listen === true;
@@ -114,7 +114,7 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
     return 2;
   }
   const said = await aSimulation(persona, {
-    agentFile: values.agent,
+    agentFile: values.file,
     judge: values.judge === true,
     voice,
     listen,

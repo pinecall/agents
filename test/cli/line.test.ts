@@ -10,7 +10,7 @@ import type { TheLine } from "@pinecall/protocol";
 const AGENT = "tienda-sur";
 
 function said(over: Partial<TheLine> = {}): TheLine {
-  return { agent: AGENT, env: "development", held: true, yours: true, waiting: [], calling: [], ...over };
+  return { agent: AGENT, env: "sandbox", held: true, yours: true, waiting: [], calling: [], ...over };
 }
 
 const BERNA = { holder: "m_berna", name: "berna@clinica.test" };

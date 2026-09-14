@@ -22,14 +22,14 @@ const SIGNUP = "/v1/signup";
 
 // The same person's key in the other world. The sign-up answers a production one — every door of
 // the org, and not `app`, because a deployed agent is held by a machine — and a terminal is a
-// laptop: what it keeps is the development key, which is the world `pinecall run` answers in.
+// laptop: what it keeps is the sandbox key, which is the world `pinecall run` answers in.
 const THE_OTHER_WORLD = "/v1/login/env";
-const DEVELOPMENT = "development";
+const SANDBOX = "sandbox";
 
 // Said when the second world could not be minted: the org exists and the production key is kept,
-// so nothing is lost, but `run` will be refused until the person holds a development key.
+// so nothing is lost, but `run` will be refused until the person holds a sandbox key.
 const ONE_WORLD_ONLY = (url: string): string =>
-  `kept the production key: ${url} would not mint a development one, and \`pinecall run\` needs it`;
+  `kept the production key: ${url} would not mint a sandbox one, and \`pinecall run\` needs it`;
 
 // Whether that door is open here is the gateway's own fact, asked before anything else: a person
 // should not type a password for a door that will refuse it. The gateway's refusal names the
@@ -55,7 +55,7 @@ export const group: Group = {
   The gateway is ${CLOUD_URL} unless another is named. The password is asked for without
   echoing it, or read from one line of stdin with --password-stdin.
 
-  What this terminal keeps is the DEVELOPMENT key, in ~/.pinecall/credentials (0600) under that
+  What this terminal keeps is the SANDBOX key, in ~/.pinecall/credentials (0600) under that
   gateway, so \`pinecall run\` and \`pinecall chat\` work straight after and nothing has to be
   exported: a laptop is where things are written. The console link it prints signs the browser
   in to production, which is where the org's numbers, people and usage are. What answers a
@@ -118,7 +118,7 @@ export async function signup(argv: string[], how: Making = {}): Promise<number> 
     return 1;
   }
   const environment = how.env ?? process.env;
-  const laptop = await theDevelopmentKey(url, made.key);
+  const laptop = await theSandboxKey(url, made.key);
   if (laptop === undefined) err.write(`${ONE_WORLD_ONLY(url)}\n`);
   writeGateway(url, { api_key: laptop ?? made.key, org: made.org }, pinecallHome(environment));
   out.write(`${madeLine(made, url)}\n`);
@@ -127,16 +127,16 @@ export async function signup(argv: string[], how: Making = {}): Promise<number> 
 }
 
 /**
- * The development key, or nothing at all.
+ * The sandbox key, or nothing at all.
  *
  * A refusal here is not the sign-up failing: the org is made and its production key is in hand.
  * So it is answered as an absence and said on stderr, rather than thrown over an org that exists.
  */
-async function theDevelopmentKey(url: string, key: string): Promise<string | undefined> {
+async function theSandboxKey(url: string, key: string): Promise<string | undefined> {
   try {
     const minted = await asked<{ key: string }>({ url, apiKey: key }, THE_OTHER_WORLD, {
       method: "POST",
-      body: { env: DEVELOPMENT },
+      body: { env: SANDBOX },
     });
     return minted.key;
   } catch {
@@ -147,5 +147,5 @@ async function theDevelopmentKey(url: string, key: string): Promise<string | und
 /** The one line that says what now exists and that this terminal is holding its key. */
 export function madeLine(made: SignedUp, url: string): string {
   const who = made.name === null ? "its admin" : made.name;
-  return `created org ${made.slug} on ${url} — signed in as ${who}, development key kept in ~/.pinecall/credentials`;
+  return `created org ${made.slug} on ${url} — signed in as ${who}, sandbox key kept in ~/.pinecall/credentials`;
 }

@@ -2,7 +2,8 @@
 
 import { describe, expect, it } from "vitest";
 
-import { chatUrl, group, lineOf } from "../../src/cli/chat.js";
+import { chatUrl, group, lineOf, run } from "../../src/cli/chat.js";
+import { notASlug } from "../../src/cli/load.js";
 
 describe("the caller socket chat opens", () => {
   it("flips the scheme and names the agent on the gateway's own host", () => {
@@ -76,5 +77,44 @@ describe("what one entry off the socket prints", () => {
 
   it("leaves the caller's own sentence to the prompt that already echoed it", () => {
     expect(lineOf(frame("turn.user", { text: "hola" }))).toBeNull();
+  });
+});
+
+// `--agent` meant a slug in three verbs and a FILE in six, which is a flag with two meanings and
+// no way to tell which one you got. It is a slug everywhere now, `--file` is the file, and a path
+// typed where a slug is taken is somebody who learnt the old spelling.
+describe("naming an agent, as against naming a file", () => {
+  it("takes a slug and says nothing about it", () => {
+    expect(notASlug("clinica-norte")).toBeUndefined();
+    expect(notASlug(undefined)).toBeUndefined();
+  });
+
+  it("refuses a file, and the sentence names the flag that takes one", () => {
+    expect(notASlug("agent.tsx")).toBe(
+      "an agent is named by its slug, not a file: `--file agent.tsx` names the class to load.",
+    );
+    expect(notASlug("./agents/clinica.ts")).toContain("--file ./agents/clinica.ts");
+    expect(notASlug("src/agent")).toContain("not a file");
+  });
+});
+
+describe("`pinecall chat <agent>` mounts nothing", () => {
+  // It is the caller's side alone, so the gateway hands the call to whoever is holding the slug —
+  // the other terminal's `pinecall run`, or a colleague's. No `app=`: naming this process would
+  // ask a process that holds nothing to serve it.
+  it("opens the chat socket at the slug with no app of its own", () => {
+    expect(chatUrl("https://box.pinecall.io", "clinica-norte", undefined, "+34600123456")).toBe(
+      "wss://box.pinecall.io/v1/chat?agent=clinica-norte&contact=%2B34600123456",
+    );
+  });
+
+  it("is refused --state, which opens a call in a class this process built", async () => {
+    const code = await run(["clinica-norte", "--state", "test/prompts/states.json"]);
+
+    expect(code).toBe(2);
+  });
+
+  it("refuses a file where the slug goes, before it looks for a gateway", async () => {
+    expect(await run(["agent.tsx"])).toBe(2);
   });
 });

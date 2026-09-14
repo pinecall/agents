@@ -6,7 +6,7 @@ import type { Group } from "./groups.js";
 import { aSimulation, TURNS } from "./simulate.js";
 import { NO_PERSONAS, personaNamed, personasIn, type Persona } from "./testing/caller.js";
 
-const USAGE = "usage: pinecall personas list | show <name> | try <name> [--agent agent.tsx]\n";
+const USAGE = "usage: pinecall personas list | show <name> | try <name> [--file agent.tsx]\n";
 
 export const group: Group = {
   purpose: "list | show | try the synthetic callers in test/personas",
@@ -19,7 +19,7 @@ export const group: Group = {
   show <name>     that caller whole, facts and all
   try <name>      one improvised line from them, through the gateway's caller door — the same
                   door \`pinecall simulate\` asks for every turn. Needs a key
-  --agent file    which class to read the personas beside, when there is more than one`,
+  --file <path>   which class to read the personas beside, when there is more than one`,
   run,
 };
 
@@ -31,14 +31,14 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
   const { values, positionals } = parseArgs({
     args: argv,
     allowPositionals: true,
-    options: { agent: { type: "string" }, json: { type: "boolean", default: false } },
+    options: { file: { type: "string" }, json: { type: "boolean", default: false } },
   });
   const [verb, name] = positionals;
   if (verb === "list") return await listed(values.json === true, out);
   if (verb === "show" && name !== undefined) return await shown(name, values.json === true, out);
   // `try` runs the caller against the class, because reading a persona tells you who they are and
   // only a call tells you how they land. It is `simulate` without the judge — one implementation.
-  if (verb === "try" && name !== undefined) return await tried(name, values.agent, out);
+  if (verb === "try" && name !== undefined) return await tried(name, values.file, out);
   process.stderr.write(USAGE);
   return 2;
 }

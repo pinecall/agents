@@ -25,7 +25,7 @@ export interface GatewayEntry {
   api_key: string;
   org: string;
   logged_in_at: string;
-  /** The phone this person calls FROM, so a ring in development reaches their own agent rather
+  /** The phone this person calls FROM, so a ring in the sandbox reaches their own agent rather
    * than whoever holds the line. Said once with `pinecall line from`, and re-sent by every
    * `pinecall run` — the gateway keeps it beside its live table, not in a row. */
   calling?: string;

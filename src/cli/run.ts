@@ -11,7 +11,9 @@ import { showMachine } from "./machine.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { callsFrom, describing, theLine } from "./line.js";
-import { connectedLine, doorsOf, whereThisLanded } from "./connected.js";
+import { connectedLine, doorsOf } from "./connected.js";
+import { cannotTell, ENV_FLAG, notThisWorld, standing } from "./world.js";
+import { orgOf, type Who } from "./whoami.js";
 import { callingFrom } from "./profiles.js";
 import { instanceFor, load, mountOptions } from "./load.js";
 import { asked, Refused, type Door } from "./testing/gateway.js";
@@ -36,12 +38,14 @@ const KEYS = "keys: p pause · c clear · e events · s prompt · q quit";
 
 export const group: Group = {
   purpose: "the app and its doors: the process you deploy",
-  usage: `usage: pinecall run [agent.tsx] [--ui] [--events] [--show-prompt]
+  usage: `usage: pinecall run [agent.tsx] [--env production] [--ui] [--events] [--show-prompt]
 
   With nothing after it: the agent registered on the gateway, one line per log entry on stdout,
   no port bound and no page served: the gateway serves the console, and this prints its URL with a
   one-use code that signs the browser in. It answers that console for this directory.
 
+  --env <world>  say which world you believe this key opens, and be refused if it opens the
+                 other. Nothing said is the sandbox; a deployment types --env production
   --show-prompt  the prompt a fresh instance would produce, then exit. No key, no gateway
   --events       one JSON line per log entry instead of the lines, for a pipe
   --ui           the full-screen terminal view; keys: p pause · c clear · e events · s prompt · q quit`,
@@ -52,7 +56,7 @@ export const group: Group = {
  * Load the agent, mount it, connect, and stay up until the process is signalled.
  *
  * This is the verb that goes under pm2 and into a container, and it is the same process in
- * development and in production: it runs the agent, binds no port and serves no page. What a
+ * the sandbox and in production: it runs the agent, binds no port and serves no page. What a
  * person looks at is `--ui` in this terminal, or the log over the gateway's API.
  * See docs/decisions/tenant-cli.md.
  */
@@ -64,6 +68,7 @@ export async function run(argv: string[]): Promise<number> {
       "show-prompt": { type: "boolean", default: false },
       events: { type: "boolean", default: false },
       ui: { type: "boolean", default: false },
+      ...ENV_FLAG,
     },
   });
   const loaded = await load(positionals[0]);
@@ -80,6 +85,22 @@ export async function run(argv: string[]): Promise<number> {
 
   const door = theDoor();
   if (door === undefined) return 2;
+  // Before the socket and not after it. This used to be asked once the agent was already
+  // registered, which makes a line REPORTING where it landed rather than a say in it: the world a
+  // key opens is the one thing this verb must not be wrong about, and it is the same one request
+  // either way. See docs/decisions/tenant-cli.md.
+  let who: Who;
+  try {
+    who = await standing(door);
+  } catch (failed) {
+    process.stderr.write(`${cannotTell("run", failed)}\n`);
+    return 2;
+  }
+  const elsewhere = notThisWorld("run", who, values.env);
+  if (elsewhere !== undefined) {
+    process.stderr.write(`${elsewhere}\n`);
+    return 2;
+  }
   const url = door.url;
   const pc = new Pinecall({ url, apiKey: door.apiKey });
   // Whoever opens the app socket closes it. Left open it keeps this process alive after the
@@ -118,7 +139,9 @@ export async function run(argv: string[]): Promise<number> {
         url,
         tools: mounted.options.tools?.length ?? 0,
         doors,
-        ...(await whereThisLanded(door)),
+        org: orgOf(who),
+        env: who.env,
+        source: door.source,
       });
       return await plain(pc, mounted.agent.onAny.bind(mounted.agent), mounted.slug, url, line, () =>
         onceUp(door, mounted.slug, rings(mounted.options.routes)),
@@ -202,7 +225,7 @@ export function rings(routes: RouteInput[] | undefined): boolean {
   return (routes ?? []).some((route) => route.number !== null && route.number !== undefined);
 }
 
-// A number exists once in a world: in production the box answers it, and in development the org
+// A number exists once in a world: in production the box answers it, and in the sandbox the org
 // shares one and it rings where it was claimed. Printed here because the moment a second
 // developer starts is the moment they need to know they did NOT take the calls.
 async function lineLine(door: Door, slug: string): Promise<string> {
