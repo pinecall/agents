@@ -83,6 +83,18 @@ export class NoSuchSpecialty extends Error {
 // tan comprobable como el del "sí": sin ella, ningún test vería nunca fallar una reserva.
 export const REFUSED_HOUR = 13;
 
+/**
+ * La hora de un hueco **en la zona del centro**, leída del propio texto.
+ *
+ * `new Date(startsAt).getHours()` da la hora de la MÁQUINA, no la de la clínica: en un runner en
+ * UTC el hueco de las trece es el de las once, así que la regla de abajo se aplicaba a otro hueco
+ * y el que la prueba buscaba no existía. Pasaba en este portátil y fallaba en CI, que es la peor
+ * forma de fallar. `startsAt` lleva la zona escrita, y los caracteres 11 y 12 son la hora.
+ */
+export function hourOf(startsAt: string): number {
+  return Number(startsAt.slice(11, 13));
+}
+
 const REFUSAL = "ese hueco acaba de ocuparse";
 
 // La zona del centro. Una cita sin zona es una cita que cambia de hora al cruzar una frontera.
@@ -246,7 +258,7 @@ export class FakeAgenda {
 
   /** Reserva un hueco por su id. Rechaza siempre el de las 13:00: alguien lo cogió antes. */
   async book(patient: Patient, slot: Slot): Promise<Booking> {
-    if (new Date(slot.startsAt).getHours() === REFUSED_HOUR || this.booked.has(slot.id)) {
+    if (hourOf(slot.startsAt) === REFUSED_HOUR || this.booked.has(slot.id)) {
       throw new AgendaRefused(REFUSAL);
     }
     this.booked.add(slot.id);
