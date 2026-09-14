@@ -23,7 +23,7 @@ export interface Promoting {
 const NO_CLASS = "no agent class in this directory: a candidate is written beside the goldens it will join";
 
 /**
- * One `Promoting` for the life of a `pinecall ui`. A promotion WRITES A FILE — `test/candidates`
+ * One `Promoting` for the life of a `pinecall run`. A promotion WRITES A FILE — `test/candidates`
  * beside this directory's goldens — which is why it is a door of this process and not of the
  * gateway: the call is the gateway's, the file is this machine's. It lands as a CANDIDATE with
  * `promoted_from` on it, and a person edits it before it counts as a golden.

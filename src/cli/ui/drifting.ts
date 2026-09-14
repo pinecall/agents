@@ -23,7 +23,7 @@ const A_WEEK = 7 * 24 * 60 * 60;
 const A_MONTH = 30 * 24 * 60 * 60;
 
 /**
- * One `Drifting` for the life of a `pinecall ui`. Nothing here is the console's own work: it is
+ * One `Drifting` for the life of a `pinecall run`. Nothing here is the console's own work: it is
  * the very `theDrift` the verb runs, in the process that already holds the key, because reading
  * two hundred calls and their scores is two hundred round trips and a browser should make none of
  * them. A held-rate is a count of the verdicts the log already carries — nothing is judged again.

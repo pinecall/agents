@@ -20,7 +20,7 @@ const A_CALL_OPENS_WITHIN_MS = 20_000;
 
 // The console may be opened on any agent the gateway holds, but a written call needs the CLASS —
 // mounted in this process, as `pinecall chat` mounts it — and the class is the one in the
-// directory `pinecall ui` was typed in.
+// directory `pinecall run` was typed in.
 const NOT_THIS_DIRECTORY = (asked: string, here: string | null): string =>
   here === null
     ? `no agent class in this directory: run \`pinecall run\` where ${asked}'s agent.tsx is`

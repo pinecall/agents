@@ -46,6 +46,11 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   la regla que lo rechaza se aplicaba a otro hueco y el que dos pruebas buscaban no existía. Verde
   en un portátil en +02:00 y rojo en CI, que es la peor forma de fallar. `hourOf(startsAt)` lo lee
   del texto, que lleva la zona escrita.
+- **Nothing tells you to type `pinecall ui` any more.** The verb was deleted when the console
+  became the gateway's page, and eleven places went on naming it: the supervise desk's own line,
+  `pipeline --help`, the sentence a simulation prints when it ends, and the console's Evals page,
+  in a `<code>` a person reads on screen. A test pins the prose now, the way one already pinned
+  the group list.
 - **`pinecall --help` names every verb there is, and only those.** It advertised `ui` for four
   days after that verb was deleted — typing it answered `no such group: ui` while the help said it
   was there — and it never grew a row for `line`, built and documented all along. The table is

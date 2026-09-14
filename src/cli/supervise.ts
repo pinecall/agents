@@ -16,7 +16,8 @@ const USAGE = "usage: pinecall supervise <call>";
 // The audio is the console's, deliberately: a terminal has no speakers this process may reach, and
 // `pinecall simulate --listen` already says the same sentence about the same room. What a terminal
 // CAN do is the transcript and the desk, which is what this verb is.
-export const ON_THE_SPEAKERS = "the audio of a live call is `pinecall ui`, which has a room; this is the transcript and the desk";
+export const ON_THE_SPEAKERS =
+  "the audio of a live call is the console, which has a room — `pinecall run` prints its URL; this is the transcript and the desk";
 
 /** What a supervisor may type, one move per line. `q` leaves and the call goes on without them. */
 export const MOVES = [
