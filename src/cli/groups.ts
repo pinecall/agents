@@ -27,7 +27,6 @@ export const PLANNED: Record<string, string> = {
   costs: "what the calls cost, by agent, model or channel",
   call: "the agent dials a number, for real",
   tokens: "mint a browser token for a web call",
-  phones: "list | buy | attach the numbers the org owns",
   agents: "list | show the agents this org has registered",
   deploy: "put this app on a box and keep it there",
 };

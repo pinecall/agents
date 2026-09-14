@@ -33,6 +33,7 @@ compiled `dist/cli/index.js` and needs no loader.
 | [`runs`](#runs) | the suites: list, show, diff, promote a call, watch the drift | yes |
 | [`pipeline`](#pipeline) | what it hears, decides and speaks with, and the six knobs | yes |
 | [`line`](#line) | which phone is yours, and whose terminal a call from anybody else's rings in | yes |
+| [`numbers`](#numbers) | which number reaches which agent, and the world it answers in | yes |
 | [`personas`](#personas) | the synthetic callers in `test/personas` | for `try` |
 | [`knowledge`](#knowledge) | the base the agent answers from: push, list, drop, eval | yes |
 | [`memory`](#memory) | what memory kept about a contact, forgetting it, and recall's golden | yes |
@@ -43,7 +44,7 @@ compiled `dist/cli/index.js` and needs no loader.
 | [`signup`](#signup) | an org on Pinecall's cloud, and its first key kept here | no, it makes one |
 | [`login`](#login) · [`whoami`](#whoami) | the key, once, and which one is being used | yes |
 
-Declared and not written: `new`, `g`, `observe`, `costs`, `call`, `tokens`, `phones`, `agents`,
+Declared and not written: `new`, `g`, `observe`, `costs`, `call`, `tokens`, `agents`,
 `deploy`. Typing one prints what it *will* be and exits 0 — a person who types a verb deserves
 better than "unknown command". `src/cli/groups.ts` is the one place that says which half of the
 CLI is still a design, and a verb leaves that table in the commit that writes it.
@@ -432,6 +433,36 @@ Every move lands in the caller's own log as its own `supervisor.*` entry with a 
 human did to a call is read the same way as what the agent did. The **audio** of a live call is
 the console's Live screen, which has a room; this is the transcript and the desk.
 
+## `numbers`
+
+```
+pinecall numbers list
+pinecall numbers import <+34…> --agent <slug> [--channel phone|whatsapp] [--dry-run]
+pinecall numbers move <+34…> --env <production|sandbox>
+pinecall numbers drop <+34…>
+```
+
+A number exists once in a world and reaches one agent. `list` shows the key's world, because that
+is the world this key works in.
+
+**`move` is the one verb that crosses, and it is what makes a staging run cost nothing.** An org
+buys ONE number, so a team wanting to try a new agent on the real line has nowhere to try it: a
+second number is a second bill, and a third world would be a third of everything. Point the org's
+number at the sandbox for an afternoon, run the new agent there, move it back. The carrier is
+untouched either way — a call arrives at this box whichever world answers it — so the move is one
+row and takes effect on the next call. Moving it to where it already is writes nothing and says so.
+
+```console
+$ pinecall numbers move +34910000000 --env sandbox
++34910000000 · production → sandbox · → clinica-norte
+```
+
+`import` takes a number the org's carrier account already owns and points it here: the carrier's
+trunk, the SFU's trunk, the route — `--dry-run` prints those steps and writes nothing, which is
+what you read before letting the gateway touch a carrier account. `drop` forgets the route and
+takes the number off the SFU trunk; the carrier account keeps it, so nobody is un-bought by a typo.
+Whose corner a ring lands in, once a world is answering it, is [`line`](#line).
+
 ## `keys`
 
 ```
@@ -711,6 +742,7 @@ code can call — over HTTP, in any language, with the same key.
 | `memory` | `GET`·`DELETE /v1/contacts/{contact}/memory`, `POST /v1/contacts/memory/eval` |
 | `remember` | `POST /v1/agents/{slug}/memory/extraction` |
 | `keys` | `GET`·`POST /v1/keys`, `POST /v1/keys/{fingerprint}/revoke` |
+| `numbers` | `GET`·`POST /v1/numbers`, `PUT /v1/numbers/{number}/env`, `DELETE /v1/numbers/{number}` |
 | `providers` | `GET /v1/providers` · `PUT`·`DELETE`·`GET /v1/provider-keys[/{vendor}]` |
 | `callbacks` | `GET /v1/callbacks[?agent=&after=]` |
 | `line` | `GET`·`POST`·`DELETE /v1/agents/{slug}/line`, `PUT`·`DELETE /v1/line/from` |
