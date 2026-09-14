@@ -41,6 +41,17 @@ ever talks to over a socket.
 npm install pinecall
 ```
 
+## Install
+
+```bash
+npm i -g pinecall        # the CLI and the console, anywhere
+npm i pinecall           # or as a dependency, to write an agent in your own project
+```
+
+You need a gateway for the CLI to talk to — `pip install pinecall` is that, and
+[from-zero](https://github.com/pinecall/runtime/blob/main/docs/from-zero.md) walks both halves up
+on a laptop in one sitting. To read this code or run the two examples, clone instead:
+
 ## Five minutes
 
 ```
