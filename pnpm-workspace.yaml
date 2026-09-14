@@ -7,3 +7,6 @@ packages:
 # tsx is the tenant CLI's TypeScript loader; esbuild is its compiler, and it builds a binary.
 allowBuilds:
   esbuild: true
+
+minimumReleaseAgeExclude:
+  - '@pinecall/protocol@0.1.0'
