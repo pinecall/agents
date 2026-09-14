@@ -386,18 +386,17 @@ prompt` must not pay for a websocket client.
 `observe`, `costs`, `call`, `tokens`, `agents`, `deploy`. Typing one prints what it *will* be and exits 0. A verb leaves that table in the commit
 that writes it.
 
-**Where the key comes from** (`cli/env.ts`, the one place that decides it, for every verb):
+**Where the key comes from** (`cli/env.ts` and `cli/profiles.ts`, the one place that decides it,
+for every verb): the profile `--profile` names, or the active one in `~/.pinecall/config.json`.
+There is nothing else — no variable, no fallback and no order to remember.
 
-1. the URL: `PINECALL_URL` → the local gateway's `~/.pinecall/dev` → the single row `login` kept →
-   `http://localhost:8080`;
-2. the key: **if the URL is the local dev gateway, its own dev key** — and an exported
-   `PINECALL_API_KEY` is then ignored **out loud**, because that gateway honours its own key and no
-   other, and a bare `403` with no sentence in it cost this project an afternoon twice;
-3. otherwise `PINECALL_API_KEY` → the `credentials` row for that URL → `PINECALL_DEV_KEY`;
-4. nothing: the verb says `pinecall login <url>` and exits 2.
+It was four files and three variables, resolved in an order nobody was ever told, and the one that
+won was the one you had not chosen: an exported `PINECALL_API_KEY` (v1's variable) beat what
+`pinecall login` had just kept, and a local gateway's own `~/.pinecall/dev` beat both. An agent
+could register into another org, in another world, with every printed line reading the same.
 
-`~/.pinecall/` is 0700, every file 0600, and the `dev` file is trusted only when this account owns
-it and nobody else can read it. The `credentials` file keeps v1's top-level `api_key` untouched.
+`~/.pinecall/` is 0700 and every file 0600. The `credentials` file keeps v1's top-level `api_key`
+untouched; it is read once, folded into `config.json`, and never read again.
 
 ## 11. The two pages
 
@@ -566,8 +565,9 @@ folds there.
 | 4 | what did every call score? | `call.score`, written by the runtime at hang-up with nobody watching; read here by `runs drift`, `runs promote` and the console's Evals screen |
 
 The nightly (`.github/workflows/nightly.yml`) is rings 1 and 4 on real money: both examples,
-two models, all three repositories checked out, a throwaway Postgres, a gateway on
-`PINECALL_DEV_KEY` — and two gates, the baseline model's goldens and each judge's drift.
+two models, all three repositories checked out, a throwaway Postgres the schema is migrated into,
+a gateway and a `pinecall-runtime init` — and two gates, the baseline model's goldens and each
+judge's drift.
 
 ## 16. Packaging: one distribution, no build between a change and a test
 

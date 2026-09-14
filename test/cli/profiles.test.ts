@@ -74,13 +74,14 @@ describe("the file", () => {
     expect(readFileSync(join(home, "credentials"), "utf8")).toContain(A_KEY);
   });
 
-  // It is not a row somebody kept: a gateway on a dev key writes it at every start, with whichever
-  // port it opened on, and takes it away when it stops.
-  it("reads the local gateway's own file every time and writes it never", () => {
+  // A gateway on a PINECALL_DEV_KEY used to write ~/.pinecall/dev at every start, and this file
+  // folded it in as a profile nobody had kept. Both are gone with the dev key: a local gateway
+  // runs on the same Postgres and the same issued keys a box does, so it is `pinecall login`
+  // like any other, and a file left over from that runtime says nothing about this one.
+  it("reads no gateway out of a file nobody logged in to", () => {
     writeFileSync(join(home, "dev"), JSON.stringify({ url: LOCAL, key: A_DEV_KEY }), { mode: 0o600 });
 
-    expect(readConfig(home).profiles["local"]).toEqual({ url: LOCAL, key: A_DEV_KEY });
-    expect(() => readFileSync(join(home, "config.json"), "utf8")).toThrow();
+    expect(readConfig(home).profiles).toEqual({});
   });
 });
 

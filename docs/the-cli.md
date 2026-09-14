@@ -70,9 +70,9 @@ process can see.
 
 Nothing else is read. `PINECALL_API_KEY`, `PINECALL_URL` and `PINECALL_DEV_KEY` are gone from
 this CLI — the first of those is v1's variable too, and a shell that still had v1's key exported
-pointed every verb at another org with every line reading the same. One source left under the
-profile: `~/.pinecall/dev`, the local gateway's own word about where it is and which key it
-honours, read every time and written never. It goes with the dev key itself.
+pointed every verb at another org with every line reading the same. `~/.pinecall/dev` is gone with
+them: a local gateway used to write it at every start, and a local gateway now runs the same
+Postgres and the same issued keys a box does, so it is `pinecall login` like any other.
 
 Every verb that connects opens by printing `gateway <url> · key from <source>`. **`env | grep
 PINECALL` is the first thing to run when a door refuses you and will not say why.**
@@ -82,11 +82,9 @@ PINECALL` is the first thing to run when a door refuses you and will not say why
 | file | what it holds |
 |---|---|
 | `credentials` | `{ "api_key": …, "gateways": { "<url>": { api_key, org, logged_in_at } } }`. The top-level `api_key` is v1's and is never touched |
-| `dev` | what a local `pinecall-runtime gateway` on a dev key left behind: its URL and its key |
 
-The directory is `0700` and every file `0600`. The `dev` file is trusted **only** when this
-account owns it and nobody else can read it — a key another account could have written is not a
-key, it is an invitation. A key is never printed, never logged, and never put in a URL.
+The directory is `0700` and every file `0600`. A key is never printed, never logged, and never put
+in a URL.
 
 ---
 
@@ -639,7 +637,7 @@ every child process and every `ps` can read. `PINECALL_HOME` says where that fil
 
 ```console
 $ pinecall whoami
-gateway http://127.0.0.1:8080 · key from dev-file
+gateway http://127.0.0.1:8080 · key from profile
 org default · key dev · sandbox · the local gateway
 ```
 

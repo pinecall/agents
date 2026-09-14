@@ -80,9 +80,10 @@ sentences; small methods; 150 lines is the norm. Tests read as sentences.
 
 ## Traps — each one cost an afternoon
 
-- **A gateway on a dev key honours that key and no other.** `PINECALL_API_KEY` exported in the
-  shell is then ignored, out loud (`cli/env.ts`). A bare `403` with no sentence in it:
-  `env | grep PINECALL`, then `unset`. `pinecall whoami` says which key a verb would use.
+- **The CLI reads no environment at all.** Which gateway and which key is the active profile in
+  `~/.pinecall/config.json`, and nothing else — `PINECALL_API_KEY`, `PINECALL_URL` and
+  `PINECALL_DEV_KEY` are gone, and exporting one changes nothing. `pinecall whoami` says which key
+  a verb would use, `pinecall config` lists them, `pinecall use <name>` switches.
 - **A tool with no docstring is refused,** because without one no model can choose it; and
   `@tool({ stage })` on a class with no `stage` field is refused too.
 - **The class docstring lives above the class,** where `toString()` cannot see it, and parameter

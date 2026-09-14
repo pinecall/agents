@@ -13,7 +13,6 @@ const FILE_MODE = 0o600;
 const OTHERS = 0o077;
 
 const CREDENTIALS = "credentials";
-const DEV = "dev";
 
 /** The directory both files live in: ~/.pinecall, or the one PINECALL_HOME names instead. */
 export function pinecallHome(env: NodeJS.ProcessEnv = process.env): string {
@@ -41,12 +40,6 @@ export interface GatewayEntry {
 export interface Credentials {
   api_key?: string;
   gateways: Record<string, GatewayEntry>;
-}
-
-/** What a local `pinecall-runtime gateway` on a dev key left behind: where it is and its key. */
-export interface DevGateway {
-  url: string;
-  key: string;
 }
 
 /** The whole file. A missing one, an unreadable one and a broken one are all an empty table. */
@@ -98,24 +91,6 @@ export function writeCalling(url: string, calling: string | undefined, home: str
   writeFileSync(path, `${JSON.stringify(kept, null, 2)}\n`, { mode: FILE_MODE });
   chmodSync(path, FILE_MODE);
   return true;
-}
-
-/**
- * The local gateway's own file, or nothing.
- *
- * A dev key opens a gateway that has no database and honours that one key, so this file is how a
- * terminal finds it without anybody exporting anything. It is trusted only when this account owns
- * it and nobody else can read it — otherwise it is ignored in silence, because a key another
- * account could have written is not a key, it is an invitation.
- */
-export function devGateway(home: string = pinecallHome()): DevGateway | undefined {
-  const path = join(home, DEV);
-  if (!ours(path)) return undefined;
-  const read = parsed(path);
-  if (read === undefined) return undefined;
-  const url = read["url"];
-  const key = read["key"];
-  return typeof url === "string" && typeof key === "string" ? { url, key } : undefined;
 }
 
 /** The URL as a key in the table: lowercase scheme and host, and no trailing slash. */

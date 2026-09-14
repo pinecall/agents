@@ -29,6 +29,11 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   key rather than the one on screen, because the toggle mints the second from the first.
 
 ### Changed
+- **`~/.pinecall/dev` is gone, with the runtime's dev key.** A local gateway used to write that
+  file at every start and this CLI folded it in as a profile nobody had kept — the one source that
+  beat both `pinecall login` and an exported key, so a verb could land somewhere nobody chose. A
+  local gateway runs the same Postgres and the same issued keys a box does now, so it is
+  `pinecall login http://localhost:8080` like any other gateway.
 - **`--env` asserts which world you are in, and never selects one.** A key opens one world, so a
   flag that CHOSE would be a flag that lies; `pinecall run --env production` says which world you
   believe the key in hand opens, and the verb stops when it opens the other. Nothing said means
