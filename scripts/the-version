@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# La versión que este repo declara, y la única condición que no se puede arreglar después de
+# publicar: ninguna dependencia puede salir como `workspace:` ni `file:`. En el árbol de trabajo
+# `@pinecall/protocol` es `workspace:*` y pnpm lo resuelve al repo de al lado; `pnpm publish` lo
+# reescribe a la versión LOCAL de ese checkout — que hoy es 0.0.0 — y publica un paquete que pide
+# un protocol que no existe en el registro. Imprime la versión, o el motivo.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+version=$(node -p "require('./package.json').version")
+
+linked=$(node -e '
+const p = require("./package.json");
+const fields = ["dependencies", "optionalDependencies", "peerDependencies"];
+const bad = fields.flatMap((f) =>
+  Object.entries(p[f] ?? {}).filter(([, r]) => /^(workspace|file|link):/.test(r))
+    .map(([n, r]) => `${f}.${n} = ${r}`));
+console.log(bad.join("\n"));
+')
+if [ -n "$linked" ]; then
+  echo "hay dependencias atadas al checkout de al lado:" >&2
+  echo "$linked" >&2
+  echo "publicá protocol primero y poné el rango acá antes de taggear." >&2
+  exit 1
+fi
+echo "$version"
