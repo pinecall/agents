@@ -193,7 +193,7 @@ approval.
 - **The nightly** (`.github/workflows/nightly.yml`): rings 1 and 4 on real money, weekday nights.
   `pinecall remember` belongs here too — one model call per case is real money, and the extraction
   prompt is exactly the kind of thing that drifts without anybody touching the class.
-  All three repositories checked out, a throwaway Postgres, a gateway on `PINECALL_DEV_KEY`, both
+  All three repositories checked out, a throwaway Postgres with the schema migrated, a gateway, both
   examples, **two models** — and two gates: the goldens on the baseline model, and each judge's
   drift. A golden the two models disagree about fails nothing and is written into the summary as a
   finding; the answer to a divergence is a fix, never a softened golden.

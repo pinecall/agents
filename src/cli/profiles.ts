@@ -3,7 +3,7 @@
 import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { devGateway, normalised, pinecallHome, readCredentials } from "./credentials.js";
+import { normalised, pinecallHome, readCredentials } from "./credentials.js";
 
 // The directory is a person's and the file holds keys: 0700 and 0600, as the old two were.
 const DIRECTORY_MODE = 0o700;
@@ -33,15 +33,14 @@ export interface Config {
  * Every profile this machine has, and which is active.
  *
  * There were four files and three variables answering two questions — which gateway, and which
- * key — with a precedence nobody was ever told. This is the one file. The two it replaces are
+ * key — with a precedence nobody was ever told. This is the one file. The one it replaces is
  * read ONCE, here, and written into it: `~/.pinecall/credentials`, which `pinecall login` kept a
- * row per gateway in, and `~/.pinecall/dev`, which a local gateway on a dev key left behind.
- * Neither is deleted — v1's CLI still reads the first on this same machine — and neither is read
- * again once this file exists.
+ * row per gateway in. It is not deleted — v1's CLI still reads it on this same machine — and it is
+ * not read again once this file exists. The third source, `~/.pinecall/dev`, went with the dev key
+ * that wrote it: a local gateway runs the same Postgres and the same issued keys a box does.
  */
 export function readConfig(home: string = pinecallHome()): Config {
-  const config = parsedConfig(home) ?? migrated(home);
-  return withTheLocalGateway(config, home);
+  return parsedConfig(home) ?? migrated(home);
 }
 
 /**
@@ -65,28 +64,6 @@ function migrated(home: string): Config {
   if (only !== undefined && rest.length === 0) config.active = only;
   if (only !== undefined) writeConfig(config, home);
   return config;
-}
-
-/**
- * The local gateway's own file, as a profile called `local`, read EVERY time and written never.
- *
- * It is not a row somebody kept: a `pinecall-runtime gateway` on a dev key writes it at every
- * start, with whichever port it opened on, and takes it away when it stops. Folding it in once
- * would pin a gateway that has since moved or gone. It is the only live source left, and it goes
- * with the dev key itself.
- */
-function withTheLocalGateway(config: Config, home: string): Config {
-  const dev = devGateway(home);
-  if (dev === undefined) return config;
-  // Under the profile that already points there when one does — refreshing its key, because the
-  // gateway's own file is the newer word about which key it honours — and under a fresh name when
-  // none does. It must never take a name another gateway answers to: writing `local` on top of a
-  // loopback profile somebody logged in to on another port silently repoints where a verb goes,
-  // which is the one thing `nameFor` exists to stop.
-  const name = nameOfGateway(dev.url, config) ?? nameFor(dev.url, config);
-  const already = config.profiles[name];
-  const here: Profile = already === undefined ? { url: dev.url, key: dev.key } : { ...already, key: dev.key };
-  return { ...config, profiles: { ...config.profiles, [name]: here }, active: config.active ?? name };
 }
 
 // What `--profile <name>` said, for this one invocation. It is read out of argv once, by the

@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { devGateway, gatewayFor, normalised, pinecallHome, readCredentials, writeGateway } from "../../src/cli/credentials.js";
+import { gatewayFor, normalised, pinecallHome, readCredentials, writeGateway } from "../../src/cli/credentials.js";
 
 const A_KEY = "pk_a_key_no_gateway_will_ever_honour";
 const A_DEV_KEY = "a-dev-key-nobody-will-ever-deploy";
@@ -80,25 +80,5 @@ describe("the credentials file", () => {
     wrote("credentials", "{ this was edited by hand");
 
     expect(readCredentials(home)).toEqual({ gateways: {} });
-  });
-});
-
-describe("the local gateway's file", () => {
-  it("says where the gateway is and which key it honours", () => {
-    wrote("dev", JSON.stringify({ url: "http://127.0.0.1:8080", key: A_DEV_KEY }));
-
-    expect(devGateway(home)).toEqual({ url: "http://127.0.0.1:8080", key: A_DEV_KEY });
-  });
-
-  it("is ignored, in silence, when anybody else on this machine can read it", () => {
-    wrote("dev", JSON.stringify({ url: "http://127.0.0.1:8080", key: A_DEV_KEY }), 0o644);
-
-    expect(devGateway(home)).toBeUndefined();
-  });
-
-  it("is ignored when it is there but says neither where nor with what", () => {
-    wrote("dev", JSON.stringify({ url: "http://127.0.0.1:8080" }));
-
-    expect(devGateway(home)).toBeUndefined();
   });
 });
