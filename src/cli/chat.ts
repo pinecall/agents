@@ -147,6 +147,9 @@ export function chatUrl(base: string, agent: string, app?: string, contact?: str
 function talk(url: string, apiKey: string, events: boolean): Promise<number> {
   const socket = new WebSocket(url, { headers: { authorization: `Bearer ${apiKey}` } });
   const lines = createInterface({ input: process.stdin, output: process.stdout, prompt: PROMPT });
+  // An entry can land after the keyboard is gone — a piped stdin ends the moment it is read, and
+  // the agent's greeting arrives after that — and readline throws on a prompt it has closed.
+  let typing = true;
   // The keyboard waits for the socket: `ws` throws on a send while the upgrade is still in flight
   // rather than queueing it. Paused, a line typed early stays in the stream and arrives as the
   // first turn the moment the socket is up, which is what a person who typed it meant.
@@ -164,7 +167,7 @@ function talk(url: string, apiKey: string, events: boolean): Promise<number> {
       if (line === null) return;
       // The prompt is rewritten after every entry: one may land while the caller is still typing.
       process.stdout.write(`\r${line}\n`);
-      lines.prompt();
+      if (typing) lines.prompt();
     });
     socket.on("error", (failed: Error) => {
       process.stderr.write(`\rthe gateway refused the chat socket: ${failed.message}\n`);
@@ -188,7 +191,10 @@ function talk(url: string, apiKey: string, events: boolean): Promise<number> {
       if (line.trim() !== "") socket.send(JSON.stringify({ text: line.trim() }));
       lines.prompt();
     });
-    lines.on("close", () => socket.close());
+    lines.on("close", () => {
+      typing = false;
+      socket.close();
+    });
   });
 }
 
