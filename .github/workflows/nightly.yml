@@ -27,25 +27,9 @@ concurrency:
 jobs:
   goldens:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
-    # The gateway's log lives in Postgres. The dev stack's image adds pgvector and pg_textsearch
-    # for the retriever and nothing this job runs asks for either — the migrations create no
-    # extension — so the stock image starts in seconds instead of being built here.
-    services:
-      postgres:
-        image: postgres:17.11-alpine
-        env:
-          POSTGRES_USER: pinecall
-          POSTGRES_PASSWORD: pinecall
-          POSTGRES_DB: pinecall
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U pinecall -d pinecall"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 12
+    # The postgres image is built in a step below rather than pulled, and building it — pgvector
+    # and pg_textsearch from source — is most of the minutes this job spends before a call.
+    timeout-minutes: 30
 
     env:
       DATABASE_URL: postgresql://pinecall:pinecall@127.0.0.1:5432/pinecall
@@ -73,6 +57,28 @@ jobs:
           repository: pinecall/runtime
           path: runtime
           ssh-key: ${{ secrets.RUNTIME_DEPLOY_KEY }}
+
+      # What a person does with `docker compose -f infra/compose/dev.yml up -d`, in one step.
+      #
+      # The schema needs BOTH extensions — `halfvec` in 0008 and 0009, a `bm25` index in 0009 — so
+      # the stock image cannot run `migrate up` at all: it stops at `type "halfvec" does not
+      # exist`, which is where this job stopped. The image that has them is the runtime's own and
+      # is built, not published, so it is built here and started as a STEP: a `services:` block
+      # starts before any step runs and so cannot wait for a build. The two `CREATE EXTENSION`s
+      # are here because no migration creates one — the same two a person types once by hand.
+      - name: postgres with the two extensions the schema needs
+        run: |
+          docker build -q -t pinecall/postgres:ci runtime/infra/compose/postgres
+          docker run -d --name postgres -p 5432:5432 \
+            -e POSTGRES_USER=pinecall -e POSTGRES_PASSWORD=pinecall -e POSTGRES_DB=pinecall \
+            pinecall/postgres:ci
+          for _ in $(seq 1 60); do
+            docker exec postgres pg_isready -U pinecall -d pinecall && break
+            sleep 1
+          done
+          docker exec postgres psql -U pinecall -d pinecall \
+            -c "CREATE EXTENSION IF NOT EXISTS vector" \
+            -c "CREATE EXTENSION IF NOT EXISTS pg_textsearch"
 
       - uses: astral-sh/setup-uv@v5
         with:
@@ -169,7 +175,7 @@ jobs:
         run: |
           code=0
           for agent in clinica-norte tienda-sur; do
-            pnpm exec pinecall runs drift \
+            node bin/pinecall.js runs drift \
               --agent "$agent" --window 7d --baseline 30d --threshold 10 \
               > "$RUNNER_TEMP/drift-$agent.txt" || code=$?
             { echo "### drift — $agent"; echo '```'; cat "$RUNNER_TEMP/drift-$agent.txt"; echo '```'; } \
