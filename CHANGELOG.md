@@ -35,6 +35,12 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   fingerprint …` for every key there was. `revoke` resolves what you typed against the org's own
   rows first: the whole hash still works, a word that names two keys is refused with both, and one
   that names none says which verb lists them.
+- **The nightly bootstraps the way a person does.** It ran on `PINECALL_DEV_KEY: dev` and
+  `PINECALL_URL` — one key that needed no `api_keys` row, and a variable the CLI no longer reads —
+  so it would have failed every night from now on, and for a reason that had nothing to do with
+  the goldens. It now does the three steps the walkthrough does: `migrate up`, the gateway, then
+  `keys issue` piped straight into `pinecall login --key-stdin`, with `PINECALL_HOME` saying where
+  that profile goes. The key never becomes a variable, a file of its own, or a line in the log.
 - **La agenda de `clinica-norte` lee la hora en la zona del centro.** `new Date(startsAt).getHours()`
   da la hora de la MÁQUINA: en un runner en UTC el hueco de las trece era el de las once, así que
   la regla que lo rechaza se aplicaba a otro hueco y el que dos pruebas buscaban no existía. Verde
