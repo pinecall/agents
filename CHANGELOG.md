@@ -35,6 +35,9 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   fingerprint …` for every key there was. `revoke` resolves what you typed against the org's own
   rows first: the whole hash still works, a word that names two keys is refused with both, and one
   that names none says which verb lists them.
+- **`pinecall config rm <name>`.** A profile is a key in a file and there was no way to take one
+  out: a gateway that had moved and a key that had been revoked both stayed on the list for good.
+  It forgets the row and takes the active mark with it rather than leaving it pointing at nothing.
 - **`~/.pinecall/dev` is gone, with the runtime's dev key.** A local gateway used to write that
   file at every start and this CLI folded it in as a profile nobody had kept — the one source that
   beat both `pinecall login` and an exported key, so a verb could land somewhere nobody chose. A

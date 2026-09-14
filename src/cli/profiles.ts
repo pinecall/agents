@@ -128,6 +128,22 @@ export function activate(name: string, home: string = pinecallHome()): boolean {
   return true;
 }
 
+/**
+ * Forget a gateway. False when there is no such name, so a typo is never silence.
+ *
+ * A profile is a key in a file, and a key that opens nothing is worse than none: somebody will
+ * trust it tomorrow and read the refusal as the gateway's fault. This is the only way to take one
+ * out, and it takes the active mark with it rather than leaving it pointing at a row that is gone.
+ */
+export function forget(name: string, home: string = pinecallHome()): boolean {
+  const config = readConfig(home);
+  if (config.profiles[name] === undefined) return false;
+  const { [name]: _gone, ...left } = config.profiles;
+  const active = config.active === name ? undefined : config.active;
+  writeConfig({ ...(active === undefined ? {} : { active }), profiles: left }, home);
+  return true;
+}
+
 /** The phone this person calls FROM at the gateway in hand, so a ring reaches their own agent. */
 export function callingFrom(home: string = pinecallHome()): string | undefined {
   return profileFor(theChosenProfile(), home)?.calling;

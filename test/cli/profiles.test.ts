@@ -116,6 +116,38 @@ describe("`pinecall config` and `pinecall use`", () => {
     expect(out.text()).not.toContain(ANOTHER);
   });
 
+  // A profile is a key in a file, and there was no way to take one out: a gateway that moved and a
+  // key that was revoked both stayed on the list, and a key that opens nothing is worse than none.
+  it("forgets one, and takes the active mark with it rather than leaving it dangling", async () => {
+    writeProfile("box", { url: BOX, key: A_KEY }, home);
+    writeProfile("stg", { url: OTHER, key: ANOTHER }, home);
+    activate("stg", home);
+    const out = written();
+
+    expect(await run(["rm", "stg"], { out: out.stream, home })).toBe(0);
+
+    expect(out.text()).toBe("forgot stg\n");
+    expect(Object.keys(readConfig(home).profiles)).toEqual(["box"]);
+    expect(readConfig(home).active).toBeUndefined();
+  });
+
+  it("leaves the mark alone when the row it names is not the one going", async () => {
+    writeProfile("box", { url: BOX, key: A_KEY }, home);
+    writeProfile("stg", { url: OTHER, key: ANOTHER }, home);
+    activate("box", home);
+
+    expect(await run(["rm", "stg"], { out: written().stream, home })).toBe(0);
+    expect(readConfig(home).active).toBe("box");
+  });
+
+  it("names the ones there are when asked to forget a word that is not one", async () => {
+    writeProfile("box", { url: BOX, key: A_KEY }, home);
+    const err = written();
+
+    expect(await run(["rm", "nope"], { err: err.stream, home })).toBe(2);
+    expect(err.text()).toBe("no profile called nope: box\n");
+  });
+
   it("says what to type when this machine knows no gateway at all", async () => {
     const out = written();
 

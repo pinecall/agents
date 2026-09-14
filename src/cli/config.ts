@@ -1,10 +1,11 @@
 /** `pinecall config` and `pinecall use`: the gateways this machine knows, and which one is in hand. */
 
 import type { Group } from "./groups.js";
-import { activate, activeName, readConfig, type Profile } from "./profiles.js";
+import { activate, activeName, forget, readConfig, type Profile } from "./profiles.js";
 
-const USAGE = `usage: pinecall config           the gateways this machine knows
-       pinecall use <profile>    the one the next verb goes to`;
+const USAGE = `usage: pinecall config              the gateways this machine knows
+       pinecall config rm <name>    forget one
+       pinecall use <profile>       the one the next verb goes to`;
 
 export const group: Group = {
   purpose: "the gateways this machine knows, and which one the next verb goes to",
@@ -16,7 +17,11 @@ export const group: Group = {
 
   It prints no key. What a listing may say about one is that it is there, and its fingerprint is
   the Keys screen's business — not a prefix, not a hint. The org and the world beside each name
-  are what \`whoami\` last said, kept as a label so this list reads without a network.`,
+  are what \`whoami\` last said, kept as a label so this list reads without a network.
+
+  \`config rm\` takes a row out — a gateway that has moved, a key that was revoked. It forgets the
+  row here and nothing else: the key itself is stopped from the Keys screen, and a row left behind
+  is a key somebody will trust tomorrow and a refusal they will read as the gateway's fault.`,
   run,
 };
 
@@ -31,8 +36,9 @@ export interface Showing {
 export async function run(argv: string[], how: Showing = {}): Promise<number> {
   const out = how.out ?? process.stdout;
   const err = how.err ?? process.stderr;
-  const [named] = argv;
+  const [named, ...rest] = argv;
   if (named === undefined) return listed(out, how.home);
+  if (named === "rm") return dropped(rest[0], out, err, how.home);
   return chosen(named, out, err, how.home);
 }
 
@@ -62,6 +68,23 @@ function listed(out: NodeJS.WritableStream, home: string | undefined): number {
   return 0;
 }
 
+function dropped(
+  name: string | undefined,
+  out: NodeJS.WritableStream,
+  err: NodeJS.WritableStream,
+  home: string | undefined,
+): number {
+  if (name === undefined) {
+    err.write(`${USAGE}\n`);
+    return 2;
+  }
+  if (forget(name, home)) {
+    out.write(`forgot ${name}\n`);
+    return 0;
+  }
+  return noSuchProfile(name, err, home);
+}
+
 function chosen(
   name: string,
   out: NodeJS.WritableStream,
@@ -72,6 +95,11 @@ function chosen(
     out.write(`▸ ${name}\n`);
     return 0;
   }
+  return noSuchProfile(name, err, home);
+}
+
+/** The one refusal both `use` and `rm` give, naming what this machine does know. */
+function noSuchProfile(name: string, err: NodeJS.WritableStream, home: string | undefined): number {
   const known = Object.keys(readConfig(home).profiles).sort();
   const has = known.length === 0 ? "none yet: `pinecall login <url>`" : known.join(" · ");
   err.write(`no profile called ${name}: ${has}\n`);
