@@ -106,6 +106,7 @@ means editing a list on purpose, which is the point.
 | | |
 |---|---|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | what this package is, file by file: the entities, the bridge, the CLI, the console, the import table, and where LiveKit is and is not |
+| the runtime's `docs/from-zero.md` | **self-hosting**: a runtime of your own, from nothing, through to this clinic answering — every command run, every output what came back |
 | [docs/tutorial.md](docs/tutorial.md) | from an empty directory to an agent that answers from your documents and remembers who called |
 | [docs/writing-an-agent.md](docs/writing-an-agent.md) | the class: state, tools, stages, channels, knowledge · docs · memory, hooks, events |
 | [docs/the-prompt.md](docs/the-prompt.md) | the prompt: named blocks in two regions, `render()`, where what a lookup found lands, and where a rule belongs |

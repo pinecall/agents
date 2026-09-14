@@ -19,6 +19,9 @@ pnpm exec pinecall run       # inside this workspace
 In a checkout the CLI runs from source through tsx (`bin/pinecall.js`); what npm installs is the
 compiled `dist/cli/index.js` and needs no loader.
 
+Running the gateway yourself, from nothing? The runtime repo's `docs/from-zero.md` is that
+path end to end, with every output under it.
+
 ## The map
 
 | verb | what it is | needs the gateway |
