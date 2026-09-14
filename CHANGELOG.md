@@ -7,6 +7,15 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **A release is a tag, and the tag has a guard in front of it.** `release.yml` fires on `v*`:
+  `guard` refuses unless the tag and `package.json` say the same number, `gates` runs the same
+  `ci.yml` every push runs — a tag is not a branch, so without that the release path had no gate
+  at all — and only then does `publish-npm` touch the registry, over OIDC with no token stored
+  anywhere. The package is packed with `pnpm pack` and published with `npm publish <tgz>`, because
+  `npm pack` does not apply `publishConfig`: the manifest it builds still points `main` and `bin`
+  at `src/` and `bin/`, neither of which `files: ["dist"]` ships. `scripts/the-version` refuses
+  while `@pinecall/protocol` is `workspace:*` — pnpm would rewrite it to the version of the
+  checkout next door, which is not a version anyone can install. Protocol publishes first, always.
 - **`pinecall numbers`, and `numbers move` crosses the two worlds.** An org buys ONE number, so a
   team wanting to try a new agent on the real line had nowhere to try it: a second number is a
   second bill, and a third world would be a third of everything. `pinecall numbers move +34… --env
