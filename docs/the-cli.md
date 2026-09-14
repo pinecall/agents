@@ -190,7 +190,8 @@ claim there; `pinecall run` prints the line only for an agent that answers at a 
 ## `chat`
 
 ```
-pinecall chat [agent] [--file agent.tsx] [--as <contact>] [--state file [--case n]] [--events]
+pinecall chat [agent] [--file agent.tsx] [--env production] [--as <contact>]
+             [--state file [--case n]] [--events]
 ```
 
 With nothing after it: the agent of this directory mounted in **this** process, and a written
@@ -215,7 +216,8 @@ verb that loads a file (`test`, `simulate`, `remember`, `personas`, `knowledge`,
 
 `--as` is who is calling — the id memory files the call under. `--state file [--case n]` opens the
 call in a state: the same goldens file `prompt` reads, and it is refused beside a slug, because
-nothing is mounted here to open. `--events` prints the wire instead.
+nothing is mounted here to open. `--events` prints the wire instead. `--env` asserts the world, as
+[`run`](#run)'s does: nothing said is the sandbox, and a key that opens the other one stops the verb.
 
 ## `prompt`
 

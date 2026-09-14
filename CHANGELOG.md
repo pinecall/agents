@@ -46,6 +46,11 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   la regla que lo rechaza se aplicaba a otro hueco y el que dos pruebas buscaban no existía. Verde
   en un portátil en +02:00 y rojo en CI, que es la peor forma de fallar. `hourOf(startsAt)` lo lee
   del texto, que lleva la zona escrita.
+- **`pinecall --help` names every verb there is, and only those.** It advertised `ui` for four
+  days after that verb was deleted — typing it answered `no such group: ui` while the help said it
+  was there — and it never grew a row for `line`, built and documented all along. The table is
+  hand-written and had drifted both ways; a test now pins it against `builtNames()`. `chat --env`
+  is in `docs/the-cli.md` too, which it was not.
 - **`pinecall config rm <name>`.** A profile is a key in a file and there was no way to take one
   out: a gateway that had moved and a key that had been revoked both stayed on the list for good.
   It forgets the row and takes the active mark with it rather than leaving it pointing at nothing.

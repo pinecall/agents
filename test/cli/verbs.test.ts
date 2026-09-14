@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { builtNames, groupFor, groupNames, main } from "../../src/cli/index.js";
+import { PLANNED } from "../../src/cli/groups.js";
 import { Refused } from "../../src/cli/testing/gateway.js";
 import { connectedLine, doorsOf } from "../../src/cli/connected.js";
 import { consoleUrl, run, whyNoConsole } from "../../src/cli/run.js";
@@ -139,6 +140,33 @@ describe("`serve` is not a verb of this CLI", () => {
   it("is not a group the CLI declares, planned or built", () => {
     expect(groupNames()).not.toContain("serve");
     expect(groupNames()).toContain("run");
+  });
+});
+
+// The top-level usage is a hand-written table, and it drifted both ways: it advertised `ui` for
+// four days after that verb was deleted — `pinecall ui` answered `no such group: ui` while the
+// help said it was there — and it never grew a row for `line`, which has been built and
+// documented all along. A person reads that table to find out what exists.
+describe("`pinecall --help` names every verb there is, and nothing else", () => {
+  it("has one row per built group, and no row for a group that is gone", async () => {
+    const out = collected();
+
+    await main(["--help"], out.stream, collected().stream);
+
+    const rows = [...out.text().matchAll(/^ {2}([a-z]+) {1,}\S/gm)].map((row) => row[1]!);
+    const named = rows.filter((name) => !Object.keys(PLANNED).includes(name));
+    expect(named.sort()).toEqual([...builtNames()].sort());
+  });
+
+  it("names the planned ones too, each said to be unbuilt", async () => {
+    const out = collected();
+
+    await main(["--help"], out.stream, collected().stream);
+
+    for (const name of Object.keys(PLANNED)) {
+      expect(out.text()).toContain(`${name.padEnd(10)}`);
+    }
+    expect(out.text()).toContain("not built yet");
   });
 });
 
