@@ -7,6 +7,15 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **`pinecall numbers`, and `numbers move` crosses the two worlds.** An org buys ONE number, so a
+  team wanting to try a new agent on the real line had nowhere to try it: a second number is a
+  second bill, and a third world would be a third of everything. `pinecall numbers move +34… --env
+  sandbox` points the org's own number at the sandbox for an afternoon and back again — one row,
+  in effect on the next call, with the carrier untouched because a call arrives at this box
+  whichever world answers it. Beside it: `list` for the key's world, `import` off the org's
+  carrier account (`--dry-run` prints the steps and writes nothing) and `drop`. It replaces
+  `phones` in the planned table, because the door, the console's screen and the runtime's CLI all
+  say numbers.
 - **The front page says whose corner each agent is, and filters by it.** The sandbox holds one
   agent per person, and a key that opens `team` — an admin's, the operator's — is now answered
   every member's corner rather than only its own, so the same slug arrives several times. The page

@@ -113,6 +113,7 @@ a directory earns its place there by having a line in that table (§13).
 | `test.ts` · `simulate.ts` · `eval.ts` · `runs/` | ring 1, a live persona, ring 3, and what the gateway has run |
 | `knowledge.ts` · `memory.ts` | the folder pushed whole under a name, listed, dropped · one contact's facts, and the right to be forgotten. Each also holds its golden's verb: `eval` prints `recall@k` and `nDCG@10`, computed in the gateway by code with no model, and exits 1 on a miss |
 | `keys.ts` | the API keys this org's machines run on: one issued for a machine and printed once, the rows read back as fingerprints, one revoked |
+| `numbers.ts` | which number reaches which agent: the org's doors listed, one imported off its carrier, one MOVED between the worlds — an org buys one number, so that move is what makes a staging run cost nothing — one let go |
 | `providers.ts` | the provider keys this org brought of its own: one added from stdin, one taken back, the vendors read by name — never a value |
 | `personas.ts` · `machine.ts` · `view.ts` | the synthetic callers, the state machine on one page, the terminal view as a pure function |
 | `login.ts` · `browser.ts` · `whoami.ts` · `secret.ts` | the browser dance that signs this terminal in (a word asked for, a link opened, the key collected once), how a URL is put in front of a person, which key a verb would use, and the one place a terminal is read |
@@ -382,7 +383,7 @@ prompt` must not pay for a websocket client.
 | `whoami` | which gateway, which org, and **where this terminal's key came from** | yes |
 
 `groups.ts` also declares every verb the design names and this tree has not written — `new`, `g`,
-`observe`, `costs`, `call`, `tokens`, `phones`, `agents`, `deploy`. Typing one prints what it *will* be and exits 0. A verb leaves that table in the commit
+`observe`, `costs`, `call`, `tokens`, `agents`, `deploy`. Typing one prints what it *will* be and exits 0. A verb leaves that table in the commit
 that writes it.
 
 **Where the key comes from** (`cli/env.ts`, the one place that decides it, for every verb):

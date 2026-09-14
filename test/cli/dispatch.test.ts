@@ -13,10 +13,14 @@ function collected(): { stream: NodeJS.WritableStream; text(): string } {
 }
 
 describe("the groups the CLI answers to", () => {
+  // `phones` was the design's word for it and the verb is `numbers`: the gateway's door, the
+  // console's screen and the runtime's CLI all say numbers, and one idea gets one name.
   it("declares every group of the design's verb list", () => {
     const declared = groupNames();
 
-    for (const group of ["new", "g", "run", "chat", "prompt", "test", "simulate", "runs", "personas", "eval", "sessions", "knowledge", "memory", "login", "whoami", "keys", "tokens", "phones", "agents", "supervise", "observe", "call", "costs", "deploy"]) {
+    expect(declared).not.toContain("phones");
+
+    for (const group of ["new", "g", "run", "chat", "prompt", "test", "simulate", "runs", "personas", "eval", "sessions", "knowledge", "memory", "login", "whoami", "keys", "tokens", "numbers", "agents", "supervise", "observe", "call", "costs", "deploy"]) {
       expect(declared).toContain(group);
     }
   });

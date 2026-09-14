@@ -10,7 +10,7 @@ import { withoutTheProfileFlag } from "./profiles.js";
 // The order this table is written is the order the help prints: run and chat first, because
 // they are what a person types on the first day, and the planned groups after, in the design's
 // order. run is rails server and chat is rails console — see docs/decisions/tenant-cli.md.
-const BUILT = ["run", "chat", "prompt", "test", "simulate", "eval", "sessions", "runs", "pipeline", "line", "personas", "knowledge", "memory", "remember", "supervise", "keys", "providers", "callbacks", "signup", "login", "whoami", "config", "use"] as const;
+const BUILT = ["run", "chat", "prompt", "test", "simulate", "eval", "sessions", "runs", "pipeline", "line", "numbers", "personas", "knowledge", "memory", "remember", "supervise", "keys", "providers", "callbacks", "signup", "login", "whoami", "config", "use"] as const;
 
 /** Everything `pinecall` answers to, built and planned alike, in the order help prints them. */
 export function groupNames(): string[] {
@@ -80,6 +80,7 @@ export async function groupFor(name: string, out: NodeJS.WritableStream = proces
   if (name === "supervise") return (await import("./supervise.js")).group;
   if (name === "sessions") return (await import("./sessions.js")).group;
   if (name === "keys") return (await import("./keys.js")).group;
+  if (name === "numbers") return (await import("./numbers.js")).group;
   if (name === "providers") return (await import("./providers.js")).group;
   if (name === "callbacks") return (await import("./callbacks.js")).group;
   if (name === "signup") return (await import("./signup.js")).group;
@@ -111,6 +112,7 @@ export function usage(): string {
     "  sessions  list | show a call's log, with what it cost and how it was judged",
     "  runs      list | show | diff the suites, promote a call, and watch the drift",
     "  pipeline  what the agent hears, decides and speaks with, and the knobs over it",
+    "  numbers   list | import | move | drop the numbers the org answers at",
     "  personas  list | show | try the synthetic callers in test/personas",
     "  knowledge push | list | drop the knowledge base the agent answers from",
     "  memory    what memory kept about a contact, forget it, and hold recall to a golden",
