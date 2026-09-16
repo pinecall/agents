@@ -85,6 +85,7 @@ diffed, never rendered, never in a snapshot:
 | `phone`, `whatsapp`, `web` | the doors this agent answers. A number, or `true` for a door with none |
 | `voice` | a voice **by name** — the platform resolves it to a vendor and an id |
 | `llm` | `"haiku"`, `"sonnet"`, `"opus"`, or `"provider/model"` |
+| `stt` | the ears: `"deepgram"` (Flux), `"soniox"`, or `"vendor/model"`. Unsaid, the runtime's own |
 | `language` | which standing rules the framework contributes (`es`, `en`) |
 | `greeting` | how the call opens: the words, or what the model reads before finding its own |
 | `says` | `{ DKV: "de ka uve" }` — how a word the voice would misread is said |

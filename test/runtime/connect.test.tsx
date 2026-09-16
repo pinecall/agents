@@ -8,7 +8,7 @@ import { Pinecall } from "../../src/client/index.js";
 import { FakeGateway } from "../../src/client/testing/index.js";
 
 import ClinicaNorte from "../agent/clinica-norte.js";
-import { modelOf, mount, optionsFor, slugOf, type Mounted } from "../../src/runtime/connect.js";
+import { earsOf, modelOf, mount, optionsFor, slugOf, type Mounted } from "../../src/runtime/connect.js";
 
 const KEY = "pk_test";
 const SLUG = "clinica-norte";
@@ -230,6 +230,19 @@ it("runs onEnd and forgets the instance when the call ends", async () => {
   await settled();
   expect(ended).toEqual([CALL]);
   expect(mounted.instanceOf(CALL)).toBeUndefined();
+});
+
+// `stt = "deepgram"` is a vendor and its own model; "deepgram/flux-general-en" is both halves.
+it("stt names the ears' vendor, with or without the model", () => {
+  expect(earsOf("deepgram")).toEqual({ provider: "deepgram", model: "" });
+  expect(earsOf("deepgram/flux-general-en")).toEqual({ provider: "deepgram", model: "flux-general-en" });
+  expect(earsOf("")).toBeUndefined();
+  class Hears extends ClinicaNorte {
+    stt = "deepgram";
+  }
+  const options = optionsFor(Hears, [], undefined, FILE);
+  const stateNames = (options.stateFields ?? []).map((field) => field.name);
+  expect([options.stt, stateNames.includes("stt")]).toEqual([{ provider: "deepgram", model: "" }, false]);
 });
 
 // `llm = "haiku"` is the design's sugar; the provider needs the id behind it or the first turn is a 404.

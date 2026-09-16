@@ -105,6 +105,19 @@ export function modelOf(value: unknown): Camel<ModelConfig> | undefined {
   return { provider: provider!, model: SHORT_NAMES[name!] ?? name! };
 }
 
+// `stt = "deepgram"` names the ears' vendor and keeps that vendor's own model — the runtime's
+// door for Deepgram is Flux, Soniox's is its real-time model — and "deepgram/flux-general-en"
+// names both halves. There are no short names to translate here, and the wire's ModelConfig
+// wants a model string, so a vendor alone travels with an empty one, which the runtime reads as
+// "yours". Until this field existed the ears could only be turned on the gateway, per agent, by
+// an operator: a class that said `llm` and `voice` and could not say what it heard with.
+export function earsOf(value: unknown): Camel<ModelConfig> | undefined {
+  if (typeof value === "object" && value !== null) return value as Camel<ModelConfig>;
+  if (typeof value !== "string" || value === "") return undefined;
+  const [provider, model = ""] = value.split("/", 2);
+  return { provider: provider!, model };
+}
+
 // `voice = "carolina"` is a name, not an id: sending it as one is how a call spent twenty seconds
 // retrying 1008 voice_id_does_not_exist while the model apologised. The word the class wrote travels
 // as the word it is, and the platform resolves it to a vendor and an id when this declaration lands
@@ -180,6 +193,8 @@ export function optionsFor(ctor: Ctor, tools: Tool[], instance: Agent = new ctor
   if (typeof language === "string") options.language = language;
   const llm = modelOf(probe["llm"]);
   if (llm) options.llm = llm;
+  const stt = earsOf(probe["stt"]);
+  if (stt) options.stt = stt;
   const voice = voiceOf(probe["voice"]);
   if (voice) options.voice = voice;
   const says = saysOf(probe["says"]);
