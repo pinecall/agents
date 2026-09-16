@@ -6,6 +6,7 @@ import { useLocation } from "react-router";
 import { Brand, Crumbs, ThemeToggle } from "../../shared/frame";
 import { AgentSelect } from "./agent-select";
 import { Leave } from "./leave";
+import { OrgSelect } from "./org-select";
 import { Whose } from "./whose";
 import { WorldToggle } from "./world-toggle";
 
@@ -19,6 +20,7 @@ export function Header({ agent }: { agent: string }): ReactNode {
       <Crumbs crumbs={crumbs} />
       <div className="head-right">
         <AgentSelect agent={agent} />
+        <OrgSelect />
         <WorldToggle />
         <Whose />
         <Leave />

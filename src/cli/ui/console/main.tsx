@@ -7,7 +7,7 @@ import { RouterProvider } from "react-router";
 import { onUnauthorized } from "../shared/api";
 import { BASE } from "./lib/base";
 import { CredentialsProvider } from "../shared/credentials";
-import { loginToWorld, loginWithCode, type Signed } from "./lib/login";
+import { loginToOrg, loginToWorld, loginWithCode, type Signed } from "./lib/login";
 import { LeavingProvider } from "./lib/leaving";
 import { forgetEveryKey, forgetKey, keepKey, keepWorld, keptKey, keptWorld, type World } from "./lib/session-key";
 import { WhoamiProvider } from "./lib/whoami";
@@ -93,7 +93,21 @@ function Console({ startingWith }: { startingWith: Start }): ReactNode {
     },
     [key],
   );
-  const worlds = useMemo(() => ({ world, turnTo }), [world, turnTo]);
+  // The org switch's one move. The same person's key in the org picked (POST /v1/login/org)
+  // replaces every key this browser holds — the other world's key was the old org's — and the
+  // console reopens at its root: the agent in the address was the old org's too.
+  const moveTo = useCallback(
+    async (org: string): Promise<void> => {
+      if (key === null) return;
+      const signed = await loginToOrg({ base: BASE, key }, org);
+      forgetEveryKey();
+      keepKey(signed.env, signed.key);
+      keepWorld(signed.env);
+      window.location.assign(BASE);
+    },
+    [key],
+  );
+  const worlds = useMemo(() => ({ world, turnTo, moveTo }), [world, turnTo, moveTo]);
 
   // Every world's key, not the one on screen — see forgetEveryKey. Nothing else in this page may
   // reach storage (lib/session-key.ts), so there is nowhere else a key could still be.

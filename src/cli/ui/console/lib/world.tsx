@@ -4,11 +4,13 @@ import { createContext, useContext, type ReactNode } from "react";
 
 import type { World } from "./session-key";
 
-/** The world on screen, and the one move that changes it. */
+/** The world on screen, the one move that changes it, and the move to another org of the person's. */
 export interface Worlds {
   world: World;
   /** Turn to the other world: a kept key, or one minted for the same person. Rejects with the refusal. */
   turnTo: (world: World) => Promise<void>;
+  /** Move to another org the person belongs to: a key minted for them there, and the console reopened on it. */
+  moveTo: (org: string) => Promise<void>;
 }
 
 const Held = createContext<Worlds | null>(null);

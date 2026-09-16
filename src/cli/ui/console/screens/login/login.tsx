@@ -43,20 +43,9 @@ export function Login({ base, onSigned }: { base: string; onSigned: (signed: Sig
           <b>pinecall</b> <span>/</span> console
         </div>
         <h1 className="way-title">Sign in</h1>
-        <p className="way-lede">Your org, and the email and password you were invited with.</p>
+        <p className="way-lede">The email and password you were invited with. Name the org only if you belong to several; you can switch later.</p>
 
         <div className="way-fields">
-          <label className="way-field">
-            <span className="way-label">org</span>
-            <input
-              className="way-input"
-              value={org}
-              onChange={(event) => setOrg(event.target.value)}
-              autoComplete="organization"
-              autoFocus
-              required
-            />
-          </label>
           <label className="way-field">
             <span className="way-label">email</span>
             <input
@@ -65,6 +54,7 @@ export function Login({ base, onSigned }: { base: string; onSigned: (signed: Sig
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               autoComplete="username"
+              autoFocus
               required
             />
           </label>
@@ -77,6 +67,16 @@ export function Login({ base, onSigned }: { base: string; onSigned: (signed: Sig
               onChange={(event) => setPassword(event.target.value)}
               autoComplete="current-password"
               required
+            />
+          </label>
+          <label className="way-field">
+            <span className="way-label">org · optional</span>
+            <input
+              className="way-input"
+              value={org}
+              onChange={(event) => setOrg(event.target.value)}
+              autoComplete="organization"
+              placeholder="the oldest of yours when left empty"
             />
           </label>
         </div>

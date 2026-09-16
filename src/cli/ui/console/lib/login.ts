@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 
-import { answered, post, type Credentials } from "../../shared/api";
+import { answered, post, read, type Credentials } from "../../shared/api";
 
 // What POST /v1/login answers, in the one shape a key travels in. The key is read once and kept
 // by lib/session-key.ts under the world it opens; the rest is what the header shows.
@@ -27,9 +27,34 @@ export async function loginWithCode(base: string, code: string): Promise<Signed>
   return login(base, { code, device: THIS_DEVICE });
 }
 
-/** A person's own login: their org, their email, their password. */
-export async function loginWithPassword(base: string, who: { org: string; email: string; password: string }): Promise<Signed> {
-  return login(base, { ...who, device: THIS_DEVICE });
+/** A person's own login: their email and password, and the org when they belong to several. */
+export async function loginWithPassword(base: string, who: { org?: string; email: string; password: string }): Promise<Signed> {
+  return login(base, { ...who, org: who.org === undefined || who.org === "" ? null : who.org, device: THIS_DEVICE });
+}
+
+// The orgs a person belongs to, as GET /v1/login/orgs lists them: the one this key opens is `here`.
+const OrgsOfSchema = z.object({
+  orgs: z.array(
+    z.object({
+      org: z.string(),
+      slug: z.string().nullish(),
+      name: z.string().nullish(),
+      role: z.string(),
+      status: z.string(),
+      here: z.boolean(),
+    }),
+  ),
+});
+export type OrgOf = z.infer<typeof OrgsOfSchema>["orgs"][number];
+
+/** Every org this key's person belongs to. A machine key names nobody and is refused in a sentence. */
+export async function orgsOf(credentials: Credentials): Promise<OrgOf[]> {
+  return OrgsOfSchema.parse(await read(credentials, "/v1/login/orgs")).orgs;
+}
+
+/** The same person, another of their orgs: a key minted for them there, in this key's world. */
+export async function loginToOrg(credentials: Credentials, org: string): Promise<Signed> {
+  return SignedSchema.parse(await post(credentials, "/v1/login/org", { org }));
 }
 
 /**
