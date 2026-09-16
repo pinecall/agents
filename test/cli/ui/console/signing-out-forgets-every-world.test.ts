@@ -13,7 +13,7 @@ beforeEach(() => {
   Object.defineProperty(globalThis, "window", {
     configurable: true,
     value: {
-      sessionStorage: {
+      localStorage: {
         getItem: (name: string) => kept.get(name) ?? null,
         setItem: (name: string, value: string) => void kept.set(name, value),
         removeItem: (name: string) => void kept.delete(name),
