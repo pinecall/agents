@@ -66,6 +66,10 @@ export async function goldensIn(paths: string[]): Promise<Golden[]> {
  */
 export async function casesIn<T extends { name?: string }>(paths: string[], fallback: string): Promise<T[]> {
   const found: T[] = [];
+  // Nobody named a path and the default folder is not there: no goldens, which is an answer —
+  // an empty roster in the console, the NO_GOLDENS sentence from the verb — and not an ENOENT
+  // thrown from readFile, which is what an agent with no test/goldens yet used to get (2026-09-16).
+  if (paths.length === 0 && !(await stat(resolve(fallback)).catch(() => null))?.isDirectory()) return found;
   for (const path of paths.length > 0 ? paths : [fallback]) {
     for (const file of await filesUnder(resolve(path))) found.push(...(await casesOf<T>(file)));
   }

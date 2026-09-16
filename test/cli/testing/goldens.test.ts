@@ -58,3 +58,18 @@ describe("which goldens a run walks", () => {
     expect(matching(goldens, undefined)).toHaveLength(2);
   });
 });
+
+describe("an agent with no goldens yet", () => {
+  it("answers none for the default folder that is not there, never an ENOENT", async () => {
+    // A console asking a `pinecall run` in agents/sales for its roster used to be answered with
+    // "ENOENT: no such file or directory, open '…/test/goldens'" (2026-09-16).
+    const folder = await mkdtemp(join(tmpdir(), "no-goldens-"));
+    const before = process.cwd();
+    process.chdir(folder);
+    try {
+      expect(await goldensIn([])).toEqual([]);
+    } finally {
+      process.chdir(before);
+    }
+  });
+});
