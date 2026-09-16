@@ -25,6 +25,7 @@ export const CONFIG_FIELDS = [
   "says",
   "hears",
   "llm",
+  "stt",
   "language",
   "knowledge",
   "docs",

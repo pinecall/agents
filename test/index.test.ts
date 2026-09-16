@@ -37,6 +37,7 @@ const PUBLIC = [
     "docOf",
     "docsOf",
     "docsVersion",
+    "earsOf",
     "emitEvent",
     "eventsOf",
     "headerFor",
