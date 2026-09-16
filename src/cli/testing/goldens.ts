@@ -100,3 +100,8 @@ async function filesUnder(path: string): Promise<string[]> {
   const names = await readdir(path);
   return names.filter((name) => extname(name) === ".json").sort().map((name) => join(path, name));
 }
+
+/** The goldens of one agent's home: its folder, or none when it has none yet. */
+export async function goldensOf(folder: string): Promise<Golden[]> {
+  return (await stat(folder).catch(() => null))?.isDirectory() === true ? await casesIn<Golden>([folder], GOLDENS) : [];
+}

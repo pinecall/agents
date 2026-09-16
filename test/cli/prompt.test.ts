@@ -47,7 +47,7 @@ describe("loading an agent from disk", () => {
       expect((await load()).file).toBe(AGENT);
 
       process.chdir(fileURLToPath(new URL(".", import.meta.url)));
-      await expect(load()).rejects.toThrow(/no agent here: looked for agent.tsx and agent.ts in /);
+      await expect(load()).rejects.toThrow(/no agent here: looked for agent.tsx and agent.ts, and agents\/\*\.tsx, in /);
     } finally {
       process.chdir(was);
     }

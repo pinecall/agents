@@ -160,10 +160,10 @@ async function theStateOf(
  * per call opened against it. `takesUnclaimed: false` is what keeps this a console and not a
  * server: a real phone call must not ring in a browser tab because somebody left `ui` open.
  */
-export function linesFromThisProcess(door: Door, out: NodeJS.WritableStream): Lines {
+export function linesFromThisProcess(door: Door, out: NodeJS.WritableStream, file?: string): Lines {
   let mounting: Promise<{ pc: Pinecall; url: string }> | undefined;
   const mounted = async (opening?: Record<string, unknown> | undefined): Promise<{ pc: Pinecall; url: string }> => {
-    const loaded = await load();
+    const loaded = await load(file);
     const pc = new Pinecall({ url: door.url, apiKey: door.apiKey });
     const app = mount(loaded.ctor, {
       ...mountOptions(loaded, pc),

@@ -6,6 +6,7 @@ import { dirname, join, resolve } from "node:path";
 import type { KnowledgePushed, KnowledgeScore } from "@pinecall/protocol";
 
 import { slugOf } from "../../runtime/connect.js";
+import type { Home } from "../home.js";
 import {
   AN_EMPTY_GOLDEN,
   DEFAULT_DIR,
@@ -125,4 +126,9 @@ async function theDirectory(): Promise<Here> {
   } catch {
     return { agent: null, directory: null, golden: null };
   }
+}
+
+/** One agent of a project, as the Knowledge screen reads it: its slug, its documents, its golden. */
+export function hereOf(home: Home, slug: string): () => Promise<Here> {
+  return async () => ({ agent: slug, directory: home.docs, golden: home.knowledgeGolden });
 }

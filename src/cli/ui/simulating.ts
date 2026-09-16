@@ -3,6 +3,7 @@
 import { aSimulation, degradedBy, ONLY_ON_A_LINE, TURNS } from "../simulate.js";
 import { NO_PERSONAS, personasIn, type Persona } from "../testing/caller.js";
 import type { Door } from "../testing/gateway.js";
+import type { Home } from "../home.js";
 import { aFlag, anObject, aNumber, aString, maybeNumber } from "./asked.js";
 import { Refusal } from "./refusal.js";
 
@@ -143,5 +144,13 @@ function parsed(asked: unknown): Wanted {
     turns: given["turns"] === undefined ? TURNS : aNumber(given, "turns", 1, MOST_TURNS),
     background_noise: maybeNumber(given, "background_noise", 0, 120),
     packet_loss: maybeNumber(given, "packet_loss", 0, 100),
+  };
+}
+
+/** The pieces for one agent of a project: its personas, and simulations of its own class. */
+export function simulatingPiecesFor(home: Home): Pieces {
+  return {
+    personas: () => personasIn(home.personas),
+    simulate: (persona, how) => aSimulation(persona, { ...how, agentFile: home.file }),
   };
 }

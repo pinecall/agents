@@ -13,6 +13,7 @@ import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { anEarIn, type Ear } from "./listening.js";
 import { load, mountOptions } from "./load.js";
+import { AGENT_FLAG, oneHome } from "./home.js";
 import { NO_PERSONAS, personaNamed, type Persona } from "./testing/caller.js";
 import { type Door, entriesOf, type Entry, type Persona as Calling, type Spoken, theNextLine } from "./testing/gateway.js";
 import { latencyLine, mediansOf } from "./testing/latency.js";
@@ -22,7 +23,7 @@ import { lineFor, metricsLine } from "./view.js";
 
 const USAGE =
   "usage: pinecall simulate --persona <name> [--judge] [--turns n] [--voice] [--listen]\n" +
-  "       [--background-noise <dB under the caller>] [--packet-loss <percent>] [--file agent.tsx]\n";
+  "       [--background-noise <dB under the caller>] [--packet-loss <percent>] [--agent <name>] [--file agent.tsx]\n";
 
 export const group: Group = {
   purpose: "a model plays one persona against the agent, live, and the call is scored at hang-up",
@@ -94,6 +95,7 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
       "packet-loss": { type: "string" },
       turns: { type: "string" },
       file: { type: "string" },
+      ...AGENT_FLAG,
     },
   });
   const listen = values.listen === true;
@@ -108,13 +110,14 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
     process.stderr.write(`${ONLY_ON_A_LINE}\n`);
     return 2;
   }
-  const persona = await personaNamed(values.persona);
+  const home = await oneHome("simulate", values.file, values.agent);
+  const persona = await personaNamed(values.persona, home.personas);
   if (persona === undefined) {
-    process.stderr.write(`no persona called ${values.persona}: ${NO_PERSONAS}\n`);
+    process.stderr.write(`no persona called ${values.persona} at ${home.personas}: ${NO_PERSONAS}\n`);
     return 2;
   }
   const said = await aSimulation(persona, {
-    agentFile: values.file,
+    agentFile: home.file,
     judge: values.judge === true,
     voice,
     listen,

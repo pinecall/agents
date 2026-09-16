@@ -11,12 +11,13 @@ import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { dayAndTime, theQuestionsIn } from "./knowledge.js";
 import { load } from "./load.js";
+import { AGENT_FLAG, homeOf, oneHome } from "./home.js";
 import { asked, type Door } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
 
 const USAGE = `usage: pinecall memory <contact>
        pinecall memory forget <contact>
-       pinecall memory eval [golden.json] [--k <n>] [--file agent.tsx]`;
+       pinecall memory eval [golden.json] [--k <n>] [--agent <name>] [--file agent.tsx]`;
 
 // The golden beside the agent that answers with those facts: the questions recall is held to, and
 // what each should have brought back. `memory/golden.json` is where `eval` looks when nobody says.
@@ -68,13 +69,16 @@ export async function run(argv: string[], how: Recalling = {}): Promise<number> 
   const { values, positionals } = parseArgs({
     args: argv,
     allowPositionals: true,
-    options: { file: { type: "string" }, k: { type: "string" } },
+    options: { file: { type: "string" }, k: { type: "string" }, ...AGENT_FLAG },
   });
   const [verb, second] = positionals;
   const door = theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
   try {
-    if (verb === "eval") return await evaluate(door, second, values.k, values.file, out, err);
+    if (verb === "eval") {
+      const file = second === undefined ? (await oneHome("memory eval", values.file, values.agent)).file : values.file;
+      return await evaluate(door, second, values.k, file, out, err);
+    }
     if (verb === "forget" && second !== undefined) {
       return await forget(door, second, how.confirm ?? askOnATerminal, out);
     }
@@ -126,7 +130,7 @@ async function evaluate(
   out: NodeJS.WritableStream,
   err: NodeJS.WritableStream,
 ): Promise<number> {
-  const golden = resolve(file ?? join(dirname((await load(agent)).file), DEFAULT_GOLDEN));
+  const golden = resolve(file ?? homeOf((await load(agent)).file).memoryGolden);
   if (!existsSync(golden)) {
     err.write(`${NO_GOLDEN(golden)}\n`);
     return 2;

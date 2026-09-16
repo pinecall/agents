@@ -5,8 +5,9 @@ import { parseArgs } from "node:util";
 import type { Group } from "./groups.js";
 import { aSimulation, TURNS } from "./simulate.js";
 import { NO_PERSONAS, personaNamed, personasIn, type Persona } from "./testing/caller.js";
+import { AGENT_FLAG, homesFor, oneHome } from "./home.js";
 
-const USAGE = "usage: pinecall personas list | show <name> | try <name> [--file agent.tsx]\n";
+const USAGE = "usage: pinecall personas list | show <name> | try <name> [--agent <name>] [--file agent.tsx]\n";
 
 export const group: Group = {
   purpose: "list | show | try the synthetic callers in test/personas",
@@ -31,21 +32,34 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
   const { values, positionals } = parseArgs({
     args: argv,
     allowPositionals: true,
-    options: { file: { type: "string" }, json: { type: "boolean", default: false } },
+    options: { file: { type: "string" }, json: { type: "boolean", default: false }, ...AGENT_FLAG },
   });
   const [verb, name] = positionals;
-  if (verb === "list") return await listed(values.json === true, out);
-  if (verb === "show" && name !== undefined) return await shown(name, values.json === true, out);
+  if (verb === "list") {
+    const homes = await homesFor(values.file, values.agent);
+    let worst = 0;
+    for (const home of homes) {
+      if (homes.length > 1) out.write(`── ${home.name} ──\n`);
+      worst = Math.max(worst, await listed(values.json === true, out, home.personas));
+    }
+    return worst;
+  }
+  if (verb === "show" && name !== undefined) {
+    return await shown(name, values.json === true, out, (await oneHome("personas show", values.file, values.agent)).personas);
+  }
   // `try` runs the caller against the class, because reading a persona tells you who they are and
   // only a call tells you how they land. It is `simulate` without the judge — one implementation.
-  if (verb === "try" && name !== undefined) return await tried(name, values.file, out);
+  if (verb === "try" && name !== undefined) {
+    const home = await oneHome("personas try", values.file, values.agent);
+    return await tried(name, home.file, out, home.personas);
+  }
   process.stderr.write(USAGE);
   return 2;
 }
 
 /** One line per caller: the name a verb takes, and the goal it is written to pursue. */
-async function listed(asJson: boolean, out: NodeJS.WritableStream): Promise<number> {
-  const personas = await personasIn();
+async function listed(asJson: boolean, out: NodeJS.WritableStream, folder?: string): Promise<number> {
+  const personas = await personasIn(folder);
   if (personas.length === 0) {
     process.stderr.write(`${NO_PERSONAS}\n`);
     return 2;
@@ -56,8 +70,8 @@ async function listed(asJson: boolean, out: NodeJS.WritableStream): Promise<numb
 }
 
 /** One caller whole: how they talk, and every fact about themselves they are allowed to state. */
-async function shown(name: string, asJson: boolean, out: NodeJS.WritableStream): Promise<number> {
-  const persona = await personaNamed(name);
+async function shown(name: string, asJson: boolean, out: NodeJS.WritableStream, folder?: string): Promise<number> {
+  const persona = await personaNamed(name, folder);
   if (persona === undefined) {
     process.stderr.write(`no persona called ${name}: ${NO_PERSONAS}\n`);
     return 2;
@@ -81,8 +95,9 @@ async function tried(
   name: string,
   agentFile: string | undefined,
   out: NodeJS.WritableStream,
+  folder?: string,
 ): Promise<number> {
-  const persona = await personaNamed(name);
+  const persona = await personaNamed(name, folder);
   if (persona === undefined) {
     process.stderr.write(`no persona called ${name}: ${NO_PERSONAS}\n`);
     return 2;

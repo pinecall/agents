@@ -6,7 +6,8 @@ import { modelOf } from "../../runtime/connect.js";
 import { load } from "../load.js";
 import { inFlight } from "../testing/progress.js";
 import type { Door, Wanted as RunWanted } from "../testing/gateway.js";
-import { goldensIn, type Golden } from "../testing/goldens.js";
+import { goldensIn, goldensOf, type Golden } from "../testing/goldens.js";
+import type { Home } from "../home.js";
 import { mountedForASuite, ranSuite } from "../testing/suite.js";
 import { aFlag, anObject, aString, maybeNumber, names } from "./asked.js";
 import { Refusal } from "./refusal.js";
@@ -152,8 +153,9 @@ async function inThisProcess(
   models: string[],
   line: Partial<RunWanted>,
   out: NodeJS.WritableStream,
+  file?: string,
 ): Promise<number> {
-  const loaded = await load();
+  const loaded = await load(file);
   const pc = new Pinecall({ url: door.url, apiKey: door.apiKey });
   const held = mountedForASuite(loaded, pc);
   try {
@@ -175,5 +177,14 @@ function parsed(asked: unknown): Wanted {
     voice: aFlag(given, "voice"),
     background_noise: maybeNumber(given, "background_noise", 0, 120),
     packet_loss: maybeNumber(given, "packet_loss", 0, 1),
+  };
+}
+
+/** The pieces for one agent of a project: its goldens, and its class mounted for a suite. */
+export function testingPiecesFor(home: Home): Pieces {
+  return {
+    goldens: () => goldensOf(home.goldens),
+    suite: (door, goldens, models, line, out) => inThisProcess(door, goldens, models, line, out, home.file),
+    running: inFlight,
   };
 }

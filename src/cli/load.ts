@@ -1,7 +1,7 @@
 /** Loading a tenant's agent file from the CLI: the TypeScript loader, the class, and its own source. */
 
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { basename, extname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { Agent, setCall } from "../agent/agent.js";
@@ -77,13 +77,42 @@ export function mountOptions(loaded: Loaded, pc: MountOptions["pc"]): MountOptio
   return { pc, source: loaded.source, file: loaded.file };
 }
 
+/** The folder a project of several agents keeps them in, one file each: `agents/<name>.tsx`. */
+export const PROJECT_AGENTS = "agents";
+
+// A file under agents/ that is not an agent: a test beside it, a type declaration.
+const NOT_AN_AGENT = /\.(test|spec|d)\.tsx?$/;
+
+/**
+ * The agents of the project rooted here: every `agents/<name>.tsx` (or `.ts`), sorted — and none
+ * when this directory holds an `agent.tsx` of its own, which makes it one agent's folder.
+ */
+export function agentFilesOfTheProject(root: string = process.cwd()): string[] {
+  if (DEFAULT_AGENTS.some((name) => existsSync(resolve(root, name)))) return [];
+  const folder = resolve(root, PROJECT_AGENTS);
+  if (!existsSync(folder)) return [];
+  return readdirSync(folder, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && /\.tsx?$/.test(entry.name) && !NOT_AN_AGENT.test(entry.name))
+    .map((entry) => resolve(folder, entry.name))
+    .sort();
+}
+
 // Nobody named a file. Looking for both names and saying so is the whole of it: a directory with
 // neither is a directory somebody typed the verb in by mistake, and the refusal has to say where
-// it looked rather than "no agent at /…/agent.tsx" for a project written in .ts.
+// it looked rather than "no agent at /…/agent.tsx" for a project written in .ts. At a project's
+// root the one agent is that agent; several have to be named.
 function theAgentHere(): string {
   const found = DEFAULT_AGENTS.map((name) => resolve(name)).find((path) => existsSync(path));
   if (found !== undefined) return found;
-  throw new Error(`no agent here: looked for ${DEFAULT_AGENTS.join(" and ")} in ${process.cwd()}`);
+  const project = agentFilesOfTheProject();
+  if (project.length === 1) return project[0]!;
+  if (project.length > 1) {
+    const names = project.map((file) => `--agent ${basename(file, extname(file))}`).join(" or ");
+    throw new Error(`this project has ${project.length} agents: name one with ${names}`);
+  }
+  throw new Error(
+    `no agent here: looked for ${DEFAULT_AGENTS.join(" and ")}, and ${PROJECT_AGENTS}/*.tsx, in ${process.cwd()}`,
+  );
 }
 
 // The slug of the agent this terminal is standing in, read the way `run` reads it, so no two verbs

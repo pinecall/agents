@@ -2,10 +2,10 @@
 
 import { parseArgs } from "node:util";
 
-import { Pinecall, type CamelEvent, type RouteInput } from "../client/index.js";
+import { Pinecall, type RouteInput } from "../client/index.js";
 
 import { showPrompt } from "../views/render.js";
-import { mount, type Mounted } from "../runtime/connect.js";
+import { mount, slugOf, type Mounted } from "../runtime/connect.js";
 import type { Agent as AgentClass } from "../agent/agent.js";
 import { showMachine } from "./machine.js";
 import { theDoor } from "./env.js";
@@ -15,34 +15,31 @@ import { connectedLine, doorsOf } from "./connected.js";
 import { cannotTell, ENV_FLAG, notThisWorld, standing } from "./world.js";
 import { orgOf, type Who } from "./whoami.js";
 import { callingFrom } from "./profiles.js";
-import { instanceFor, load, mountOptions } from "./load.js";
+import { agentFilesOfTheProject, instanceFor, load, mountOptions } from "./load.js";
+import { AGENT_FLAG, homesFor } from "./home.js";
+import { goldensOf } from "./testing/goldens.js";
 import { asked, Refused, type Door } from "./testing/gateway.js";
-import { chattingFrom, type Chatting } from "./ui/chatting.js";
+import { chattingFrom, linesFromThisProcess, type Chatting } from "./ui/chatting.js";
 import { devHandler, ownVerbs } from "./ui/doors.js";
 import { driftingFrom } from "./ui/drifting.js";
-import { knowingFrom } from "./ui/knowing.js";
+import { hereOf, knowingFrom } from "./ui/knowing.js";
 import { promotingFrom } from "./ui/promoting.js";
-import { rememberingFrom } from "./ui/remembering.js";
+import { rememberingFrom, rememberingPiecesFor } from "./ui/remembering.js";
 import { reproducingFrom } from "./ui/reproducing.js";
-import { simulatingFrom } from "./ui/simulating.js";
-import { testingFrom } from "./ui/testing.js";
-import { absorb, draw, screenFor, type Screen } from "./view.js";
-
-// Ten frames a second. The terminal view is a person watching a conversation, and a person cannot read
-// faster than that; redrawing on every entry would repaint the whole screen several times inside
-// one turn and make the transcript flicker while somebody is trying to read it.
-const FRAME_MS = 100;
-
-const CLEAR = "[2J[3J[H";
-const KEYS = "keys: p pause · c clear · e events · s prompt · q quit";
+import { simulatingFrom, simulatingPiecesFor } from "./ui/simulating.js";
+import { testingFrom, testingPiecesFor } from "./ui/testing.js";
+import { live, plain, stream, type Plain, type Watching } from "./run-screens.js";
 
 export const group: Group = {
   purpose: "the app and its doors: the process you deploy",
-  usage: `usage: pinecall run [agent.tsx] [--env production] [--ui] [--events] [--show-prompt]
+  usage: `usage: pinecall run [agent.tsx] [--agent <name>] [--env production] [--ui] [--events] [--show-prompt]
 
   With nothing after it: the agent registered on the gateway, one line per log entry on stdout,
   no port bound and no page served: the gateway serves the console, and this prints its URL with a
   one-use code that signs the browser in. It answers that console for this directory.
+
+  At the root of a project of several agents — agents/<name>.tsx — every agent at once, on one
+  socket, each line prefixed by its slug; --agent <name> (or its slug) runs one of them.
 
   --env <world>  say which world you believe this key opens, and be refused if it opens the
                  other. Nothing said is the sandbox; a deployment types --env production
@@ -68,10 +65,13 @@ export async function run(argv: string[]): Promise<number> {
       "show-prompt": { type: "boolean", default: false },
       events: { type: "boolean", default: false },
       ui: { type: "boolean", default: false },
+      ...AGENT_FLAG,
       ...ENV_FLAG,
     },
   });
-  const loaded = await load(positionals[0]);
+  // One class, or — at the root of a project of several — every agents/*.tsx, or the one named.
+  const homes = await homesFor(positionals[0], values.agent);
+  const loaded = await Promise.all(homes.map(async (home) => ({ home, loaded: await load(home.file) })));
   // What the `s` key and --show-prompt both print: the prompt the model would read, and under it
   // the stage this instance is in with the tools that stage shows.
   const promptPage = (agent: AgentClass): string => `${showPrompt(agent)}\n\n${showMachine(agent)}`;
@@ -79,8 +79,16 @@ export async function run(argv: string[]): Promise<number> {
   // --show-prompt never connects: it is the question "what would the model read at the start of a
   // call", and answering it must not need a gateway, a key or a network.
   if (values["show-prompt"] === true) {
-    process.stdout.write(`${promptPage(instanceFor(loaded))}\n`);
+    for (const one of loaded) {
+      if (loaded.length > 1) process.stdout.write(`── ${slugOf(one.loaded.ctor)} ──\n`);
+      process.stdout.write(`${promptPage(instanceFor(one.loaded))}\n`);
+    }
     return 0;
+  }
+  if (values.ui === true && loaded.length > 1) {
+    const names = homes.map((home) => `--agent ${home.name}`).join(" or ");
+    process.stderr.write(`the full-screen view watches one agent and this project has ${loaded.length}: add ${names}\n`);
+    return 2;
   }
 
   const door = theDoor();
@@ -102,52 +110,74 @@ export async function run(argv: string[]): Promise<number> {
     return 2;
   }
   const url = door.url;
+  // One socket for every agent of the project: the gateway takes several slugs on one app socket,
+  // and every call is routed to the class it names.
   const pc = new Pinecall({ url, apiKey: door.apiKey });
   // Whoever opens the app socket closes it. Left open it keeps this process alive after the
   // signal has been read — a plain `kill` on `pinecall run` did nothing until this landed —
   // and the gateway holds the slug until it shuts.
   // What a console may ask of THIS process through the gateway, because the answer is a file of
-  // this directory or the class in it: a written call, the personas and a simulation, the goldens
+  // the agent's home or the class in it: a written call, the personas and a simulation, the goldens
   // and a suite, the knowledge folder, the memory goldens, a candidate, drift, a reproduction.
   // The lines they print land here, in the terminal that typed `run`, as the verbs would print
   // them. Registered before connect, so the first dev.request finds a handler.
-  let chatting: Chatting | undefined;
+  const chattings: Chatting[] = [];
   try {
-    const mounted = mount(loaded.ctor, mountOptions(loaded, pc));
-    chatting = chattingFrom(door, mounted.slug, process.stdout);
-    mounted.agent.onDev(
-      devHandler(
-        ownVerbs({
-          simulating: simulatingFrom(door, mounted.slug, process.stdout),
-          testing: testingFrom(door, mounted.slug, process.stdout),
-          chatting,
-          knowing: knowingFrom(door, mounted.slug),
-          remembering: rememberingFrom(door, mounted.slug),
-          promoting: promotingFrom(door, mounted.slug, process.stdout),
-          drifting: driftingFrom(door),
-          reproducing: reproducingFrom(),
-        }),
-      ),
-    );
+    const all = loaded.map(({ home, loaded: one }) => {
+      const mounted = mount(one.ctor, mountOptions(one, pc));
+      const project = homes.length > 1 || agentFilesOfTheProject().length > 0;
+      const chatting = project
+        ? chattingFrom(door, mounted.slug, process.stdout, linesFromThisProcess(door, process.stdout, home.file), () => goldensOf(home.goldens))
+        : chattingFrom(door, mounted.slug, process.stdout);
+      chattings.push(chatting);
+      mounted.agent.onDev(
+        devHandler(
+          ownVerbs({
+            simulating: project
+              ? simulatingFrom(door, mounted.slug, process.stdout, simulatingPiecesFor(home))
+              : simulatingFrom(door, mounted.slug, process.stdout),
+            testing: project
+              ? testingFrom(door, mounted.slug, process.stdout, testingPiecesFor(home))
+              : testingFrom(door, mounted.slug, process.stdout),
+            chatting,
+            knowing: project ? knowingFrom(door, mounted.slug, hereOf(home, mounted.slug)) : knowingFrom(door, mounted.slug),
+            remembering: project
+              ? rememberingFrom(door, mounted.slug, rememberingPiecesFor(home, mounted.slug))
+              : rememberingFrom(door, mounted.slug),
+            promoting: promotingFrom(door, mounted.slug, process.stdout),
+            drifting: driftingFrom(door),
+            reproducing: reproducingFrom(),
+          }),
+        ),
+      );
+      return { mounted, loaded: one };
+    });
+    const listens = all.map(({ mounted }) => mounted.agent.onAny.bind(mounted.agent));
     // --events is a pipe into another program: it prints nothing but its JSON.
-    if (values.events === true) return await stream(pc, mounted.agent.onAny.bind(mounted.agent));
+    if (values.events === true) return await stream(pc, (listener) => {
+      const stops = listens.map((listen) => listen(listener));
+      return () => stops.forEach((stop) => stop());
+    });
 
     if (values.ui !== true) {
-      const doors = doorsOf(mounted.options.routes);
-      const line = connectedLine({
+      const agents: Plain[] = all.map(({ mounted }) => ({
         slug: mounted.slug,
-        url,
-        tools: mounted.options.tools?.length ?? 0,
-        doors,
-        org: orgOf(who),
-        env: who.env,
-        source: door.source,
-      });
-      return await plain(pc, mounted.agent.onAny.bind(mounted.agent), mounted.slug, url, line, () =>
-        onceUp(door, mounted.slug, rings(mounted.options.routes)),
-      );
+        heard: mounted.agent.onAny.bind(mounted.agent),
+        connected: connectedLine({
+          slug: mounted.slug,
+          url,
+          tools: mounted.options.tools?.length ?? 0,
+          doors: doorsOf(mounted.options.routes),
+          org: orgOf(who),
+          env: who.env,
+          source: door.source,
+        }),
+        after: () => onceUp(door, mounted.slug, rings(mounted.options.routes)),
+      }));
+      return await plain(pc, agents, url);
     }
 
+    const { mounted, loaded: one } = all[0]!;
     // Which call the `s` key renders: the newest one, so the prompt on screen is the prompt of the
     // conversation on screen. With no call up it is a fresh instance — the same page --show-prompt gives.
     let newest: string | undefined;
@@ -157,11 +187,11 @@ export async function run(argv: string[]): Promise<number> {
     const watching: Watching = {
       slug: mounted.slug,
       url,
-      prompt: () => promptPage(instanceOf(mounted, newest) ?? instanceFor(loaded)),
+      prompt: () => promptPage(instanceOf(mounted, newest) ?? instanceFor(one)),
     };
     return await live(pc, mounted.agent.onAny.bind(mounted.agent), watching);
   } finally {
-    await chatting?.close();
+    for (const chatting of chattings) await chatting.close();
     pc.close();
   }
 }
@@ -245,138 +275,6 @@ async function consoleLine(door: Door, slug: string): Promise<string> {
   }
 }
 
-/** What `run` knows about the agent it just registered: everything the one line names. */
-type Listen = (listener: (event: CamelEvent) => void) => () => void;
-
 function instanceOf(mounted: Mounted, call: string | undefined): AgentClass | undefined {
   return call === undefined ? undefined : mounted.instanceOf(call);
-}
-
-// --events is the view for a program: one JSON line per entry, nothing else on stdout, so a
-// `pinecall run --events | jq` is a first-class way to watch a call.
-async function stream(pc: Pinecall, listen: Listen): Promise<number> {
-  listen((event) => process.stdout.write(`${JSON.stringify(event)}\n`));
-  await pc.connect();
-  await forever();
-  return 0;
-}
-
-// The default: the same lines the view would have grown, appended, with nothing that moves
-// the cursor. It is what a process manager captures and what `docker logs` shows.
-async function plain(
-  pc: Pinecall,
-  listen: Listen,
-  slug: string,
-  url: string,
-  connected: string,
-  after: () => Promise<string[]>,
-): Promise<number> {
-  let screen = screenFor(slug, url);
-  listen((event) => {
-    const before = screen;
-    screen = absorb(screen, event);
-    for (const line of newLines(before, screen)) process.stdout.write(`${line}\n`);
-  });
-  // After the socket is up and not before it: the line says the gateway took this agent, and a
-  // gateway that refused it must leave its own refusal as the last thing on the screen.
-  await pc.connect();
-  process.stdout.write(`${connected}\n`);
-  for (const said of await after()) process.stdout.write(`${said}\n`);
-  await forever();
-  return 0;
-}
-
-// What one event added, so the plain log prints the line the view would have grown and not the
-// whole view again. Only the two panels a person follows in a log grow line by line.
-function newLines(before: Screen, after: Screen): string[] {
-  const lines: string[] = [];
-  for (const line of after.transcript.slice(before.transcript.length)) lines.push(`${line.mark} ${line.text}`);
-  for (const line of after.tools.slice(before.tools.length)) lines.push(`${line.mark} ${line.text}`);
-  for (const metric of after.metrics.slice(before.metrics.length)) lines.push(`metrics  ${metric}`);
-  if (after.changed !== before.changed && after.changed.length > 0) {
-    lines.push(`state    ${after.changed.join(", ")}`);
-  }
-  return lines;
-}
-
-/** The full-screen terminal view: absorb every event, and repaint at most ten times a second. */
-async function live(pc: Pinecall, listen: Listen, watching: Watching): Promise<number> {
-  let screen = screenFor(watching.slug, watching.url);
-  let paused = false;
-  let raw = false;
-  let dirty = true;
-  let prompt: string | undefined;
-
-  const paint = (): void => {
-    if (paused || !dirty) return;
-    dirty = false;
-    const rows = process.stdout.rows ?? 40;
-    const columns = process.stdout.columns ?? 100;
-    const page = prompt ?? draw(screen, rows - 3, columns, raw);
-    process.stdout.write(`${CLEAR}${page}\n\n${KEYS}\n`);
-  };
-
-  listen((event) => {
-    screen = absorb(screen, event);
-    dirty = true;
-  });
-
-  // The repaint starts only once the socket is up. Started before it, a refused connection leaves
-  // it running: nothing reaches the clearInterval below, the timer holds the process open, and it
-  // wipes the screen ten times a second over the one line that says what went wrong.
-  await pc.connect();
-  const timer = setInterval(paint, FRAME_MS);
-  paint();
-  await new Promise<void>((done) => {
-    const stop = onKey((key) => {
-      if (key === "q" || key === "\u0003") {
-        stop();
-        done();
-        return;
-      }
-      if (key === "p") paused = !paused;
-      if (key === "c") screen = screenFor(watching.slug, watching.url);
-      if (key === "e") raw = !raw;
-      // s shows the prompt the model would read right now, and the stage that decided its tools:
-      // the live instance when a call is up, and a fresh one otherwise, as --show-prompt prints.
-      if (key === "s") prompt = prompt === undefined ? watching.prompt() : undefined;
-      dirty = true;
-    });
-  });
-  clearInterval(timer);
-  process.stdout.write(CLEAR);
-  return 0;
-}
-
-/** What the view needs beyond the events: who it is watching, and how to ask for the prompt. */
-interface Watching {
-  slug: string;
-  url: string;
-  prompt(): string;
-}
-
-// Raw mode is how a single keypress arrives without an enter; a terminal that has no tty (a pipe,
-// CI) simply never sends one, and the view still draws.
-function onKey(handle: (key: string) => void): () => void {
-  const input = process.stdin;
-  if (!input.isTTY) return () => undefined;
-  input.setRawMode(true);
-  input.resume();
-  input.setEncoding("utf8");
-  const listener = (chunk: string): void => handle(chunk);
-  input.on("data", listener);
-  return () => {
-    input.off("data", listener);
-    input.setRawMode(false);
-    input.pause();
-  };
-}
-
-// The verb ends when the process is signalled, not when a promise settles: it registers an
-// agent and then has nothing left to do but stay reachable.
-function forever(): Promise<void> {
-  return new Promise<void>((done) => {
-    process.once("SIGINT", () => done());
-    process.once("SIGTERM", () => done());
-  });
 }

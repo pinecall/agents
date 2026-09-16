@@ -93,11 +93,50 @@ in a URL.
 
 # Writing the agent
 
+## A project of several agents
+
+One repository may hold several agents. Each is a file under `agents/`, and every folder the
+verbs read is shared, by the agent's name:
+
+```
+agents/dispatch.tsx              one agent: its class, its slug declared on it
+agents/sales.tsx                 another
+lib/                             what both import
+knowledge/dispatch.md            what dispatch knows by heart — `knowledge = "../knowledge/dispatch.md"`
+knowledge/sales/                 the documents `knowledge push` sends to sales's base
+knowledge/sales.golden.json      the questions `knowledge eval` holds that base to
+memory/<name>.golden.json        what `memory eval` asks
+test/dispatch.test.ts            ring 0, one file per agent
+test/goldens/<name>/             what `test` runs for that agent
+test/personas/<name>/            the callers `simulate` and `personas` read for that agent
+test/memory/<name>/              what `remember` runs for that agent
+```
+
+At the root of such a project every verb that reads a class acts on **every agent**, each against
+its own folders, or on the one `--agent <name>` names — by its file's name (`sales`) or by its slug
+(`bidfire-sales`):
+
+| at the root | does |
+|---|---|
+| `pinecall run` | every agent at once, **on one socket, in one process**; each line prefixed by the slug, one console URL each |
+| `pinecall test` | each agent's goldens through its own class, one after another; the exit code is the worst |
+| `pinecall knowledge push` · `eval` | every agent that has `knowledge/<name>/` · `knowledge/<name>.golden.json`; the rest are named and skipped |
+| `pinecall personas list` | every agent's callers, under its name |
+| `pinecall chat` · `simulate` · `prompt` · `remember` · `memory eval` · `line` · `personas show\|try` · `run --ui` | one agent: `--agent <name>` is required when there are several |
+
+A directory that holds an `agent.tsx` of its own is one agent's folder, and everything reads
+beside that file as it always has: `knowledge/docs`, `knowledge/golden.json`, `test/goldens`,
+`test/personas`. The two layouts are one idea — an agent's *home* (`src/cli/home.ts`) — and a verb
+never computes a path of its own.
+
 ## `run`
 
 ```
-pinecall run [agent.tsx] [--env production] [--ui] [--events] [--show-prompt]
+pinecall run [agent.tsx] [--agent <name>] [--env production] [--ui] [--events] [--show-prompt]
 ```
+
+At a project's root with no file named, every `agents/*.tsx` is held at once, on one socket: see
+[A project of several agents](#a-project-of-several-agents).
 
 The app registered on the gateway and answering: **this is the process you deploy**. Which world
 it answers in is the key's: `pinecall signup` and a login keep a sandbox key, so a laptop's

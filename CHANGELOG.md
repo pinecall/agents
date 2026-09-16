@@ -7,6 +7,16 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **A project of several agents.** `agents/<name>.tsx` at a repository's root, with every folder
+  the verbs read shared by name — `knowledge/<name>.md` and `knowledge/<name>/`,
+  `test/goldens/<name>/`, `test/personas/<name>/`, `memory/<name>.golden.json`. At that root
+  `pinecall run` holds every agent on one socket, each line prefixed by its slug; `test`,
+  `knowledge push|eval` and `personas list` act on each agent against its own folders; `chat`,
+  `simulate`, `prompt`, `remember`, `memory eval` and `line` take `--agent <name|slug>`. One agent in
+  its own folder reads beside its `agent.tsx` as before. The paths are one function,
+  `src/cli/home.ts`, and every console door (goldens, chat, simulate, knowledge, memory) reads the
+  agent's home.
+- **No goldens is none, not an ENOENT**: an agent with no `test/goldens` yet has an empty roster.
 - **0.1.0, and the wire comes from the registry.** `@pinecall/protocol` is `^0.1.0` instead of
   `workspace:*`: pnpm rewrites a workspace range to the version of the checkout next door, which
   is not a version anyone can install. The sibling checkout stays in `pnpm-workspace.yaml` so a
