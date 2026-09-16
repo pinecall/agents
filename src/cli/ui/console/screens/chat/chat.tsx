@@ -1,12 +1,12 @@
 /** Chat: the class of this directory talked to in writing, in the browser, on the call's own log. */
 
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { GatewayError } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
 import { Nothing } from "../../../shared/frame";
-import { Bubbles } from "./bubbles";
+import { Bubbles, type Pending } from "./bubbles";
 import { endChat, readChatRoster, sayInChat, startChat, type Roster } from "./door";
 import "./chat.css";
 
@@ -122,33 +122,61 @@ export function Chat(): ReactNode {
           the whole call, row by row
         </Link>
       </div>
-      <Bubbles call={call} />
-      <Composer agent={agent} call={call} />
+      <Conversation agent={agent} call={call} />
     </section>
   );
 }
 
+/** The bubbles and the composer together: a line you send is on screen before the log confirms it. */
+function Conversation({ agent, call }: { agent: string; call: string }): ReactNode {
+  const [pending, setPending] = useState<Pending[]>([]);
+  const next = useRef(0);
+  return (
+    <>
+      <Bubbles
+        call={call}
+        pending={pending}
+        onConfirmed={(text) => setPending((now) => {
+          const at = now.findIndex((line) => line.text === text);
+          return at === -1 ? now : [...now.slice(0, at), ...now.slice(at + 1)];
+        })}
+      />
+      <Composer
+        agent={agent}
+        call={call}
+        onSent={(text) => {
+          next.current += 1;
+          const line = { id: next.current, text };
+          setPending((now) => [...now, line]);
+          return () => setPending((now) => now.filter((one) => one.id !== line.id));
+        }}
+      />
+    </>
+  );
+}
+
 /** The caller's side: one line at a time down the socket the terminal holds, and the hangup. */
-function Composer({ agent, call }: { agent: string; call: string }): ReactNode {
+function Composer({ agent, call, onSent }: { agent: string; call: string; onSent: (text: string) => () => void }): ReactNode {
   const credentials = useCredentials();
   const navigate = useNavigate();
   const [text, setText] = useState("");
-  const [sending, setSending] = useState(false);
   const [refused, setRefused] = useState<string | null>(null);
 
+  // The line leaves the box at once and stands greyed in the conversation; the log's turn.user
+  // settles it. A refusal takes it back and puts the words in the box again.
   const say = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
     const said = text.trim();
     if (said === "") return;
-    setSending(true);
+    setText("");
     setRefused(null);
+    const takeBack = onSent(said);
     try {
       await sayInChat(credentials, agent, call, said);
-      setText("");
     } catch (failed) {
+      takeBack();
+      setText(said);
       setRefused(failed instanceof GatewayError ? failed.message : String(failed));
-    } finally {
-      setSending(false);
     }
   };
 
@@ -174,7 +202,7 @@ function Composer({ agent, call }: { agent: string; call: string }): ReactNode {
           placeholder="say something to the agent…"
           onChange={(event) => setText(event.target.value)}
         />
-        <button type="submit" className="button button-accent chat-send" disabled={sending || text.trim() === ""}>
+        <button type="submit" className="button button-accent chat-send" disabled={text.trim() === ""}>
           say
         </button>
       </form>
