@@ -21,6 +21,7 @@ import { Talk } from "./screens/talk";
 import { Terminal } from "./screens/terminal";
 import { Team } from "./screens/team";
 import { Usage } from "./screens/usage";
+import { Widget, WidgetPreview } from "./screens/widget";
 import { Shell } from "./shell/shell";
 
 // The URL is the state: which agent, which screen, and later which call. Nothing the console holds
@@ -62,8 +63,12 @@ export const router = createBrowserRouter(
         { path: "knowledge", element: <Knowledge /> },
         { path: "memory", element: <Memory /> },
         { path: "evals", element: <Evals /> },
+        { path: "widget", element: <Widget /> },
       ],
     },
+    // A blank page with nothing but the widget on it, the way a site would have it: outside the
+    // shell, the same key.
+    { path: "/a/:agent/widget/preview", element: <WidgetPreview /> },
     { path: "*", element: <Agents /> },
   ],
   { basename: BASE },

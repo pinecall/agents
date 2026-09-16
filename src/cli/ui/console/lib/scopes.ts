@@ -12,6 +12,7 @@ export const SCOPE_OF: Record<string, string> = {
   knowledge: "knowledge",
   memory: "memory",
   evals: "evals",
+  widget: "talk",
   agents: "calls",
   live: "calls",
   numbers: "numbers",

@@ -1,0 +1,152 @@
+/* The Widget screen: the snippet and the knobs on the left, the button itself on the right. */
+
+.widget-screen {
+  display: grid;
+  gap: 28px;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+  padding: 26px 28px;
+}
+
+@media (max-width: 900px) {
+  .widget-screen {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.widget-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.widget-title {
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.widget-lede,
+.widget-note {
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 0;
+  max-width: 64ch;
+}
+
+.widget-note code {
+  color: var(--ink);
+  font-family: var(--face-fixed);
+  font-size: 12px;
+}
+
+.widget-heading {
+  color: var(--ink-faint);
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  margin: 18px 0 0;
+  text-transform: uppercase;
+}
+
+.widget-snippet {
+  background: var(--sunk);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-panel);
+  font-size: 12px;
+  line-height: 1.55;
+  margin: 0;
+  overflow-x: auto;
+  padding: 14px 16px;
+  user-select: all;
+  white-space: pre;
+}
+
+.widget-fields {
+  display: grid;
+  gap: 10px 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 560px;
+}
+
+.widget-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.widget-fields label span,
+.widget-accents > span {
+  color: var(--ink-faint);
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.widget-accents {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  grid-column: 1 / -1;
+}
+
+.widget-accent {
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  height: 22px;
+  width: 22px;
+}
+
+.widget-accent-here {
+  border-color: var(--ink);
+}
+
+.widget-open {
+  color: var(--accent);
+}
+
+.widget-stage-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.widget-stage-label {
+  color: var(--ink-faint);
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+}
+
+/* A white card whatever the theme: the widget is drawn for a site's page, not for this console. */
+.widget-stage {
+  background: #fff;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-panel);
+  color: #1f2937;
+  min-height: 120px;
+  padding: 24px;
+}
+
+.widget-refused {
+  color: var(--accent);
+  font-size: 12px;
+}
+
+/* The blank page: white, empty, the button where a site would have it. */
+.widget-blank {
+  background: #fff;
+  color: #1f2937;
+  font-family: Inter, system-ui, sans-serif;
+  height: 100vh;
+  position: relative;
+}
+
+.widget-blank-mark {
+  color: #9ca3af;
+  font-size: 11px;
+  left: 16px;
+  position: absolute;
+  top: 12px;
+}
