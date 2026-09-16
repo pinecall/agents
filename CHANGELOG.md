@@ -6,6 +6,10 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+Nothing yet.
+
+## 0.2.0 — A project of several agents
+
 ### Added
 - **A project of several agents.** `agents/<name>.tsx` at a repository's root, with every folder
   the verbs read shared by name — `knowledge/<name>.md` and `knowledge/<name>/`,
