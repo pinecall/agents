@@ -45,12 +45,23 @@ export function forgetEveryKey(): void {
   for (const world of WORLDS) forgetKey(world);
 }
 
-/** The world this tab was looking at, or production when it never said. */
+/**
+ * The world this tab was looking at; a new tab, the one this browser last looked at; production
+ * when it never said. A developer who signed in to the sandbox and opened a second tab landed in
+ * production, looking at the box's copy of their agent and not their own (2026-09-16).
+ */
 export function keptWorld(): World {
-  return window.sessionStorage.getItem(WORLD_UNDER) === "sandbox" ? "sandbox" : "production";
+  return saidWorld() ?? "production";
 }
 
-/** Remember which world the tab looks at, so a reload lands on the same one. */
+/** The world this tab, or else this browser, last looked at; null when neither ever said. */
+export function saidWorld(): World | null {
+  const said = window.sessionStorage.getItem(WORLD_UNDER) ?? window.localStorage.getItem(WORLD_UNDER);
+  return said === "sandbox" || said === "production" ? said : null;
+}
+
+/** Remember which world the tab looks at, so a reload and the next new tab land on the same one. */
 export function keepWorld(world: World): void {
   window.sessionStorage.setItem(WORLD_UNDER, world);
+  window.localStorage.setItem(WORLD_UNDER, world);
 }

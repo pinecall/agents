@@ -172,3 +172,9 @@
   font-family: var(--face-fixed);
   font-size: 12px;
 }
+
+/* The world a login opens: the header's two-word pill, sat at the left of the card. */
+.way-world {
+  align-self: flex-start;
+  height: 30px;
+}

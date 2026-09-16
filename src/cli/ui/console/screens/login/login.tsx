@@ -3,7 +3,9 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 
 import { GatewayError } from "../../../shared/api";
+import "../../shell/shell.css";
 import { loginWithPassword, type Signed } from "../../lib/login";
+import { WORLDS, saidWorld, type World } from "../../lib/session-key";
 
 /**
  * The one screen shown with no key, and it signs a person IN and nothing else.
@@ -20,6 +22,9 @@ export function Login({ base, onSigned }: { base: string; onSigned: (signed: Sig
   const [org, setOrg] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // The sandbox unless this browser last looked at production: the person signing in here is
+  // most often a developer about to open the copy their terminal runs, and that copy is there.
+  const [world, setWorld] = useState<World>(() => saidWorld() ?? "sandbox");
   const [busy, setBusy] = useState(false);
   const [refused, setRefused] = useState<string | null>(null);
 
@@ -28,7 +33,7 @@ export function Login({ base, onSigned }: { base: string; onSigned: (signed: Sig
     setBusy(true);
     setRefused(null);
     try {
-      onSigned(await loginWithPassword(base, { org: org.trim(), email: email.trim(), password }));
+      onSigned(await loginWithPassword(base, { org: org.trim(), email: email.trim(), password, env: world }));
     } catch (failed) {
       setRefused(failed instanceof GatewayError ? failed.message : String(failed));
     } finally {
@@ -79,6 +84,22 @@ export function Login({ base, onSigned }: { base: string; onSigned: (signed: Sig
               placeholder="the oldest of yours when left empty"
             />
           </label>
+          <div className="way-field">
+            <span className="way-label">world</span>
+            <span className="world-switch way-world fixed" role="group" aria-label="which world">
+              {[...WORLDS].reverse().map((one) => (
+                <button
+                  key={one}
+                  type="button"
+                  className={one === world ? "world-option world-option-here" : "world-option"}
+                  onClick={() => setWorld(one)}
+                  aria-pressed={one === world}
+                >
+                  {one}
+                </button>
+              ))}
+            </span>
+          </div>
         </div>
 
         <button className="way-go" type="submit" disabled={busy}>
@@ -99,3 +120,4 @@ export function Login({ base, onSigned }: { base: string; onSigned: (signed: Sig
     </div>
   );
 }
+

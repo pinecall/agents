@@ -28,7 +28,10 @@ export async function loginWithCode(base: string, code: string): Promise<Signed>
 }
 
 /** A person's own login: their email and password, and the org when they belong to several. */
-export async function loginWithPassword(base: string, who: { org?: string; email: string; password: string }): Promise<Signed> {
+export async function loginWithPassword(
+  base: string,
+  who: { org?: string; email: string; password: string; env?: "production" | "sandbox" },
+): Promise<Signed> {
   return login(base, { ...who, org: who.org === undefined || who.org === "" ? null : who.org, device: THIS_DEVICE });
 }
 
