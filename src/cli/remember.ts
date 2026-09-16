@@ -11,6 +11,7 @@ import { mount } from "../runtime/connect.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { load, mountOptions } from "./load.js";
+import { AGENT_FLAG, oneHome } from "./home.js";
 import { asked, type Door } from "./testing/gateway.js";
 import { casesIn, matching } from "./testing/goldens.js";
 import { BROKEN, HELD } from "./testing/score.js";
@@ -24,7 +25,7 @@ export const CASES = "test/memory";
 
 export const NO_CASES = `no extraction goldens at ${CASES}: write one, or name the file or directory to run`;
 
-const USAGE = "usage: pinecall remember [paths] [--file agent.tsx] [--grep x] [--json]";
+const USAGE = "usage: pinecall remember [paths] [--agent <name>] [--file agent.tsx] [--grep x] [--json]";
 
 export const group: Group = {
   purpose: "the goldens memory.remember is held to: what a call teaches, and what it never keeps",
@@ -62,22 +63,28 @@ export async function run(argv: string[], how: Running = {}): Promise<number> {
     allowPositionals: true,
     options: {
       file: { type: "string" },
+      ...AGENT_FLAG,
       grep: { type: "string" },
       json: { type: "boolean", default: false },
     },
   });
   const door = theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
-  if (positionals.length === 0 && !existsSync(CASES)) {
-    err.write(`${NO_CASES}\n${USAGE}\n`);
+  // The agent's home says where its cases are; a directory with no agent at all is told where a
+  // case belongs, before any class is looked for.
+  const home = await oneHome("remember", values.file, values.agent).catch(() => undefined);
+  const folder = home?.memoryCases ?? CASES;
+  const paths = positionals.length > 0 ? positionals : [folder];
+  if (positionals.length === 0 && !existsSync(folder)) {
+    err.write(`${home === undefined ? NO_CASES : NO_CASES.replace(CASES, folder)}\n${USAGE}\n`);
     return 2;
   }
-  const cases = matching(await casesIn<ExtractionGolden>(positionals, CASES), values.grep);
+  const cases = matching(await casesIn<ExtractionGolden>(paths, CASES), values.grep);
   if (cases.length === 0) {
     err.write(`no case matched${values.grep === undefined ? "" : ` --grep ${values.grep}`}\n`);
     return 2;
   }
-  const loaded = await load(values.file);
+  const loaded = await load(home?.file ?? values.file);
   const pc = new Pinecall({ url: door.url, apiKey: door.apiKey });
   // takesUnclaimed: false for the reason `test` has it: this process holds the agent so the run
   // reaches THIS class, and a real call must not ring in a terminal running a suite.

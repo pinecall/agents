@@ -10,13 +10,14 @@ import { slugOf } from "../runtime/connect.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { load } from "./load.js";
+import { AGENT_FLAG, homesFor, type Home } from "./home.js";
 import { asked, type Door } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
 
-const USAGE = `usage: pinecall knowledge push [dir] [--base <name>] [--file agent.tsx]
+const USAGE = `usage: pinecall knowledge push [dir] [--base <name>] [--agent <name>] [--file agent.tsx]
        pinecall knowledge list
        pinecall knowledge drop <base>
-       pinecall knowledge eval [golden.json] [--base <name>] [--k <n>] [--file agent.tsx]`;
+       pinecall knowledge eval [golden.json] [--base <name>] [--k <n>] [--agent <name>] [--file agent.tsx]`;
 
 /** Where a base is refused before a byte is sent: the three sentences both doors say. */
 export const NO_DIRECTORY = (directory: string): string => `no knowledge directory at ${directory}`;
@@ -63,12 +64,33 @@ export async function run(argv: string[], how: Pushing = {}): Promise<number> {
   const { values, positionals } = parseArgs({
     args: argv,
     allowPositionals: true,
-    options: { base: { type: "string" }, file: { type: "string" }, k: { type: "string" } },
+    options: { base: { type: "string" }, file: { type: "string" }, k: { type: "string" }, ...AGENT_FLAG },
   });
   const [verb, ...rest] = positionals;
   const door = theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
   try {
+    if (verb === "push" || verb === "eval") {
+      // A dir, a golden or a base typed is about one agent; nothing typed, at a project's root, is
+      // every agent that has documents (push) or a golden (eval).
+      const typed = rest[0] !== undefined || values.base !== undefined;
+      const homes = typed ? [] : await homesFor(values.file, values.agent);
+      if (homes.length > 1) {
+        let worst = 0;
+        for (const home of homes) {
+          const has = verb === "push" ? existsSync(home.docs) : existsSync(home.knowledgeGolden);
+          if (!has) {
+            out.write(`${home.name} · no ${verb === "push" ? `documents at ${home.docs}` : `golden at ${home.knowledgeGolden}`}\n`);
+            continue;
+          }
+          worst = Math.max(worst, verb === "push" ? await pushHome(door, home, out, err) : await evaluateHome(door, home, values.k, out, err));
+        }
+        return worst;
+      }
+      if (homes.length === 1 && !typed) {
+        return verb === "push" ? await pushHome(door, homes[0]!, out, err) : await evaluateHome(door, homes[0]!, values.k, out, err);
+      }
+    }
     if (verb === "push") return await push(door, rest[0], values.base, values.file, out, err);
     if (verb === "list") return await list(door, out);
     if (verb === "drop" && rest[0] !== undefined) return await drop(door, rest[0], out);
@@ -216,4 +238,22 @@ export function markdownUnder(directory: string): KnowledgeFile[] {
 /** Unix seconds as a person reads them: the day and the minute, in UTC, no fractions. */
 export function dayAndTime(seconds: number): string {
   return new Date(seconds * 1000).toISOString().slice(0, 16).replace("T", " ");
+}
+
+/** One agent's documents to its base: the home says where they are, the class names the base. */
+async function pushHome(door: Door, home: Home, out: NodeJS.WritableStream, err: NodeJS.WritableStream): Promise<number> {
+  const loaded = await load(home.file);
+  return await push(door, home.docs, slugOf(loaded.ctor), home.file, out, err);
+}
+
+/** One agent's golden against its base. */
+async function evaluateHome(
+  door: Door,
+  home: Home,
+  k: string | undefined,
+  out: NodeJS.WritableStream,
+  err: NodeJS.WritableStream,
+): Promise<number> {
+  const loaded = await load(home.file);
+  return await evaluate(door, home.knowledgeGolden, slugOf(loaded.ctor), k, home.file, out, err);
 }

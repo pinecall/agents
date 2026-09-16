@@ -8,6 +8,7 @@ import { showPrompt } from "../views/render.js";
 import { showMachine } from "./machine.js";
 import type { Group } from "./groups.js";
 import { instanceFor, load } from "./load.js";
+import { AGENT_FLAG, oneHome } from "./home.js";
 
 /** One case of a goldens file: a state to start from, and what the caller then says. */
 interface Case {
@@ -42,13 +43,13 @@ export async function run(
   const { values, positionals } = parseArgs({
     args: argv,
     allowPositionals: true,
-    options: { state: { type: "string" }, case: { type: "string" } },
+    options: { state: { type: "string" }, case: { type: "string" }, ...AGENT_FLAG },
   });
   if (values.state === undefined) {
     err.write("pinecall prompt: --state <file> is required\n");
     return 2;
   }
-  const loaded = await load(positionals[0]);
+  const loaded = await load((await oneHome("prompt", positionals[0], values.agent)).file);
   const agent = instanceFor(loaded);
   agent.startIn(firstState(values.state, values.case));
   out.write(`${showPrompt(agent)}\n\n${showMachine(agent)}\n`);

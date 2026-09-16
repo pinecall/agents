@@ -14,6 +14,7 @@ import { AN_EMPTY_GOLDEN, DEFAULT_GOLDEN, NO_GOLDEN, recalledOn } from "../memor
 import { CASES, extracted, NO_CASES } from "../remember.js";
 import type { Door } from "../testing/gateway.js";
 import { casesIn } from "../testing/goldens.js";
+import type { Home } from "../home.js";
 import { anObject, aString, maybeNumber } from "./asked.js";
 import { Refusal } from "./refusal.js";
 
@@ -103,8 +104,8 @@ async function theCases(): Promise<ExtractionGolden[]> {
 // The class is mounted here for the length of the run, exactly as `pinecall remember` mounts it:
 // the categories a golden may name are the class's own declaration, read off the socket this
 // process opens, and the extraction itself runs where the org's keys are.
-async function inThisProcess(door: Door, cases: ExtractionGolden[]): Promise<ExtractionRun> {
-  const loaded = await load();
+async function inThisProcess(door: Door, cases: ExtractionGolden[], file?: string): Promise<ExtractionRun> {
+  const loaded = await load(file);
   const pc = new Pinecall({ url: door.url, apiKey: door.apiKey });
   const held = mount(loaded.ctor, { ...mountOptions(loaded, pc), takesUnclaimed: false });
   try {
@@ -123,4 +124,13 @@ async function theGolden(): Promise<{ agent: string | null; golden: string | nul
   } catch {
     return { agent: null, golden: null };
   }
+}
+
+/** The pieces for one agent of a project: its extraction cases, its class, its recall golden. */
+export function rememberingPiecesFor(home: Home, slug: string): Pieces {
+  return {
+    cases: async () => (existsSync(home.memoryCases) ? await casesIn<ExtractionGolden>([home.memoryCases], CASES) : []),
+    extract: (door, cases) => inThisProcess(door, cases, home.file),
+    golden: async () => ({ agent: slug, golden: home.memoryGolden }),
+  };
 }

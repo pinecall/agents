@@ -9,12 +9,13 @@ import { modelOf } from "../runtime/connect.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { load } from "./load.js";
+import { AGENT_FLAG, hasDirectory, homesFor, type Home } from "./home.js";
 import type { Wanted } from "./testing/gateway.js";
 import { GOLDENS, goldensIn, matching, NO_GOLDENS } from "./testing/goldens.js";
 import { mountedForASuite, ranSuite } from "./testing/suite.js";
 
 const USAGE =
-  "usage: pinecall test [paths] [--file agent.tsx] [--model m]… [--grep x] [--watch] [--json]\n" +
+  "usage: pinecall test [paths] [--agent <name>] [--file agent.tsx] [--model m]… [--grep x] [--watch] [--json]\n" +
   "       pinecall test --voice [--background-noise dB] [--packet-loss 0.05]\n";
 
 export const group: Group = {
@@ -73,6 +74,7 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
     allowPositionals: true,
     options: {
       file: { type: "string" },
+      ...AGENT_FLAG,
       model: { type: "string", multiple: true },
       grep: { type: "string" },
       watch: { type: "boolean", default: false },
@@ -84,12 +86,33 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
   });
   const door = theDoor();
   if (door === undefined) return 2;
-  if (positionals.length === 0 && !existsSync(GOLDENS)) {
-    process.stderr.write(`${NO_GOLDENS}\n${USAGE}`);
+  // A project of several agents: each agent's goldens through its own class, one after another,
+  // and the exit code is the worst of them. Paths typed name goldens of one agent, so they need one.
+  const homes = await homesFor(values.file, values.agent);
+  if (homes.length > 1) {
+    if (positionals.length > 0 || values.watch === true) {
+      process.stderr.write(`paths and --watch are for one agent: add --agent ${homes.map((home) => home.name).join(" or --agent ")}\n`);
+      return 2;
+    }
+    let worst = 0;
+    for (const home of homes) {
+      if (!hasDirectory(home.goldens)) {
+        out.write(`${home.name} · no goldens at ${home.goldens}\n`);
+        continue;
+      }
+      worst = Math.max(worst, await suiteOf(home, [home.goldens], door, values, out));
+    }
+    return worst;
+  }
+  const home = homes[0]!;
+  const paths = positionals.length > 0 ? positionals : [home.goldens];
+  if (positionals.length === 0 && !existsSync(home.goldens)) {
+    process.stderr.write(`${NO_GOLDENS.replace(GOLDENS, home.goldens)}\n${USAGE}`);
     return 2;
   }
+  if (values.watch !== true) return await suiteOf(home, paths, door, values, out);
 
-  const loaded = await load(values.file);
+  const loaded = await load(home.file);
   const pc = new Pinecall({ url: door.url, apiKey: door.apiKey });
   const held = mountedForASuite(loaded, pc);
   const models = (values.model ?? []).map(modelOf).filter((model) => model !== undefined);
@@ -97,16 +120,15 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
   try {
     await pc.connect();
     const suite = async (): Promise<number> => {
-      const goldens = matching(await goldensIn(positionals), values.grep);
+      const goldens = matching(await goldensIn(paths), values.grep);
       if (goldens.length === 0) {
         process.stderr.write(`no golden matched${values.grep === undefined ? "" : ` --grep ${values.grep}`}\n`);
         return 2;
       }
       return await ranSuite({ door, loaded, held, goldens, models, line: aLine(values), out, json: values.json === true });
     };
-    const code = await suite();
-    if (values.watch !== true) return code;
-    return await watching(positionals, suite, out);
+    await suite();
+    return await watching(paths, suite, out);
   } finally {
     pc.close();
   }
@@ -136,4 +158,29 @@ async function watching(
   }
   // The watchers hold the process; a person ends it with the same ctrl-C that ends `run`.
   return await new Promise<number>(() => {});
+}
+
+/** One agent's goldens through its own class, mounted here for the length of the run. */
+async function suiteOf(
+  home: Home,
+  paths: string[],
+  door: NonNullable<ReturnType<typeof theDoor>>,
+  values: Parameters<typeof aLine>[0] & { grep?: string | undefined; model?: string[] | undefined; json?: boolean | undefined },
+  out: NodeJS.WritableStream,
+): Promise<number> {
+  const loaded = await load(home.file);
+  const pc = new Pinecall({ url: door.url, apiKey: door.apiKey });
+  const held = mountedForASuite(loaded, pc);
+  const models = (values.model ?? []).map(modelOf).filter((model) => model !== undefined);
+  try {
+    await pc.connect();
+    const goldens = matching(await goldensIn(paths), values.grep);
+    if (goldens.length === 0) {
+      process.stderr.write(`no golden matched${values.grep === undefined ? "" : ` --grep ${values.grep}`}\n`);
+      return 2;
+    }
+    return await ranSuite({ door, loaded, held, goldens, models, line: aLine(values), out, json: values.json === true });
+  } finally {
+    pc.close();
+  }
 }

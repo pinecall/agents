@@ -10,6 +10,7 @@ import { mount } from "../runtime/connect.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { load, mountOptions, notASlug } from "./load.js";
+import { AGENT_FLAG, oneHome } from "./home.js";
 import { cannotTell, ENV_FLAG, notThisWorld, standing } from "./world.js";
 import { BROKE, CALLER, lineFor } from "./view.js";
 import { firstState } from "./prompt.js";
@@ -65,6 +66,7 @@ export async function run(argv: string[]): Promise<number> {
       case: { type: "string" },
       as: { type: "string" },
       file: { type: "string" },
+      ...AGENT_FLAG,
       events: { type: "boolean", default: false },
       ...ENV_FLAG,
     },
@@ -95,7 +97,7 @@ export async function run(argv: string[]): Promise<number> {
   if (reach !== undefined) {
     return await talk(chatUrl(url, reach, undefined, values.as), door.apiKey, values.events === true);
   }
-  const loaded = await load(values.file);
+  const loaded = await load((await oneHome("chat", values.file, values.agent)).file);
   const pc = new Pinecall({ url, apiKey: door.apiKey });
   // takesUnclaimed: false is the other half of the `?app=` below. Holding the agent is what makes
   // this a console; taking a call nobody named would make it a server, and a real phone call would
