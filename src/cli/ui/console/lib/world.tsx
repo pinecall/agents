@@ -11,6 +11,10 @@ export interface Worlds {
   turnTo: (world: World) => Promise<void>;
   /** Move to another org the person belongs to: a key minted for them there, and the console reopened on it. */
   moveTo: (org: string) => Promise<void>;
+  /** Whose sandbox copy the doors answer for: a colleague's member id, or null for one's own. */
+  corner: string | null;
+  /** Open a colleague's copy (an admin, in the sandbox), or null to come back to one's own. */
+  lookInto: (corner: string | null) => void;
 }
 
 const Held = createContext<Worlds | null>(null);

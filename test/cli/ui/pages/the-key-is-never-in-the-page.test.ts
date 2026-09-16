@@ -22,12 +22,14 @@ const SHAPED_LIKE_A_KEY = /pk_[A-Za-z0-9_-]{20,}/;
 const AN_ENVIRONMENT_KEY = /PINECALL_(API|DEV)_KEY/;
 
 // Each page holds ONE credential — the console a person's scoped key, the admin the box's ops key
-// — and each keeps it in exactly one file, in sessionStorage: one tab's, gone when the tab closes,
-// surviving a reload. localStorage would outlive the session and be every tab's, so nothing may
-// reach it. Two files and not one, on purpose: the two credentials must never meet.
-test("one file per page reaches the tab's storage, and nothing reaches localStorage", () => {
+// — and each keeps it in exactly one file. The admin's is one tab's, in sessionStorage. The
+// console's person is the browser's since 2026-09-16 — a login code spends once, and a per-tab
+// store left every other tab signed out — so its keys are in localStorage, and signing out forgets
+// them in every tab; the world and the corner a tab looks at stay the tab's. Two files and not
+// one, on purpose: the two credentials must never meet.
+test("one file per page reaches a browser's storage", () => {
   expect(sourceFilesReaching("sessionStorage")).toEqual(["admin/lib/ops-key.ts", "console/lib/session-key.ts"]);
-  expect(sourceFilesReaching("localStorage")).toEqual([]);
+  expect(sourceFilesReaching("localStorage")).toEqual(["console/lib/session-key.ts"]);
 });
 
 // The key rides one header and that header is spelled in one place for both pages: every door

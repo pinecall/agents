@@ -9,7 +9,17 @@ import { BASE } from "./lib/base";
 import { CredentialsProvider } from "../shared/credentials";
 import { loginToOrg, loginToWorld, loginWithCode, type Signed } from "./lib/login";
 import { LeavingProvider } from "./lib/leaving";
-import { forgetEveryKey, forgetKey, keepKey, keepWorld, keptKey, keptWorld, type World } from "./lib/session-key";
+import {
+  forgetEveryKey,
+  forgetKey,
+  keepCorner,
+  keepKey,
+  keepWorld,
+  keptCorner,
+  keptKey,
+  keptWorld,
+  type World,
+} from "./lib/session-key";
 import { WhoamiProvider } from "./lib/whoami";
 import { WorldProvider } from "./lib/world";
 import { router } from "./router";
@@ -71,6 +81,12 @@ async function theKeyToStartWith(): Promise<Start> {
 function Console({ startingWith }: { startingWith: Start }): ReactNode {
   const [world, setWorld] = useState<World>(startingWith.world);
   const [key, setKey] = useState<string | null>(startingWith.key);
+  // Whose copy: a colleague's only in the sandbox, where corners are. Production has one, the box's.
+  const [corner, setCorner] = useState<string | null>(() => (startingWith.world === "sandbox" ? keptCorner() : null));
+  const lookInto = useCallback((other: string | null): void => {
+    keepCorner(other);
+    setCorner(other);
+  }, []);
   onUnauthorized(() => {
     forgetKey(world);
     setKey(null);
@@ -88,6 +104,8 @@ function Console({ startingWith }: { startingWith: Start }): ReactNode {
         keepKey(other, signed.key);
       }
       keepWorld(other);
+      keepCorner(null);
+      setCorner(null);
       setWorld(other);
       setKey(keptKey(other));
     },
@@ -101,18 +119,22 @@ function Console({ startingWith }: { startingWith: Start }): ReactNode {
       if (key === null) return;
       const signed = await loginToOrg({ base: BASE, key }, org);
       forgetEveryKey();
+      keepCorner(null);
       keepKey(signed.env, signed.key);
       keepWorld(signed.env);
       window.location.assign(BASE);
     },
     [key],
   );
-  const worlds = useMemo(() => ({ world, turnTo, moveTo }), [world, turnTo, moveTo]);
+  const worlds = useMemo(() => ({ world, turnTo, moveTo, corner, lookInto }), [world, turnTo, moveTo, corner, lookInto]);
+  const credentials = useMemo(() => ({ base: BASE, key: key ?? "", corner }), [key, corner]);
 
   // Every world's key, not the one on screen — see forgetEveryKey. Nothing else in this page may
   // reach storage (lib/session-key.ts), so there is nowhere else a key could still be.
   const leave = useCallback((): void => {
     forgetEveryKey();
+    keepCorner(null);
+    setCorner(null);
     setKey(null);
   }, []);
 
@@ -141,7 +163,7 @@ function Console({ startingWith }: { startingWith: Start }): ReactNode {
     return <Login base={BASE} onSigned={signed} />;
   }
   return (
-    <CredentialsProvider value={{ base: BASE, key }}>
+    <CredentialsProvider value={credentials}>
       <WhoamiProvider>
         <WorldProvider value={worlds}>
           <LeavingProvider value={leave}>

@@ -65,3 +65,19 @@ export function keepWorld(world: World): void {
   window.sessionStorage.setItem(WORLD_UNDER, world);
   window.localStorage.setItem(WORLD_UNDER, world);
 }
+
+const CORNER_UNDER = "pinecall.corner";
+
+/**
+ * Whose sandbox copy this tab looks at, when an admin opened a colleague's; null for their own.
+ * One tab's, on purpose: a second tab opens on the person's own copy.
+ */
+export function keptCorner(): string | null {
+  return window.sessionStorage.getItem(CORNER_UNDER);
+}
+
+/** Remember whose copy the tab looks at, or forget it with null: back to the person's own. */
+export function keepCorner(corner: string | null): void {
+  if (corner === null) window.sessionStorage.removeItem(CORNER_UNDER);
+  else window.sessionStorage.setItem(CORNER_UNDER, corner);
+}

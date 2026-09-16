@@ -9,6 +9,8 @@
 export interface Credentials {
   base: string;
   key: string;
+  /** Whose sandbox copy the doors answer for, when an admin opened a colleague's: their member id. */
+  corner?: string | null;
 }
 
 /** A door answered with something other than 200. `status` is the gateway's, `message` its detail. */
@@ -25,7 +27,10 @@ export class GatewayError extends Error {
 
 /** The headers every request carries: the key, as a Bearer. This is the one line that spells it. */
 export function headersFor(credentials: Credentials): Record<string, string> {
-  return { authorization: `Bearer ${credentials.key}` };
+  const headers: Record<string, string> = { authorization: `Bearer ${credentials.key}` };
+  // The gateway resolves every door in that member's corner, and refuses a key that may not.
+  if (credentials.corner) headers["pinecall-corner"] = credentials.corner;
+  return headers;
 }
 
 // A 401 while a page is mounted is its key dying under it — revoked, or the gateway restarted on

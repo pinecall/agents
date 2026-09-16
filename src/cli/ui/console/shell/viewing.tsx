@@ -60,13 +60,14 @@ function initialsOf(words: string): string {
  * holds here, each with the copies the team is running, and the org and the world to turn to.
  *
  * Every screen under an agent is `/a/<slug>/…`, and the door behind it answers in the corner this
- * key opens: a colleague's copy is listed so it is seen running, never offered as a page, because
- * opening it would show the reader their own. They open it from their own console.
+ * key opens. A developer sees their own copy; an admin sees the team's and, in the sandbox, opens
+ * any of them: every request then carries that member's corner (shared/api.ts), and the gateway
+ * resolves each door there. Production has one copy, the org's, the one deployed on the box.
  */
 export function Viewing({ agent }: { agent: string }): ReactNode {
   const whose = useWhoami();
   const me = meIn(whose);
-  const { world } = useWorld();
+  const { world, corner, lookInto } = useWorld();
   const [open, setOpen] = useState(false);
   const [tick, setTick] = useState(0);
   const { agents, loaded } = useHeldAgents(tick);
@@ -94,10 +95,30 @@ export function Viewing({ agent }: { agent: string }): ReactNode {
   }, [open]);
 
   const slugs = slugsOf(agents, me);
-  const here = slugs.find((one) => one.slug === agent);
-  const mine = here?.copies.find((held) => !somebodyElses(held, me));
   const person = whose?.name ?? whose?.label ?? "";
+  const org = whose === null ? "the org" : orgOf(whose);
+  // An admin's key sees every corner, and in the sandbox it may open any of them.
+  const seesTheTeam = world === "sandbox" && whose?.scopes.includes("team") === true;
+  const holderOf = (held: HeldAgent): string | null => held.holder?.holder ?? null;
+  // Production has one copy, the org's, deployed on the box. The sandbox has one per person, and
+  // the one on screen is the colleague's an admin opened, or the reader's own.
+  const onScreen = (held: HeldAgent): boolean =>
+    world === "production" ? holderOf(held) === null : holderOf(held) === (corner ?? me);
+  const opens = (held: HeldAgent): boolean => {
+    const holder = holderOf(held);
+    if (world === "production") return holder === null;
+    return holder !== null && (holder === me || seesTheTeam);
+  };
+  const labelOf = (held: HeldAgent): string => {
+    const holder = holderOf(held);
+    if (holder === null) return world === "production" ? `${org} · deployed on the box` : `${org} · shared`;
+    if (holder === me) return `${person || "you"} · you`;
+    return held.holder?.name ?? holder;
+  };
+  const here = slugs.find((one) => one.slug === agent);
+  const mine = here?.copies.find(onScreen);
   const running = mine !== undefined;
+  const lookingAt = corner === null ? undefined : agents.find((held) => holderOf(held) === corner);
 
   const toggle = (): void => {
     // Opened, the list is read again: a colleague who ran their copy a minute ago is on it.
@@ -111,7 +132,9 @@ export function Viewing({ agent }: { agent: string }): ReactNode {
         <span className={`viewing-dot${agent === "" ? "" : running ? " viewing-dot-up" : " viewing-dot-down"}`} />
         <span className="viewing-agent fixed">{agent === "" ? "choose an agent" : agent}</span>
         {agent !== "" && (
-          <span className="viewing-copy">{mine !== undefined ? whoseCopy(mine, me) : "not running"}</span>
+          <span className={`viewing-copy${corner !== null ? " viewing-copy-theirs" : ""}`}>
+            {mine !== undefined ? labelOf(mine) : "not running"}
+          </span>
         )}
         <span className={`viewing-world viewing-world-${world}`}>{world}</span>
         {whose !== null && (
@@ -133,6 +156,17 @@ export function Viewing({ agent }: { agent: string }): ReactNode {
                   {orgOf(whose)} · {whose.key_id}
                 </span>
               </span>
+            </section>
+          )}
+
+          {corner !== null && (
+            <section className="viewing-section viewing-looking">
+              <span>
+                Looking at <b>{lookingAt?.holder?.name ?? corner}</b>'s copy
+              </span>
+              <button type="button" className="viewing-back" onClick={() => lookInto(null)}>
+                back to yours
+              </button>
             </section>
           )}
 
@@ -159,28 +193,30 @@ export function Viewing({ agent }: { agent: string }): ReactNode {
                     <span className="viewing-row-sub">{one.channels.join(" · ") || "no doors"}</span>
                   </div>
                   {one.copies.map((held) => {
-                    const yours = !somebodyElses(held, me);
-                    const current = yours && one.slug === agent;
-                    const who = yours ? `${person || whoseCopy(held, me)} · you` : whoseCopy(held, me);
+                    const holder = holderOf(held);
+                    const current = onScreen(held) && one.slug === agent;
+                    const openable = opens(held);
+                    const who = labelOf(held);
                     return (
                       <button
-                        key={held.holder?.holder ?? "org"}
+                        key={holder ?? "org"}
                         type="button"
                         className={`viewing-row${current ? " viewing-row-here" : ""}`}
-                        disabled={!yours}
-                        title={yours ? undefined : "their copy: it answers them, and they open it from their own console"}
+                        disabled={!openable}
+                        title={openable ? undefined : "their copy: it answers them, and they open it from their own console"}
                         onClick={() => {
                           setOpen(false);
-                          if (!current) void navigate(`/a/${one.slug}/${kept}`);
+                          if (world === "sandbox") lookInto(holder === me ? null : holder);
+                          if (one.slug !== agent) void navigate(`/a/${one.slug}/${kept}`);
                         }}
                       >
                         <span className="viewing-dot viewing-dot-up" />
-                        <span className="viewing-avatar viewing-avatar-small">{initialsOf(yours ? person || who : who)}</span>
+                        <span className="viewing-avatar viewing-avatar-small">{initialsOf(holder === me ? person || who : who)}</span>
                         <span className="viewing-row-main">
                           <span className="viewing-row-who">{who}</span>
                         </span>
                         <span className={`viewing-world viewing-world-${world}`}>{world}</span>
-                        <span className="viewing-check">{current ? "viewing" : yours ? "open" : "theirs"}</span>
+                        <span className="viewing-check">{current ? "viewing" : openable ? "open" : "theirs"}</span>
                       </button>
                     );
                   })}

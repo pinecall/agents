@@ -50,6 +50,35 @@
   color: var(--ink-soft);
 }
 
+.viewing-copy-theirs {
+  color: var(--accent);
+}
+
+.viewing-looking {
+  align-items: center;
+  background: var(--accent-soft);
+  color: var(--ink);
+  display: flex;
+  font-size: 12px;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.viewing-looking b {
+  font-weight: inherit;
+  color: var(--accent);
+}
+
+.viewing-back {
+  background: none;
+  border: 1px solid var(--accent-line);
+  border-radius: 6px;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 3px 8px;
+}
+
 .viewing-world {
   border-radius: 4px;
   font-size: 10.5px;
