@@ -152,50 +152,40 @@ export function Viewing({ agent }: { agent: string }): ReactNode {
               </div>
             )}
             <ul className="viewing-list">
-              {slugs.map((one) => {
-                const own = one.copies.find((held) => !somebodyElses(held, me));
-                const theirs = one.copies.filter((held) => somebodyElses(held, me));
-                const current = one.slug === agent;
-                return (
-                  <li key={one.slug}>
-                    <button
-                      type="button"
-                      className={`viewing-row${current ? " viewing-row-here" : ""}`}
-                      disabled={own === undefined}
-                      title={own === undefined ? "only a colleague runs this one: run your own copy to open it" : undefined}
-                      onClick={() => {
-                        setOpen(false);
-                        if (!current) void navigate(`/a/${one.slug}/${kept}`);
-                      }}
-                    >
-                      <span className={`viewing-dot${own !== undefined ? " viewing-dot-up" : ""}`} />
-                      <span className="viewing-row-main">
-                        <span className="viewing-row-slug fixed">{one.slug}</span>
-                        <span className="viewing-row-sub">
-                          {one.channels.join(" · ") || "no doors"}
-                          {own !== undefined && <> · {whoseCopy(own, me)}</>}
+              {slugs.map((one) => (
+                <li key={one.slug} className="viewing-agent-block">
+                  <div className="viewing-agent-head">
+                    <span className="viewing-row-slug fixed">{one.slug}</span>
+                    <span className="viewing-row-sub">{one.channels.join(" · ") || "no doors"}</span>
+                  </div>
+                  {one.copies.map((held) => {
+                    const yours = !somebodyElses(held, me);
+                    const current = yours && one.slug === agent;
+                    const who = yours ? `${person || whoseCopy(held, me)} · you` : whoseCopy(held, me);
+                    return (
+                      <button
+                        key={held.holder?.holder ?? "org"}
+                        type="button"
+                        className={`viewing-row${current ? " viewing-row-here" : ""}`}
+                        disabled={!yours}
+                        title={yours ? undefined : "their copy: it answers them, and they open it from their own console"}
+                        onClick={() => {
+                          setOpen(false);
+                          if (!current) void navigate(`/a/${one.slug}/${kept}`);
+                        }}
+                      >
+                        <span className="viewing-dot viewing-dot-up" />
+                        <span className="viewing-avatar viewing-avatar-small">{initialsOf(yours ? person || who : who)}</span>
+                        <span className="viewing-row-main">
+                          <span className="viewing-row-who">{who}</span>
                         </span>
-                      </span>
-                      {current && <span className="viewing-check">viewing</span>}
-                    </button>
-                    {theirs.length > 0 && (
-                      <div className="viewing-team">
-                        {theirs.map((held) => (
-                          <span
-                            key={held.holder?.holder ?? "org"}
-                            className="viewing-mate"
-                            title="their copy: it answers them, and they open it from their own console"
-                          >
-                            <span className="viewing-avatar viewing-avatar-small">{initialsOf(whoseCopy(held, me))}</span>
-                            {whoseCopy(held, me)}
-                          </span>
-                        ))}
-                        <span className="viewing-team-note">also running it</span>
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
+                        <span className={`viewing-world viewing-world-${world}`}>{world}</span>
+                        <span className="viewing-check">{current ? "viewing" : yours ? "open" : "theirs"}</span>
+                      </button>
+                    );
+                  })}
+                </li>
+              ))}
             </ul>
           </section>
         </div>

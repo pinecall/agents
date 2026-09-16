@@ -193,7 +193,11 @@
 
 .viewing-row:disabled {
   cursor: default;
-  opacity: 0.55;
+  opacity: 0.6;
+}
+
+.viewing-row:disabled .viewing-check {
+  color: var(--ink-faint);
 }
 
 .viewing-row-here {
@@ -221,6 +225,27 @@
 .viewing-check {
   color: var(--accent);
   font-size: 10.5px;
+}
+
+.viewing-agent-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+
+.viewing-agent-head {
+  align-items: baseline;
+  display: flex;
+  gap: 8px;
+  padding: 4px 10px;
+}
+
+.viewing-row-who {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .viewing-team {
