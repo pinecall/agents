@@ -4,6 +4,7 @@ import type { Entry, State } from "@pinecall/protocol";
 import { useEffect, useRef, type ReactNode } from "react";
 
 import { LogRow } from "./log-row";
+import { agentSaying } from "./saying";
 import { MemoryRow, SourcesRow } from "./lookup-rows";
 import { ConfirmRow, EventRow, QuietRow, StateRow, SupervisorRow } from "./marks";
 import { rowsOf, type Row } from "./timeline-rows";
@@ -15,6 +16,8 @@ const NEAR_THE_END_PX = 80;
 
 /** Every row of one call; `after` is what closes the list (a recording). The words being said are its last rows. */
 export function Timeline({ entries, state, after }: { entries: Entry[]; state: State; after?: ReactNode }): ReactNode {
+  // The reducer's `live.agent` is the last DELTA — one word — so the reply in flight is folded here.
+  const saying = agentSaying(entries);
   const list = useRef<HTMLDivElement>(null);
   const following = useRef(true);
 
@@ -23,7 +26,7 @@ export function Timeline({ entries, state, after }: { entries: Entry[]; state: S
   useEffect(() => {
     const box = list.current;
     if (box !== null && following.current) box.scrollTop = box.scrollHeight;
-  }, [entries, state.live.user, state.live.agent]);
+  }, [entries, state.live.user, saying]);
 
   return (
     <div
@@ -38,7 +41,7 @@ export function Timeline({ entries, state, after }: { entries: Entry[]; state: S
         <RowOf key={`${row.kind}-${String(row.seq)}`} row={row} state={state} />
       ))}
       <Saying said={state.live.user} who="caller" />
-      <Saying said={state.live.agent} who="agent" />
+      <Saying said={saying} who="agent" />
       {after}
     </div>
   );
