@@ -11,10 +11,19 @@ const FILE_MODE = 0o600;
 
 const CONFIG = "config.json";
 
-/** One gateway this machine can reach: where it is, what opens it, and whose org that key names. */
+/** The two worlds of an org, as a profile names them. */
+export type World = "sandbox" | "production";
+
+/** The same person's key in each world of one org, as the login minted them. */
+export type Keys = Partial<Record<World, string>>;
+
+/** One org on one gateway: where it is, the keys that open it, and which world is in hand. */
 export interface Profile {
   url: string;
+  /** The key every verb uses: the one of the world `env` names. */
   key: string;
+  /** Both worlds' keys, so moving between them is `pinecall use` and never a second login. */
+  keys?: Keys;
   /** The org the key belongs to, as `whoami` last said it. A label, never a check. */
   org?: string;
   /** The world it opens, likewise: printed, never trusted over what the gateway says. */
@@ -23,9 +32,11 @@ export interface Profile {
   calling?: string;
 }
 
-/** The file: every profile by name, and the one a verb uses when nobody names another. */
+/** The file: every profile by name, the one a verb uses when nobody names another, and the gateway this machine was pointed at. */
 export interface Config {
   active?: string;
+  /** Where `pinecall login` goes when nobody names a URL: `pinecall gateway <url>` writes it. */
+  gateway?: string;
   profiles: Record<string, Profile>;
 }
 
@@ -106,6 +117,16 @@ export function profileFor(named: string | undefined, home: string = pinecallHom
   return name === undefined ? undefined : config.profiles[name];
 }
 
+/** The gateway this machine was pointed at, or nothing — and then it is the cloud's. */
+export function chosenGateway(home: string = pinecallHome()): string | undefined {
+  return readConfig(home).gateway;
+}
+
+/** Point this machine at a gateway, so `pinecall login` and every verb with no key go there. */
+export function chooseGateway(url: string, home: string = pinecallHome()): void {
+  writeConfig({ ...readConfig(home), gateway: url }, home);
+}
+
 /** Which profile is in hand, for a line that says where a verb is about to go. */
 export function activeName(home: string = pinecallHome()): string | undefined {
   return readConfig(home).active;
@@ -126,6 +147,31 @@ export function activate(name: string, home: string = pinecallHome()): boolean {
   config.active = name;
   writeConfig(config, home);
   return true;
+}
+
+/**
+ * Move a profile to one of its worlds, with the key the login already minted for it.
+ *
+ * A person holds a key in each world of an org, and used to hold only the sandbox one: looking at
+ * production from a terminal meant a second profile nobody knew how to make.
+ */
+export function inWorld(name: string, world: World, home: string = pinecallHome()): "moved" | "unknown" | "nokey" {
+  const config = readConfig(home);
+  const profile = config.profiles[name];
+  if (profile === undefined) return "unknown";
+  const key = profile.keys?.[world];
+  if (key === undefined) return "nokey";
+  config.profiles[name] = { ...profile, key, env: world };
+  config.active = name;
+  writeConfig(config, home);
+  return "moved";
+}
+
+/** A name for an org's profile: its slug, and the gateway's host beside it when another gateway took the slug. */
+export function nameForOrg(slug: string, url: string, config: Config): string {
+  const held = config.profiles[slug];
+  if (held === undefined || normalised(held.url) === normalised(url)) return slug;
+  return `${slug}@${new URL(url).host}`;
 }
 
 /**
@@ -214,6 +260,7 @@ function parsedConfig(home: string): Config | undefined {
   if (typeof profiles !== "object" || profiles === null || Array.isArray(profiles)) return undefined;
   const config: Config = { profiles: profiles as Record<string, Profile> };
   if (typeof read["active"] === "string") config.active = read["active"];
+  if (typeof read["gateway"] === "string") config.gateway = read["gateway"];
   return config;
 }
 

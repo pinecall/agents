@@ -1,11 +1,12 @@
 /** `pinecall config` and `pinecall use`: the gateways this machine knows, and which one is in hand. */
 
 import type { Group } from "./groups.js";
-import { activate, activeName, forget, readConfig, type Profile } from "./profiles.js";
+import { activate, activeName, forget, inWorld, readConfig, type Profile, type World } from "./profiles.js";
 
 const USAGE = `usage: pinecall config              the gateways this machine knows
        pinecall config rm <name>    forget one
-       pinecall use <profile>       the one the next verb goes to`;
+       pinecall use <org>           the org the next verb goes to
+       pinecall use <org> <world>   and the world: sandbox, or production`;
 
 export const group: Group = {
   purpose: "the gateways this machine knows, and which one the next verb goes to",
@@ -39,6 +40,7 @@ export async function run(argv: string[], how: Showing = {}): Promise<number> {
   const [named, ...rest] = argv;
   if (named === undefined) return listed(out, how.home);
   if (named === "rm") return dropped(rest[0], out, err, how.home);
+  if (rest[0] !== undefined) return moved(named, rest[0], out, err, how.home);
   return chosen(named, out, err, how.home);
 }
 
@@ -56,7 +58,7 @@ function listed(out: NodeJS.WritableStream, home: string | undefined): number {
   const config = readConfig(home);
   const names = Object.keys(config.profiles).sort();
   if (names.length === 0) {
-    out.write("no gateway yet: `pinecall login <url>`\n");
+    out.write("no gateway yet: `pinecall login`\n");
     return 0;
   }
   const rows = names.map((name) => [
@@ -98,17 +100,36 @@ function chosen(
   return noSuchProfile(name, err, home);
 }
 
+// One login keeps both worlds' keys, so this is a line in a file and never a trip to the gateway.
+function moved(name: string, world: string, out: NodeJS.WritableStream, err: NodeJS.WritableStream, home: string | undefined): number {
+  if (world !== "sandbox" && world !== "production") {
+    err.write(`a world is sandbox or production, not ${world}\n`);
+    return 2;
+  }
+  const answer = inWorld(name, world as World, home);
+  if (answer === "unknown") return noSuchProfile(name, err, home);
+  if (answer === "nokey") {
+    err.write(`${name} holds no ${world} key: \`pinecall login\` again keeps both worlds\n`);
+    return 2;
+  }
+  out.write(`▸ ${name} · ${world}\n`);
+  if (world === "production") out.write("  you look at production from here; what answers its numbers is the box's own key\n");
+  return 0;
+}
+
 /** The one refusal both `use` and `rm` give, naming what this machine does know. */
 function noSuchProfile(name: string, err: NodeJS.WritableStream, home: string | undefined): number {
   const known = Object.keys(readConfig(home).profiles).sort();
-  const has = known.length === 0 ? "none yet: `pinecall login <url>`" : known.join(" · ");
+  const has = known.length === 0 ? "none yet: `pinecall login`" : known.join(" · ");
   err.write(`no profile called ${name}: ${has}\n`);
   return 2;
 }
 
 /** Whose org and which world, as the gateway last said them. A label, never a check. */
 function said(profile: Profile): string {
-  return [profile.org, profile.env].filter((word) => word !== undefined).join(" · ");
+  const other = profile.env === "production" ? "sandbox" : "production";
+  const world = profile.env !== undefined && profile.keys?.[other] !== undefined ? `${profile.env} (and ${other})` : profile.env;
+  return [profile.org, world].filter((word) => word !== undefined).join(" · ");
 }
 
 /** Every column as wide as its widest value: nothing is cut to make a table line up. */

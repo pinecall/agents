@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_URL, noKey } from "../../src/cli/env.js";
+import { CLOUD_URL, noKey } from "../../src/cli/env.js";
 import { linesOf, replayUrl, run, type Answer } from "../../src/cli/eval.js";
 import { onStderr } from "./said.js";
 
@@ -53,7 +53,7 @@ describe("what eval needs before it can ask", () => {
     if (previous.home === undefined) delete process.env["PINECALL_HOME"];
     else process.env["PINECALL_HOME"] = previous.home;
     expect(code).toBe(2);
-    expect(said.text()).toBe(`${noKey(DEFAULT_URL)}\n`);
+    expect(said.text()).toBe(`${noKey(CLOUD_URL)}\n`);
   });
 
   it("asks for a call id rather than evaluating whatever was typed first", async () => {

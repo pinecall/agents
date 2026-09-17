@@ -175,7 +175,7 @@ describe("which gateway a login without one is for", () => {
 
     expect(chosen.url).toBe(CLOUD_URL);
     expect(chosen.assumed).toContain(CLOUD_URL);
-    expect(chosen.assumed).toContain("`pinecall login <url>` for your own box");
+    expect(chosen.assumed).toContain("`pinecall gateway <url>` for your own box");
   });
 
   it("assumes nothing, and says nothing, when a gateway was named", () => {
