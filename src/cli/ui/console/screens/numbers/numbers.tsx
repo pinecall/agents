@@ -4,8 +4,6 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 
 import { GatewayError } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
-import { BASE } from "../../lib/base";
-import { keptKey } from "../../lib/session-key";
 import { useHeldAgents } from "../../lib/use-held-agents";
 import { useWorld } from "../../lib/world";
 import { Adding } from "./adding";
@@ -26,10 +24,10 @@ import {
 import "./numbers.css";
 
 /**
- * In the order a person asks: which numbers ring, and who picks up; how to test by phone from the
- * sandbox; how to add one; and, last, the carrier account they come from. A number answers in one
- * world, so the screen always says which world it is showing, and in the sandbox it shows
- * production's numbers too — they are the ones a developer calls (`pinecall line from`).
+ * In the order a person asks: which numbers ring, and who picks up; how to add one; and, last, the
+ * carrier account they come from. A number answers in one world, so the screen says which world
+ * it is showing. How a developer reaches their own copy by phone is the local console's screen
+ * (phone.tsx): it needs no number of its own.
  */
 export function Numbers(): ReactNode {
   const credentials = useCredentials();
@@ -37,9 +35,7 @@ export function Numbers(): ReactNode {
   const [carrier, setCarrier] = useState<Carrier | null | undefined>(undefined);
   const [doors, setDoors] = useState<Answering[] | null>(null);
   const [available, setAvailable] = useState<Available | null>(null);
-  const [elsewhere, setElsewhere] = useState<Answering[] | null>(null);
   const { world } = useWorld();
-  const other = world === "sandbox" ? "production" : "sandbox";
   const [busy, setBusy] = useState(false);
   const [refused, setRefused] = useState<string | null>(null);
 
@@ -48,10 +44,7 @@ export function Numbers(): ReactNode {
     setCarrier(brought);
     setDoors(answering);
     setAvailable(brought === null ? null : await readAvailable(credentials));
-    // The other world's numbers, read with the key this browser holds for it, when it holds one.
-    const theirs = keptKey(other);
-    setElsewhere(theirs === null ? null : await readNumbers({ base: BASE, key: theirs }).catch(() => null));
-  }, [credentials, other]);
+  }, [credentials]);
 
   useEffect(() => {
     let gone = false;
@@ -81,7 +74,6 @@ export function Numbers(): ReactNode {
 
   const numbered = (doors ?? []).filter((door) => door.route.number !== null);
   const onTheWeb = (doors ?? []).filter((door) => door.route.number === null);
-  const theirs = (elsewhere ?? []).filter((door) => door.route.number !== null);
 
   return (
     <div className="numbers">
@@ -118,25 +110,6 @@ export function Numbers(): ReactNode {
             <p className="numbers-hint">
               Also on the web, with no number needed: {onTheWeb.map((door) => door.route.agent).join(", ")}.
             </p>
-          )}
-        </section>
-      )}
-
-      {world === "sandbox" && (
-        <section className="numbers-doors numbers-callout">
-          <h2 className="numbers-heading">Testing by phone</h2>
-          <p className="numbers-text">
-            You do not need a sandbox number. Tell Pinecall which mobile is yours, keep{" "}
-            <code>pinecall run</code> going, and call a production number from it: <b>your copy answers</b>.
-            Everybody else who calls still reaches production.
-          </p>
-          <pre className="numbers-code fixed">pinecall line from +1XXXXXXXXXX    # once: this mobile is mine{"\n"}pinecall run                       # leave it running, then call the number</pre>
-          {theirs.length > 0 ? (
-            <div className="numbers-cards">
-              {theirs.map((door) => <NumberCard key={door.route.number} door={door} onRemove={null} busy={busy} />)}
-            </div>
-          ) : (
-            <p className="numbers-hint">Switch to production (top right) to see the numbers you can call.</p>
           )}
         </section>
       )}

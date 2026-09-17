@@ -8,10 +8,10 @@ import { GatewayError } from "../../shared/api";
 import { useCredentials } from "../../shared/credentials";
 import { meIn, somebodyElses } from "../lib/corners";
 import { orgsOf, type OrgOf } from "../lib/login";
+import { MODE } from "../lib/mode";
 import { useHeldAgents } from "../lib/use-held-agents";
 import { orgOf, useWhoami } from "../lib/whoami";
 import { useWorld } from "../lib/world";
-import { WorldToggle } from "./world-toggle";
 
 // The screens under an agent that make sense for every agent. A call or a session in the path is
 // one agent's alone, so a move to another agent lands on the screen and drops the id.
@@ -60,9 +60,10 @@ function initialsOf(words: string): string {
  * holds here, each with the copies the team is running, and the org and the world to turn to.
  *
  * Every screen under an agent is `/a/<slug>/…`, and the door behind it answers in the corner this
- * key opens. A developer sees their own copy; an admin sees the team's and, in the sandbox, opens
- * any of them: every request then carries that member's corner (shared/api.ts), and the gateway
- * resolves each door there. Production has one copy, the org's, the one deployed on the box.
+ * key opens. The gateway's console looks at production, which has one copy: the org's, deployed on
+ * the box. A machine's own (`pinecall serve`) looks at the sandbox: a developer sees their own
+ * copy; an admin sees the team's and opens any of them — every request then carries that member's
+ * corner (shared/api.ts), and the gateway resolves each door there.
  */
 export function Viewing({ agent }: { agent: string }): ReactNode {
   const whose = useWhoami();
@@ -136,7 +137,7 @@ export function Viewing({ agent }: { agent: string }): ReactNode {
             {mine !== undefined ? labelOf(mine) : "not running"}
           </span>
         )}
-        <span className={`viewing-world viewing-world-${world}`}>{world}</span>
+        <span className={`viewing-world viewing-world-${world}`}>{MODE === "local" ? `${world} · local` : world}</span>
         {whose !== null && (
           <span className="viewing-avatar" title={`${person} · ${orgOf(whose)}`}>
             {initialsOf(person || orgOf(whose))}
@@ -170,10 +171,12 @@ export function Viewing({ agent }: { agent: string }): ReactNode {
             </section>
           )}
 
-          <section className="viewing-section viewing-where">
-            <OrgPick />
-            <WorldToggle />
-          </section>
+          {/* Another org is another key: the gateway's console mints it, a machine's is its profile's (`pinecall use`). */}
+          {MODE === "hosted" && (
+            <section className="viewing-section viewing-where">
+              <OrgPick />
+            </section>
+          )}
 
           <section className="viewing-section">
             <div className="viewing-heading">
@@ -181,8 +184,14 @@ export function Viewing({ agent }: { agent: string }): ReactNode {
             </div>
             {loaded && slugs.length === 0 && (
               <div className="viewing-empty">
-                Nothing is running here. <span className="fixed">pinecall run</span> in an agent's folder puts it on
-                this list.
+                {MODE === "local" ? (
+                  <>
+                    Nothing is running here. <span className="fixed">pinecall run</span> in a project puts its agents on
+                    this list.
+                  </>
+                ) : (
+                  <>Nothing is deployed here yet: production is held by a process on a box, on a machine key.</>
+                )}
               </div>
             )}
             <ul className="viewing-list">

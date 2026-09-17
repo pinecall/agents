@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useLocation } from "react-router";
 
 import { Brand, Crumbs, ThemeToggle } from "../../shared/frame";
+import { MODE } from "../lib/mode";
 import { Leave } from "./leave";
 import { Viewing } from "./viewing";
 
@@ -17,7 +18,8 @@ export function Header({ agent }: { agent: string }): ReactNode {
       <Crumbs crumbs={crumbs} />
       <div className="head-right">
         <Viewing agent={agent} />
-        <Leave />
+        {/* Nothing to sign out of on a machine's own console: it holds no key. */}
+        {MODE === "hosted" && <Leave />}
         <ThemeToggle />
       </div>
     </>

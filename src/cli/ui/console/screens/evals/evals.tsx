@@ -9,6 +9,7 @@ import { RunDetail } from "./run-detail";
 import { RunTable } from "./run-table";
 import { SuiteForm } from "./suite-form";
 import { useEvalRuns } from "./use-eval-runs";
+import { MODE } from "../../lib/mode";
 import { useScoredCalls } from "../../lib/use-scored-calls";
 import "./evals.css";
 
@@ -22,7 +23,10 @@ export function Evals(): ReactNode {
   const scored = useScoredCalls(agent);
 
   const asked = params.get("view");
-  const view = asked === "calls" || asked === "drift" ? asked : "runs";
+  // Running a suite is the workshop's: it goes through the class in a developer's directory. The
+  // gateway's console reads what production's calls scored, and how that is drifting.
+  const suites = MODE === "local";
+  const view = asked === "calls" || asked === "drift" ? asked : suites ? "runs" : "calls";
   const selected = params.get("run");
   const open = runs.runs.find((run) => run.id === selected) ?? null;
 
@@ -50,10 +54,12 @@ export function Evals(): ReactNode {
           through is a number and not a feeling.
         </p>
         <nav className="tabs" aria-label="View">
-          <button type="button" className={view === "runs" ? "tab is-active" : "tab"} onClick={() => select({ view: null })}>
-            runs
-          </button>
-          <button type="button" className={view === "calls" ? "tab is-active" : "tab"} onClick={() => select({ view: "calls", run: null })}>
+          {suites && (
+            <button type="button" className={view === "runs" ? "tab is-active" : "tab"} onClick={() => select({ view: null })}>
+              runs
+            </button>
+          )}
+          <button type="button" className={view === "calls" ? "tab is-active" : "tab"} onClick={() => select({ view: suites ? "calls" : null, run: null })}>
             calls
           </button>
           <button type="button" className={view === "drift" ? "tab is-active" : "tab"} onClick={() => select({ view: "drift", run: null })}>

@@ -1,8 +1,10 @@
 /** Every URL the console has. Append a route as a screen lands; never reorder — this file is a seam. */
 
-import { createBrowserRouter, Navigate } from "react-router";
+import type { ReactNode } from "react";
+import { createBrowserRouter, Navigate, type RouteObject } from "react-router";
 
 import { BASE } from "./lib/base";
+import { AGENT_SCREENS, MODE, ORG_SCREENS, screensOf, type Screen } from "./lib/mode";
 // One import line per screen, and it is the screen's directory, never a file inside it: a screen
 // that reorganises itself renames nothing here.
 import { Agents } from "./screens/agents";
@@ -14,7 +16,7 @@ import { Keys } from "./screens/keys";
 import { Providers } from "./screens/providers";
 import { Knowledge } from "./screens/knowledge";
 import { Memory } from "./screens/memory";
-import { Numbers } from "./screens/numbers";
+import { Numbers, PhoneTesting } from "./screens/numbers";
 import { Pipeline } from "./screens/pipeline";
 import { Session, Sessions } from "./screens/sessions";
 import { Talk } from "./screens/talk";
@@ -23,6 +25,46 @@ import { Team } from "./screens/team";
 import { Usage } from "./screens/usage";
 import { Widget, WidgetPreview } from "./screens/widget";
 import { Shell } from "./shell/shell";
+
+// The element of every screen, by the key lib/mode.ts lists it under. Which of them THIS console
+// has is that table's answer and not this file's: a row it leaves out gets no route, so a path
+// typed by hand lands on the front page and not on a screen whose doors would refuse.
+const ORG: Record<string, ReactNode> = {
+  agents: <Agents />,
+  live: <FloorLive />,
+  sessions: <FloorSessions />,
+  numbers: <Numbers />,
+  phone: <PhoneTesting />,
+  keys: <Keys />,
+  providers: <Providers />,
+  team: <Team />,
+  usage: <Usage />,
+};
+
+const AGENT: Record<string, ReactNode> = {
+  talk: <Talk />,
+  chat: <Chat />,
+  calls: <Calls />,
+  sessions: <Sessions />,
+  pipeline: <Pipeline />,
+  knowledge: <Knowledge />,
+  memory: <Memory />,
+  evals: <Evals />,
+  widget: <Widget />,
+};
+
+// A call in the path is the conversation, the call being watched, or the session read: the same
+// screen one level deeper.
+const DEEPER: Record<string, ReactNode> = { chat: <Chat />, calls: <Calls />, sessions: <Session /> };
+
+function routesOf(table: readonly Screen[], elements: Record<string, ReactNode>): RouteObject[] {
+  return screensOf(table).flatMap((screen): RouteObject[] => {
+    const element = elements[screen.key];
+    if (screen.path === "") return [{ index: true, element }];
+    const deeper = elements === AGENT ? DEEPER[screen.key] : undefined;
+    return deeper === undefined ? [{ path: screen.path, element }] : [{ path: screen.path, element }, { path: `${screen.path}/:call`, element: deeper }];
+  });
+}
 
 // The URL is the state: which agent, which screen, and later which call. Nothing the console holds
 // in memory decides what is on screen, so a reload lands on exactly the same thing. The org's
@@ -33,38 +75,16 @@ export const router = createBrowserRouter(
       path: "/",
       element: <Shell />,
       children: [
-        { index: true, element: <Agents /> },
-        { path: "live", element: <FloorLive /> },
-        { path: "sessions", element: <FloorSessions /> },
-        { path: "numbers", element: <Numbers /> },
-        { path: "keys", element: <Keys /> },
-        { path: "providers", element: <Providers /> },
-        { path: "team", element: <Team /> },
-        { path: "usage", element: <Usage /> },
-        // Where `pinecall login` sends a person: the card that signs their terminal in.
-        { path: "cli", element: <Terminal /> },
+        ...routesOf(ORG_SCREENS, ORG),
+        // Where `pinecall login` sends a person: the card that signs their terminal in. The
+        // gateway's alone — a machine that serves its own console is signed in already.
+        ...(MODE === "hosted" ? [{ path: "cli", element: <Terminal /> }] : []),
       ],
     },
     {
       path: "/a/:agent",
       element: <Shell />,
-      children: [
-        { index: true, element: <Navigate to="talk" replace /> },
-        { path: "talk", element: <Talk /> },
-        { path: "chat", element: <Chat /> },
-        // A call in the path is the conversation this page is having; without it, a new one opens.
-        { path: "chat/:call", element: <Chat /> },
-        { path: "calls", element: <Calls /> },
-        // A call in the path is the one being watched; without it, Calls watches every live call.
-        { path: "calls/:call", element: <Calls /> },
-        { path: "sessions", element: <Sessions /> },
-        { path: "sessions/:call", element: <Session /> },
-        { path: "pipeline", element: <Pipeline /> },
-        { path: "knowledge", element: <Knowledge /> },
-        { path: "memory", element: <Memory /> },
-        { path: "evals", element: <Evals /> },
-        { path: "widget", element: <Widget /> },
-      ],
+      children: [{ index: true, element: <Navigate to="talk" replace /> }, ...routesOf(AGENT_SCREENS, AGENT)],
     },
     // A blank page with nothing but the widget on it, the way a site would have it: outside the
     // shell, the same key.

@@ -1,14 +1,12 @@
-/** Which world this tab looks at, and how it turns to the other one: one context the toggle drives. */
+/** Which world this console looks at, whose copy, and the move to another org: one context the header reads. */
 
 import { createContext, useContext, type ReactNode } from "react";
 
 import type { World } from "./session-key";
 
-/** The world on screen, the one move that changes it, and the move to another org of the person's. */
+/** The world on screen — the console's mode decides it (lib/mode.ts) — and the move to another org of the person's. */
 export interface Worlds {
   world: World;
-  /** Turn to the other world: a kept key, or one minted for the same person. Rejects with the refusal. */
-  turnTo: (world: World) => Promise<void>;
   /** Move to another org the person belongs to: a key minted for them there, and the console reopened on it. */
   moveTo: (org: string) => Promise<void>;
   /** Whose sandbox copy the doors answer for: a colleague's member id, or null for one's own. */

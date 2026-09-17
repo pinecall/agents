@@ -1,11 +1,14 @@
 /** The widget as this gateway serves it, loaded once, and one tag mounted with this key minting its tokens. */
 
 import { post, type Credentials } from "../../../shared/api";
+import { gatewayOrigin } from "../../lib/mode";
 
 // The gateway is the CDN: the runtime copies the widget in beside the console (scripts/console)
 // and serves it with the CORS header a module script needs, so a site embeds this very URL.
+// On a machine's own console the gateway is elsewhere, and a site must never be handed a
+// localhost URL: the tag names the gateway either way.
 export function widgetUrl(): string {
-  return `${window.location.origin}/widget/pinecall-widget.js`;
+  return `${gatewayOrigin()}/widget/pinecall-widget.js`;
 }
 
 let loading: Promise<void> | null = null;

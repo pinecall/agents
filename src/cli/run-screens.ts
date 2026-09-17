@@ -145,7 +145,7 @@ function onKey(handle: (key: string) => void): () => void {
 
 // The verb ends when the process is signalled, not when a promise settles: it registers an
 // agent and then has nothing left to do but stay reachable.
-function forever(): Promise<void> {
+export function forever(): Promise<void> {
   return new Promise<void>((done) => {
     process.once("SIGINT", () => done());
     process.once("SIGTERM", () => done());

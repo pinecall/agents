@@ -10,7 +10,7 @@ import { withoutTheProfileFlag } from "./profiles.js";
 // The order this table is written is the order the help prints: run and chat first, because
 // they are what a person types on the first day, and the planned groups after, in the design's
 // order. run is rails server and chat is rails console — see docs/decisions/tenant-cli.md.
-const BUILT = ["run", "chat", "prompt", "test", "simulate", "eval", "sessions", "runs", "pipeline", "line", "numbers", "personas", "knowledge", "memory", "remember", "supervise", "keys", "providers", "callbacks", "signup", "login", "whoami", "config", "use"] as const;
+const BUILT = ["run", "serve", "chat", "prompt", "test", "simulate", "eval", "sessions", "runs", "pipeline", "line", "numbers", "personas", "knowledge", "memory", "remember", "supervise", "keys", "providers", "callbacks", "signup", "login", "whoami", "config", "use"] as const;
 
 /** Everything `pinecall` answers to, built and planned alike, in the order help prints them. */
 export function groupNames(): string[] {
@@ -65,6 +65,7 @@ export async function main(
 // websocket client that `run` needs, and a stub must not pay for anything at all.
 export async function groupFor(name: string, out: NodeJS.WritableStream = process.stdout): Promise<Group | undefined> {
   if (name === "run") return (await import("./run.js")).group;
+  if (name === "serve") return (await import("./serve.js")).group;
   if (name === "chat") return (await import("./chat.js")).group;
   if (name === "prompt") return (await import("./prompt.js")).group;
   if (name === "test") return (await import("./test.js")).group;
@@ -103,6 +104,7 @@ export function usage(): string {
     "usage: pinecall <group> [args]",
     "",
     "  run       the app and its doors: the process you deploy",
+    "  serve     the sandbox's console on this machine: your copies, http://localhost:4100",
     "  chat      the app in this terminal's own process, and a prompt against it",
     "  prompt    the exact prompt a state would produce, offline",
     "  test      ring 1: the goldens, through the app in this terminal's own process",
@@ -111,7 +113,7 @@ export function usage(): string {
     "  sessions  list | show a call's log, with what it cost and how it was judged",
     "  runs      list | show | diff the suites, promote a call, and watch the drift",
     "  pipeline  what the agent hears, decides and speaks with, and the knobs over it",
-    "  line      whose terminal a call at the org's shared sandbox number rings in",
+    "  line      which phone is yours, and whose terminal anybody else's call rings in",
     "  numbers   list | import | move | drop the numbers the org answers at",
     "  personas  list | show | try the synthetic callers in test/personas",
     "  knowledge push | list | drop the knowledge base the agent answers from",

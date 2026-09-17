@@ -5,7 +5,6 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { GatewayError } from "../../../shared/api";
 import "../../shell/shell.css";
 import { loginWithPassword, type Signed } from "../../lib/login";
-import { WORLDS, saidWorld, type World } from "../../lib/session-key";
 
 /**
  * The one screen shown with no key, and it signs a person IN and nothing else.
@@ -14,17 +13,15 @@ import { WORLDS, saidWorld, type World } from "../../lib/session-key";
  * already exists, it ships inside the runtime every self-hoster serves, and a registration form
  * in it would be one flag away from open registration on somebody else's box. So the way in is
  * `pinecall signup` or `POST /v1/signup`, and what arrives here is a person who has a key, a
- * password, or an invitation. A `pinecall run` prints a URL with a one-use code that skips even
- * this card (lib/login.ts). The refusal is the gateway's sentence, verbatim: one for every wrong
+ * password, or an invitation. It signs in to PRODUCTION: this is the gateway's console, and the
+ * sandbox is watched on a developer's own machine (`pinecall serve`), where nothing signs in. A
+ * production `pinecall run` prints a URL with a one-use code that skips even this card (lib/login.ts). The refusal is the gateway's sentence, verbatim: one for every wrong
  * thing, by design — a door that told them apart would tell a stranger which orgs exist.
  */
 export function Login({ base, onSigned }: { base: string; onSigned: (signed: Signed) => void }): ReactNode {
   const [org, setOrg] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  // The sandbox unless this browser last looked at production: the person signing in here is
-  // most often a developer about to open the copy their terminal runs, and that copy is there.
-  const [world, setWorld] = useState<World>(() => saidWorld() ?? "sandbox");
   const [busy, setBusy] = useState(false);
   const [refused, setRefused] = useState<string | null>(null);
 
@@ -33,7 +30,7 @@ export function Login({ base, onSigned }: { base: string; onSigned: (signed: Sig
     setBusy(true);
     setRefused(null);
     try {
-      onSigned(await loginWithPassword(base, { org: org.trim(), email: email.trim(), password, env: world }));
+      onSigned(await loginWithPassword(base, { org: org.trim(), email: email.trim(), password, env: "production" }));
     } catch (failed) {
       setRefused(failed instanceof GatewayError ? failed.message : String(failed));
     } finally {
@@ -84,22 +81,6 @@ export function Login({ base, onSigned }: { base: string; onSigned: (signed: Sig
               placeholder="the oldest of yours when left empty"
             />
           </label>
-          <div className="way-field">
-            <span className="way-label">world</span>
-            <span className="world-switch way-world fixed" role="group" aria-label="which world">
-              {[...WORLDS].reverse().map((one) => (
-                <button
-                  key={one}
-                  type="button"
-                  className={one === world ? "world-option world-option-here" : "world-option"}
-                  onClick={() => setWorld(one)}
-                  aria-pressed={one === world}
-                >
-                  {one}
-                </button>
-              ))}
-            </span>
-          </div>
         </div>
 
         <button className="way-go" type="submit" disabled={busy}>
@@ -113,7 +94,8 @@ export function Login({ base, onSigned }: { base: string; onSigned: (signed: Sig
             Invited and no password yet? Open the link in your invitation — it is where you choose one.
           </p>
           <p>
-            Running the agent in a terminal? <code>pinecall run</code> prints a URL that signs you in.
+            Looking for the copy your terminal runs? That is the sandbox, on your own machine:{" "}
+            <code>pinecall serve</code>.
           </p>
         </div>
       </form>

@@ -25,9 +25,11 @@ export class GatewayError extends Error {
   }
 }
 
+// A page with no key is the local console: `pinecall serve` signs what it forwards, so the page
+// sends no authorization at all rather than an empty one.
 /** The headers every request carries: the key, as a Bearer. This is the one line that spells it. */
 export function headersFor(credentials: Credentials): Record<string, string> {
-  const headers: Record<string, string> = { authorization: `Bearer ${credentials.key}` };
+  const headers: Record<string, string> = credentials.key === "" ? {} : { authorization: `Bearer ${credentials.key}` };
   // The gateway resolves every door in that member's corner, and refuses a key that may not.
   if (credentials.corner) headers["pinecall-corner"] = credentials.corner;
   return headers;

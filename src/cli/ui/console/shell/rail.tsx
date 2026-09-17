@@ -4,41 +4,17 @@ import type { ReactNode } from "react";
 import { NavLink } from "react-router";
 
 import { RailGroup, RailLink } from "../../shared/frame";
+import { AGENT_SCREENS, MODE, ORG_SCREENS, screensOf } from "../lib/mode";
 import { opens } from "../lib/scopes";
 import { bySlug, meIn } from "../lib/corners";
 import { useHeldAgents } from "../lib/use-held-agents";
 import { useWhoami } from "../lib/whoami";
 import { useScopes } from "../lib/whoami";
 
-// The gateway's layer first: what is true across every agent, and where `/` lands.
-const ORG_SCREENS = [
-  { path: "", key: "agents", name: "Overview" },
-  { path: "live", key: "live", name: "Live" },
-  { path: "sessions", key: "sessions", name: "Sessions" },
-  { path: "numbers", key: "numbers", name: "Numbers" },
-  { path: "keys", key: "keys", name: "Keys" },
-  { path: "providers", key: "providers", name: "Providers" },
-  { path: "team", key: "team", name: "Team" },
-  { path: "usage", key: "usage", name: "Usage" },
-] as const;
-
-// Talk first: it is the screen a person opens an agent for. The rest read the same log.
-const AGENT_SCREENS = [
-  { path: "talk", name: "Talk" },
-  { path: "chat", name: "Chat" },
-  { path: "calls", name: "Calls" },
-  { path: "sessions", name: "Sessions" },
-  { path: "pipeline", name: "Pipeline" },
-  { path: "knowledge", name: "Knowledge" },
-  { path: "memory", name: "Memory" },
-  { path: "evals", name: "Evals" },
-  { path: "widget", name: "Widget" },
-] as const;
-
 /**
  * The gateway, then its agents. Every agent the gateway holds is a row; the one whose screen
  * this is stands open, its screens indented under it, so the rail reads as the thing it is: one
- * gateway, holding agents, each with the same eight screens. It used to draw the agent's screens
+ * gateway, holding agents, each with the same screens. Which screens there are is lib/mode.ts. It used to draw the agent's screens
  * ABOVE the gateway's, as if the agent held the gateway (2026-09-16).
  */
 export function Rail({ agent }: { agent: string }): ReactNode {
@@ -53,8 +29,8 @@ export function Rail({ agent }: { agent: string }): ReactNode {
 
   return (
     <>
-      <RailGroup label="Gateway">
-        {ORG_SCREENS.filter((screen) => open(screen.key)).map((screen) => (
+      <RailGroup label={MODE === "local" ? "Sandbox" : "Gateway"}>
+        {screensOf(ORG_SCREENS).filter((screen) => open(screen.key)).map((screen) => (
           <RailLink
             key={screen.key}
             to={`/${screen.path}`}
@@ -76,7 +52,7 @@ export function Rail({ agent }: { agent: string }): ReactNode {
               </NavLink>
               {here && (
                 <div className="rail-sub">
-                  {AGENT_SCREENS.filter((screen) => open(screen.path)).map((screen) => (
+                  {screensOf(AGENT_SCREENS).filter((screen) => open(screen.key)).map((screen) => (
                     <RailLink key={screen.path} to={`/a/${agent}/${screen.path}`} name={screen.name} />
                   ))}
                 </div>
