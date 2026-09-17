@@ -91,13 +91,13 @@ proved who you are.
 
 ```console
 $ pinecall login
-gateway  https://box.pinecall.io   (the default — `pinecall login <url>` for your own box)
+gateway  https://box.pinecall.io   (the default — `pinecall gateway <url>` for your own box)
 
 open this to sign in:
 https://box.pinecall.io/cli?c=cli_…
 
 waiting…
-▸ box · https://box.pinecall.io · org tienda-sur · sandbox
+▸ tienda-sur · https://box.pinecall.io · sandbox (and production)
 ```
 
 **With no URL it is the cloud, and it says so** in the line above the link, before anything is
@@ -105,9 +105,12 @@ kept. The word in the link dies in ten minutes and on first collection — open 
 second time says so. A terminal on a server with no browser prints the same link, and you open it
 from your phone: that is why it is a printed link and not a port on localhost.
 
-What it keeps is that machine's **sandbox** key, and `pinecall serve` is where what it holds is
-watched. Production is the gateway's console, signed in to with the password; `pinecall keys issue`
-is how a box gets a key there.
+What it keeps is **a profile per org you belong to, with your key in both worlds**, and the
+sandbox one in hand: `pinecall run` and `pinecall chat` answer in a world of your own, and
+`pinecall serve` is where that is watched. `pinecall use <org>` moves between orgs and `pinecall use
+<org> production` looks at production from the terminal — sessions, numbers, keys — with no second
+login. Looking is all a person does there: `pinecall keys issue` is how a BOX gets the key that
+runs the agent in production.
 
 **A person is their email, and may belong to several orgs.** One password is theirs across every
 org they are in, whichever org it was chosen in, and an email is matched trimmed and lower-cased,
@@ -117,9 +120,8 @@ password, and then offers the workspaces those open when they belong to several 
 link from the Team screen. It
 signs in to production, and the key is kept by that browser, so a second tab is the same person.
 The console's workspace menu and its switcher then move between their orgs (`GET /v1/login/orgs` lists them, `POST
-/v1/login/org` mints the same person's key in the one they pick). A terminal moves between orgs by
-profile — `pinecall use` — and `POST /v1/login/env` is how `pinecall login` turns the key a person
-signed in with into their sandbox one. A machine key names nobody, so it has no orgs to switch
+/v1/login/org` mints the same person's key in the one they pick). A terminal holds the same: `pinecall login` asks those two doors and `POST /v1/login/env` once, and
+keeps a profile per org with both worlds' keys, so `pinecall use <org> [production]` is the move. A machine key names nobody, so it has no orgs to switch
 between and opens one world.
 
 A machine has no browser and no person: `--key-stdin` reads a key from one line of stdin, and in
@@ -247,7 +249,7 @@ call. The door and its guards: the runtime's `docs/protocol/console-api.md` §4.
 - **The gateway's console says `no agent called … is held here`.** It shows production, and what
   your laptop holds is in the sandbox: `pinecall serve`, and look at `http://localhost:4100`.
 - **`pinecall serve` refused the key.** It is a production key; the sandbox is a person's. `pinecall
-  use <profile>` for the one `pinecall login` kept — `pinecall config` lists them.
+  use <org> sandbox` for the one `pinecall login` kept — `pinecall config` lists them.
 - **A verb answered for an org you did not expect.** It cannot be an export any more — the CLI
   reads none — so it is the active profile. `pinecall config` says which one, `pinecall use`
   moves it, and `pinecall whoami` says which key that is and in which world.

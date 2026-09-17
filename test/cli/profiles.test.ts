@@ -153,7 +153,7 @@ describe("`pinecall config` and `pinecall use`", () => {
 
     await run([], { out: out.stream, home });
 
-    expect(out.text()).toBe("no gateway yet: `pinecall login <url>`\n");
+    expect(out.text()).toBe("no gateway yet: `pinecall login`\n");
   });
 
   it("moves the mark, and names the ones there are when the word is not one", async () => {

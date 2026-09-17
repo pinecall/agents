@@ -41,6 +41,6 @@ describe("the verb's shape", () => {
     const err = written();
 
     expect(await run(["move", A_NUMBER], { err: err.stream, env: { PINECALL_HOME: "/nowhere" } })).toBe(1);
-    expect(err.text()).toContain("no gateway");
+    expect(err.text()).toContain("not signed in to");
   });
 });

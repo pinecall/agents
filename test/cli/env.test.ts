@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { DEFAULT_URL, doorFrom, doorLine, noKey, theDoor } from "../../src/cli/env.js";
+import { CLOUD_URL, doorFrom, doorLine, noKey, theDoor } from "../../src/cli/env.js";
 import { writeProfile } from "../../src/cli/profiles.js";
 import { written } from "./said.js";
 
@@ -42,19 +42,21 @@ describe("the door a verb is handed", () => {
 describe("a machine that knows no gateway", () => {
   it("is nothing at all, rather than a default key from somewhere", () => {
     expect(doorFrom({ PINECALL_HOME: home })).toEqual({
-      url: DEFAULT_URL,
+      url: CLOUD_URL,
       apiKey: undefined,
       source: "none",
     });
   });
 
-  // Two environment names is what it used to say, and neither of them was the fix.
+  // Two environment names is what it used to say, and neither of them was the fix. Nor is a URL:
+  // the cloud is the default, so the verb that fixes it is one word.
   it("is told the verb that fixes it, and the one that lists what is already kept", () => {
     const said = written();
 
     expect(theDoor({ PINECALL_HOME: home }, said.stream)).toBeUndefined();
-    expect(said.text()).toBe(`${noKey(DEFAULT_URL)}\n`);
-    expect(said.text()).toContain("pinecall login http://localhost:8080");
+    expect(said.text()).toBe(`${noKey(CLOUD_URL)}\n`);
+    expect(said.text()).toContain("`pinecall login`");
+    expect(said.text()).toContain("pinecall gateway <url>");
     expect(said.text()).toContain("pinecall config");
   });
 

@@ -6,7 +6,22 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Added
+- **`pinecall gateway [url]`** — where this machine is pointed, and one word to point it somewhere
+  else. Every verb goes to `https://box.pinecall.io` until it says otherwise, so a person on the
+  cloud types `pinecall login` and nothing else; a box of your own is named ONCE and every verb
+  after it goes there. A URL on `pinecall login` still wins for that one command.
+
+- **One login keeps every org and both worlds.** `pinecall login` writes a profile per org the
+  person belongs to, named after the org, each holding their sandbox AND production key (the
+  gateway mints them from the one in hand). `pinecall use <org>` moves between orgs and `pinecall
+  use <org> production|sandbox` between worlds, with no second login; `pinecall config` says which
+  worlds a profile holds. A person still only LOOKS at production: `app` there is a machine's key.
+
 ### Changed
+- **A machine with no profile is on the cloud, not on localhost.** `pinecall login` with no URL was
+  already the cloud's; now the same is true of every verb that runs before a key is kept, and the
+  refusal says *not signed in to <gateway>* with the one-word verb that fixes it.
 - **The console, redesigned.** One light theme in Inter, its colours in one file
   (`ui/tokens.css`) and its parts in `ui/` — page, card, stat, grid table, controls, pill, icons
   drawn in the repo. A sidebar in three groups (Agents, Gateway or Sandbox, Settings) with live and

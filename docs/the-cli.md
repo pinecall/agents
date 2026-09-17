@@ -46,6 +46,7 @@ path end to end, with every output under it.
 | [`keys`](#keys) | the API keys this org's machines run on: issue, list, revoke | yes |
 | [`providers`](#providers) | every vendor this build runs, and the keys this org brought | yes |
 | [`signup`](#signup) | an org on Pinecall's cloud, and its first key kept here | no, it makes one |
+| [`gateway`](#gateway) | which gateway this machine talks to; the cloud until you point it elsewhere | no |
 | [`login`](#login) · [`whoami`](#whoami) | the key, once, and which one is being used | yes |
 
 Declared and not written: `new`, `g`, `observe`, `costs`, `call`, `tokens`, `agents`,
@@ -705,9 +706,10 @@ be one flag away from open registration on somebody else's box.
 
 ```
 pinecall login [gateway-url] [--as <profile>] [--key-stdin]
+pinecall gateway [url]
 pinecall config
 pinecall config rm <name>
-pinecall use <profile>
+pinecall use <org> [sandbox|production]
 pinecall whoami
 ```
 
@@ -719,34 +721,50 @@ does not change.
 
 ```console
 $ pinecall login
-gateway  https://box.pinecall.io   (the default — `pinecall login <url>` for your own box)
+gateway  https://box.pinecall.io   (the default — `pinecall gateway <url>` for your own box)
 
 open this to sign in:
 https://box.pinecall.io/cli?c=cli_…
 
 waiting…
-▸ box · https://box.pinecall.io · org clinica · sandbox
+▸ clinica · https://box.pinecall.io · sandbox (and production)
+  tienda-sur · https://box.pinecall.io · sandbox (and production)
+  `pinecall use <org>` moves between them; `pinecall use <org> production` looks at production
 ```
 
-**With no URL it is `https://box.pinecall.io`, and it says so** in the line above the link, so a
-person who meant their own box sees the assumption before anything is kept. The word in the link
-dies in ten minutes and on first collection; a terminal on a server with no browser prints the same
-link and you open it from wherever you are. The key is kept as a **profile** in
-`~/.pinecall/config.json` (0600), named after the gateway's host — `--as` names it yourself —
-proved at `/v1/whoami` before it is written, and made the active one. After that every verb finds
-it by itself, and `pinecall use` is how you point them somewhere else:
+**With no URL it is the gateway this machine is pointed at** — `https://box.pinecall.io` until
+[`pinecall gateway <url>`](#gateway) says otherwise — and it says which in the line above the link,
+so a person who meant their own box sees the assumption before anything is kept. The word in the
+link dies in ten minutes and on first collection; a terminal on a server with no browser prints the
+same link and you open it from wherever you are.
+
+**One login keeps everything a person holds.** A **profile per org** they belong to, named after
+the org, each with the key of **both worlds** — the gateway mints the rest from the key in hand
+(`POST /v1/login/org`, `POST /v1/login/env`), so there is no second login for a second org and none
+to look at production. Every key is proved at `/v1/whoami` before it is written; the org signed in
+to is the active one, in the sandbox. `--as <name>` keeps ONE profile under a name of yours, which
+is what a machine's key wants (`--key-stdin`).
 
 ```console
 $ pinecall config
-▸ box      https://box.pinecall.io  clinica · sandbox
-  stg      https://stg.acme.io      clinica · production
+▸ clinica     https://box.pinecall.io  clinica · sandbox (and production)
+  tienda-sur  https://box.pinecall.io  tienda-sur · sandbox (and production)
 
-$ pinecall use stg
-▸ stg
+$ pinecall use tienda-sur              # another org
+▸ tienda-sur
 
-$ pinecall config rm stg
-forgot stg
+$ pinecall use tienda-sur production   # and its other world
+▸ tienda-sur · production
+  you look at production from here; what answers its numbers is the box's own key
+
+$ pinecall config rm tienda-sur
+forgot tienda-sur
 ```
+
+Moving is a line in a file and never a trip to the gateway. **In production a person LOOKS** —
+`sessions`, `numbers`, `keys`, `providers`, `supervise` — **and in the sandbox they RUN**: a
+person's key never opens `app` in production, so no laptop answers the org's numbers by accident.
+What runs there is a machine's key ([`keys issue`](#keys)) on the box.
 
 `config` prints no key. What a listing may say about one is that it is there. `config rm` takes a
 row out — a gateway that has moved, a key that was revoked — and takes the active mark with it

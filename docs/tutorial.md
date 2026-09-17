@@ -27,7 +27,8 @@ In another terminal, sign this one in. The password is typed in a browser and ne
 and what the terminal keeps is a key of its own, labelled as this machine and revoked on its own:
 
 ```
-pinecall login http://127.0.0.1:8080
+pinecall gateway http://127.0.0.1:8080   # once: this machine talks to your own box
+pinecall login
 pinecall whoami                    # which org, which world, where the key came from
 ```
 

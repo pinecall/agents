@@ -1,13 +1,13 @@
 /** Where the CLI is pointed and what opens the door: the one place that decides both, for every verb. */
 
 import { pinecallHome } from "./credentials.js";
-import { profileFor, theChosenProfile } from "./profiles.js";
+import { chosenGateway, profileFor, theChosenProfile } from "./profiles.js";
 
-/** The gateway a developer runs on their own machine, which is where `pinecall run` starts. */
-export const DEFAULT_URL = "http://localhost:8080";
-
-/** Pinecall's own cloud: where `pinecall signup` makes an org when no other gateway is named. */
+/** Pinecall's own cloud: where every verb goes until `pinecall gateway <url>` says otherwise. */
 export const CLOUD_URL = "https://box.pinecall.io";
+
+/** The gateway a developer runs on their own machine: what `pinecall gateway` is for. */
+export const OWN_BOX_URL = "http://localhost:8080";
 
 /** Where the key came from, so a verb can say it and a person can check it without grepping. */
 export type Source = "profile" | "none";
@@ -45,7 +45,10 @@ export function doorFrom(
   profile: string | undefined = theChosenProfile(),
 ): Found {
   const chosen = profileFor(profile, home);
-  if (chosen === undefined) return { url: DEFAULT_URL, apiKey: undefined, source: "none" };
+  // No profile yet: the gateway is whichever this machine was pointed at, and the cloud until
+  // somebody points it elsewhere. A localhost default sent every first verb at a box that is not
+  // running, and the refusal read as the CLI being broken.
+  if (chosen === undefined) return { url: chosenGateway(home) ?? CLOUD_URL, apiKey: undefined, source: "none" };
   return { url: chosen.url, apiKey: chosen.key, source: "profile" };
 }
 
@@ -62,11 +65,11 @@ export function theDoor(
   return { url: found.url, apiKey: found.apiKey, source: found.source };
 }
 
-/** What to say when this machine knows no gateway: the verb that fixes it, and CI's way in. */
+/** What to say when this machine holds no key: the verb that fixes it, and where it would go. */
 export function noKey(url: string): string {
   return (
-    `no gateway: \`pinecall login ${url}\`, or \`pinecall use <profile>\` for one already kept`
-    + " (`pinecall config` lists them)"
+    `not signed in to ${url}: \`pinecall login\`, \`pinecall gateway <url>\` for another gateway,`
+    + " or `pinecall use <profile>` for one already kept (`pinecall config` lists them)"
   );
 }
 
