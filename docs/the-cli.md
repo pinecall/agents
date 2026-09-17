@@ -197,6 +197,12 @@ your change and be answered in a colleague's scrollback, with nothing on either 
 **Say which phone is yours, once.** Then every call you make lands in your own agent: no claim, no
 coordination, three of you testing at the same time.
 
+**It works on the production number too.** A call from your phone to a number that answers in
+production reaches your sandbox copy while you are holding that agent — your class, your tools,
+your terminal, a sandbox log marked `diverted_from: production` — and every other caller reaches
+production exactly as before. Stop `pinecall run`, or `pinecall line forget`, and your own calls go
+back to production. That is how a team tests on the line its customers use, with one number.
+
 ```console
 $ pinecall line from +59899111111
 calls from +59899111111 reach this terminal

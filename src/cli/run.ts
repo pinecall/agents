@@ -227,14 +227,13 @@ export function whyNoConsole(refused: unknown): string {
 // worth failing the run over: a gateway that refuses says so on its own line and the app runs on.
 async function onceUp(door: Door, slug: string, rings: boolean): Promise<string[]> {
   const said = [await consoleLine(door, slug)];
-  if (rings) {
-    // The gateway keeps whose phone is whose beside its live table and not in a row, because it
-    // is only meaningful next to a socket. So every connect says it again: a restarted gateway,
-    // or one this terminal has never told, learns it here rather than routing the person's own
-    // test call into a colleague's terminal.
-    await sayWhoCallsFromHere(door);
-    said.push(await lineLine(door, slug));
-  }
+  // The gateway keeps whose phone is whose beside its live table and not in a row, because it is
+  // only meaningful next to a socket. So every connect says it again — for every agent, and not
+  // only one that declares a number: a production number is the box's route and no class declares
+  // it, yet a developer's own phone dialling it reaches their copy (the runtime's rings-for door).
+  // A restarted gateway learns it here rather than sending the person's test call to production.
+  await sayWhoCallsFromHere(door);
+  if (rings) said.push(await lineLine(door, slug));
   return said;
 }
 
