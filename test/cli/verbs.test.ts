@@ -2,15 +2,16 @@
 // console is, and binds no port on this machine — the gateway serves the page.
 
 import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import { builtNames, groupFor, groupNames, main } from "../../src/cli/index.js";
+import { builtNames, groupFor, groupNames, main, usage } from "../../src/cli/index.js";
 import { PLANNED } from "../../src/cli/groups.js";
 import { Refused } from "../../src/cli/testing/gateway.js";
 import { connectedLine, doorsOf } from "../../src/cli/connected.js";
-import { consoleUrl, run, whyNoConsole } from "../../src/cli/run.js";
+import { run } from "../../src/cli/run.js";
+import { consoleUrl, whyNoConsole } from "../../src/cli/run-console.js";
 
 const GATEWAY = "https://box.pinecall.io";
 
@@ -102,13 +103,15 @@ describe("the console's URL `pinecall run` prints", () => {
 });
 
 describe("`pinecall run` opens no port", () => {
-  // The agent's process serves no UI at all: the gateway serves the console, so nothing under the
-  // tenant's CLI listens for a connection. A grep is the honest test of that — a suite cannot
-  // prove the absence of a socket, and this catches the file that would bring one back.
-  it("has nothing under cli/ that binds one", () => {
+  // The agent's process serves no UI: the one thing under the tenant's CLI that listens for a
+  // connection is the sandbox's console, `pinecall serve`, in src/cli/serve/ — and `run` reaches
+  // it only when `--serve` asks. A grep is the honest test of that — a suite cannot prove the
+  // absence of a socket, and this catches the file that would bring a second one in.
+  it("has nothing under cli/ that binds one, but the sidecar", () => {
     const cli = fileURLToPath(new URL("../../src/cli/", import.meta.url));
+    const sidecar = join(cli, "serve") + sep;
 
-    for (const file of sources(cli)) {
+    for (const file of sources(cli).filter((one) => !one.startsWith(sidecar))) {
       const source = readFileSync(file, "utf8");
       expect(`${file}: ${source.includes("createServer")}`).toBe(`${file}: false`);
       expect(`${file}: ${/\.listen\(/.test(source)}`).toBe(`${file}: false`);
@@ -121,25 +124,14 @@ describe("`pinecall run` opens no port", () => {
   });
 });
 
-// `serve` promised a port and a server; the agent opens one outbound socket and listens on
-// nothing, so the verb was renamed on 2026-09-08 (docs/decisions/tenant-cli.md). Rename, not
-// alias: nothing was published and nobody had a .env, and an alias today is a deprecation
-// carried forever. This pins that the old word is gone and that the answer names the new one.
-describe("`serve` is not a verb of this CLI", () => {
-  it("is refused, and the usage a person is handed names `run`", async () => {
-    const out = collected();
-    const err = collected();
-
-    const code = await main(["serve"], out.stream, err.stream);
-
-    expect(code).toBe(2);
-    expect(err.text()).toContain("no such group: serve");
-    expect(err.text()).toContain("run       the app and its doors: the process you deploy");
-  });
-
-  it("is not a group the CLI declares, planned or built", () => {
-    expect(groupNames()).not.toContain("serve");
-    expect(groupNames()).toContain("run");
+// `serve` was this verb's first name and was taken from it on 2026-09-08, because it promised a
+// port and the agent listens on nothing. The word came back on 2026-09-17 for the thing that DOES
+// bind one: the sandbox's console on this machine. `run` is still the process you deploy.
+describe("`serve` is the console, and `run` is the app", () => {
+  it("declares both, each saying which it is", () => {
+    expect(groupNames()).toContain("serve");
+    expect(usage()).toContain("run       the app and its doors: the process you deploy");
+    expect(usage()).toContain("serve     the sandbox's console on this machine");
   });
 });
 

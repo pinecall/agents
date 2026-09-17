@@ -12,13 +12,13 @@ import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { callsFrom, describing, theLine } from "./line.js";
 import { connectedLine, doorsOf } from "./connected.js";
-import { cannotTell, ENV_FLAG, notThisWorld, standing } from "./world.js";
+import { cannotTell, ENV_FLAG, notThisWorld, PRODUCTION, standing } from "./world.js";
 import { orgOf, type Who } from "./whoami.js";
 import { callingFrom } from "./profiles.js";
 import { agentFilesOfTheProject, instanceFor, load, mountOptions } from "./load.js";
 import { AGENT_FLAG, homesFor } from "./home.js";
 import { goldensOf } from "./testing/goldens.js";
-import { asked, Refused, type Door } from "./testing/gateway.js";
+import type { Door } from "./testing/gateway.js";
 import { chattingFrom, linesFromThisProcess, type Chatting } from "./ui/chatting.js";
 import { devHandler, ownVerbs } from "./ui/doors.js";
 import { driftingFrom } from "./ui/drifting.js";
@@ -29,20 +29,24 @@ import { reproducingFrom } from "./ui/reproducing.js";
 import { simulatingFrom, simulatingPiecesFor } from "./ui/simulating.js";
 import { testingFrom, testingPiecesFor } from "./ui/testing.js";
 import { live, plain, stream, type Plain, type Watching } from "./run-screens.js";
+import { consoleLine, HOSTED, NOWHERE, whyNoConsole } from "./run-console.js";
+import { NoSidecar, openOrReuse, theOneUp, type Sidecar } from "./serve/sidecar.js";
 
 export const group: Group = {
   purpose: "the app and its doors: the process you deploy",
-  usage: `usage: pinecall run [agent.tsx] [--agent <name>] [--env production] [--ui] [--events] [--show-prompt]
+  usage: `usage: pinecall run [agent.tsx] [--agent <name>] [--env production] [--serve] [--ui] [--events] [--show-prompt]
 
   With nothing after it: the agent registered on the gateway, one line per log entry on stdout,
-  no port bound and no page served: the gateway serves the console, and this prints its URL with a
-  one-use code that signs the browser in. It answers that console for this directory.
+  no port bound and no page served. It answers the console for this directory — in the sandbox
+  that console is \`pinecall serve\`, on this machine; in production it is the gateway's own.
 
   At the root of a project of several agents — agents/<name>.tsx — every agent at once, on one
   socket, each line prefixed by its slug; --agent <name> (or its slug) runs one of them.
 
   --env <world>  say which world you believe this key opens, and be refused if it opens the
                  other. Nothing said is the sandbox; a deployment types --env production
+  --serve        also serve the sandbox's console on http://localhost:4100, or point at the one
+                 already up: \`pinecall run\` and \`pinecall serve\` in one terminal
   --show-prompt  the prompt a fresh instance would produce, then exit. No key, no gateway
   --events       one JSON line per log entry instead of the lines, for a pipe
   --ui           the full-screen terminal view; keys: p pause · c clear · e events · s prompt · q quit`,
@@ -54,7 +58,8 @@ export const group: Group = {
  *
  * This is the verb that goes under pm2 and into a container, and it is the same process in
  * the sandbox and in production: it runs the agent, binds no port and serves no page. What a
- * person looks at is `--ui` in this terminal, or the log over the gateway's API.
+ * person looks at is `--ui` in this terminal, or a console: the gateway's own for production, and
+ * `pinecall serve` on this machine for the sandbox — which `--serve` opens beside this process.
  * See docs/decisions/tenant-cli.md.
  */
 export async function run(argv: string[]): Promise<number> {
@@ -65,6 +70,7 @@ export async function run(argv: string[]): Promise<number> {
       "show-prompt": { type: "boolean", default: false },
       events: { type: "boolean", default: false },
       ui: { type: "boolean", default: false },
+      serve: { type: "boolean", default: false },
       ...AGENT_FLAG,
       ...ENV_FLAG,
     },
@@ -108,6 +114,27 @@ export async function run(argv: string[]): Promise<number> {
   if (elsewhere !== undefined) {
     process.stderr.write(`${elsewhere}\n`);
     return 2;
+  }
+  // The sandbox's console is this machine's: opened here when asked, else the one already up is
+  // named, else the line says which verb opens it. Production's is the gateway's own page.
+  let sidecar: Sidecar | undefined;
+  let local: string | undefined;
+  if (who.env === PRODUCTION) {
+    if (values.serve === true) {
+      process.stderr.write(`--serve is the sandbox's console, and this key opens ${PRODUCTION}: production is watched at ${door.url}\n`);
+      return 2;
+    }
+  } else if (values.serve === true) {
+    try {
+      sidecar = await openOrReuse(door, who);
+      local = sidecar.url;
+    } catch (failed) {
+      if (!(failed instanceof NoSidecar)) throw failed;
+      process.stderr.write(`${failed.message}\n`);
+      return 2;
+    }
+  } else {
+    local = await theOneUp(door, who);
   }
   const url = door.url;
   // One socket for every agent of the project: the gateway takes several slugs on one app socket,
@@ -172,7 +199,7 @@ export async function run(argv: string[]): Promise<number> {
           env: who.env,
           source: door.source,
         }),
-        after: () => onceUp(door, mounted.slug, rings(mounted.options.routes)),
+        after: () => onceUp(door, mounted.slug, rings(mounted.options.routes), who.env === PRODUCTION ? HOSTED : (local ?? NOWHERE)),
       }));
       return await plain(pc, agents, url);
     }
@@ -193,40 +220,15 @@ export async function run(argv: string[]): Promise<number> {
   } finally {
     for (const chatting of chattings) await chatting.close();
     pc.close();
+    await sidecar?.close();
   }
-}
-
-// What a gateway answers for a path no router of its declared.
-const NO_SUCH_DOOR = 404;
-
-// The console is the gateway's page at `/a/<agent>`, and it holds a key of its own — never this
-// process's. So this process mints a one-use code standing for its key (five minutes, once) and
-// prints the URL that carries it; the page spends it for a key of the tab's own. A gateway that
-// refuses the code is one line, and the app runs on.
-/** Where the console of this agent is, with the code that signs the browser in. */
-export function consoleUrl(gateway: string, slug: string, code: string): string {
-  return `${gateway.replace(/\/$/, "")}/a/${encodeURIComponent(slug)}?login=${encodeURIComponent(code)}`;
-}
-
-// A 404 at this door means the gateway has no such door, which means it is OLDER than this CLI —
-// a long-running dev gateway is the usual way to meet it, since nothing restarts one for you. A
-// status is not a thing a person can act on, so the sentence says the cause and the fix instead.
-const OLDER_GATEWAY =
-  "this gateway has no login-code door, so it is older than this CLI. Restart it: it serves the console too, and that will be stale as well.";
-
-/** Why the console line has no URL in it, in words that name the next move. */
-export function whyNoConsole(refused: unknown): string {
-  if (refused instanceof Refused) {
-    return refused.status === NO_SUCH_DOOR ? OLDER_GATEWAY : `the gateway answered ${refused.status}`;
-  }
-  return refused instanceof Error ? refused.message : String(refused);
 }
 
 // What is only true once the socket is up: the console's URL, and — when the agent answers at a
 // number — whose terminal that number rings in. Both are asked of the gateway, and neither is
 // worth failing the run over: a gateway that refuses says so on its own line and the app runs on.
-async function onceUp(door: Door, slug: string, rings: boolean): Promise<string[]> {
-  const said = [await consoleLine(door, slug)];
+async function onceUp(door: Door, slug: string, rings: boolean, where: string): Promise<string[]> {
+  const said = [await consoleLine(door, slug, where)];
   // The gateway keeps whose phone is whose beside its live table and not in a row, because it is
   // only meaningful next to a socket. So every connect says it again — for every agent, and not
   // only one that declares a number: a production number is the box's route and no class declares
@@ -262,15 +264,6 @@ async function lineLine(door: Door, slug: string): Promise<string> {
     return `line     ${describing(await theLine(door, slug))}`;
   } catch (refused) {
     return `line     not available: ${whyNoConsole(refused)}`;
-  }
-}
-
-async function consoleLine(door: Door, slug: string): Promise<string> {
-  try {
-    const minted = await asked<{ code: string }>(door, "/v1/login/codes", { method: "POST", body: {} });
-    return `console  ${consoleUrl(door.url, slug, minted.code)}   (opens within five minutes, once)`;
-  } catch (refused) {
-    return `console  not available: ${whyNoConsole(refused)}`;
   }
 }
 
