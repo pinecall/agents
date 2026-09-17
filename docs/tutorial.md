@@ -384,6 +384,10 @@ is for.
 
 ## Where to go next
 
+- **A second agent in the same repository**: move the class to `agents/<name>.tsx` and each folder
+  under its name — [Several agents in one project](writing-an-agent.md#several-agents-in-one-project).
+  `pinecall run` at the root then holds both.
+
 | you want | read |
 |---|---|
 | every declaration a class may carry | [writing-an-agent.md](writing-an-agent.md) |

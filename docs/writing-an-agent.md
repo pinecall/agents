@@ -22,6 +22,27 @@ test/
 tsconfig.json       { "extends": "pinecall/tsconfig.tenant.json" }
 ```
 
+### Several agents in one project
+
+A repository that holds more than one agent keeps each as a file under `agents/`, and shares every
+other folder by the agent's name:
+
+```
+agents/dispatch.tsx       one class each; the slug is declared on it
+agents/sales.tsx
+lib/                      what they share
+knowledge/dispatch.md     by heart: `knowledge = "../knowledge/dispatch.md"`, relative to the class
+knowledge/sales/          the documents `pinecall knowledge push` sends to sales's base
+knowledge/sales.golden.json
+test/dispatch.test.ts     ring 0, one file per agent
+test/goldens/<name>/      test/personas/<name>/      test/memory/<name>/
+memory/<name>.golden.json
+```
+
+At that root `pinecall run` holds every agent on one socket, and every verb acts on each agent
+against its own folders, or on the one `--agent <name|slug>` names. The CLI's page says which verb
+does what: [A project of several agents](the-cli.md#a-project-of-several-agents).
+
 The file is `agent.tsx` because the class renders JSX. That is the only reason, and it changes
 nothing else: a class that writes no `render()` may stay in `agent.ts`, and the CLI finds either.
 
