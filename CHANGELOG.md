@@ -6,6 +6,8 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## 0.3.0 — The sandbox's console on your machine
+
 ### Added
 - **`pinecall serve`: the sandbox's console, on your machine.** `http://localhost:4100` is the
   console for what YOU are running — your copies, their calls, chat, suites, knowledge, memory, the

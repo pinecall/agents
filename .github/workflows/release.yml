@@ -100,5 +100,15 @@ jobs:
       # `npm publish <tgz>` no reempaqueta nada.
       - run: pnpm pack --pack-destination /tmp/pkg
         working-directory: agents
-      - run: npm publish --provenance --access public /tmp/pkg/*.tgz
+      # A version already on the registry was published by hand (`npm publish` from a laptop, the
+      # way 0.2.0 and 0.3.0 went out before npm knew this workflow): the tag then only records it.
+      # npm never takes a number twice, so asking again is a red run that says nothing new.
+      - name: publish, unless this version is already on npm
         working-directory: agents
+        run: |
+          version="${{ needs.guard.outputs.version }}"
+          if npm view "pinecall@$version" version >/dev/null 2>&1; then
+            echo "pinecall@$version is already on npm: nothing to publish, the tag records it"
+            exit 0
+          fi
+          npm publish --provenance --access public /tmp/pkg/*.tgz
