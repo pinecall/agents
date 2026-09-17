@@ -153,8 +153,8 @@ the thing a full org cannot do.
 ## Two developers, one agent
 
 Berna and Carla both run `tienda-sur`. Each `pinecall run` holds it in its own corner; each
-`pinecall chat` reaches its own; each console, in the sandbox, opens its own copy and lists its own
-calls. Berna's test call writes Berna's sandbox memory and nobody else's. Neither can hold
+`pinecall chat` reaches its own; each `pinecall serve`, on its own machine, opens its own copy and
+lists its own calls. Berna's test call writes Berna's sandbox memory and nobody else's. Neither can hold
 production: the box does. Both count against the plan once, because a slug is one agent however
 many corners hold it.
 
@@ -208,7 +208,7 @@ what happens on its own when the terminal holding it closes. A claim on an agent
 not running is refused: a ring lands on the line, so a corner with no app in it would take the
 call and drop it. Production has one corner and the box holds it, so there is nothing to claim
 there — only a developer's own phone is diverted, as above; `pinecall run` prints the line under
-the console's URL for any agent that declares a number.
+the console's line for any agent that declares a number.
 
 Web and chat need none of this. They name the agent AND the person, so they always reach your own.
 
