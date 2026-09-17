@@ -162,6 +162,12 @@ the issuer, the client, the email domains it admits, the role somebody nobody in
 the console already spends; the flow, the doors and the operator's break-glass are the runtime's
 `docs/protocol/people.md`.
 
+**Disabling, and removing.** Disabling keeps the row and shuts the person out; **removing** takes
+them out of the org for good — every key of theirs revoked, their pending invitation spent, the
+seat free (`DELETE /v1/members/{id}`, the Team screen's *Remove*). What the log already named them
+by stays readable either way, because a call names an id and not a row. The door refuses two
+removals: your own, and the org's last active admin.
+
 **Seats.** An invitation takes a seat, and where the org's plan caps them the door answers `429`
 in the quota's own words and makes no row. Invited counts — an org at its limit could otherwise
 invite forever and seat everybody the moment they accepted. Disabling somebody frees their seat
