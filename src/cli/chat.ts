@@ -19,7 +19,8 @@ const PROMPT = `${CALLER} `;
 
 export const group: Group = {
   purpose: "the app in this terminal's own process, and a prompt against it",
-  usage: `usage: pinecall chat [agent] [--file agent.tsx] [--as <contact>] [--state file [--case n]]
+  usage: `usage: pinecall chat [agent] [--agent <name>] [--file agent.tsx] [--env production] [--as <contact>]
+                     [--state file [--case n]] [--events]
 
   With nothing after it: the agent of this directory, mounted in THIS process, and a written
   caller against it. The tools run here, so a breakpoint in a @tool is reachable.
@@ -28,7 +29,8 @@ export const group: Group = {
   \`pinecall run\` in another terminal, or a colleague's. Nothing is mounted here, so --state,
   which opens a call in a class this process built, is refused.
 
-  --file <path>   which class to mount, when the directory holds more than one
+  --agent <name>  which agent of a project of several, by its file's name or its slug
+  --file <path>   which class to mount, by its path
   --env <world>   the world you believe this key opens; refused when it opens the other
   --as <contact>  who is calling: the id memory files this call under (a phone number, a customer id)
   --state file    the state the call opens in — the same goldens file \`pinecall prompt\` reads

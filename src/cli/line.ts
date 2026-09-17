@@ -10,29 +10,32 @@ import { oneHome } from "./home.js";
 import { slugOf } from "../runtime/connect.js";
 import { asked, type Door } from "./testing/gateway.js";
 
-const USAGE = "usage: pinecall line [from <+number> | forget | claim | release] [agent.tsx]";
+const USAGE = "usage: pinecall line [from <+number> | forget | claim | release] [agent.tsx] [--agent <name>]";
 
 // A number exists once in a world, so it rings in one place. In production that place is the box
 // and there is nothing to decide; in the sandbox an org shares ONE number and three developers
 // may be running the same agent, so which terminal it rings in is claimed out loud. Alone nobody
 // claims anything — the first `pinecall run` takes it. See the runtime's docs/protocol/gateway-api.md.
 export const group: Group = {
-  purpose: "whose terminal the sandbox number rings in",
+  purpose: "which phone is yours, and whose terminal anybody else's call rings in",
   usage: `${USAGE}
 
   With nothing after it: who is answering this agent's number right now, and who else is running
   it and could take it.
 
   \`from <+number>\` is the one you want. Say which phone is YOURS, once, and every call you make
-  to a sandbox number reaches your own agent — no claim, no coordination, and three of you
-  testing at the same time. It is remembered for this gateway and re-sent by every
-  \`pinecall run\`. \`forget\` undoes it.
+  reaches your own agent — on the number your customers call, in production, as much as on a
+  sandbox one: while you are running the agent your phone reaches your copy, and everybody else
+  reaches production. No claim, no coordination, three of you testing at the same time. It is
+  remembered for this gateway and re-sent by every \`pinecall run\`, each time it connects.
+  \`forget\` undoes it.
 
   \`claim\` and \`release\` are the fallback, for a call from a number nobody said was theirs — a
   customer, a colleague's phone. The first terminal to hold the agent has it; alone, you never
   need either word.
 
-  The agent is the one in this directory, so nothing has to be named.`,
+  The agent is the one in this directory; at the root of a project of several, \`claim\`,
+  \`release\` and the bare \`line\` take --agent <name>. \`from\` and \`forget\` are about your phone.`,
   run,
 };
 
