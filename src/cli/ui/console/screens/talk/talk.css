@@ -1,144 +1,89 @@
-/* Talk: the bar, the lobby before joining, the conversation filling the page, the composer under it. The Inspector is its own. */
+/* Talk: the door, the two facts under it, and the call as the room says it. The Inspector is its own. */
 
 .talk-grid {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 330px);
   grid-template-rows: minmax(0, 1fr);
 }
 
-.talk-main {
-  min-width: 0;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  background: var(--ground);
-}
-
-.talk-bar {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--line);
-}
-
-.talk-light {
-  flex: none;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--line-muted);
-}
-
-.talk-light-on {
-  background: var(--green-dot);
-  box-shadow: 0 0 0 4px var(--green-soft);
-}
-
-.talk-bar-words {
+.talk-grid > .ui-page {
   min-width: 0;
 }
 
-.talk-agent {
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.talk-standing {
-  font-size: 12.5px;
-  color: var(--ink-4);
-  margin-top: 1px;
-}
-
-.talk-moves {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.talk-lobby {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 32px 20px;
-  background: var(--ground-side);
-}
-
-.talk-lobby-card {
-  width: 100%;
-  max-width: 440px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  text-align: center;
-}
-
-.talk-lobby-ended {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 8px 8px 14px;
-  margin-bottom: 8px;
+.talk-card {
   border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--ground);
-  font-size: 13px;
-  color: var(--ink-2);
+  border-radius: 12px;
+  padding: 28px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
 }
 
-.talk-lobby-title {
-  font-size: 22px;
-  font-weight: 650;
-  letter-spacing: -0.4px;
-}
-
-.talk-lobby-words {
-  margin: -6px 0 0;
-  font-size: 13.5px;
-  line-height: 1.6;
-  color: var(--ink-3);
-}
-
-.talk-join {
-  align-self: center;
-  width: auto;
-  min-width: 200px;
+.talk-door {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
   box-shadow: var(--shadow-talk);
 }
 
-.talk-lobby-facts {
-  font-size: 12px;
+.talk-door-clock {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.5px;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.talk-mic {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.talk-door:hover {
+  background: var(--accent-hover);
+}
+
+.talk-door:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.talk-door-on,
+.talk-door-on:hover {
+  background: var(--red);
+  box-shadow: none;
+}
+
+.talk-standing {
+  text-align: center;
+}
+
+.talk-phase {
+  font-size: 13.5px;
+  font-weight: 550;
+}
+
+.talk-hint {
+  font-size: 12.5px;
   color: var(--ink-4);
-}
-
-.talk-lobby-failed {
-  font-size: 12.5px;
-  color: var(--red);
-}
-
-.talk-refused {
-  flex: none;
-  margin: 0;
-  padding: 10px 20px;
-  border-top: 1px solid var(--line-2);
-  font-size: 12.5px;
-  color: var(--red);
+  margin-top: 3px;
 }
 
 .talk-bars {
   display: flex;
   align-items: flex-end;
   gap: 3px;
-  height: 18px;
-  margin-right: 4px;
+  height: 20px;
 }
 
 .talk-bars span {
@@ -198,11 +143,43 @@
   }
 }
 
-.talk-lines {
+.talk-call {
+  font-size: 11.5px;
+  color: var(--ink-6);
+  word-break: break-all;
+  text-align: center;
+}
+
+.talk-facts {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.talk-fact {
   flex: 1;
-  min-height: 0;
+  min-width: 200px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 13px 15px;
+}
+
+.talk-fact-label {
+  font-size: 11.5px;
+  color: var(--ink-4);
+  margin-bottom: 5px;
+}
+
+.talk-fact-value {
+  font-size: 13.5px;
+  font-weight: 550;
+}
+
+.talk-lines {
+  min-height: 120px;
+  max-height: 420px;
   overflow: auto;
-  padding: 22px 24px;
+  padding: 18px 20px;
   display: flex;
   flex-direction: column;
   gap: 11px;
@@ -226,7 +203,7 @@
 
 .talk-bubble {
   margin: 0;
-  max-width: min(74%, 620px);
+  max-width: 74%;
   padding: 10px 13px;
   border-radius: 14px;
   font-size: 13.5px;
@@ -284,10 +261,9 @@
 }
 
 .talk-composer {
-  flex: none;
   display: flex;
   gap: 9px;
-  padding: 12px 20px 16px;
+  padding: 12px 16px;
   border-top: 1px solid var(--line);
   background: var(--ground);
 }

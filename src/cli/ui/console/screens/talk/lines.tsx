@@ -4,8 +4,8 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 
 import { words, type Line, type Mark, type Said } from "./transcript";
 
-/** Every line so far, filling the conversation's place, scrolled to the last one. Nothing here animates on a timer. */
-export function Transcript({ lines }: { lines: Line[] }): ReactNode {
+/** Every line so far, in a card, scrolled to the last one. Nothing here animates on a timer. */
+export function Transcript({ lines, mode, children }: { lines: Line[]; mode: "talk" | "chat"; children?: ReactNode }): ReactNode {
   const stream = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -14,9 +14,16 @@ export function Transcript({ lines }: { lines: Line[] }): ReactNode {
   }, [lines]);
 
   return (
-    <div className="talk-lines" ref={stream}>
-      {lines.length === 0 && <p className="talk-quiet">Nothing said yet. What you say and what you write both land here.</p>}
-      {lines.map((line) => (line.kind === "said" ? <SaidLine key={line.id} line={line} /> : <MarkLine key={line.id} mark={line} />))}
+    <div className="ui-card">
+      <div className="ui-card-head">
+        <span className="ui-card-title">{mode === "talk" ? "This call" : "This chat"}</span>
+        <span className="ui-card-meta">{mode === "talk" ? "spoken or written, as the room says it" : "written, as the room says it"}</span>
+      </div>
+      <div className="talk-lines" ref={stream}>
+        {lines.length === 0 && <p className="talk-quiet">Nothing said yet. {mode === "talk" ? "What you say and what you write both land here." : "What you write and the agent's replies land here."}</p>}
+        {lines.map((line) => (line.kind === "said" ? <SaidLine key={line.id} line={line} /> : <MarkLine key={line.id} mark={line} />))}
+      </div>
+      {children}
     </div>
   );
 }
@@ -63,7 +70,7 @@ export function Composer({ open, mode, onWrite }: { open: boolean; mode: "talk" 
         className="talk-write"
         value={text}
         disabled={!open}
-        placeholder={open ? (mode === "talk" ? "Write to the agent — or just speak" : "Write to the agent") : "Join the room to write"}
+        placeholder={open ? (mode === "talk" ? "Write to the agent — or just speak" : "Write to the agent") : (mode === "talk" ? "Press Call first — then speak or write" : "Press Chat first — then write")}
         onChange={(event) => setText(event.target.value)}
       />
       <button type="submit" className="talk-send" disabled={!open || text.trim() === ""}>
