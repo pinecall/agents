@@ -7,6 +7,7 @@ import { GatewayError } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
 import { Button, Field, Input, Refused, Select } from "../../ui";
 import { Inspector } from "../talk/inspector";
+import { useWatchedCall } from "../live/use-watched-call";
 import { Bubbles, type Pending } from "./bubbles";
 import { endChat, readChatRoster, sayInChat, startChat, type Roster } from "./door";
 import "./chat.css";
@@ -141,6 +142,9 @@ function Conversation({ agent, call }: { agent: string; call: string }): ReactNo
   const [pending, setPending] = useState<Pending[]>([]);
   const [refused, setRefused] = useState<string | null>(null);
   const next = useRef(0);
+  const watched = useWatchedCall(call);
+  // A chat opened from its link after it ended is a transcript: nothing to hang up, nobody to say it to.
+  const over = watched.state.status === "ended" || watched.connection === "ended";
 
   // Hanging up is what seals the log and runs the judges at ring 4, so it is a button and not a
   // navigation: leaving the page would keep the socket open in the terminal behind it.
@@ -161,13 +165,15 @@ function Conversation({ agent, call }: { agent: string; call: string }): ReactNo
           <Link className="chat-whole" to={`/a/${agent}/sessions/${call}`}>
             Session
           </Link>
-          <Button size="md" onClick={() => void hangUp()} title="hanging up seals the log and runs the judges">
-            Hang up
-          </Button>
+          {!over && (
+            <Button size="md" onClick={() => void hangUp()} title="hanging up seals the log and runs the judges">
+              Hang up
+            </Button>
+          )}
         </div>
       </ChatHead>
       <Bubbles
-        call={call}
+        watched={watched}
         pending={pending}
         onConfirmed={(text) =>
           setPending((now) => {
@@ -181,6 +187,9 @@ function Conversation({ agent, call }: { agent: string; call: string }): ReactNo
           <Refused>{refused}</Refused>
         </div>
       )}
+      {over ? (
+        <div className="chat-over">This chat has ended — it is on the session, whole.</div>
+      ) : (
       <Composer
         agent={agent}
         call={call}
@@ -192,6 +201,7 @@ function Conversation({ agent, call }: { agent: string; call: string }): ReactNo
           return () => setPending((now) => now.filter((one) => one.id !== line.id));
         }}
       />
+      )}
     </>
   );
 }

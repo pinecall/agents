@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 import { rowsOf } from "../live/timeline-rows";
-import { useWatchedCall } from "../live/use-watched-call";
+import type { WatchedCall } from "../live/use-watched-call";
 import { repliesOf, useRevealed } from "./streaming";
 
 // How close to the foot counts as "at the foot": a reader who scrolled up to read something is
@@ -21,8 +21,7 @@ export interface Pending {
  * you sent that are still on their way. A reply fills character by character on
  * requestAnimationFrame and carries on into its settled bubble without drawing twice.
  */
-export function Bubbles({ call, pending, onConfirmed }: { call: string; pending: Pending[]; onConfirmed: (text: string) => void }): ReactNode {
-  const watched = useWatchedCall(call);
+export function Bubbles({ watched, pending, onConfirmed }: { watched: WatchedCall; pending: Pending[]; onConfirmed: (text: string) => void }): ReactNode {
   const entries = onceEach(watched.entries);
   const rows = rowsOf(entries, watched.state);
   const { streaming, settled } = repliesOf(entries);
