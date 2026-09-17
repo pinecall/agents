@@ -1,13 +1,14 @@
-/** Numbers: whose numbers reach the org, the doors it answers, and one more brought in — imported or bought. */
+/** Numbers: three tabs — which numbers ring and who picks up, the calls agents place, and the carrier they come from. */
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useSearchParams } from "react-router";
 
 import { GatewayError } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
 import { prettyNumber } from "../../lib/format";
 import { useOrg } from "../../lib/org";
 import { useWorld } from "../../lib/world";
-import { Button, Card, CardHead, Empty, Page, PageHead, Pill, Refused } from "../../ui";
+import { Button, Card, CardHead, Dot, Empty, Page, PageHead, Pill, Refused } from "../../ui";
 import { Adding } from "./adding";
 import { CarrierPanel } from "./carrier";
 import { OutboundPanel } from "./outbound";
@@ -26,18 +27,28 @@ import {
   type Available,
   type Carrier,
   type Outbound,
+  type Wired,
 } from "./door";
 import "./numbers.css";
 
+type Tab = "numbers" | "outbound" | "carrier";
+
+const TABS: readonly { tab: Tab; name: string }[] = [
+  { tab: "numbers", name: "Numbers" },
+  { tab: "outbound", name: "Outbound calls" },
+  { tab: "carrier", name: "Carrier" },
+];
+
 /**
- * In the order a person asks: which numbers ring, and who picks up; how to add one; and, last, the
- * carrier account they come from. A number answers in one world, so the screen says which world
- * it is showing. How a developer reaches their own copy by phone is the local console's screen
- * (phone.tsx): it needs no number of its own.
+ * The tab is in the address (`?tab=`), so a reload and a link land on the same one. A number
+ * answers in one world, so the numbers tab says which world it is showing. How a developer reaches
+ * their own copy by phone is the local console's screen (phone.tsx): it needs no number of its own.
  */
 export function Numbers(): ReactNode {
   const credentials = useCredentials();
   const { agents } = useOrg();
+  const [params, setParams] = useSearchParams();
+  const tab: Tab = TABS.some((one) => one.tab === params.get("tab")) ? (params.get("tab") as Tab) : "numbers";
   const [carrier, setCarrier] = useState<Carrier | null | undefined>(undefined);
   const [doors, setDoors] = useState<Answering[] | null>(null);
   const [available, setAvailable] = useState<Available | null>(null);
@@ -45,6 +56,8 @@ export function Numbers(): ReactNode {
   const { world } = useWorld();
   const [busy, setBusy] = useState(false);
   const [refused, setRefused] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [added, setAdded] = useState<Wired | null>(null);
 
   const reread = useCallback(async (): Promise<void> => {
     const [brought, answering] = await Promise.all([readCarrier(credentials), readNumbers(credentials)]);
@@ -86,14 +99,45 @@ export function Numbers(): ReactNode {
 
   return (
     <Page width={900}>
-      <PageHead title="Phone numbers" lede="The numbers people call, and which agent picks up." />
+      <PageHead title="Phone numbers" lede="The numbers people call, which agent picks up, and the calls your agents place." />
+
+      <nav className="num-tabs" aria-label="Phone numbers">
+        {TABS.map((one) => (
+          <button
+            key={one.tab}
+            type="button"
+            className={tab === one.tab ? "num-tab num-tab-on" : "num-tab"}
+            onClick={() => setParams(one.tab === "numbers" ? {} : { tab: one.tab })}
+          >
+            {one.name}
+            {one.tab === "outbound" && carrier !== undefined && <Dot tone={outbound?.ready ? "green" : "amber"} small />}
+          </button>
+        ))}
+      </nav>
 
       <Refused>{refused}</Refused>
 
-      {doors !== null && (
+      {tab === "numbers" && doors !== null && (
         <Card>
-          <CardHead title={`Numbers in ${world}`} />
-          {numbered.length === 0 && <Empty>No phone number rings in {world} yet. Add one below.</Empty>}
+          <CardHead
+            title={`Numbers in ${world}`}
+            action={
+              !adding && carrier !== undefined ? (
+                <Button
+                  kind="primary"
+                  size="sm"
+                  className="ui-card-action"
+                  onClick={() => {
+                    setAdded(null);
+                    setAdding(true);
+                  }}
+                >
+                  Add a number
+                </Button>
+              ) : undefined
+            }
+          />
+          {numbered.length === 0 && <Empty>No phone number rings in {world} yet.</Empty>}
           {numbered.map((door) => (
             <div key={door.route.number} className="num-row">
               <span className="num-number">{prettyNumber(door.route.number)}</span>
@@ -120,26 +164,37 @@ export function Numbers(): ReactNode {
               )}
             </div>
           ))}
+          {added !== null && (
+            <div className="num-added">
+              Done. {prettyNumber(added.route.number)} now rings {added.route.agent}.
+            </div>
+          )}
+          {adding && carrier !== undefined && (
+            <Adding
+              carrier={carrier}
+              agents={agents}
+              available={available}
+              busy={busy}
+              onImport={(wanted, dryRun) => moved(() => importNumber(credentials, { ...wanted, channel: "phone" }, dryRun))}
+              onBuy={(wanted, dryRun) => moved(() => buyNumber(credentials, { ...wanted, channel: "phone" }, dryRun))}
+              onDone={(wired) => {
+                setAdded(wired);
+                setAdding(false);
+              }}
+              onClose={() => setAdding(false)}
+            />
+          )}
           {onTheWeb.length > 0 && (
             <div className="num-foot">Also on the web, with no number needed: {[...new Set(onTheWeb.map((door) => door.route.agent))].join(", ")}.</div>
           )}
         </Card>
       )}
 
-      {carrier !== undefined && (
-        <Adding
-          carrier={carrier}
-          agents={agents}
-          available={available}
-          busy={busy}
-          onImport={(wanted, dryRun) => moved(() => importNumber(credentials, { ...wanted, channel: "phone" }, dryRun))}
-          onBuy={(wanted, dryRun) => moved(() => buyNumber(credentials, { ...wanted, channel: "phone" }, dryRun))}
-        />
+      {tab === "outbound" && carrier !== undefined && (
+        <OutboundPanel outbound={outbound} agents={agents} busy={busy} onProvision={(dryRun) => moved(() => provisionOutbound(credentials, dryRun))} />
       )}
 
-      {outbound !== null && <OutboundPanel outbound={outbound} busy={busy} onProvision={(dryRun) => moved(() => provisionOutbound(credentials, dryRun))} />}
-
-      {carrier !== undefined && (
+      {tab === "carrier" && carrier !== undefined && (
         <CarrierPanel
           carrier={carrier}
           busy={busy}

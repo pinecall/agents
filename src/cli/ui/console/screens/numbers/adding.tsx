@@ -5,7 +5,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import type { HeldAgent } from "@pinecall/protocol";
 
 import { prettyNumber } from "../../lib/format";
-import { Button, Card, CardHead, Input, Label, Select } from "../../ui";
+import { Button, Input, Label, Select } from "../../ui";
 import type { Available, Carrier, Wired } from "./door";
 
 /** What the panel is told: the carrier (or none), the org's agents, and the two doors it knocks at. */
@@ -16,6 +16,9 @@ export interface AddingProps {
   busy: boolean;
   onImport: (wanted: { number: string; agent: string }, dryRun: boolean) => Promise<Wired>;
   onBuy: (wanted: { country: string; area_code?: string; agent: string }, dryRun: boolean) => Promise<Wired>;
+  /** The number is in: the card that opened this form closes it and says so. */
+  onDone: (wired: Wired) => void;
+  onClose: () => void;
 }
 
 type Way = "import" | "buy";
@@ -25,26 +28,22 @@ type Way = "import" | "buy";
  * it would take, with the ids that stand today — and a person reads it before the same request
  * goes again for real. Importing needs the org's own carrier; buying needs none, since it is the
  * box's account that pays, and the plan names the number it found. Nothing is written on the
- * first click, ever.
+ * first click, ever. It is drawn inside the numbers card, opened from its head and closed on success.
  */
-export function Adding({ carrier, agents, available, busy, onImport, onBuy }: AddingProps): ReactNode {
+export function Adding({ carrier, agents, available, busy, onImport, onBuy, onDone, onClose }: AddingProps): ReactNode {
   const [way, setWay] = useState<Way>(carrier === null ? "buy" : "import");
   const [number, setNumber] = useState("");
   const [country, setCountry] = useState("US");
   const [areaCode, setAreaCode] = useState("");
   const [agent, setAgent] = useState(agents[0]?.slug ?? "");
   const [plan, setPlan] = useState<Wired | null>(null);
-  const [done, setDone] = useState<Wired | null>(null);
 
   useEffect(() => {
     if (agent === "" && agents[0] !== undefined) setAgent(agents[0].slug);
   }, [agents, agent]);
 
   // A plan is about one request; change a field and it is somebody else's plan.
-  const forget = (): void => {
-    setPlan(null);
-    setDone(null);
-  };
+  const forget = (): void => setPlan(null);
   const ask = async (dryRun: boolean): Promise<Wired> =>
     way === "import"
       ? onImport({ number: number.trim(), agent }, dryRun)
@@ -52,15 +51,14 @@ export function Adding({ carrier, agents, available, busy, onImport, onBuy }: Ad
 
   const planned = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
-    setDone(null);
     setPlan(await ask(true).catch(() => null));
   };
   const confirmed = async (): Promise<void> => {
     const wired = await ask(false).catch(() => null);
     if (wired === null) return;
     setPlan(null);
-    setDone(wired);
     setNumber("");
+    onDone(wired);
   };
 
   const owned = available !== null && available.kind === "twilio" ? available.numbers.filter((one) => !one.imported) : [];
@@ -70,24 +68,27 @@ export function Adding({ carrier, agents, available, busy, onImport, onBuy }: Ad
   };
 
   return (
-    <Card>
-      <CardHead title="Add a number">
-        <div className="ui-segmented num-ways" role="group">
+    <div className="num-add">
+      <div className="num-add-head">
+        <div className="ui-segmented" role="group">
           <button
             type="button"
             className={way === "import" ? "ui-segment ui-segment-on" : "ui-segment"}
             aria-pressed={way === "import"}
             onClick={() => turn("import")}
             disabled={carrier === null}
-            title={carrier === null ? "connect your phone carrier first, below" : undefined}
+            title={carrier === null ? "connect your phone carrier first, in the Carrier tab" : undefined}
           >
-            {owned.length > 0 ? `One I already have · ${owned.length}` : "One I already have"}
+            {owned.length > 0 ? `I already have one · ${owned.length}` : "I already have one"}
           </button>
           <button type="button" className={way === "buy" ? "ui-segment ui-segment-on" : "ui-segment"} aria-pressed={way === "buy"} onClick={() => turn("buy")}>
             Buy a new one
           </button>
         </div>
-      </CardHead>
+        <button type="button" className="ui-text-action num-add-close" onClick={onClose}>
+          Close
+        </button>
+      </div>
 
       <form onSubmit={(event) => void planned(event)}>
         <div className={way === "buy" ? "num-fields num-fields-3" : "num-fields"}>
@@ -212,15 +213,7 @@ export function Adding({ carrier, agents, available, busy, onImport, onBuy }: Ad
         </div>
       )}
 
-      {done !== null && (
-        <div className="num-plan num-plan-done">
-          <div className="num-plan-title">
-            Done. {prettyNumber(done.route.number)} now rings {done.route.agent} in {done.route.env}.
-          </div>
-          <Steps steps={done.steps} />
-        </div>
-      )}
-    </Card>
+    </div>
   );
 }
 

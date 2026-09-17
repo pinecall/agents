@@ -173,69 +173,6 @@
 }
 
 /* Outbound calls */
-.num-out-pill {
-  margin-left: auto;
-}
-
-.num-out-body {
-  padding: 14px 16px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.num-out-from {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.num-out-label {
-  font-size: 12.5px;
-  color: var(--ink-4);
-}
-
-.num-out-numbers {
-  font-size: 14px;
-  font-weight: 550;
-}
-
-.num-out-missing {
-  margin: 0;
-  padding-left: 18px;
-  font-size: 12.5px;
-  color: var(--amber);
-  line-height: 1.6;
-}
-
-.num-out-actions {
-  padding: 0 0 14px;
-}
-
-.num-out-guards {
-  padding: 13px 16px 14px;
-  border-top: 1px solid var(--line-2);
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.num-out-guards-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--ink-6);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  margin-bottom: 2px;
-}
-
-.num-out-note {
-  margin-top: 4px;
-  font-size: 12.5px;
-  color: var(--ink-4);
-}
-
 .num-outbound-group {
   padding: 0 16px 14px;
 }
@@ -265,4 +202,157 @@
   .num-fields-4 {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* ── the tabs ─────────────────────────────────────────────────────────────── */
+
+.num-tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--line);
+  margin-top: -4px;
+}
+
+.num-tab {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  font-size: 13px;
+  margin-bottom: -1px;
+  white-space: nowrap;
+  color: var(--ink-3);
+  font-weight: 450;
+  cursor: pointer;
+}
+
+.num-tab:hover {
+  color: var(--ink);
+}
+
+.num-tab-on,
+.num-tab-on:hover {
+  color: var(--ink);
+  font-weight: 600;
+  border-bottom-color: var(--accent);
+}
+
+/* ── adding, inside the numbers card ──────────────────────────────────────── */
+
+.num-add {
+  border-top: 1px solid var(--line-2);
+  background: var(--ground-side);
+}
+
+.num-add-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px 0;
+}
+
+.num-add-close {
+  margin-left: auto;
+  color: var(--ink-4);
+}
+
+.num-added {
+  padding: 12px 16px;
+  border-top: 1px solid var(--line-2);
+  font-size: 13px;
+  color: var(--green);
+}
+
+/* ── outbound ─────────────────────────────────────────────────────────────── */
+
+.num-hero {
+  padding: 28px 24px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 560px;
+}
+
+.num-hero-title {
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.4px;
+}
+
+.num-hero-say {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink-3);
+  line-height: 1.6;
+}
+
+.num-hero-missing {
+  margin: 0;
+  font-size: 13px;
+  color: var(--amber);
+  line-height: 1.6;
+}
+
+.num-hero-move {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.num-on {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+
+.num-on b {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.num-placed {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.num-placed a {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.num-refused {
+  padding: 0 16px 14px;
+}
+
+.num-limits {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 2px 4px;
+}
+
+.num-limits > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.num-limits-say {
+  font-size: 12.5px;
+  color: var(--ink-3);
+  line-height: 1.6;
+}
+
+.num-limits-who {
+  font-size: 12px;
+  color: var(--ink-5);
+  margin-top: 2px;
 }
