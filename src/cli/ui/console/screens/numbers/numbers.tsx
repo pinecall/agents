@@ -163,7 +163,7 @@ function NumberCard({ door, onRemove, busy }: { door: Answering; onRemove: (() =
 }
 
 /** +14176743169 as a person reads it; anything that is not a US number is left as it is. */
-function pretty(number: string): string {
+export function pretty(number: string): string {
   const us = /^\+1(\d{3})(\d{3})(\d{4})$/.exec(number);
   return us === null ? number : `+1 (${us[1]}) ${us[2]}-${us[3]}`;
 }
