@@ -6,6 +6,36 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Changed
+- **The console, redesigned.** One light theme in Inter, its colours in one file
+  (`ui/tokens.css`) and its parts in `ui/` — page, card, stat, grid table, controls, pill, icons
+  drawn in the repo. A sidebar in three groups (Agents, Gateway or Sandbox, Settings) with live and
+  count badges, folding to icons; a top bar with a switcher whose two environment chips open the
+  OTHER console at the same path; an agent's head and tabs; ⌘K over screens, agents and listed
+  sessions. **Overview moved to `/overview`**; `/` is Home. The table in `lib/mode.ts` now carries
+  each screen's group and icon. The dark theme is gone.
+- **Live is the org's floor in three columns** — the calls, one watched, what it holds — with the
+  whole supervisor's desk under the call's head; a simulated call opens there. **Calls is an
+  inbox**: an agent's sessions grouped by contact, their messages read from each call's log, and a
+  composer that writes as the agent into a live text call.
+- Sessions search by id, number, caller and outcome, filter by agent and channel, and open a call id
+  pasted whole; Talk and Chat sit beside an Inspector of the call's log; a chat that has ended reads
+  as a transcript.
+
+### Added
+- **Home**: today against yesterday, the calls that need a look, who is on the floor, where calls
+  arrive, and what is left to set up.
+- **On a gateway with the console's doors** (the runtime's `docs/protocol/console-api.md`; each is
+  probed, and an element whose door answers 404 is not drawn): the day's numbers, the median answer
+  and the budget (`GET /v1/insights`); `escalated · low score · promise made` on a row; judging
+  turned on from Home; sessions searched, counted and paged by the gateway; unread and names in
+  Calls, and a message into a WhatsApp thread inside its window; every fact an agent remembers, one
+  dropped; a judge attached to a finished call; the widget's title, tagline, greeting, accent and
+  autostart kept per agent and world; the workspaces a password opens, offered on the sign-in card;
+  a member's password reset by a one-use link from Team, and *Forgot password* saying so.
+- `lib/sessions-wire.ts`: session lists read with `score`, `flags`, `total` and `next` optional,
+  until the protocol that carries them is published.
+
 ## 0.3.0 — The sandbox's console on your machine
 
 ### Added

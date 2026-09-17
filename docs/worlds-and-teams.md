@@ -112,9 +112,11 @@ is how a box gets a key there.
 **A person is their email, and may belong to several orgs.** One password is theirs across every
 org they are in, whichever org it was chosen in, and an email is matched trimmed and lower-cased,
 so `Nico@TiendaSur.uy ` is the same person. Signing in to the console asks for the email and the
-password, and the org only when they belong to several — left empty, it is the oldest of theirs. It
+password, and then offers the workspaces those open when they belong to several (`POST
+/v1/login/orgs`, which mints nothing). A forgotten password is an admin's to hand back: a one-use
+link from the Team screen. It
 signs in to production, and the key is kept by that browser, so a second tab is the same person.
-The console's header then switches between their orgs (`GET /v1/login/orgs` lists them, `POST
+The console's workspace menu and its switcher then move between their orgs (`GET /v1/login/orgs` lists them, `POST
 /v1/login/org` mints the same person's key in the one they pick). A terminal moves between orgs by
 profile — `pinecall use` — and `POST /v1/login/env` is how `pinecall login` turns the key a person
 signed in with into their sandbox one. A machine key names nobody, so it has no orgs to switch
