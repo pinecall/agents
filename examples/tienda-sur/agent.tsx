@@ -26,6 +26,14 @@ const TiendaPrompt = (tienda: TiendaSur) => {
   const { stage, customer, counter, cart, total, order } = tienda;
   return (
     <>
+      {/* La llamada ya empezó y el saludo ya se dijo. Un turno que arranca con la ficha y el carrito
+          delante —una llamada retomada, una golden— se contestaba «Hola Rosa, ¿qué tal?» y la
+          petición se perdía detrás del saludo; en la Clínica esta frase sola arregló cuatro goldens
+          (2026-09-17). */}
+      {stage !== "done" && (customer || cart.length > 0 || counter.length > 0) && (
+        <p>La llamada ya está en curso y ya has saludado: no vuelvas a saludar.</p>
+      )}
+
       {stage !== "done" && (
         /* Quién está al teléfono, y que ya lo sabes. Sin la segunda frase el modelo ve
            `registerCustomer` en la lista de herramientas del prefijo estático —que las lleva todas,
@@ -47,7 +55,7 @@ const TiendaPrompt = (tienda: TiendaSur) => {
 
       {tienda.remembers("marca") && <p>Ofrécele primero la marca que se suele llevar.</p>}
 
-      {stage === "browse" && cart.length === 0 && (
+      {stage === "browse" && cart.length === 0 && counter.length === 0 && (
         /* La misma regla que el docstring de `findProduct`, dicha aquí en el momento en que el
            modelo decide. El catálogo es una tool y no está escrito en ninguna parte del prompt, así
            que sin esta frase el modelo contesta de memoria lo que la tienda tiene y lo que vale. */
@@ -97,9 +105,10 @@ const TiendaPrompt = (tienda: TiendaSur) => {
           que cueste una llamada. */}
       {stage === "cart" && (
         <p>
-          Que el carrito esté lleno todavía no es un pedido. Cuando te diga que ya está, llama
-          primero a proposeOrder, léeselo entero —cada línea y el total— y pregúntale si se lo
-          cierras. confirmOrder solo después de que te haya dicho que sí.
+          Que el carrito esté lleno todavía no es un pedido. En cuanto te diga que ya está —«ya
+          está», «nada más», «eso es todo»—, llama a proposeOrder en ese mismo turno, antes de
+          contestarle; después léeselo entero —cada línea y el total— y pregúntale si se lo cierras.
+          confirmOrder solo después de que te haya dicho que sí.
         </p>
       )}
 
@@ -112,7 +121,8 @@ const TiendaPrompt = (tienda: TiendaSur) => {
         <p>
           Le estás proponiendo este pedido de {total} euros. Léeselo entero si todavía no lo has
           hecho y espera su respuesta. En cuanto conteste que sí, llama a confirmOrder en ese mismo
-          turno, sin repetírselo otra vez ni volver a preguntar. Si quiere cambiar algo, búscalo y
+          turno, antes de contestarle, sin repetírselo otra vez ni volver a preguntar nada — ni la
+          dirección: la ficha ya la tiene. Si quiere cambiar algo, búscalo y
           vuelve a metérselo en el carrito.
         </p>
       )}
