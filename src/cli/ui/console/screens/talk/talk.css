@@ -81,6 +81,19 @@
   text-align: center;
 }
 
+.talk-lobby-ended {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 8px 8px 14px;
+  margin-bottom: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--ground);
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
 .talk-lobby-title {
   font-size: 22px;
   font-weight: 650;

@@ -20,9 +20,10 @@ const MODES: readonly { value: Mode; label: string }[] = [
 ];
 
 /**
- * The screen. Before a room is joined the conversation's place says how to join it; once joined
- * the bar says how it stands and holds the moves, and what is typed goes into the same call — a
- * voice call takes writing too, which is how a number or an address is given without spelling it.
+ * The screen. Out of the room it is the lobby: how to join, and — once a conversation has ended —
+ * where its session is. In the room the bar says how it stands and holds the moves, and what is
+ * typed goes into the same call: a voice call takes writing too, which is how a number or an
+ * address is given without spelling it.
  */
 export function Talk(): ReactNode {
   const agent = useParams()["agent"] ?? "";
@@ -33,15 +34,15 @@ export function Talk(): ReactNode {
   return (
     <div className="talk-grid">
       <section className="talk-main" aria-label={`Talk to ${agent}`}>
-        <Bar agent={agent} live={live} />
-        {live.lines.length === 0 && !on ? (
-          <Lobby agent={agent} live={live} mode={mode} onMode={setMode} />
+        {on ? (
+          <>
+            <Bar live={live} />
+            <Transcript lines={live.lines} />
+            {live.error !== null && <p className="talk-refused">{live.error}</p>}
+            <Composer open={live.phase === "live"} mode={live.mode} onWrite={live.write} />
+          </>
         ) : (
-          <Transcript lines={live.lines} />
-        )}
-        {live.error !== null && <p className="talk-refused">{live.error}</p>}
-        {(on || live.lines.length > 0) && (
-          <Composer open={live.phase === "live"} mode={live.mode} onWrite={live.write} />
+          <Lobby agent={agent} live={live} mode={mode} onMode={setMode} />
         )}
         {live.call !== null && <Marks call={live.call} heard={live.heard} />}
       </section>
@@ -52,15 +53,15 @@ export function Talk(): ReactNode {
 }
 
 // The agent's own head names it right above, so the bar names the conversation instead.
-/** The head of the conversation: which one, how it stands, and the moves the moment allows. */
-function Bar({ agent, live }: { agent: string; live: Talking }): ReactNode {
+/** The head of a conversation in the room: which one, how it stands, and the moves it allows. */
+function Bar({ live }: { live: Talking }): ReactNode {
   const now = useNow(live.phase === "live");
   const voice = live.mode === "talk";
   return (
     <header className="talk-bar">
       <span className={live.phase === "live" ? "talk-light talk-light-on" : "talk-light"} aria-hidden />
       <div className="talk-bar-words">
-        <div className="talk-agent">{live.phase === "idle" ? "Talk" : voice ? "Voice call" : "Chat"}</div>
+        <div className="talk-agent">{voice ? "Voice call" : "Chat"}</div>
         <div className="talk-standing">{standing(live, now)}</div>
       </div>
       <div className="talk-moves">
@@ -78,29 +79,15 @@ function Bar({ agent, live }: { agent: string; live: Talking }): ReactNode {
             </Button>
           </>
         )}
-        {(live.phase === "live" || live.phase === "connecting") && (
-          <Button kind="danger" size="sm" disabled={live.phase === "connecting"} onClick={() => void live.close()}>
-            {voice ? "Leave" : "End chat"}
-          </Button>
-        )}
-        {(live.phase === "ended" || live.phase === "failed") && live.lines.length > 0 && (
-          <>
-            {live.call !== null && (
-              <ButtonLink size="sm" to={`/a/${agent}/sessions/${live.call}`}>
-                Open session
-              </ButtonLink>
-            )}
-            <Button kind="primary" size="sm" onClick={() => void live.open(live.mode)}>
-              {voice ? "Join again" : "Chat again"}
-            </Button>
-          </>
-        )}
+        <Button kind="danger" size="sm" disabled={live.phase === "connecting"} onClick={() => void live.close()}>
+          {voice ? "Leave" : "End chat"}
+        </Button>
       </div>
     </header>
   );
 }
 
-/** Before anything was said: how to join, and what joining means. */
+/** Out of the room: how to join, what joining means, and the conversation that just ended. */
 function Lobby({ agent, live, mode, onMode }: { agent: string; live: Talking; mode: Mode; onMode: (mode: Mode) => void }): ReactNode {
   const whose = useWhoami();
   const { world } = useWorld();
@@ -108,7 +95,15 @@ function Lobby({ agent, live, mode, onMode }: { agent: string; live: Talking; mo
   return (
     <div className="talk-lobby">
       <div className="talk-lobby-card">
-        <div className="talk-lobby-title">Talk to {agent}</div>
+        {live.phase === "ended" && live.call !== null && (
+          <div className="talk-lobby-ended">
+            <span>{live.mode === "talk" ? "The call ended" : "The chat ended"} — judged at hang-up.</span>
+            <ButtonLink size="sm" to={`/a/${agent}/sessions/${live.call}`}>
+              Open session
+            </ButtonLink>
+          </div>
+        )}
+        <div className="talk-lobby-title">{mode === "talk" ? `Call ${agent}` : `Chat with ${agent}`}</div>
         <p className="talk-lobby-words">
           {mode === "talk"
             ? "Join the agent's room with this machine's microphone. It answers out loud, and you can write into the same call whenever typing is easier."
@@ -121,7 +116,7 @@ function Lobby({ agent, live, mode, onMode }: { agent: string; live: Talking; mo
         <div className="talk-lobby-facts">
           As {person} · lands in {world} · counts in usage
         </div>
-        {live.phase === "failed" && <div className="talk-lobby-failed">The room did not open. The reason is below.</div>}
+        {live.phase === "failed" && <div className="talk-lobby-failed">The room did not open: {live.error ?? "no reason was given"}</div>}
       </div>
     </div>
   );
@@ -129,18 +124,8 @@ function Lobby({ agent, live, mode, onMode }: { agent: string; live: Talking; mo
 
 function standing(live: Talking, now: number): string {
   const voice = live.mode === "talk";
-  switch (live.phase) {
-    case "idle":
-      return "Not in the room";
-    case "connecting":
-      return voice ? "Joining the room…" : "Opening the chat…";
-    case "live":
-      return `${voice ? (live.muted ? "On the call · muted" : "On the call") : "Chatting"} · ${elapsed(live.since, now)}`;
-    case "ended":
-      return voice ? "The call ended — judged at hang-up, in Sessions" : "The chat ended — judged at hang-up, in Sessions";
-    case "failed":
-      return "The room did not open";
-  }
+  if (live.phase === "connecting") return voice ? "Joining the room…" : "Opening the chat…";
+  return `${voice ? (live.muted ? "On the call · muted" : "On the call") : "Chatting"} · ${elapsed(live.since, now)}`;
 }
 
 // The log's marks reach the transcript through this: it opens the call's stream and renders

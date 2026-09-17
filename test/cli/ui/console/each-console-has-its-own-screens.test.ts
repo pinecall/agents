@@ -45,8 +45,8 @@ describe("a machine's own console", () => {
     expect(names(ORG_SCREENS, "local")).toEqual(["Home", "Overview", "Live", "Sessions", "Phone testing"]);
   });
 
-  it("has every screen of an agent, Chat among them", () => {
-    expect(names(AGENT_SCREENS, "local")).toEqual(["Talk", "Chat", "Calls", "Sessions", "Pipeline", "Knowledge", "Memory", "Evals", "Widget"]);
+  it("has every screen of an agent, Dev chat among them", () => {
+    expect(names(AGENT_SCREENS, "local")).toEqual(["Talk & Chat", "Dev chat", "Calls", "Sessions", "Pipeline", "Knowledge", "Memory", "Evals", "Widget"]);
   });
 
   it("sends no authorization: `pinecall serve` signs what it forwards", () => {
