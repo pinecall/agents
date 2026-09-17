@@ -14,7 +14,9 @@ const USAGE = `usage: pinecall signup [<gateway-url>] --org <slug> --email <you@
 
 // Asked for, never echoed, never a flag: a password on a command line is a password in the
 // shell's history. The same rule `login` holds its key to.
-const PROMPT = "Password (12 characters at least): ";
+// The rule is the GATEWAY's, and it says so at `/.well-known/pinecall`: a prompt with a number of
+// its own refused what the box would have taken, and a person read it as their password being bad.
+const PROMPT = (least: number): string => (least > 0 ? `Password (${least} characters at least): ` : "Password: ");
 
 // The door a stranger knocks at, and what it answers: the one shape a key travels in, plus the
 // org's slug, the member and a one-use code for a browser. runtime docs/protocol/people.md.
@@ -97,11 +99,13 @@ export async function signup(argv: string[], how: Making = {}): Promise<number> 
     err.write(`missing: ${missing.map((one) => `--${one}`).join(" ")}\n`);
     return 2;
   }
-  if (!(await discovered(url)).signup) {
+  const says = await discovered(url);
+  if (!says.signup) {
     err.write(`${SHUT(url)}\n`);
     return 1;
   }
-  const password = (await (how.password ?? (values["password-stdin"] === true ? aLineOfStdin : () => typedInSilence(PROMPT, out)))()).trim();
+  const typed = how.password ?? (values["password-stdin"] === true ? aLineOfStdin : () => typedInSilence(PROMPT(says.min_password), out));
+  const password = (await typed()).trim();
   if (password === "") {
     err.write("no password was typed: nothing was made\n");
     return 2;

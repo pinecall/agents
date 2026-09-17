@@ -18,6 +18,9 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   use <org> production|sandbox` between worlds, with no second login; `pinecall config` says which
   worlds a profile holds. A person still only LOOKS at production: `app` there is a machine's key.
 
+- `pinecall signup` asks for a password in the GATEWAY's own rule, read from
+  `/.well-known/pinecall`, instead of a number of its own that could refuse what the box accepts.
+
 ### Changed
 - **A machine with no profile is on the cloud, not on localhost.** `pinecall login` with no URL was
   already the cloud's; now the same is true of every verb that runs before a key is kept, and the
