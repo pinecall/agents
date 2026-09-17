@@ -7,6 +7,7 @@ import { MODE } from "../lib/mode";
 import { OrgProvider, useOrg } from "../lib/org";
 import { AgentHead } from "./agent-head";
 import { Palette } from "./palette";
+import { Ringing } from "./ringing";
 import { Sidebar } from "./sidebar";
 import { Top } from "./top";
 import "./shell.css";
@@ -52,6 +53,7 @@ function Frame(): ReactNode {
         {agent !== "" && !missing && <AgentHead agent={agent} />}
         <div className="frame-screen">{missing ? <Missing agent={agent} /> : <Outlet />}</div>
       </div>
+      <Ringing />
       {searching && <Palette agent={missing ? "" : agent} onClose={() => setSearching(false)} />}
     </div>
   );
