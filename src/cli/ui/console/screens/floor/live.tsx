@@ -5,11 +5,12 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 
 import { EVERY_MS, isLive } from "../../lib/use-agent-sessions";
-import { elapsed, whoOn } from "../../lib/format";
+import { ago, duration, elapsed, whoOn } from "../../lib/format";
 import { useOrg } from "../../lib/org";
-import { Dot } from "../../ui";
+import { Dot, Input, Pill } from "../../ui";
 import { SimulateForm } from "../calls/simulate-form";
 import { Live } from "../live";
+import { matches } from "../sessions/search";
 import "./live.css";
 
 // A screenful and then some: the floor lists the org's newest calls, and older ones are Sessions'.
@@ -26,11 +27,13 @@ export function FloorLive(): ReactNode {
   const [search, setSearch] = useSearchParams();
   const only = search.get("agent");
   const [simulating, setSimulating] = useState(false);
+  const [query, setQuery] = useState("");
   const now = useNow();
 
-  const shown = lines.filter((line) => only === null || line.agent === only);
+  const shown = lines.filter((line) => (only === null || line.agent === only) && matches(line, query));
   const live = shown.filter(isLive);
-  const rows = [...live, ...shown.filter((line) => !isLive(line))].slice(0, ROWS);
+  const ended = shown.filter((line) => !isLive(line)).slice(0, ROWS);
+  const rows = [...live, ...ended];
   const watched = chosen ?? live[0]?.call ?? rows[0]?.call;
   const suffix = only === null ? "" : `?agent=${encodeURIComponent(only)}`;
 
@@ -41,8 +44,18 @@ export function FloorLive(): ReactNode {
           <div className="fl-standing">
             <Dot tone={live.length > 0 ? "green" : undefined} />
             <span className="fl-count">{live.length === 1 ? "1 call up" : `${live.length} calls up`}</span>
-            <span className="fl-asked">re-asked every {EVERY_MS / 1000} s</span>
+            <span className="fl-asked" title={`re-asked every ${EVERY_MS / 1000} s`}>
+              {shown.length} listed
+            </span>
           </div>
+          <Input
+            size="sm"
+            className="fl-search"
+            placeholder="Search a number, agent or outcome"
+            aria-label="Search the floor's calls"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
           {only !== null && (
             <div className="fl-only">
               <span className="ui-clip">{only}</span>
@@ -71,14 +84,25 @@ export function FloorLive(): ReactNode {
           )}
         </div>
         <div className="fl-list">
-          <div className="fl-label">Sessions</div>
           {floorError !== null && <p className="fl-empty fl-refused">{floorError}</p>}
           {rows.length === 0 && floorError === null && (
-            <p className="fl-empty">No calls yet. Leave this open — a call that reaches any agent shows up here as it rings.</p>
+            <p className="fl-empty">
+              {query === "" ? "No calls yet. Leave this open — a call that reaches any agent shows up here as it rings." : "No call here matches."}
+            </p>
           )}
-          {rows.map((line) => (
+          {live.length > 0 && <div className="fl-label">On a call now</div>}
+          {live.map((line) => (
             <FloorRow key={line.call} line={line} on={line.call === watched} now={now} to={`/live/${line.call}${suffix}`} />
           ))}
+          {ended.length > 0 && <div className="fl-label">Recent</div>}
+          {ended.map((line) => (
+            <FloorRow key={line.call} line={line} on={line.call === watched} now={now} to={`/live/${line.call}${suffix}`} />
+          ))}
+          {ended.length > 0 && (
+            <Link to="/sessions" className="fl-all">
+              Every session →
+            </Link>
+          )}
         </div>
       </nav>
       {watched === undefined ? (
@@ -90,13 +114,39 @@ export function FloorLive(): ReactNode {
   );
 }
 
+/** One call: who is on it and how it stands, then which agent, which door, and how the judges answered. */
 function FloorRow({ line, on, now, to }: { line: SessionLine; on: boolean; now: number; to: string }): ReactNode {
   const up = isLive(line);
   return (
-    <Link to={to} className={on ? "fl-row fl-row-on" : "fl-row"} title={`${line.agent} · ${line.call}`}>
+    <Link to={to} className={on ? "fl-row fl-row-on" : "fl-row"} title={line.call}>
       <span className={up ? "fl-dot fl-dot-live" : "fl-dot"} />
-      <span className="fl-id">{whoOn(line)}</span>
-      <span className={up ? "fl-meta fl-meta-live" : "fl-meta"}>{up ? (line.status === "active" ? elapsed(line.started_at, now) : line.status) : "ended"}</span>
+      <span className="fl-row-words">
+        <span className="fl-row-top">
+          <span className="fl-id">{whoOn(line)}</span>
+          <span className={up ? "fl-meta fl-meta-live" : "fl-meta"}>{up ? (line.status === "active" ? elapsed(line.started_at, now) : line.status) : ago(line.started_at, now)}</span>
+        </span>
+        <span className="fl-row-sub">
+          <span className="ui-clip">
+            {line.agent}
+            {line.channel !== null && ` · ${line.channel}`}
+            {line.direction === "outbound" && " · outbound"}
+            {!up && ` · ${duration(line)}`}
+          </span>
+          {line.score != null && (
+            <span className="fl-score">
+              <Pill tone={line.score.passed ? "green" : "red"}>
+                {line.score.held}/{line.score.judged}
+              </Pill>
+            </span>
+          )}
+          {line.score == null && (line.flags ?? []).includes("escalated") && (
+            <span className="fl-score">
+              <Pill tone="amber">escalated</Pill>
+            </span>
+          )}
+        </span>
+        {!up && line.outcome !== null && <span className="fl-outcome">{line.outcome}</span>}
+      </span>
     </Link>
   );
 }

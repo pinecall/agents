@@ -2,6 +2,7 @@
 
 import type { Entry, State } from "@pinecall/protocol";
 import { useEffect, useState, type ReactNode } from "react";
+import { Link } from "react-router";
 
 import { useDeclaredState } from "../../lib/declared-state";
 import { elapsed, prettyNumber } from "../../lib/format";
@@ -36,6 +37,9 @@ export function Live({ call, agent }: { call: string; agent?: string | undefined
     <div className="lv">
       <div className="lv-middle">
         <Head call={call} agent={agent} state={state} connection={watched.error ?? watched.connection} failed={watched.error !== null}>
+          <Link to={`/sessions/${call}`} className="lv-session">
+            Open session
+          </Link>
           {supervises && (
             <button
               type="button"

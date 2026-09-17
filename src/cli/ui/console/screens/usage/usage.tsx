@@ -1,122 +1,149 @@
-/** Usage: the org's totals, then every metered row — a call.summary or a call.score, folded, never a price of ours. */
+/** Usage: what the org spent, by day, by agent and call by call — the provider's bill as the log knows it, never a price of ours. */
 
 import { useEffect, useState, type ReactNode } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 
 import { GatewayError } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
-import { clockOf, euros } from "../../lib/format";
-import { Button, Card, CardFoot, Empty, Page, PageHead, Refused, Stat, Stats, TableHead } from "../../ui";
-import { readUsage, type Totals, type UsageRow } from "./door";
+import { dayAndTime, euros, today } from "../../lib/format";
+import { useInsights } from "../../lib/insights";
+import { Bar, Card, CardFoot, Empty, Page, PageHead, Refused, Stat, Stats, TableHead, TableRow, Tabs } from "../../ui";
+import { readUsage, type UsageRow } from "./door";
+import { byAgent, byCall, byDay, total, type Group } from "./folded";
 import "./usage.css";
 
-const COLUMNS = "78px 120px minmax(110px,1fr) 100px 54px 86px";
+type Tab = "days" | "agents" | "calls";
 
-// Every total the door adds up. The ones the design does not headline — tokens, characters — are
-// still the log's and still on the card's foot.
-const NONE: Totals = { minutes: 0, messages: 0, input_tokens: 0, output_tokens: 0, characters: 0, judge_calls: 0, cost_eur: 0, calls: 0 };
+const TABS: readonly { tab: Tab; name: string }[] = [
+  { tab: "days", name: "By day" },
+  { tab: "agents", name: "By agent" },
+  { tab: "calls", name: "Call by call" },
+];
 
-function added(one: Totals, other: Totals | null): Totals {
-  if (other === null) return one;
-  return {
-    minutes: one.minutes + other.minutes,
-    messages: one.messages + other.messages,
-    input_tokens: one.input_tokens + other.input_tokens,
-    output_tokens: one.output_tokens + other.output_tokens,
-    characters: one.characters + other.characters,
-    judge_calls: one.judge_calls + other.judge_calls,
-    cost_eur: one.cost_eur + other.cost_eur,
-    calls: one.calls + other.calls,
-  };
-}
+const GROUP_COLUMNS = "minmax(0,1.2fr) 70px 80px 90px minmax(0,1fr) 90px";
+const CALL_COLUMNS = "130px 140px minmax(0,1fr) 70px 80px 90px";
+
+// The door pages oldest first, a few hundred rows at a time. A bill is read whole or it lies, so
+// the pages are followed to the end — and stopped here, where an org this size never gets.
+const PAGES_AT_MOST = 40;
 
 /**
- * What the org consumed, off the same rows the operator's `/v1/ops/usage` pages, cut to the key's
- * org. The totals are a sum over the pages read; a row is one metered entry with the call it came
- * from, linked. `cost_eur` is the provider's bill as best the log knows it, four decimals.
+ * The org's metered rows, read to the end and folded: a call writes a summary and a score, and a
+ * person reads one line per call. The totals are sums over what was read.
  */
 export function Usage(): ReactNode {
   const credentials = useCredentials();
-  const [rows, setRows] = useState<UsageRow[]>([]);
-  const [totals, setTotals] = useState<Totals | null>(null);
-  const [next, setNext] = useState<number | null>(null);
-  const [read, setRead] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const insights = useInsights();
+  const [params, setParams] = useSearchParams();
+  const tab: Tab = TABS.some((one) => one.tab === params.get("tab")) ? (params.get("tab") as Tab) : "days";
+  const [rows, setRows] = useState<UsageRow[] | null>(null);
   const [refused, setRefused] = useState<string | null>(null);
 
-  const page = async (after: number, first: boolean): Promise<void> => {
-    setBusy(true);
-    try {
-      const answer = await readUsage(credentials, after);
-      setRows((kept) => (first ? answer.rows : [...kept, ...answer.rows]));
-      setTotals((kept) => (answer.totals === null ? kept : added(first || kept === null ? NONE : kept, answer.totals)));
-      setNext(answer.next);
-      setRefused(null);
-    } catch (failed) {
-      setRefused(failed instanceof GatewayError ? failed.message : String(failed));
-    } finally {
-      setRead(true);
-      setBusy(false);
-    }
-  };
-
-  // The first page, again for another key; later pages are asked for by the button.
   useEffect(() => {
-    void page(0, true);
+    let gone = false;
+    void (async () => {
+      try {
+        const read: UsageRow[] = [];
+        let after = 0;
+        for (let page = 0; page < PAGES_AT_MOST; page += 1) {
+          const answer = await readUsage(credentials, after);
+          if (gone) return;
+          read.push(...answer.rows);
+          setRows([...read]);
+          if (answer.next === null) break;
+          after = answer.next;
+        }
+      } catch (failed) {
+        if (!gone) setRefused(failed instanceof GatewayError ? failed.message : String(failed));
+      }
+    })();
+    return () => {
+      gone = true;
+    };
   }, [credentials]);
+
+  const bills = byCall(rows ?? []);
+  const all = total(bills);
+  const days = byDay(bills);
+  const spentToday = days.find((day) => day.name === today().today)?.cost_eur ?? 0;
+  const budget = insights?.budget ?? null;
 
   return (
     <Page tight>
-      <PageHead title="Usage" lede="What this org consumed, as the log says it: every call summary and score, folded." />
+      <PageHead title="Usage" lede="What this org spent: the providers' bill as the call log knows it, never a price of ours." />
       <Refused>{refused}</Refused>
 
-      {totals !== null && (
-        <Stats min={140}>
-          <Stat size="small" label="Calls" value={totals.calls} />
-          <Stat size="small" label="Minutes" value={totals.minutes.toFixed(1)} />
-          <Stat size="small" label="Messages" value={totals.messages} />
-          <Stat size="small" label="Judge calls" value={totals.judge_calls} />
-          <Stat size="small" label="Cost" value={euros(totals.cost_eur)} accent />
+      {rows !== null && (
+        <Stats min={150}>
+          <Stat
+            size="small"
+            label={budget !== null ? "Spent this month" : "Spent in all"}
+            value={euros(budget !== null ? budget.spent_eur_month : all.cost_eur)}
+            of={budget !== null && budget.limit_eur !== null ? `of ${euros(budget.limit_eur)}` : undefined}
+            accent
+          />
+          <Stat size="small" label="Today" value={euros(spentToday)} />
+          <Stat size="small" label="Calls" value={all.calls} />
+          <Stat size="small" label="Minutes" value={all.minutes.toFixed(1)} />
+          <Stat size="small" label="Per call" value={all.calls === 0 ? "—" : euros(all.cost_eur / all.calls)} />
+          <Stat size="small" label="Per minute" value={all.minutes === 0 ? "—" : euros(all.cost_eur / all.minutes)} />
         </Stats>
       )}
 
-      <Card>
-        {read && rows.length === 0 ? (
+      <Tabs label="Usage" tabs={TABS} on={tab} onPick={(picked) => setParams(picked === "days" ? {} : { tab: picked })} />
+
+      {rows !== null && bills.length === 0 && (
+        <Card>
           <Empty>Nothing metered yet: the first call to end writes the first row.</Empty>
-        ) : (
-          <>
-            <TableHead columns={COLUMNS} labels={["At", "Agent", "Call", "Type", "Min>", "Cost>"]} />
-            {rows.map((row) => (
-              <div key={row.cursor} className="ui-table-row usage-row" style={{ gridTemplateColumns: COLUMNS }}>
-                <span className="ui-cell-faint">{clockOf(row.at)}</span>
-                <span className="ui-cell-ink ui-clip">{row.agent}</span>
-                <Link to={`/sessions/${row.call}`} className="usage-call ui-clip">
-                  {row.call}
-                </Link>
-                <span className="ui-cell-faint ui-clip">{row.type}</span>
-                <span className="ui-cell-ink usage-right">{row.minutes.toFixed(1)}</span>
-                <span className="usage-cost">{euros(row.cost_eur)}</span>
-              </div>
-            ))}
-          </>
-        )}
-        {rows.length > 0 && (
+        </Card>
+      )}
+
+      {bills.length > 0 && tab !== "calls" && <Groups label={tab === "days" ? "Day" : "Agent"} groups={tab === "days" ? days : byAgent(bills)} />}
+
+      {bills.length > 0 && tab === "calls" && (
+        <Card>
+          <TableHead columns={CALL_COLUMNS} labels={["Started", "Agent", "Call", "Min>", "Messages>", "Cost>"]} />
+          {bills.map((bill) => (
+            <TableRow key={bill.call} columns={CALL_COLUMNS}>
+              <span className="ui-cell-faint">{dayAndTime(bill.at)}</span>
+              <span className="ui-cell-ink ui-clip">{bill.agent}</span>
+              <Link to={`/sessions/${bill.call}`} className="usage-call ui-clip">
+                {bill.call}
+              </Link>
+              <span className="ui-cell-ink usage-right">{bill.minutes.toFixed(1)}</span>
+              <span className="ui-cell-ink usage-right">{bill.messages}</span>
+              <span className="usage-cost">{euros(bill.cost_eur)}</span>
+            </TableRow>
+          ))}
           <CardFoot>
             <span>
-              {rows.length} {rows.length === 1 ? "row" : "rows"} read
-              {totals !== null && ` · ${totals.input_tokens} tokens in · ${totals.output_tokens} out · ${totals.characters} characters`} · the provider's bill as the
-              log knows it, never a price of ours
+              {bills.length} calls{all.judge_calls > 0 && ` · ${all.judge_calls} judge calls`} · a call's judging is folded into its line
             </span>
-            {next !== null && (
-              <span className="usage-more">
-                <Button size="sm" disabled={busy} onClick={() => void page(next, false)}>
-                  {busy ? "Reading…" : "Load more"}
-                </Button>
-              </span>
-            )}
           </CardFoot>
-        )}
-      </Card>
+        </Card>
+      )}
     </Page>
+  );
+}
+
+/** Days or agents: what each one took, and its share of the spend as a bar. */
+function Groups({ label, groups }: { label: string; groups: Group[] }): ReactNode {
+  const most = Math.max(...groups.map((group) => group.cost_eur), 0);
+  return (
+    <Card>
+      <TableHead columns={GROUP_COLUMNS} labels={[label, "Calls>", "Min>", "Per call>", "", "Cost>"]} />
+      {groups.map((group) => (
+        <TableRow key={group.name} columns={GROUP_COLUMNS}>
+          <span className="ui-cell-strong ui-clip">{group.name}</span>
+          <span className="ui-cell-ink usage-right">{group.calls}</span>
+          <span className="ui-cell-ink usage-right">{group.minutes.toFixed(1)}</span>
+          <span className="ui-cell-faint usage-right">{euros(group.cost_eur / group.calls)}</span>
+          <span className="usage-bar">
+            <Bar share={most === 0 ? 0 : group.cost_eur / most} />
+          </span>
+          <span className="usage-cost">{euros(group.cost_eur)}</span>
+        </TableRow>
+      ))}
+    </Card>
   );
 }

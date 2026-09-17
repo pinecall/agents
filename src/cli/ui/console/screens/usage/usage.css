@@ -1,9 +1,5 @@
 /* Usage: the metered rows' cells and the table's foot. */
 
-.usage-row {
-  padding: 11px 16px;
-}
-
 .usage-call {
   font-size: 13px;
   color: var(--accent);
@@ -21,6 +17,7 @@
   white-space: nowrap;
 }
 
-.usage-more {
-  margin-left: auto;
+.usage-bar {
+  padding: 0 14px;
+  align-self: center;
 }

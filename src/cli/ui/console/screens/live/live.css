@@ -69,6 +69,30 @@
   color: var(--red);
 }
 
+.lv-session {
+  flex: none;
+  margin-left: auto;
+  height: 30px;
+  padding: 0 11px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line-hover);
+  border-radius: 8px;
+  background: var(--ground);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.lv-session + .lv-listen {
+  margin-left: 8px;
+}
+
+.lv-session:hover {
+  border-color: var(--accent);
+  color: var(--accent-hover);
+}
+
 .lv-listen {
   margin-left: auto;
   display: flex;
