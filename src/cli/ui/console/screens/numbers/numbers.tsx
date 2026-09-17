@@ -4,7 +4,10 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 
 import { GatewayError } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
+import { BASE } from "../../lib/base";
+import { keptKey } from "../../lib/session-key";
 import { useHeldAgents } from "../../lib/use-held-agents";
+import { useWorld } from "../../lib/world";
 import { Adding } from "./adding";
 import { CarrierPanel } from "./carrier";
 import {
@@ -23,10 +26,10 @@ import {
 import "./numbers.css";
 
 /**
- * Three things on one screen, in the order a person meets them: the carrier the org brought
- * (a Twilio account or a SIP peer — nothing imports without one, and buying needs none), the
- * doors it answers today with who put each there, and the way to add one — always the plan
- * first, then the same request for real. Every refusal is the gateway's sentence, verbatim.
+ * In the order a person asks: which numbers ring, and who picks up; how to test by phone from the
+ * sandbox; how to add one; and, last, the carrier account they come from. A number answers in one
+ * world, so the screen always says which world it is showing, and in the sandbox it shows
+ * production's numbers too — they are the ones a developer calls (`pinecall line from`).
  */
 export function Numbers(): ReactNode {
   const credentials = useCredentials();
@@ -34,6 +37,9 @@ export function Numbers(): ReactNode {
   const [carrier, setCarrier] = useState<Carrier | null | undefined>(undefined);
   const [doors, setDoors] = useState<Answering[] | null>(null);
   const [available, setAvailable] = useState<Available | null>(null);
+  const [elsewhere, setElsewhere] = useState<Answering[] | null>(null);
+  const { world } = useWorld();
+  const other = world === "sandbox" ? "production" : "sandbox";
   const [busy, setBusy] = useState(false);
   const [refused, setRefused] = useState<string | null>(null);
 
@@ -42,7 +48,10 @@ export function Numbers(): ReactNode {
     setCarrier(brought);
     setDoors(answering);
     setAvailable(brought === null ? null : await readAvailable(credentials));
-  }, [credentials]);
+    // The other world's numbers, read with the key this browser holds for it, when it holds one.
+    const theirs = keptKey(other);
+    setElsewhere(theirs === null ? null : await readNumbers({ base: BASE, key: theirs }).catch(() => null));
+  }, [credentials, other]);
 
   useEffect(() => {
     let gone = false;
@@ -71,53 +80,63 @@ export function Numbers(): ReactNode {
   };
 
   const numbered = (doors ?? []).filter((door) => door.route.number !== null);
+  const onTheWeb = (doors ?? []).filter((door) => door.route.number === null);
+  const theirs = (elsewhere ?? []).filter((door) => door.route.number !== null);
 
   return (
     <div className="numbers">
-      <h1 className="numbers-title">Numbers</h1>
-      <p className="numbers-lede">Whose numbers reach this org, which one reaches which agent, and one more brought in.</p>
-
-      {carrier !== undefined && (
-        <CarrierPanel
-          carrier={carrier}
-          busy={busy}
-          onBring={async (wanted) => { await moved(() => bringCarrier(credentials, wanted)).catch(() => undefined); }}
-          onDrop={async () => { await moved(() => dropCarrier(credentials)).catch(() => undefined); }}
-        />
-      )}
+      <h1 className="numbers-title">Phone numbers</h1>
+      <p className="numbers-lede">
+        The numbers people call, and which agent picks up. You are looking at{" "}
+        <span className={`numbers-world numbers-world-${world}`}>{world}</span>.
+      </p>
 
       {refused !== null && <p className="numbers-note numbers-refused fixed">{refused}</p>}
 
       {doors !== null && (
         <section className="numbers-doors">
-          <div className="numbers-form-head"><span className="numbers-form-title">The doors this org answers</span></div>
-          {doors.length === 0 ? (
-            <p className="numbers-note fixed">none yet — bring a carrier and import one below, or have the box buy one; an app that declares a door shows up here too</p>
+          <h2 className="numbers-heading">Numbers in {world}</h2>
+          {numbered.length === 0 ? (
+            <p className="numbers-empty">No phone number rings in {world} yet.</p>
           ) : (
-            <div className="numbers-panel">
-              <div className="numbers-row numbers-row-head fixed">
-                <span>NUMBER</span><span>CHANNEL</span><span>AGENT</span><span>WORLD</span><span>SOURCE</span><span></span>
-              </div>
-              {doors.map((door) => (
-                <div key={`${door.route.channel}-${door.route.number ?? door.route.agent}`} className="numbers-row">
-                  <span className="fixed">{door.route.number ?? "—"}{door.route.managed && <span className="numbers-managed fixed" title="bought by the box for this org: counts against the numbers quota">bought</span>}</span>
-                  <span className="numbers-channel">{door.route.channel}</span>
-                  <span className="fixed">{door.route.agent}</span>
-                  <span className="fixed numbers-dim">{door.route.env}</span>
-                  <span className={door.source === "operator" ? "fixed numbers-operator" : "fixed numbers-dim"}>{door.source}</span>
-                  <span className="numbers-row-moves">
-                    {door.route.number !== null && door.source === "operator" && (
-                      <button type="button" className="link" disabled={busy} onClick={() => void moved(() => releaseNumber(credentials, door.route.number ?? "")).catch(() => undefined)}>let go</button>
-                    )}
-                  </span>
-                </div>
+            <div className="numbers-cards">
+              {numbered.map((door) => (
+                <NumberCard
+                  key={door.route.number}
+                  door={door}
+                  onRemove={
+                    door.source === "operator"
+                      ? () => void moved(() => releaseNumber(credentials, door.route.number ?? "")).catch(() => undefined)
+                      : null
+                  }
+                  busy={busy}
+                />
               ))}
             </div>
           )}
-          {numbered.length > 0 && (
-            <p className="numbers-note fixed">
-              letting a number go removes the route and the media plane's admission; the carrier account is not touched, and a bought number stays the box's to release there
+          {onTheWeb.length > 0 && (
+            <p className="numbers-hint">
+              Also on the web, with no number needed: {onTheWeb.map((door) => door.route.agent).join(", ")}.
             </p>
+          )}
+        </section>
+      )}
+
+      {world === "sandbox" && (
+        <section className="numbers-doors numbers-callout">
+          <h2 className="numbers-heading">Testing by phone</h2>
+          <p className="numbers-text">
+            You do not need a sandbox number. Tell Pinecall which mobile is yours, keep{" "}
+            <code>pinecall run</code> going, and call a production number from it: <b>your copy answers</b>.
+            Everybody else who calls still reaches production.
+          </p>
+          <pre className="numbers-code fixed">pinecall line from +1XXXXXXXXXX    # once: this mobile is mine{"\n"}pinecall run                       # leave it running, then call the number</pre>
+          {theirs.length > 0 ? (
+            <div className="numbers-cards">
+              {theirs.map((door) => <NumberCard key={door.route.number} door={door} onRemove={null} busy={busy} />)}
+            </div>
+          ) : (
+            <p className="numbers-hint">Switch to production (top right) to see the numbers you can call.</p>
           )}
         </section>
       )}
@@ -128,12 +147,52 @@ export function Numbers(): ReactNode {
           agents={agents}
           available={available}
           busy={busy}
+          world={world}
           onImport={(wanted, dryRun) => moved(() => importNumber(credentials, { ...wanted, channel: "phone" }, dryRun))}
           onBuy={(wanted, dryRun) => moved(() => buyNumber(credentials, { ...wanted, channel: "phone" }, dryRun))}
         />
       )}
+
+      {carrier !== undefined && (
+        <CarrierPanel
+          carrier={carrier}
+          busy={busy}
+          onBring={async (wanted) => { await moved(() => bringCarrier(credentials, wanted)).catch(() => undefined); }}
+          onDrop={async () => { await moved(() => dropCarrier(credentials)).catch(() => undefined); }}
+        />
+      )}
     </div>
   );
+}
+
+/** One number: what people dial, who answers, in which world, and the way to take it off. */
+function NumberCard({ door, onRemove, busy }: { door: Answering; onRemove: (() => void) | null; busy: boolean }): ReactNode {
+  return (
+    <div className="numbers-card">
+      <span className="numbers-card-number fixed">{pretty(door.route.number ?? "")}</span>
+      <span className="numbers-card-arrow" aria-hidden>→</span>
+      <span className="numbers-card-agent fixed">{door.route.agent}</span>
+      <span className={`numbers-world numbers-world-${door.route.env}`}>{door.route.env}</span>
+      {door.route.managed && <span className="numbers-managed fixed" title="bought by the box for this org">bought</span>}
+      {onRemove !== null && (
+        <button
+          type="button"
+          className="link numbers-card-remove"
+          disabled={busy}
+          title="The number stops ringing this agent. It stays in your carrier account."
+          onClick={onRemove}
+        >
+          remove
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** +14176743169 as a person reads it; anything that is not a US number is left as it is. */
+function pretty(number: string): string {
+  const us = /^\+1(\d{3})(\d{3})(\d{4})$/.exec(number);
+  return us === null ? number : `+1 (${us[1]}) ${us[2]}-${us[3]}`;
 }
 
 function saidBy(failed: unknown): string {

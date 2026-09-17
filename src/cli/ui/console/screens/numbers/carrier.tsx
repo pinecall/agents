@@ -23,13 +23,14 @@ export function CarrierPanel({ carrier, busy, onBring, onDrop }: CarrierPanelPro
   if (carrier !== null && !replacing) {
     return (
       <section className="numbers-carrier">
+        <h2 className="numbers-heading">Phone carrier</h2>
         <div className="numbers-carrier-standing">
           <span className="numbers-kind fixed">{carrier.kind}</span>
-          <span className="fixed">{carrier.account}</span>
-          <span className="numbers-dim fixed">{carrier.kind === "twilio" ? "account SID · verified" : "SIP peer · registers with its own credentials"}</span>
+          <span>{carrier.kind === "twilio" ? "Twilio account connected" : "SIP peer connected"}</span>
+          <span className="numbers-dim fixed">{carrier.account}</span>
           <span className="numbers-carrier-moves">
-            <button type="button" className="link" onClick={() => setReplacing(true)} disabled={busy}>replace</button>
-            <button type="button" className="link" onClick={() => void onDrop()} disabled={busy}>forget</button>
+            <button type="button" className="link" onClick={() => setReplacing(true)} disabled={busy}>change</button>
+            <button type="button" className="link" onClick={() => void onDrop()} disabled={busy}>disconnect</button>
           </span>
         </div>
       </section>
@@ -70,7 +71,7 @@ function CarrierForm({ busy, onBring, onCancel }: { busy: boolean; onBring: (wan
   return (
     <form className="numbers-form" onSubmit={submit}>
       <div className="numbers-form-head">
-        <span className="numbers-form-title">Bring the org's carrier</span>
+        <h2 className="numbers-heading">Connect your phone carrier</h2>
         <span className="tabs">
           <button type="button" className={kind === "twilio" ? "tab is-active" : "tab"} onClick={() => setKind("twilio")}>Twilio</button>
           <button type="button" className={kind === "sip" ? "tab is-active" : "tab"} onClick={() => setKind("sip")}>SIP peer</button>
@@ -90,12 +91,12 @@ function CarrierForm({ busy, onBring, onCancel }: { busy: boolean; onBring: (wan
         </div>
       )}
       <div className="numbers-form-foot">
-        <button className="button button-accent" type="submit" disabled={busy}>{busy ? "bringing…" : kind === "twilio" ? "bring and verify" : "bring"}</button>
-        {onCancel !== null && <button type="button" className="link" onClick={onCancel}>keep the one standing</button>}
+        <button className="button button-accent" type="submit" disabled={busy}>{busy ? "connecting…" : "Connect"}</button>
+        {onCancel !== null && <button type="button" className="link" onClick={onCancel}>cancel</button>}
         <span className="numbers-note fixed">
           {kind === "twilio"
-            ? "the account is opened once to check; the credentials are sealed under the vault key and never shown again"
-            : "a SIP peer's calls are admitted from these networks alone, with its username and password"}
+            ? "The account is checked once. The credentials are stored encrypted and never shown again."
+            : "Calls are accepted only from these networks, with this username and password."}
         </span>
       </div>
     </form>

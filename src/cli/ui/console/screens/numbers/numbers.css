@@ -230,3 +230,107 @@
   color: var(--accent);
   margin: 0 0 14px;
 }
+
+
+/* ── the screen in plain words: headings, number cards, the world it answers in ───────── */
+
+.numbers-heading {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 12px;
+}
+
+.numbers-empty,
+.numbers-text {
+  color: var(--ink-soft);
+  font-size: 13.5px;
+  line-height: 1.55;
+  margin: 0 0 12px;
+  max-width: 68ch;
+}
+
+.numbers-text b {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.numbers-text code {
+  font-family: var(--face-fixed);
+  font-size: 12.5px;
+}
+
+.numbers-hint {
+  color: var(--ink-faint);
+  font-size: 12px;
+  margin: 10px 0 0;
+}
+
+.numbers-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.numbers-card {
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-panel);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.numbers-card-number {
+  color: var(--ink);
+  font-size: 16px;
+}
+
+.numbers-card-arrow {
+  color: var(--ink-faint);
+}
+
+.numbers-card-agent {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.numbers-card-remove {
+  margin-left: auto;
+}
+
+.numbers-world {
+  border-radius: 4px;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+}
+
+.numbers-world-sandbox {
+  background: color-mix(in srgb, var(--warn) 16%, transparent);
+  color: var(--warn);
+}
+
+.numbers-world-production {
+  background: color-mix(in srgb, var(--ok) 16%, transparent);
+  color: var(--ok);
+}
+
+.numbers-callout {
+  background: var(--panel-2, var(--panel));
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-panel);
+  padding: 16px 18px;
+}
+
+.numbers-code {
+  background: var(--sunk);
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 0 0 12px;
+  overflow-x: auto;
+  padding: 10px 12px;
+}
