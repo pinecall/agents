@@ -59,7 +59,7 @@ export function SuiteForm({ agent, onOpened }: { agent: string; onOpened: (run: 
     );
   }
   if (roster.goldens.length === 0) {
-    return <p className="suite-aside">No goldens in test/goldens: write one, and it appears here.</p>;
+    return <p className="suite-aside">No goldens for this agent yet: write one in its goldens folder — test/goldens, or test/goldens/&lt;name&gt; in a project of several — and it appears here.</p>;
   }
 
   const tick = (name: string, on: boolean): void => {

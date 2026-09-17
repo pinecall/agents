@@ -10,7 +10,7 @@ import { slugOf } from "../runtime/connect.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { load } from "./load.js";
-import { AGENT_FLAG, homesFor, type Home } from "./home.js";
+import { AGENT_FLAG, homesFor, oneHome, type Home } from "./home.js";
 import { asked, type Door } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
 
@@ -91,10 +91,14 @@ export async function run(argv: string[], how: Pushing = {}): Promise<number> {
         return verb === "push" ? await pushHome(door, homes[0]!, out, err) : await evaluateHome(door, homes[0]!, values.k, out, err);
       }
     }
-    if (verb === "push") return await push(door, rest[0], values.base, values.file, out, err);
+    // A directory or a golden typed beside --agent is still that agent's: its slug is the base.
+    // The class is only needed when no base was typed, so the agent is resolved only then.
+    const theFile = async (): Promise<string | undefined> =>
+      values.base !== undefined && rest[0] !== undefined ? values.file : (await oneHome(`knowledge ${verb}`, values.file, values.agent)).file;
+    if (verb === "push") return await push(door, rest[0], values.base, await theFile(), out, err);
     if (verb === "list") return await list(door, out);
     if (verb === "drop" && rest[0] !== undefined) return await drop(door, rest[0], out);
-    if (verb === "eval") return await evaluate(door, rest[0], values.base, values.k, values.file, out, err);
+    if (verb === "eval") return await evaluate(door, rest[0], values.base, values.k, await theFile(), out, err);
   } catch (refused) {
     // The gateway's own sentence, as it was said: "this gateway keeps no knowledge: it runs on
     // a dev key" names the fix, and nothing here knows better.

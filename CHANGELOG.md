@@ -30,6 +30,10 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   start in the plain log only.
 
 ### Fixed
+- `pinecall knowledge push <dir> --agent <name>` (and `eval <golden> --agent`) ignored `--agent` at a
+  project's root; the agent named gives the base.
+- The usage of `chat`, `prompt` and `line` says `--agent`, and `line` says it works on a production
+  number. Evals' empty roster names the goldens folder of a project, not only `test/goldens`.
 - A gateway that restarted printed a stack per redial under `pinecall run`. It is one line now,
   `gateway  … — reconnecting`, and `gateway  back`.
 - **Test on the production number.** `pinecall line from <+your-phone>` now reaches your sandbox
