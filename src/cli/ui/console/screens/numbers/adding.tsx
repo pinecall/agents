@@ -225,7 +225,7 @@ export function Adding({ carrier, agents, available, busy, onImport, onBuy }: Ad
 }
 
 /** The gateway's own steps, one per line, in its words — the first token is what kind of thing each is. */
-function Steps({ steps }: { steps: string[] }): ReactNode {
+export function Steps({ steps }: { steps: string[] }): ReactNode {
   return (
     <ol className="num-steps">
       {steps.map((step, index) => {

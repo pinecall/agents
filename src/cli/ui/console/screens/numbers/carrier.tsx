@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent, type ReactNode } from "react";
 
-import { Button, Card, CardHead, Input, Label } from "../../ui";
+import { Button, Card, CardHead, Input, Label, Select } from "../../ui";
 import type { Carrier, WantedCarrier } from "./door";
 
 /** What the panel is told: the carrier standing, and the two moves. */
@@ -58,13 +58,31 @@ function CarrierForm({ busy, onBring, onCancel }: { busy: boolean; onBring: (wan
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [addresses, setAddresses] = useState("");
+  const [outHost, setOutHost] = useState("");
+  const [outTransport, setOutTransport] = useState<"auto" | "udp" | "tcp" | "tls">("auto");
+  const [outUsername, setOutUsername] = useState("");
+  const [outPassword, setOutPassword] = useState("");
 
   const submit = (event: FormEvent): void => {
     event.preventDefault();
     const wanted: WantedCarrier =
       kind === "twilio"
         ? { kind, account_sid: accountSid.trim(), user: user.trim() || accountSid.trim(), secret }
-        : { kind, username: username.trim(), password, addresses: addresses.split(/[\s,]+/).filter(Boolean) };
+        : {
+            kind,
+            username: username.trim(),
+            password,
+            addresses: addresses.split(/[\s,]+/).filter(Boolean),
+            // A peer the box only receives from names no outbound host, and sends none of the four.
+            ...(outHost.trim() === ""
+              ? {}
+              : {
+                  outbound_host: outHost.trim(),
+                  outbound_transport: outTransport,
+                  ...(outUsername.trim() === "" ? {} : { outbound_username: outUsername.trim() }),
+                  ...(outPassword === "" ? {} : { outbound_password: outPassword }),
+                }),
+          };
     void onBring(wanted);
   };
 
@@ -114,6 +132,35 @@ function CarrierForm({ busy, onBring, onCancel }: { busy: boolean; onBring: (wan
             </>
           )}
         </div>
+        {kind === "sip" && (
+          <div className="num-outbound-group">
+            <div className="num-outbound-title">Outbound</div>
+            <div className="num-outbound-say">Where this box sends a call it places. Leave empty for a peer you only receive from.</div>
+            <div className="num-fields num-fields-4 num-fields-flush">
+              <div>
+                <Label>Host · and port</Label>
+                <Input value={outHost} onChange={(e) => setOutHost(e.target.value)} placeholder="sip.carrier.example:5060" autoComplete="off" />
+              </div>
+              <div>
+                <Label>Transport</Label>
+                <Select value={outTransport} onChange={(e) => setOutTransport(e.target.value as typeof outTransport)}>
+                  <option value="auto">auto</option>
+                  <option value="udp">udp</option>
+                  <option value="tcp">tcp</option>
+                  <option value="tls">tls</option>
+                </Select>
+              </div>
+              <div>
+                <Label>Username · else the one above</Label>
+                <Input value={outUsername} onChange={(e) => setOutUsername(e.target.value)} autoComplete="off" />
+              </div>
+              <div>
+                <Label>Password · else the one above</Label>
+                <Input type="password" value={outPassword} onChange={(e) => setOutPassword(e.target.value)} autoComplete="off" />
+              </div>
+            </div>
+          </div>
+        )}
         <div className="num-actions">
           <Button kind="primary" type="submit" disabled={busy}>
             {busy ? "Connecting…" : "Connect"}

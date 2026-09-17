@@ -10,18 +10,22 @@ import { useWorld } from "../../lib/world";
 import { Button, Card, CardHead, Empty, Page, PageHead, Pill, Refused } from "../../ui";
 import { Adding } from "./adding";
 import { CarrierPanel } from "./carrier";
+import { OutboundPanel } from "./outbound";
 import {
   bringCarrier,
   buyNumber,
   dropCarrier,
   importNumber,
+  provisionOutbound,
   readAvailable,
   readCarrier,
   readNumbers,
+  readOutbound,
   releaseNumber,
   type Answering,
   type Available,
   type Carrier,
+  type Outbound,
 } from "./door";
 import "./numbers.css";
 
@@ -37,6 +41,7 @@ export function Numbers(): ReactNode {
   const [carrier, setCarrier] = useState<Carrier | null | undefined>(undefined);
   const [doors, setDoors] = useState<Answering[] | null>(null);
   const [available, setAvailable] = useState<Available | null>(null);
+  const [outbound, setOutbound] = useState<Outbound | null>(null);
   const { world } = useWorld();
   const [busy, setBusy] = useState(false);
   const [refused, setRefused] = useState<string | null>(null);
@@ -46,6 +51,8 @@ export function Numbers(): ReactNode {
     setCarrier(brought);
     setDoors(answering);
     setAvailable(brought === null ? null : await readAvailable(credentials));
+    // Placing a call needs a carrier to place it through; a gateway with no such door answers nothing.
+    setOutbound(brought === null ? null : await readOutbound(credentials).catch(() => null));
   }, [credentials]);
 
   useEffect(() => {
@@ -129,6 +136,8 @@ export function Numbers(): ReactNode {
           onBuy={(wanted, dryRun) => moved(() => buyNumber(credentials, { ...wanted, channel: "phone" }, dryRun))}
         />
       )}
+
+      {outbound !== null && <OutboundPanel outbound={outbound} busy={busy} onProvision={(dryRun) => moved(() => provisionOutbound(credentials, dryRun))} />}
 
       {carrier !== undefined && (
         <CarrierPanel

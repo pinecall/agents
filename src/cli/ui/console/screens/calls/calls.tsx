@@ -1,13 +1,15 @@
 /** Calls: this agent's conversations as an inbox — one thread per person, what was said, and a way to answer. */
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router";
 
 import { GatewayError } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
 import { clockOf, dayOf, today, utcDay } from "../../lib/format";
 import { useAgentSessions } from "../../lib/use-agent-sessions";
-import { Avatar } from "../../ui";
+import { Avatar, Segmented } from "../../ui";
+import type { Outbound } from "../numbers/door";
+import { CallBack, DialForm, useOutbound } from "./dial";
 import { markRead, readDoorThreads, sayInto, writeTo, type DoorThread } from "./inbox-door";
 import { SimulateForm } from "./simulate-form";
 import { lastOf, lettersOf, threadsOf, titleOf, type Message, type Thread } from "./threads";
@@ -30,6 +32,8 @@ export function Calls(): ReactNode {
   const threads = useMemo(() => threadsOf(listed.lines), [listed.lines]);
   const [query, setQuery] = useState("");
   const [simulating, setSimulating] = useState(false);
+  const [adding, setAdding] = useState<"simulate" | "dial">("simulate");
+  const outbound = useOutbound();
   const door = useDoorThreads(agent, listed.lines.length);
 
   const open = threads.find((thread) => chosen !== undefined && thread.lines.some((line) => line.call === chosen)) ?? threads[0];
@@ -46,12 +50,40 @@ export function Calls(): ReactNode {
       <div className="ib-list">
         <div className="ib-list-head">
           <input className="ib-search" placeholder="Search a caller or number" value={query} onChange={(event) => setQuery(event.target.value)} />
-          <button type="button" className="ib-new" title="Simulate a caller" aria-expanded={simulating} onClick={() => setSimulating(!simulating)}>
+          <button
+            type="button"
+            className="ib-new"
+            title={outbound === null ? "Simulate a caller" : "Simulate a caller, or call a number"}
+            aria-expanded={simulating}
+            onClick={() => setSimulating(!simulating)}
+          >
             +
           </button>
-          {simulating && (
+          {simulating && outbound === null && (
             <div className="ib-sim">
               <SimulateForm agent={agent} onClose={() => setSimulating(false)} />
+            </div>
+          )}
+          {simulating && outbound !== null && (
+            <div className="ib-sim">
+              {adding === "simulate" ? (
+                <>
+                  <div className="ib-sim-ways">
+                    <Segmented options={WAYS} value={adding} onChange={setAdding} />
+                  </div>
+                  <SimulateForm agent={agent} onClose={() => setSimulating(false)} />
+                </>
+              ) : (
+                <div className="dial-panel">
+                  <div className="dial-panel-head">
+                    <Segmented options={WAYS} value={adding} onChange={setAdding} />
+                    <button type="button" className="dial-panel-close" onClick={() => setSimulating(false)} aria-label="close">
+                      ×
+                    </button>
+                  </div>
+                  <DialForm agent={agent} outbound={outbound} onClose={() => setSimulating(false)} />
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -78,11 +110,17 @@ export function Calls(): ReactNode {
           <p className="ib-nothing">{listed.error === null ? "Pick a conversation on the left." : ""}</p>
         </div>
       ) : (
-        <OpenThread key={open.contact} agent={agent} thread={open} name={nameOf(open, door)} door={door !== null} />
+        <OpenThread key={open.contact} agent={agent} thread={open} name={nameOf(open, door)} door={door !== null} outbound={outbound} />
       )}
     </div>
   );
 }
+
+// What the round + opens, once the org can dial out: a synthetic caller, or a real number.
+const WAYS: readonly { value: "simulate" | "dial"; label: string }[] = [
+  { value: "simulate", label: "Simulate a caller" },
+  { value: "dial", label: "Call a number" },
+];
 
 function nameOf(thread: Thread, door: Map<string, DoorThread> | null): string {
   return door?.get(thread.contact)?.name ?? titleOf(thread);
@@ -140,13 +178,29 @@ function whenOf(at: number | null): string {
   return dayOf(at);
 }
 
-function OpenThread({ agent, thread, name, door }: { agent: string; thread: Thread; name: string; door: boolean }): ReactNode {
+function OpenThread({
+  agent,
+  thread,
+  name,
+  door,
+  outbound,
+}: {
+  agent: string;
+  thread: Thread;
+  name: string;
+  door: boolean;
+  outbound: Outbound | null;
+}): ReactNode {
   const navigate = useNavigate();
   const credentials = useCredentials();
   const { messages, voice, loading, error } = useThread(thread);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [refused, setRefused] = useState<string | null>(null);
+  const [calling, setCalling] = useState(false);
+  const closeCalling = useCallback(() => setCalling(false), []);
+  // A call BACK: to a phone number, and only once the org can place a call at all.
+  const phone = outbound !== null && thread.contact.startsWith("+");
   const latest = thread.latest;
   const live = latest.status !== "ended";
 
@@ -197,6 +251,14 @@ function OpenThread({ agent, thread, name, door }: { agent: string; thread: Thre
           <button type="button" className="ui-button ui-button-md" onClick={() => void navigate(`/a/${agent}/sessions/${latest.call}`)}>
             Session
           </button>
+          {phone && outbound !== null && (
+            <span className="dial-anchor">
+              <button type="button" className="ui-button ui-button-primary ui-button-md" aria-expanded={calling} onClick={() => setCalling(!calling)}>
+                Call back
+              </button>
+              {calling && <CallBack agent={agent} to={thread.contact} outbound={outbound} onClose={closeCalling} onRefused={setRefused} />}
+            </span>
+          )}
         </div>
       </div>
       <div className="ib-messages">

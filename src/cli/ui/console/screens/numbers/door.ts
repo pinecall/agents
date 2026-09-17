@@ -43,7 +43,17 @@ export type Wired = z.infer<typeof WiredSchema>;
 /** What PUT /v1/carrier takes: a Twilio account, or a SIP peer with its own networks. */
 export type WantedCarrier =
   | { kind: "twilio"; account_sid: string; user: string; secret: string }
-  | { kind: "sip"; username: string; password: string; addresses: string[] };
+  | {
+      kind: "sip";
+      username: string;
+      password: string;
+      addresses: string[];
+      /** Where the box sends a call it places through this peer. Left out: a peer it only receives from. */
+      outbound_host?: string;
+      outbound_transport?: "auto" | "udp" | "tcp" | "tls";
+      outbound_username?: string;
+      outbound_password?: string;
+    };
 
 /** What an import wants: which number, which agent, on which channel. */
 export interface WantedNumber {
@@ -103,6 +113,51 @@ export async function buyNumber(credentials: Credentials, wanted: WantedPurchase
 /** Let a number go: the route and the admission. The carrier account is not touched. */
 export async function releaseNumber(credentials: Credentials, number: string): Promise<void> {
   await drop(credentials, `/v1/numbers/${encodeURIComponent(number)}`);
+}
+
+// GET /v1/carrier/outbound (the runtime's docs/protocol/console-api.md §4): whether the org can place
+// a call at all, the numbers it would place it from, what is still missing in the gateway's own
+// sentences, and the guards only whoever runs the gateway sets. Read loosely: a guard added later
+// is not a refusal.
+const OutboundSchema = z.looseObject({
+  ready: z.boolean(),
+  kind: z.string().nullish(),
+  from_numbers: z.array(z.string()),
+  steps_missing: z.array(z.string()),
+  guards: z.looseObject({
+    dial_anywhere: z.boolean(),
+    per_minute: z.number(),
+    per_day: z.number(),
+    countries: z.array(z.string()),
+    max_duration_s: z.number(),
+  }),
+});
+export type Outbound = z.infer<typeof OutboundSchema>;
+
+const ProvisionedSchema = z.looseObject({ steps: z.array(z.string()), dry_run: z.boolean(), ready: z.boolean() });
+export type Provisioned = z.infer<typeof ProvisionedSchema>;
+
+/** Whether this org can dial out, or null from a gateway with no such door (its 404) or a key that may not ask. */
+export async function readOutbound(credentials: Credentials): Promise<Outbound | null> {
+  try {
+    return OutboundSchema.parse(await read(credentials, "/v1/carrier/outbound"));
+  } catch (refused) {
+    if (isStatus(refused, 404) || isStatus(refused, 405) || isStatus(refused, 403)) return null;
+    throw refused;
+  }
+}
+
+/** Provision or repair the trunk calls are placed through: the plan alone with `dryRun`, else the writes. */
+export async function provisionOutbound(credentials: Credentials, dryRun: boolean): Promise<Provisioned> {
+  return ProvisionedSchema.parse(await post(credentials, `/v1/carrier/outbound${dryRun ? "?dry_run=true" : ""}`, {}));
+}
+
+const DialledSchema = z.looseObject({ call: z.string() });
+
+/** Place a call as the agent (POST /v1/agents/{slug}/dial). Answers the call it became; the guards refuse in sentences. */
+export async function dial(credentials: Credentials, agent: string, to: string, from?: string): Promise<string> {
+  const body = from === undefined || from === "" ? { to } : { to, from };
+  return DialledSchema.parse(await post(credentials, `/v1/agents/${encodeURIComponent(agent)}/dial`, body)).call;
 }
 
 function isStatus(failed: unknown, status: number): boolean {

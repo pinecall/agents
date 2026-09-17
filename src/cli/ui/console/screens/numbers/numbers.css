@@ -171,3 +171,98 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Outbound calls */
+.num-out-pill {
+  margin-left: auto;
+}
+
+.num-out-body {
+  padding: 14px 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.num-out-from {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.num-out-label {
+  font-size: 12.5px;
+  color: var(--ink-4);
+}
+
+.num-out-numbers {
+  font-size: 14px;
+  font-weight: 550;
+}
+
+.num-out-missing {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  color: var(--amber);
+  line-height: 1.6;
+}
+
+.num-out-actions {
+  padding: 0 0 14px;
+}
+
+.num-out-guards {
+  padding: 13px 16px 14px;
+  border-top: 1px solid var(--line-2);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.num-out-guards-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-6);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.num-out-note {
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--ink-4);
+}
+
+.num-outbound-group {
+  padding: 0 16px 14px;
+}
+
+.num-outbound-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+  margin-bottom: 3px;
+}
+
+.num-outbound-say {
+  font-size: 12.5px;
+  color: var(--ink-4);
+  margin-bottom: 10px;
+}
+
+.num-fields-4 {
+  grid-template-columns: minmax(0, 1.4fr) 110px minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.num-fields-flush {
+  padding: 0;
+}
+
+@media (max-width: 720px) {
+  .num-fields-4 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
