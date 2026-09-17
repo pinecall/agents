@@ -1,4 +1,4 @@
-/** Chat: the agent written to from this tab — no microphone and no voice — with the conversation filling the page and the call read off its log beside it. */
+/** Chat: the agent written to from this tab — no microphone and no voice — in one window, with the call read off its log beside it. */
 
 import type { Entry } from "@pinecall/protocol";
 import { useEffect, useState, type ReactNode } from "react";
@@ -15,8 +15,8 @@ import "./room-chat.css";
 
 /**
  * The screen. A chat is a written session of the same room Talk speaks in: the agent has no ears
- * and no voice for it, and writes back as it thinks. The conversation is the page, because that is
- * what a chat is — everything else sits in one bar above it.
+ * and no voice for it, and writes back as it thinks. It is a window and not a page: a conversation
+ * has a size, and a chat stretched over a wide screen is a chat nobody can read.
  */
 export function RoomChat(): ReactNode {
   const agent = useParams()["agent"] ?? "";
@@ -25,16 +25,18 @@ export function RoomChat(): ReactNode {
   const on = live.phase === "live" || live.phase === "connecting";
 
   return (
-    <div className="rchat-grid">
-      <section className="rchat" aria-label={`Chat with ${agent}`}>
-        <Bar agent={agent} live={live} world={world} />
-        {on || live.lines.length > 0 ? <Transcript lines={live.lines} mode="chat" /> : <Empty agent={agent} live={live} />}
-        {live.error !== null && <p className="rchat-refused">{live.error}</p>}
-        <Composer open={live.phase === "live"} mode="chat" onWrite={live.write} />
-        {live.call !== null && <Marks call={live.call} heard={live.heard} />}
-      </section>
+    <div className="rchat-stage">
+      <div className="rchat-window">
+        <section className="rchat" aria-label={`Chat with ${agent}`}>
+          <Bar agent={agent} live={live} world={world} />
+          {on || live.lines.length > 0 ? <Transcript lines={live.lines} mode="chat" /> : <Empty agent={agent} live={live} />}
+          {live.error !== null && <p className="rchat-refused">{live.error}</p>}
+          <Composer open={live.phase === "live"} mode="chat" onWrite={live.write} />
+          {live.call !== null && <Marks call={live.call} heard={live.heard} />}
+        </section>
 
-      <Inspector agent={agent} call={live.call} />
+        <Inspector agent={agent} call={live.call} />
+      </div>
     </div>
   );
 }

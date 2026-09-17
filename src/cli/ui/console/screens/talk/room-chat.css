@@ -1,11 +1,28 @@
 /* Chat: one bar, the conversation as the page, the composer at its foot. The Inspector is its own. */
 
-.rchat-grid {
+.rchat-stage {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 330px);
+  place-items: center;
+  padding: 22px;
+  background: var(--ground-4);
+}
+
+.rchat-window {
+  width: min(1180px, 100%);
+  height: 100%;
+  max-height: 880px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 320px);
   grid-template-rows: minmax(0, 1fr);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--ground);
+  box-shadow:
+    0 1px 2px rgba(16, 16, 20, 0.04),
+    0 26px 60px -28px rgba(16, 16, 20, 0.35);
+  overflow: hidden;
 }
 
 .rchat {
@@ -97,7 +114,16 @@
 }
 
 @media (max-width: 900px) {
-  .rchat-grid {
+  .rchat-stage {
+    padding: 0;
+    background: var(--ground);
+  }
+
+  .rchat-window {
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr) auto;
     overflow: auto;

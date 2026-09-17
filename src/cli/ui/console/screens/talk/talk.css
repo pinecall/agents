@@ -186,7 +186,7 @@
   flex: 1;
   max-height: none;
   padding: 22px 24px;
-  background: var(--ground-side);
+  background: var(--ground);
 }
 
 .talk-lines {
