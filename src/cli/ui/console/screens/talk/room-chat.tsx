@@ -1,7 +1,7 @@
 /** Chat: the agent written to from this tab — no microphone and no voice — in one window, with the call read off its log beside it. */
 
 import type { Entry } from "@pinecall/protocol";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useParams } from "react-router";
 
 import { elapsed } from "../../lib/format";
@@ -16,7 +16,8 @@ import "./room-chat.css";
 /**
  * The screen. A chat is a written session of the same room Talk speaks in: the agent has no ears
  * and no voice for it, and writes back as it thinks. It is a window and not a page: a conversation
- * has a size, and a chat stretched over a wide screen is a chat nobody can read.
+ * has a size, and a chat stretched over a wide screen is a chat nobody can read. The rail and the
+ * inspector stay where they are on every other screen: only the conversation is the window.
  */
 export function RoomChat(): ReactNode {
   const agent = useParams()["agent"] ?? "";
@@ -24,9 +25,18 @@ export function RoomChat(): ReactNode {
   const { world } = useWorld();
   const on = live.phase === "live" || live.phase === "connecting";
 
+  // Opening the tab IS starting the chat: a screen whose first act is always the same button is a
+  // button nobody wanted. It runs once per agent — a chat that ended is started again by hand.
+  const opening = useRef("");
+  useEffect(() => {
+    if (agent === "" || opening.current === agent) return;
+    opening.current = agent;
+    void live.open("chat");
+  }, [agent, live]);
+
   return (
-    <div className="rchat-stage">
-      <div className="rchat-window">
+    <div className="rchat-grid">
+      <div className="rchat-stage">
         <section className="rchat" aria-label={`Chat with ${agent}`}>
           <Bar agent={agent} live={live} world={world} />
           {on || live.lines.length > 0 ? <Transcript lines={live.lines} mode="chat" /> : <Empty agent={agent} live={live} />}
@@ -34,9 +44,9 @@ export function RoomChat(): ReactNode {
           <Composer open={live.phase === "live"} mode="chat" onWrite={live.write} />
           {live.call !== null && <Marks call={live.call} heard={live.heard} />}
         </section>
-
-        <Inspector agent={agent} call={live.call} />
       </div>
+
+      <Inspector agent={agent} call={live.call} />
     </div>
   );
 }
@@ -76,8 +86,9 @@ function Empty({ agent, live }: { agent: string; live: Talking }): ReactNode {
   return (
     <div className="rchat-empty">
       <p className="rchat-empty-words">
-        Write to {agent} as a visitor would. No microphone and no voice: the agent answers in writing, with the same tools, memory and knowledge, and the call is
-        judged at hang-up like any other.
+        {live.phase === "connecting"
+          ? `Opening a written room with ${agent}…`
+          : `Write to ${agent} as a visitor would. No microphone and no voice: the agent answers in writing, with the same tools, memory and knowledge, and the call is judged at hang-up like any other.`}
       </p>
       {live.phase === "failed" && <p className="rchat-empty-failed">The room did not open. The reason is below.</p>}
     </div>
