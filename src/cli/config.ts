@@ -12,8 +12,8 @@ export const group: Group = {
   purpose: "the gateways this machine knows, and which one the next verb goes to",
   usage: `${USAGE}
 
-  One file — ~/.pinecall/config.json — holds them, and \`pinecall login\` writes one per gateway
-  you sign in to. Nothing is exported, and there is no order of precedence to remember: the
+  One file — ~/.pinecall/config.json — holds them, and \`pinecall login\` writes one per ORG you
+  belong to, with your key in both of its worlds. Nothing is exported, and there is no order of precedence to remember: the
   profile with the ▸ is the one every verb uses until \`pinecall use\` moves it.
 
   It prints no key. What a listing may say about one is that it is there, and its fingerprint is

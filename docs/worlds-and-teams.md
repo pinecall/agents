@@ -130,7 +130,8 @@ a container `pinecall login --key-stdin` writes the same profile, with `PINECALL
 ## The team
 
 People are rows, not shared keys. The admin invites from the console's Team screen or with `POST
-/v1/members`, and gets a **link** to send; the person opens it, chooses a password on the card it
+/v1/members`. On a gateway that can send mail the person gets a **letter** with a one-use link —
+and the admin is shown the same link, to hand over where mail is not set up; the person opens it, chooses a password on the card it
 lands on, and holds keys of their own from then on — one per device, revoked on their own. On a
 gateway that takes no sign-up, the very first admin is invited the same way by whoever runs the
 box (`pinecall-runtime orgs invite`). A role is a preset of what those keys open:

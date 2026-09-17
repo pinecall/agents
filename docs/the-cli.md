@@ -702,6 +702,32 @@ yours to type and the gateway is its judge; a bad one comes back as a sentence, 
 never registers you: it ships inside every self-hosted runtime, and a registration form there would
 be one flag away from open registration on somebody else's box.
 
+## `gateway`
+
+```
+pinecall gateway              where this machine is pointed
+pinecall gateway <url>        point it at your own box, then `pinecall login`
+```
+
+Every verb goes to `https://box.pinecall.io` until this says otherwise, so a person on the cloud
+types `pinecall login` and nothing else — no URL to remember and none to mistype. Somebody running
+their own box says so ONCE, and every verb after it goes there: the login, the signup, and any verb
+that runs before this machine holds a key.
+
+```console
+$ pinecall gateway
+▸ https://box.pinecall.io   (the default)
+
+$ pinecall gateway voz.clinica.com
+▸ https://voz.clinica.com
+  `pinecall login` signs this machine in there
+```
+
+An address with no scheme is read as https, and only the origin is kept. An org you are already
+signed in to is a profile, and `pinecall use <org>` is how you move between those; this verb is for
+the gateway you have not signed in to yet. A URL typed on `pinecall login <url>` still wins, for
+that one command.
+
 ## `login` · `config` · `use` · `whoami`
 
 ```
@@ -772,7 +798,7 @@ rather than leaving it pointing at a row that is gone. It forgets the row here a
 the key itself is stopped from the Keys screen, and a row left behind is a key somebody will trust
 tomorrow and a refusal they will read as the gateway's fault.
 
-**The key it keeps is this laptop's sandbox key.** `pinecall run` and `pinecall chat` answer in
+**The key in hand after a login is the sandbox one.** `pinecall run` and `pinecall chat` answer in
 a world of your own and never in the one your customers call — and it is watched from this
 machine too, on [`pinecall serve`](#serve) ([worlds-and-teams.md](worlds-and-teams.md)).
 

@@ -12,7 +12,7 @@ import { aLineOfStdin } from "./secret.js";
 import { asked } from "./testing/gateway.js";
 import { orgOf, refusal, whoIs, type Who } from "./whoami.js";
 
-const USAGE = "usage: pinecall login [gateway-url] [--key-stdin]";
+const USAGE = "usage: pinecall login [gateway-url] [--as <profile>] [--key-stdin]";
 
 // How often the terminal asks, and for how long. The gateway's word lives ten minutes, so this
 // gives up a little after it does rather than polling a word that cannot come back.
@@ -33,8 +33,11 @@ export const group: Group = {
   With no URL it is the gateway this machine is pointed at — ${CLOUD_URL} until \`pinecall gateway
   <url>\` says otherwise — and it says which one out loud before anything is kept.
 
-  The key it keeps is this machine's SANDBOX key, so \`pinecall run\` and \`pinecall chat\`
-  answer in a world of your own and never in the one your customers call.
+  One login keeps everything you hold: a profile per org you belong to, named after the org,
+  each with your key in BOTH worlds. The sandbox one is in hand, so \`pinecall run\` and \`pinecall
+  chat\` answer in a world of your own and never in the one your customers call; \`pinecall use
+  <org>\` moves between orgs and \`pinecall use <org> production\` looks at production. --as keeps
+  ONE profile under a name of yours instead.
 
   --key-stdin reads a KEY from one line of stdin instead, for a machine: a server, a CI job, a
   container. That is what \`pinecall keys issue\` mints, and it writes the same profile — so a

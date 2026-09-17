@@ -18,7 +18,7 @@ export const group: Group = {
   login, the signup, and any verb that runs before this machine holds a key. It is remembered in
   ~/.pinecall/config.json beside the profiles, and \`pinecall config\` prints which one is in hand.
 
-  A gateway you are already signed in to is a profile: \`pinecall use <name>\` moves between them
+  An org you are already signed in to is a profile: \`pinecall use <org>\` moves between them
   and this verb is not what you want. This one is for the gateway you have not signed in to yet.`,
   run,
 };
@@ -48,7 +48,7 @@ export function run(argv: string[], how: Pointing = {}): number {
   chooseGateway(url, how.home);
   const known = readConfig(how.home).profiles[nameFor(url, readConfig(how.home))] !== undefined;
   out.write(`▸ ${url}\n`);
-  out.write(known ? "  signed in already: `pinecall use <profile>` moves between them\n" : "  `pinecall login` signs this machine in there\n");
+  out.write(known ? "  signed in already: `pinecall use <org>` moves between them\n" : "  `pinecall login` signs this machine in there\n");
   return 0;
 }
 
