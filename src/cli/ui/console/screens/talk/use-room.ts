@@ -1,4 +1,4 @@
-/** The Talk screen's room: a visit token from the gateway, the browser's microphone, and what is said as it is said. */
+/** The Talk screen's room: a visit token from the gateway — a voice call or a written chat — and what is said as it is said. */
 
 import type { Entry } from "@pinecall/protocol";
 import { ParticipantKind, Room, RoomEvent, Track, type RemoteTrack, type TextStreamReader } from "livekit-client";
@@ -23,14 +23,27 @@ import {
 /** Where the conversation stands. `ended` keeps the transcript; `open` starts a new call. */
 export type Phase = "idle" | "connecting" | "live" | "ended" | "failed";
 
+/**
+ * How the room is joined: `talk` with the microphone and the agent's voice, `chat` written — the
+ * session then has no ears and no voice, and the agent's words arrive at the pace it writes them.
+ */
+export type Mode = "talk" | "chat";
+
 /** The room as the screen reads it, and the two things it may do to it. */
 export interface Talking {
   phase: Phase;
+  mode: Mode;
   call: string | null;
   lines: Line[];
   error: string | null;
-  open: () => Promise<void>;
+  /** When the room was joined, in seconds, for the clock. */
+  since: number | null;
+  /** Whether the microphone is off, on a voice call. */
+  muted: boolean;
+  open: (mode: Mode) => Promise<void>;
   close: () => Promise<void>;
+  /** The microphone off, or on again: the call goes on either way. */
+  toggleMic: () => Promise<void>;
   /** Write a line into the call instead of saying it. The agent answers it as it answers a spoken turn. */
   write: (text: string) => Promise<void>;
   /** One entry of the call's log, for the marks the room itself does not carry. */
@@ -44,6 +57,9 @@ const MintedSchema = z.object({ server_url: z.string(), participant_token: z.str
 export function useRoom(agent: string): Talking {
   const credentials = useCredentials();
   const [phase, setPhase] = useState<Phase>("idle");
+  const [mode, setMode] = useState<Mode>("talk");
+  const [since, setSince] = useState<number | null>(null);
+  const [muted, setMuted] = useState(false);
   const [call, setCall] = useState<string | null>(null);
   const [lines, setLines] = useState<Line[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -130,27 +146,32 @@ export function useRoom(agent: string): Talking {
     [place],
   );
 
-  const open = useCallback(async (): Promise<void> => {
+  const open = useCallback(async (joining: Mode): Promise<void> => {
     setPhase("connecting");
+    setMode(joining);
+    setMuted(false);
+    setSince(null);
     setError(null);
     setLines([]);
     seen.current.clear();
     lastSpoken.current = null;
     waiting.current = [];
     try {
-      const minted = MintedSchema.parse(await post(credentials, "/v1/tokens", { agent, scope: "talk" }));
+      const minted = MintedSchema.parse(await post(credentials, "/v1/tokens", { agent, scope: joining }));
       const joined = new Room();
       room.current = joined;
       // Registered before the room is joined: a handler registered after connect misses the first words.
       joined.registerTextStreamHandler(TRANSCRIPTION_TOPIC, (reader, from) => {
         void spoken(joined, reader, from.identity, said);
       });
-      joined.on(RoomEvent.TrackSubscribed, playAloud);
+      // A chat hears the room only for its text: no voice is attached, whatever arrives.
+      if (joining === "talk") joined.on(RoomEvent.TrackSubscribed, playAloud);
       joined.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack) => track.detach().forEach((element) => element.remove()));
       joined.on(RoomEvent.Disconnected, () => setPhase("ended"));
       setCall(minted.call);
       await joined.connect(minted.server_url, minted.participant_token);
-      await joined.localParticipant.setMicrophoneEnabled(true);
+      if (joining === "talk") await joined.localParticipant.setMicrophoneEnabled(true);
+      setSince(Date.now() / 1000);
       setPhase("live");
     } catch (failed) {
       setError(failed instanceof Error ? failed.message : String(failed));
@@ -162,6 +183,13 @@ export function useRoom(agent: string): Talking {
     await room.current?.disconnect();
   }, []);
 
+  const toggleMic = useCallback(async (): Promise<void> => {
+    const joined = room.current;
+    if (joined === null) return;
+    await joined.localParticipant.setMicrophoneEnabled(muted);
+    setMuted(!muted);
+  }, [muted]);
+
   // Leaving the screen hangs up: a room nobody is looking at is a call nobody is on.
   useEffect(() => {
     return () => {
@@ -169,7 +197,7 @@ export function useRoom(agent: string): Talking {
     };
   }, []);
 
-  return { phase, call, lines, error, open, close, write, heard };
+  return { phase, mode, call, lines, error, since, muted, open, close, toggleMic, write, heard };
 }
 
 // One segment from its first delta to the trailer that settles it. A segment's line is the text

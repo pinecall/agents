@@ -1,13 +1,13 @@
 /** The Inspector: one call read off its log while it happens — its figures, its turns, its tools, its state. */
 
 import type { State, Turn } from "@pinecall/protocol";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import { euros } from "../../lib/format";
 import { medians, seconds } from "../../lib/metrics";
 import type { Connection } from "../../lib/stream";
 import { useOrg } from "../../lib/org";
-import { Pill, SectionLabel } from "../../ui";
+import { Pill, SectionLabel, Tabs } from "../../ui";
 import { useWatchedCall } from "../live/use-watched-call";
 import "./inspector.css";
 
@@ -57,7 +57,10 @@ function standing(connection: Connection | null): ReactNode {
   }
 }
 
+type Tab = "call" | "turns" | "tools" | "state";
+
 function Reading({ call, yours }: { call: string; yours: boolean }): ReactNode {
+  const [tab, setTab] = useState<Tab>("call");
   const watched = useWatchedCall(call);
   const { state } = watched;
   const seen = new Set<number>();
@@ -78,58 +81,76 @@ function Reading({ call, yours }: { call: string; yours: boolean }): ReactNode {
   ];
   const fields = Object.keys(state.app_state).sort();
 
+  const tabs = [
+    { tab: "call" as const, name: "Call" },
+    { tab: "turns" as const, name: "Turns", mark: <span className="inspector-count">{state.turns.length}</span> },
+    { tab: "tools" as const, name: "Tools", mark: <span className="inspector-count">{state.tools.length}</span> },
+    { tab: "state" as const, name: "State" },
+  ];
+
   return (
     <>
       <InspectorHead connection={watched.connection} />
-      <SectionLabel>{yours ? "This session" : "Last session"}</SectionLabel>
-      <div className="inspector-figures">
-        {figures.map(([label, value]) => (
-          <div key={label}>
-            <div className="inspector-figure-label">{label}</div>
-            <div className="inspector-figure">{value}</div>
-          </div>
-        ))}
-      </div>
-      {!yours && <p className="inspector-call">{call}</p>}
-
-      <SectionLabel ruled>Turns</SectionLabel>
-      <div className="inspector-turns">
-        {state.turns.length === 0 && <p className="inspector-none">No turn yet.</p>}
-        {state.turns.map((turn, index) => (
-          <div className="inspector-turn" key={`${turn.speech_id}-${index}`}>
-            <span className={turn.role === "agent" ? "inspector-who inspector-who-agent" : "inspector-who"}>{turn.role === "agent" ? "agent" : "caller"}</span>
-            <span className="inspector-turn-body">
-              <span className="inspector-turn-text">{turn.text}</span>
-              <span className="inspector-turn-meta">{metaOf(turn)}</span>
-            </span>
-          </div>
-        ))}
+      <div className="inspector-tabs">
+        <Tabs label="Inspector" tabs={tabs} on={tab} onPick={setTab} />
       </div>
 
-      <SectionLabel ruled>Tool calls</SectionLabel>
-      <div className="inspector-tools">
-        {state.tools.length === 0 && <p className="inspector-none">No tool has run.</p>}
-        {state.tools.map((run) => (
-          <div className="inspector-tool" key={run.call_id}>
-            <div className="inspector-tool-name">{run.name}</div>
-            <div className="inspector-tool-args">{argumentsOf(run.arguments)}</div>
-            <div className={run.status === "failed" ? "inspector-tool-result inspector-tool-failed" : run.status === "running" ? "inspector-tool-result inspector-tool-running" : "inspector-tool-result"}>
-              {run.status === "failed" ? (run.error ?? "failed") : run.status === "running" ? "running…" : `ok${run.summary ? ` · ${run.summary}` : ""}`}
+      {tab === "call" && (
+        <>
+          <SectionLabel>{yours ? "This session" : "Last session"}</SectionLabel>
+          <div className="inspector-figures">
+            {figures.map(([label, value]) => (
+              <div key={label}>
+                <div className="inspector-figure-label">{label}</div>
+                <div className="inspector-figure">{value}</div>
+              </div>
+            ))}
+          </div>
+          {!yours && <p className="inspector-call">{call}</p>}
+        </>
+      )}
+
+      {tab === "turns" && (
+        <div className="inspector-turns">
+          {state.turns.length === 0 && <p className="inspector-none">No turn yet.</p>}
+          {state.turns.map((turn, index) => (
+            <div className="inspector-turn" key={`${turn.speech_id}-${index}`}>
+              <span className={turn.role === "agent" ? "inspector-who inspector-who-agent" : "inspector-who"}>{turn.role === "agent" ? "agent" : "caller"}</span>
+              <span className="inspector-turn-body">
+                <span className="inspector-turn-text">{turn.text}</span>
+                <span className="inspector-turn-meta">{metaOf(turn)}</span>
+              </span>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
-      <SectionLabel ruled>State</SectionLabel>
-      <div className="inspector-state">
-        {fields.length === 0 && <p className="inspector-none">The app has declared no state yet.</p>}
-        {fields.map((name) => (
-          <div className="inspector-field" key={name}>
-            <span className="inspector-field-key">{name}</span>
-            <span className="inspector-field-value">{said(state.app_state[name])}</span>
-          </div>
-        ))}
-      </div>
+      {tab === "tools" && (
+        <div className="inspector-tools">
+          {state.tools.length === 0 && <p className="inspector-none">No tool has run.</p>}
+          {state.tools.map((run) => (
+            <div className="inspector-tool" key={run.call_id}>
+              <div className="inspector-tool-name">{run.name}</div>
+              <div className="inspector-tool-args">{argumentsOf(run.arguments)}</div>
+              <div className={run.status === "failed" ? "inspector-tool-result inspector-tool-failed" : run.status === "running" ? "inspector-tool-result inspector-tool-running" : "inspector-tool-result"}>
+                {run.status === "failed" ? (run.error ?? "failed") : run.status === "running" ? "running…" : `ok${run.summary ? ` · ${run.summary}` : ""}`}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === "state" && (
+        <div className="inspector-state">
+          {fields.length === 0 && <p className="inspector-none">The app has declared no state yet.</p>}
+          {fields.map((name) => (
+            <div className="inspector-field" key={name}>
+              <span className="inspector-field-key">{name}</span>
+              <span className="inspector-field-value">{said(state.app_state[name])}</span>
+            </div>
+          ))}
+        </div>
+      )}
       {watched.error !== null && <p className="inspector-refused">{watched.error}</p>}
     </>
   );

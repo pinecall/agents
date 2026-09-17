@@ -29,6 +29,16 @@
   font-weight: 550;
 }
 
+.inspector-tabs {
+  padding: 4px 8px 12px;
+}
+
+.inspector-count {
+  font-size: 11px;
+  color: var(--ink-6);
+  font-weight: 500;
+}
+
 .inspector-quiet {
   margin: 0;
   padding: 14px 15px;

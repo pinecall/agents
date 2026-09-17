@@ -4,8 +4,8 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 
 import { words, type Line, type Mark, type Said } from "./transcript";
 
-/** Every line so far, in a card, scrolled to the last one. Nothing here animates on a timer. */
-export function Transcript({ lines, children }: { lines: Line[]; children?: ReactNode }): ReactNode {
+/** Every line so far, filling the conversation's place, scrolled to the last one. Nothing here animates on a timer. */
+export function Transcript({ lines }: { lines: Line[] }): ReactNode {
   const stream = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -14,16 +14,9 @@ export function Transcript({ lines, children }: { lines: Line[]; children?: Reac
   }, [lines]);
 
   return (
-    <div className="ui-card">
-      <div className="ui-card-head">
-        <span className="ui-card-title">This call</span>
-        <span className="ui-card-meta">spoken or written, as the room says it</span>
-      </div>
-      <div className="talk-lines" ref={stream}>
-        {lines.length === 0 && <p className="talk-quiet">Nothing said yet. What you say and what you write both land here.</p>}
-        {lines.map((line) => (line.kind === "said" ? <SaidLine key={line.id} line={line} /> : <MarkLine key={line.id} mark={line} />))}
-      </div>
-      {children}
+    <div className="talk-lines" ref={stream}>
+      {lines.length === 0 && <p className="talk-quiet">Nothing said yet. What you say and what you write both land here.</p>}
+      {lines.map((line) => (line.kind === "said" ? <SaidLine key={line.id} line={line} /> : <MarkLine key={line.id} mark={line} />))}
     </div>
   );
 }
@@ -53,7 +46,7 @@ function MarkLine({ mark }: { mark: Mark }): ReactNode {
  * The box under the conversation: what is typed here goes into the SAME call the microphone is on,
  * so a person speaks or writes as it suits them — a number, an address, a name nobody can spell out loud.
  */
-export function Composer({ open, onWrite }: { open: boolean; onWrite: (text: string) => Promise<void> }): ReactNode {
+export function Composer({ open, mode, onWrite }: { open: boolean; mode: "talk" | "chat"; onWrite: (text: string) => Promise<void> }): ReactNode {
   const [text, setText] = useState("");
 
   const send = (event: FormEvent): void => {
@@ -70,7 +63,7 @@ export function Composer({ open, onWrite }: { open: boolean; onWrite: (text: str
         className="talk-write"
         value={text}
         disabled={!open}
-        placeholder={open ? "Write to the agent — or just speak" : "Press Talk first — then speak or write"}
+        placeholder={open ? (mode === "talk" ? "Write to the agent — or just speak" : "Write to the agent") : "Join the room to write"}
         onChange={(event) => setText(event.target.value)}
       />
       <button type="submit" className="talk-send" disabled={!open || text.trim() === ""}>
