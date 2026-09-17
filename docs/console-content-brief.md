@@ -339,7 +339,8 @@ This agent's conversations as an inbox: one thread per person, what was said, an
   outcome — *On a call now* in green — and the **unread** count. Names and unread come from `GET
   /v1/agents/{slug}/threads` (unread is per person: what arrived since they last opened the thread),
   and opening a thread with some posts `…/read`. A search box filters by name, handle and last line;
-  **+** opens Simulate for this agent. Empty: *No conversations yet. The first call to reach <agent>
+  **+** opens Simulate for this agent — and, once the org can dial out, *Call a number* beside it (a
+  number written whole, `+14176743169`, the number to call **From** when the org has several, **Call**). Empty: *No conversations yet. The first call to reach <agent>
   opens a thread here as it rings.*
 - **The open thread**: the avatar, the name, `handle · channel · handled by <agent>`; **Watch live**
   while its latest call is up (→ Live) and **Session** (→ that call's session). Messages are read
@@ -353,8 +354,13 @@ This agent's conversations as an inbox: one thread per person, what was said, an
   (`409`, in its words) once WhatsApp's 24 h window closed or the conversation sealed. Otherwise it
   is disabled and its placeholder says why: *A live voice call — Listen in on Live to speak into
   it* · *The conversation is closed — nothing can be written into it from here*.
-- **Call back is not here**: the gateway has no door that dials out (the runtime's
-  `console-api.md` §4). It returns with that door.
+- **Call back**, in the head of a thread whose contact is a phone number, and *Call a number* under
+  **+**, are drawn only when `GET /v1/carrier/outbound` says `ready` (read once per screen; absent
+  or not ready, neither is drawn and nothing is said). It confirms first — *Call <number> as
+  <agent>?*, **From** when there are several numbers, **Call** · Cancel — then `POST
+  /v1/agents/{slug}/dial {to, from?}` and the call it became opens on Live. A refusal (a number
+  that never called, a rate, a country) is the gateway's sentence. A contact the app filed under an
+  id of its own, not a number, has no Call back.
 
 ## 5. Sessions — `/sessions`, `/a/:agent/sessions`
 
@@ -384,7 +390,8 @@ path written, and its notes). Then, in an auditor's order:
 1. **Seven facts**: Agent · Channel (`· outbound` when it was) · Started (`16 Sep, 15:10`) ·
    Duration (*still going*) · Ended (the end reason in words, *not yet*) · Cost · Turns · events.
 2. **Outcome**, when the summary wrote one.
-3. **Transcript · N turns** *with <caller>* — beside it **Latency across this call** (per measure
+3. **Listen to this call**, when the summary points at a recording: the player, and nothing else.
+4. **Transcript · N turns** *with <caller>* — beside it **Latency across this call** (per measure
    the median and the max, LLM first token and End to end first; when nothing was measured it says
    why) and **Score**: *Passed* / *Did not pass* with `N of M held`, judge by judge — name, verdict
    pill (`held` green · `broken` red · `deferred` amber · `skipped` muted), the sentence it answered
@@ -393,13 +400,12 @@ path written, and its notes). Then, in an auditor's order:
    session* (with the log's own reason) and *Not scored yet* both carry **Attach a judge** for a key
    that opens `evals`, once the call has ended: `POST /v1/evals/judge/{call}` runs the hang-up's
    judges now, under the same ceiling, and the verdict replaces the card's at once.
-4. **Cost by model**: model · unit, quantity, euros, the total, the USD→EUR rate and its date, any
+5. **Cost by model**: model · unit, quantity, euros, the total, the USD→EUR rate and its date, any
    unpriced model named.
-5. **Listen to this call**, when the summary points at a recording.
-6. **Consent proof**, when the call asked for any: per tool call, the join from the request to the
-   grant or the decline, and to the tool call it authorised — seq to seq.
-7. **The prompt, block by block** — name, hash, length; the text never enters the log.
-8. **The log** — every entry in seq order, the metric fields one click under the turn they timed,
+6. **Details** — *consent, prompt blocks, the full log* — one card, closed until asked (*Show ▾*),
+   and opened by a `#seq-N` in the address. Under it: **Consent proof**, when the call asked for any: per tool call, the join from the request to the
+   grant or the decline, and to the tool call it authorised — seq to seq; **The prompt, block by
+   block** — name, hash, length; the text never enters the log; and **The log** — every entry in seq order, the metric fields one click under the turn they timed,
    each row an anchor (`#seq-N`).
 
 While it reads: *Reading <call>…*; nothing there: *No call <call> in the log.*; a refusal in the
@@ -407,16 +413,20 @@ gateway's words.
 
 ## 6. Talk — `/a/:agent/talk`
 
-*Talk to <agent>*: this machine's microphone reaches the agent, and the call is the same log
-everything else reads.
+*Talk to <agent>* — *Speak or write*: this machine's microphone reaches the agent, and so does what
+is typed, in the same call and the same log everything else reads.
 
 - **The button**: `Talk` → joining (disabled) → `Hang up`. Five phases, a line and a sentence each:
-  *Ready — press Talk* · *Joining the room…* · *On the call — speak* · the call ended (*Its session
+  *Ready — press Talk* · *Joining the room…* · *On the call — speak or write* · the call ended (*Its session
   is in Sessions, judged at hang-up*) · *The room did not open* (*the reason is under the button*).
   The five bars under it move while a call is up; they are not a level meter.
 - **Speaking as** `<person> · you` and **Lands in** `<world> · counts in usage`.
-- **This call**, once there are lines: the transcript word by word — interim grey, final solid, the
-  supervisor's marks between them as single sentences.
+- **This call**: the conversation as bubbles — yours on the right in the accent, the agent's on
+  the left filling word by word, interim speech dimmed, a tool or a supervisor's move as a centred
+  pill — and a **composer** at its foot. While the call is up it sends what is typed into the same
+  room (`sendText` on LiveKit's `lk.chat` topic, the agent session's text input): the line shows at
+  once, dimmed, until the log's `turn.user` carries it; a send that fails takes it back and says
+  why. With no call up it is disabled: *Press Talk first — then speak or write*.
 - **The Inspector** (`talk/inspector.tsx`, Chat's too), beside the page: a pill for the stream's
   state; *This session* — or *Last session*, the agent's newest call, before one is made — with
   Turns, ttft and e2e (medians), Cost, Tokens in (cached ones counted) and out, and the call id;
@@ -548,7 +558,16 @@ number** — *One I already have · N* (the carrier's numbers not imported yet) 
 confirm.*), the gateway's steps verbatim, then **Confirm**. **The carrier** last: a `TWILIO` / `SIP`
 badge, *Account connected*, the account, **Change** · **Disconnect** — or *Connect your phone
 carrier*: Twilio (account SID, API key SID, secret) or a SIP peer (username, password, the networks
-its calls come from).
+its calls come from, and an **Outbound** group — host, transport `auto · udp · tcp · tls`, username,
+password: *Where this box sends a call it places. Leave empty for a peer you only receive from.*).
+Between the two, **Outbound calls** — *an agent calling somebody back* (`GET /v1/carrier/outbound`;
+not drawn without the door, the scope or a carrier): `ready` green or `not ready` amber, *Calls are
+placed from* the org's numbers, the gateway's sentence for each step still missing, and **Set up
+outbound** (**Repair** once ready) — plan first like a number: `POST …?dry_run=true`, the steps
+verbatim, **Confirm**, then the state re-read. Under it the **Guards**, read-only: who may be called
+(*only numbers that have already called or written to you*, or *any number*), per minute, per day,
+countries (*the countries of your own numbers* when none is named), the longest call — *Set by
+whoever runs this gateway: `pinecall-runtime orgs dialling`.*
 
 **Phone testing** — `/phone` (local): *Call the number your customers call, from your own mobile,
 and your copy answers.* The commands (`pinecall line from +1XXXXXXXXXX` once per machine; `pinecall
@@ -570,14 +589,22 @@ its kinds, and `your key` · `ready` · the standing in gray (`no key · no plug
 **Give back** on a vendor the org brought.
 
 **Team** — `/team`: **Invite** — Email, Name, Role (`qa · supervisor · manager · admin ·
-developer`), Agents (*every agent* when empty); the answer's link is shown **once**, in a card with
+developer`), Agents (*every agent* when empty), and a pointer to the Roles table; the answer's link is shown **once**, in a card with
 Copy. The table: Name · Email · Role and Agents (each edited in place on a click) · Status
 (`active` green · `invited` amber · `disabled` gray) and one move — **Resend invite** (the same
 invitation again: a fresh one-use link, no second seat), **Reset password** and **Disable** on an
 active member, **Bring back** on a disabled one. **Reset password** is `POST
 /v1/members/{id}/reset`: a one-use link, shown once in the same card (*A new password for <name>*),
 handed on by the admin because this box sends no email; it opens the password card and spends every
-older link of theirs.
+older link of theirs. **Roles** — Role · Who · Opens, one row per role off one constant
+(`team/roles.tsx`): *a preset of what a person's keys open — changing one changes their next key,
+not a door*. **Single sign-on** (`GET /v1/org/sso`; not drawn without the door, and a `503` is the
+gateway's sentence about its vault): unset, a form — Issuer URL, Client ID, *Client secret, sent
+once*, Allowed domains, *Role for people who arrive new* (`nobody: invite first` among them), the
+switch *Passwords stop working for this org* — and **Save**, the gateway asking the issuer for its
+discovery document before it keeps anything; set, the same values with the secret *kept, and never
+shown*, **Change** and **Remove** (pressed twice). Either way the `redirect_uri` to register at the
+identity provider, with Copy.
 
 **Usage** — `/usage`: Calls · Minutes · Messages · Judge calls · Cost, added up over the pages read;
 then every metered row — At · Agent · Call (a link to the session) · Type (`call.summary` ·
@@ -593,7 +620,12 @@ foot, and on the right half an illustration of the inbox — drawn, not data.
   /v1/login/orgs {email, password}` — which orgs those open, no key minted, the login's own throttle
   — and a **Workspace** select appears with them (one org: shown, not a choice). A gateway without
   that door gets the old free-text field, *only if you belong to several*. **Forgot password** says
-  who to ask: an admin of the workspace hands a one-use link from Team. It signs in to production;
+  who to ask: an admin of the workspace hands a one-use link from Team. Under an *or*, **Continue
+  with SSO** — drawn only on a gateway with `POST /v1/login/sso/discover`: the email typed is asked
+  which workspaces sign in with a provider for its domain; one → the browser goes to `GET
+  /v1/login/sso?org=<slug>`, several → a select, none → *No workspace signs in with a provider for
+  that address.* The provider sends the person back to `/?login=<code>`, the one-use code this
+  page already spends — no key is ever in a URL. It signs in to production;
   a refusal is the gateway's one sentence for every wrong thing. A `?login=<code>` that a production
   `pinecall run` printed skips the card. The key is kept by the **browser** (`lib/session-key.ts`),
   so a second tab is the same person; signing out forgets every key.
@@ -609,8 +641,7 @@ foot, and on the right half an illustration of the inbox — drawn, not data.
 
 ## 10. Doors that exist and have no screen
 
-- **Dialling out** — no door yet (the runtime's `console-api.md` §4); Calls' *Call back* waits for it.
-- **SSO** — no door yet; the sign-in card has no such button until there is one.
+- **What an org may dial** — `PUT /v1/ops/orgs/{org}/dialling` is the operator's; the console shows the guards and never sets them.
 - **A number moved between worlds** — `PUT /v1/numbers/{number}/env` (`pinecall numbers move`).
 - **The operator's tables** — `/ops/orgs`, their keys, quotas (the budget among them), usage and routes: the box's key, never a tenant's; the admin page's.
 - **The agent's own declaration** — `GET /v1/agents/{slug}/config`: tools, stages, state fields, events. Only the visibility half is read today.

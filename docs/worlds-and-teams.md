@@ -143,7 +143,21 @@ box (`pinecall-runtime orgs invite`). A role is a preset of what those keys open
 
 The roles are presets and nothing more: every door reads the key's scopes, and a role re-cut
 tomorrow changes the next key minted and not one door. `agents` on a member narrows which of the
-org's agents they work on; empty is every one.
+org's agents they work on; empty is every one. The Team screen is where all of it is done — the
+invitation, a role or the agents changed in place, **Resend invite**, **Disable** and **Bring
+back** — and it draws this table beside the people, so whoever invites reads what a role opens.
+
+**A forgotten password** is the admin's to hand back: **Reset password** on an active member
+(`POST /v1/members/{id}/reset`) answers a one-use link like an invitation's, which the admin passes
+on; it opens the same password card and spends every older link of theirs.
+
+**Single sign-on.** An org may sign its people in with its own identity provider — Google
+Workspace, Okta, Entra, anything that speaks OpenID Connect — wired by an admin on the Team screen:
+the issuer, the client, the email domains it admits, the role somebody nobody invited arrives with
+(none, unless said), and whether a password still opens the org at all. The sign-in card's
+*Continue with SSO* finds the workspace by the email's domain and comes back with the one-use code
+the console already spends; the flow, the doors and the operator's break-glass are the runtime's
+`docs/protocol/people.md`.
 
 **Seats.** An invitation takes a seat, and where the org's plan caps them the door answers `429`
 in the quota's own words and makes no row. Invited counts — an org at its limit could otherwise
@@ -213,6 +227,17 @@ there — only a developer's own phone is diverted, as above; `pinecall run` pri
 the console's line for any agent that declares a number.
 
 Web and chat need none of this. They name the agent AND the person, so they always reach your own.
+
+### Calling somebody back
+
+An agent can place a call too, once the org's carrier has an outbound trunk — set up from the
+Numbers screen (*Outbound calls*: the plan first, then Confirm) for a Twilio account or a SIP peer
+that declared where it takes calls. Then *Call back* in an agent's Calls inbox, or `POST
+/v1/agents/{slug}/dial {to}` with a key that opens `talk`, rings the person from one of the org's
+own numbers, and the call is a log like any other, `outbound`. It is fenced, and only whoever runs
+the gateway moves the fence: by default a number that has already called or written to the org,
+in the countries of the org's own numbers, six dials a minute and two hundred a day, ten minutes a
+call. The door and its guards: the runtime's `docs/protocol/console-api.md` §4.
 
 ## Traps
 

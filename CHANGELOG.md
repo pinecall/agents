@@ -33,6 +33,17 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   dropped; a judge attached to a finished call; the widget's title, tagline, greeting, accent and
   autostart kept per agent and world; the workspaces a password opens, offered on the sign-in card;
   a member's password reset by a one-use link from Team, and *Forgot password* saying so.
+- **Talk takes writing beside the voice**: a composer under the conversation sends what is typed
+  into the same call (LiveKit's `lk.chat` text input), and the transcript reads as bubbles.
+- **A session opens on its recording**; consent proof, the prompt's blocks and the full log fold
+  under one *Details* card that a `#seq-N` link opens.
+- **Team**: a Roles table — what each role opens — and **Single sign-on**, an org's own OpenID
+  Connect provider set from the console (`GET`/`PUT`/`DELETE /v1/org/sso`); the sign-in card offers
+  *Continue with SSO* on a gateway that has it, finding the workspace by the email's domain.
+- **Outbound calls**: Numbers sets the org's outbound trunk up plan-first and shows the guards an
+  operator set (`GET`/`POST /v1/carrier/outbound`), a SIP carrier declares where the box sends the
+  calls it places, and the Calls inbox gains *Call back* and *Call a number* (`POST
+  /v1/agents/{slug}/dial`) once the org can dial.
 - `lib/sessions-wire.ts`: session lists read with `score`, `flags`, `total` and `next` optional,
   until the protocol that carries them is published.
 
