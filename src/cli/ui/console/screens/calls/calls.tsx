@@ -149,7 +149,6 @@ function OpenThread({ agent, thread, name, door }: { agent: string; thread: Thre
   const [refused, setRefused] = useState<string | null>(null);
   const latest = thread.latest;
   const live = latest.status !== "ended";
-  const phone = thread.contact.startsWith("+");
 
   // Who may write, and where it goes: into the live text call as the agent, or — with the gateway's
   // door — into a closed WhatsApp thread inside its window. Everything else says why not.

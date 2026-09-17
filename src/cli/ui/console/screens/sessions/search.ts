@@ -43,23 +43,30 @@ export function useServerSearch(scope: string, filter: Filter, pages: number, re
     const timer = window.setTimeout(() => {
       void (async () => {
         const path = scope === "" ? "/v1/sessions" : `/v1/agents/${encodeURIComponent(scope)}/sessions`;
-        const params: Record<string, string | number> = { limit: A_PAGE * pages };
+        const params: Record<string, string | number> = { limit: A_PAGE };
         if (filter.query.trim() !== "") params["q"] = filter.query.trim();
         if (filter.agent !== "") params["agent"] = filter.agent;
         if (filter.channel !== "") params["channel"] = filter.channel;
         try {
-          const answer = (await read(credentials, path, params)) as Record<string, unknown>;
-          if (gone) return;
-          if (typeof answer["total"] !== "number") {
-            setUnsupported(true);
-            return;
+          // One request per page, each continuing below the last call of the one before (`before`):
+          // the door caps a page at 200, so a growing `limit` would stop there for good.
+          const rows: SessionLine[] = [];
+          let total = 0;
+          let next: string | null = null;
+          for (let page = 0; page < pages; page += 1) {
+            if (page > 0 && next === null) break;
+            const answer = (await read(credentials, path, next === null ? params : { ...params, before: next })) as Record<string, unknown>;
+            if (gone) return;
+            if (typeof answer["total"] !== "number") {
+              setUnsupported(true);
+              return;
+            }
+            const listed = Array.isArray(answer["calls"]) ? answer["calls"] : [];
+            rows.push(...listed.map((row) => LooseLine.parse(row) as SessionLine));
+            total = answer["total"];
+            next = typeof answer["next"] === "string" ? answer["next"] : null;
           }
-          const listed = Array.isArray(answer["calls"]) ? answer["calls"] : Array.isArray(answer["rows"]) ? answer["rows"] : [];
-          setSearched({
-            rows: listed.map((row) => LooseLine.parse(row) as SessionLine),
-            total: answer["total"],
-            next: typeof answer["next"] === "string" || typeof answer["next"] === "number" ? String(answer["next"]) : null,
-          });
+          setSearched({ rows, total, next });
         } catch {
           if (!gone) setUnsupported(true);
         }

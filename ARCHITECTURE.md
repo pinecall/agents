@@ -412,7 +412,7 @@ this CLI opens a port:
 | `ui/console/` | the gateway's `/` — **hosted**, production | a PERSON's scoped key, minted at login | whoever runs the org |
 | `ui/console/` | `http://localhost:4100` — **local**, the sandbox | none: the sidecar signs what the page asks | whoever writes the agent |
 | `ui/admin/` | `/admin` | the BOX's ops key, typed in | the operator |
-| `ui/shared/` | — | the fetch, the credentials context, the theme, the frame, the style vocabulary | both |
+| `ui/shared/` | — | the fetch (`api.ts`) and the credentials context — what BOTH pages import; `/.well-known/pinecall` (`the-floor.ts`), read by the console's password card; and the theme, the frame and the `styles/` vocabulary, which since the console's redesign only the admin page wears | both · the admin |
 
 They are two programs and not two sections of one, because the ops key **belongs to no org** and
 must never reach a tab that holds a tenant's: two bundles, two storage names, and an import table
@@ -423,10 +423,10 @@ nothing reaches one page through the other.
 
 **One bundle, two consoles.** The sidecar marks the page it serves (`<meta name="pinecall-console"
 content="local">`); a page nobody marked is the gateway's. `lib/mode.ts` reads that once and holds
-the ONE table of screens with the modes that have each: the rail draws it and the router routes it,
+the ONE table of screens — path, name, sidebar group, icon, and the modes that have each: the sidebar draws it and the router routes it,
 so a screen a console does not have is neither linked nor reachable, and no screen asks which mode
 it is in to decide whether it exists (`test/cli/ui/console/each-console-has-its-own-screens.test.ts`).
-Hosted looks at production and runs the org — Numbers, Keys, Providers, Team, Usage. Local looks at
+Both open on Home (`/`) and have Overview (`/overview`), Live and Sessions. Hosted looks at production and runs the org — Usage, Numbers, Keys, Providers, Team. Local looks at
 the reader's corner of the sandbox and is the workshop — Chat, Evals ▸ runs, Phone testing — with no
 login, no sign out and no key in the page: `headersFor` sends no `authorization` when the key is
 empty, and a refused sidecar key shows one card naming `pinecall login`. An admin opens a
@@ -438,11 +438,11 @@ What follows is the hosted page, where a key IS held. Everything about it is a c
   at login and kept by the browser (`lib/session-key.ts`, the one file that touches storage).
   It is a production key: a sandbox one left from before the sandbox moved out, or answered by an
   older `pinecall run`'s link, is turned into the same person's production key (`POST
-  /v1/login/env`) and forgotten. Signing out (`shell/leave.tsx`, `lib/leaving.tsx`) forgets every
+  /v1/login/env`) and forgotten. Signing out (`shell/top.tsx`, `lib/leaving.tsx`) forgets every
   key. A production `pinecall run` mints a one-use code standing for its key and prints
   `/a/<agent>?login=<code>`; the page spends it for a key of its own and takes it out of the
-  address bar before rendering (`main.tsx`, `lib/login.ts`). Cold, it asks for email, password and the org only when the person has several
-  (`screens/login/`), and signs in to production. Opened from an invitation link — `/invitations/<token>`, the one an
+  address bar before rendering (`main.tsx`, `lib/login.ts`). Cold, it asks for email and password, offers the workspaces those open once the password is typed
+  (`POST /v1/login/orgs`, which mints nothing; a free-text org on a gateway without the door), says who hands out a forgotten password's link (an admin, from Team), and signs in to production (`screens/login/`, every card in `way-in.tsx`'s frame). Opened from an invitation or a reset link — `/invitations/<token>`, the one an
   admin's Team screen or the operator's `orgs invite` hands out — it shows the card where the
   person chooses their password and takes their first key (`screens/login/accept.tsx`), and the
   token leaves the address the moment it is spent. At `/cli?c=<code>` it is the card that signs a
@@ -471,27 +471,35 @@ What follows is the hosted page, where a key IS held. Everything about it is a c
 
 | screen | what it reads |
 |---|---|
-| `agents/` | which agents this gateway holds — so `/` offers a list and not a URL shape |
-| `calls/` + `live/` | the calls happening now; one watched call: transcript, marks — a `memory.ops` and a `docs.sources` each one row, `op · n facts · ms` and `n sources · ms`, what was found under it — `STATE`, `PROMPT` (every block by name, hash and length), `ROOM`, `METRICS`, and the supervisor's six verbs |
-| `sessions/` | every finished call; one of them read whole — envelope, latency, consent join, score, the prompt block by block, then every entry in `seq`, a lookup's sources one click under the turn it answered |
-| `evals/` | every run this agent's suites scored, the diff between two runs, and what each finished call was sealed with |
-| `pipeline/` | the three providers of a voice turn, the anatomy of a turn as a waterfall, and the overrides an operator may change between two calls |
-| `talk/` | a person reaches the agent from this tab, with this browser's microphone |
-| `floor/` | the org's layer: every live call across its agents (`/live`, off `GET /v1/sessions` and the floor's stream `GET /v1/events`), and every agent's finished calls in one table with an agent column (`/sessions`, the very `SessionTable` an agent's screen draws) |
-| `numbers/` · `team/` · `usage/` | **numbers, whole**: the org's carrier — a Twilio account or a SIP peer — brought, shown by kind and account and never a secret, replaced or forgotten (`/v1/carrier`, `carrier.tsx`); the doors it answers with who put each there and a bought one marked (`GET /v1/numbers`), one let go (`DELETE /v1/numbers/{number}`); and one added, two ways — imported from what the carrier owns (`GET /v1/numbers/available`, `POST /v1/numbers`) or bought on the box's account (`POST /v1/numbers/buy`) — **always the plan first** (`?dry_run=true`, the gateway's own steps shown in its words) and the same request again on confirm (`adding.tsx`); the org's people, invited with a token shown once and changed in place (`/v1/members`); what the org consumed, totals then rows in the runtime's own field names (`GET /v1/usage`) |
-| the shell | an agent selector (`GET /v1/agents`, one row per slug — `lib/corners.ts`, because a screen is addressed by slug and the door answers in the corner the key opens), a way out (`shell/leave.tsx`), the Production / Sandbox toggle — one key per world in the tab, the other minted for the same person by `POST /v1/login/env` (`lib/world.tsx`, `lib/session-key.ts`) — and a rail gated by the key's scopes off `GET /v1/whoami` (`lib/scopes.ts`, `lib/whoami.tsx`): a screen the key does not open is not drawn |
+| `home/` | `/`: today at a glance — the gateway's count (`GET /v1/insights`, `lib/insights.ts`) or, from a gateway without it, a fold of the floor's rows; the calls that need a look (the rows' `flags`, else end reasons and the first scores read); who is on the floor; the channels; and the setup steps, judging among them (`setup.tsx`, `GET/PUT /v1/org/judging`) |
+| `agents/` | `/overview`: which agents this gateway holds, the numbers routed to each, today's calls and the share of judges that held, and the keys and vendors behind them — each read only by a key that opens it |
+| `floor/` + `live/` | `/live[/:call]`: the org's calls down the left (`floor/live.tsx`), one watched (`live/live.tsx`): the log's rows — a `memory.ops` and a `docs.sources` each one row — the `STATE · ROOM · PROMPT · METRICS` pane, and the supervisor's desk (`live/desk.tsx`: listen, whisper, say, take the line, transfer, end). `/sessions` is `floor/sessions.tsx` over the same `sessions/list.tsx` an agent's draws |
+| `calls/` | an agent's calls as an inbox: threads grouped by contact in the browser (`threads.ts`), their messages read from each call's log (`use-thread.ts`), and what the gateway keeps per contact — names, unread, a message into a WhatsApp thread — behind a probe (`inbox-door.ts`). `simulate-form.tsx` is the synthetic caller, Live's too |
+| `sessions/` | every call, searched by the gateway when its door can (`search.ts`: a `total` in the answer) and in the browser when it cannot; one read whole — facts, transcript, latency, score with a judge attached later (`POST /v1/evals/judge/{call}`), cost, recording, consent join, the prompt block by block, then every entry in `seq` |
+| `talk/` · `chat/` | a person reaches the agent with this browser's microphone, or — local — in writing through the class in `pinecall run`'s directory; both beside `talk/inspector.tsx`, the call's log as numbers, turns, tool calls and state |
+| `evals/` | the goldens and how the latest run left each, every run this agent's suites scored and the diff between two, what each finished call was sealed with, and the drift |
+| `pipeline/` | the three providers of a voice turn, the anatomy of a turn as bars, and the overrides an operator may change between two calls |
+| `knowledge/` · `memory/` · `widget/` | the directory's folder and golden with the org's bases; every current fact an agent's calls taught, one dropped (`GET /v1/agents/{slug}/memory`, `DELETE /v1/memory/facts/{id}`), or one contact read and forgotten; the tag, the look the gateway keeps per agent and world (`GET/PUT /v1/agents/{slug}/widget`), and the widget itself mounted as a preview |
+| `numbers/` · `keys/` · `providers/` · `team/` · `usage/` | **numbers, whole**: the carrier — a Twilio account or a SIP peer — shown by kind and account and never a secret (`carrier.tsx`); the numbers, one let go; one added, imported or bought, **always the plan first** (`?dry_run=true`, the gateway's own steps in its words) and the same request again on confirm (`adding.tsx`); local's `phone.tsx` is Phone testing. The machine keys, issued once and revoked; the vendors and the keys the org brought; the people, invited or reset with a link shown once and changed in place; what the org consumed |
+| `login/` · `terminal/` | the way in: sign in, choose a password, *this machine is not signed in*; and `/cli`, the card that signs a terminal in |
+| the shell | `shell/shell.tsx` mounts `lib/org.tsx` — ONE read of the floor (`GET /v1/sessions`, `GET /v1/events`), the agents, the person's orgs and the day's insights, shared by every screen — around `sidebar.tsx` (the workspace and its org menu, the table's groups gated by the key's scopes off `GET /v1/whoami`, one row per slug — `lib/corners.ts`), `top.tsx` (where you are, sign out), `switcher.tsx` (the person, the org, the two environment chips that open the OTHER console, every copy and — for a `team` key in the sandbox — a colleague's opened, `lib/world.tsx`), `agent-head.tsx` (an agent's standing and its tabs) and `palette.tsx` (⌘K) |
 
-**What it looks like** is the design canvas, translated: `styles/tokens.css` is the one file
-allowed to hold a hex and carries the canvas's palette under the console's names (`--ground`,
-`--panel`, `--panel-2`, `--edge`, `--edge-soft`, four inks `--ink` / `--ink-2` / `--ink-soft` /
-`--ink-faint`, one `--accent` with its `--accent-soft` ground and `--accent-line`, `--ok`, `--warn`),
-both themes — the light one under `:root[data-theme="light"]`, stamped by `shell/theme.ts`;
-`styles/page.css` is the vocabulary every screen builds from (a page, a panel, a table, a chip, a
-segmented tab strip, a bordered 28px control, one filled `.button-accent`); each screen's own
-stylesheet holds only what is that screen's. Prose is IBM Plex Sans and anything a machine wrote is
-IBM Plex Mono, both fetched from Google Fonts by `index.html` with a system fallback — the one
-request the page makes to anything but the gateway. The mark is `public/logo-mark.png`, served at
-`/logo-mark.png`.
+**What it looks like** is the redesign, taken literally: `ui/tokens.css` is the one file of the
+console allowed to hold a hex — the inks, the lines, the grounds, the accent `#5b3df5` and its steps,
+the tints a pill wears, the shadows, the two faces — and it is **light only**: no theme, no toggle.
+`ui/ui.css` is the vocabulary (the page, the card, the stat, the grid table, the controls, the
+pill) and `ui/*.tsx` its parts — `Page`, `Card`, `Stat`, `TableHead`/`TableRow`, `Button`, `Field`,
+`Segmented`, `Chips`, `Pill`, `Avatar`, `Icon` and the rest — imported as one from `ui/`; each
+screen's own stylesheet holds only what is that screen's, under its own prefix. `lib/format.ts` is
+how a duration, a sum of money, a moment and a phone number are written, UTC like the log.
+`lib/sessions-wire.ts` reads a session list with what a newer gateway adds to it (`score`, `flags`,
+`total`, `next`, all optional), because the published protocol's schemas are strict and predate
+them; it goes when that protocol is published. The face is Inter, fetched from Google Fonts by
+`index.html` with a system fallback — the one request the page makes to anything but the gateway —
+and anything a machine wrote is the system's monospace. The icons are paths in `ui/icon.tsx`, so the
+page depends on no icon set. The logo is `public/pinecall-logo.png`, its mark `pinecall-mark.png`
+and the favicon cut from it. None of `ui/shared/styles/`, `frame.tsx` or `theme.ts` is the
+console's any more: they are the admin page's.
 
 Its own laws. Three are held by a test of their own: vite bundles every screen's stylesheet into
 one file, so **a class name is global** whatever directory it was written in
@@ -499,7 +507,7 @@ one file, so **a class name is global** whatever directory it was written in
 (`the-desk-sends-one-verb`); a supervisor's six entries each read back as **one sentence**
 (`a-supervisor-reads-as-one-line`), and so do a lookup's two (`a-lookup-reads-as-one-line`, off
 `lib/lookups.ts`, which both timelines print from). Two more are conventions the reader enforces:
-`lib/api.ts` is the only place a request to the gateway is built, and `lib/metrics.ts` the only
+`shared/api.ts` is the only place a request to the gateway is built, and `lib/metrics.ts` the only
 file that names a metric — Sessions must print the same digits as `pinecall-runtime sessions show`.
 
 ### The admin

@@ -1,145 +1,181 @@
 # The console, screen by screen — what each one says, and every value it can say it with
 
-Read off `agents/src/cli/ui/console/`, `runtime/src/pinecall/gateway/` and `protocol/schema/` on 2026-09-12, and brought up to date with the header, the rail, the Widget, Numbers and Chat screens on 2026-09-17 (the split repos under `~/pinecall-v2`). This is a **content** inventory for a
-redesign: what each screen must be able to state, which door the fact comes from, and the values a
-field can actually take. It says nothing about layout, hierarchy or visual direction — those are the
-redesign's to decide.
+Read off `agents/src/cli/ui/console/`, the runtime's `docs/protocol/` and `protocol/schema/` on
+2026-09-17, after the redesign (the split repos under `~/pinecall-v2`). This is a **content**
+inventory: what each screen states, which door the fact comes from, and the values a field can
+actually take. How it looks is `ui/tokens.css` and `ui/ui.css`; this page is what it says.
 
 ## Two consoles, one bundle
 
-The same page is served in two places, and it is a different product in each (2026-09-17):
+The same page is served in two places, and it is a different product in each:
 
 | | the gateway's — **hosted** | a developer's machine — **local** (`pinecall serve`, `http://localhost:4100`) |
 |---|---|---|
 | looks at | production, and only production | the sandbox: the reader's own corner |
 | who uses it | whoever runs the org: the owner, a supervisor, qa | whoever writes the agent |
 | signing in | email and password; a key kept by the browser | none: the sidecar signs what the page asks, the page holds no key, and there is no sign out |
-| org screens | Overview, Live, Sessions, Numbers, Keys, Providers, Team, Usage, `/cli` | Overview, Live, Sessions, Phone testing |
-| agent screens | Talk, Calls, Sessions, Pipeline, Knowledge, Memory, Evals (calls, drift), Widget | the same, plus **Chat**, and Evals ▸ runs |
+| sidebar ▸ Gateway (local: *Sandbox*) | Home `/`, Overview `/overview`, Live, Sessions, Usage | Home, Overview, Live, Sessions |
+| sidebar ▸ Settings | Numbers, Keys, Providers, Team | Phone testing |
+| outside the sidebar | `/cli` | — |
+| an agent's tabs | Talk, Calls, Sessions, Pipeline, Knowledge, Memory, Evals (scored calls, drift), Widget | the same, plus **Chat**, Evals ▸ runs and *Run all* |
 | copies | one: the org's, *deployed on the box* | the reader's; a key with `team` opens a teammate's |
 
 Which is which is a `<meta name="pinecall-console" content="local">` the sidecar puts in the page
-(absent: hosted), read once in `lib/mode.ts`, where **one table** lists every screen and the modes
-that have it. The rail draws that table and the router routes it; a screen a console does not have
-is neither linked nor reachable. A redesign moves rows there. Everything below describes a screen
-once, and says when it belongs to one console only.
+(absent: hosted), read once in `lib/mode.ts`, where **one table** lists every screen with its path,
+its sidebar group (`gateway` · `settings`), its icon and the modes that have it. The sidebar draws
+that table and the router routes it; a screen a console does not have is neither linked nor
+reachable. Everything below describes a screen once, and says when it belongs to one console only.
 
 ## 0. The frame every screen hangs in
 
-Eighteen screens behind the rail across the two consoles, one shell, one router (`agents/src/cli/ui/console/router.tsx`) — plus the
-widget's blank preview, the `/cli` card and the two cards shown with no key. React 19 + react-router: **the URL is
-the state** of what is on screen, so a reload lands on exactly the same thing, and no screen keeps a selection in
-memory. What the browser keeps is who is signed in and where they are looking (below).
+One shell (`shell/shell.tsx`), one router (`router.tsx`). React 19 + react-router: **the URL is the
+state** of what is on screen, so a reload lands on exactly the same thing. What the browser keeps is
+who is signed in and whose copy is open (`lib/session-key.ts`); a folded sidebar, an open switcher
+and the ⌘K box are the tab's and die with it.
 
 | URL | screen |
 |---|---|
-| `/` | Overview (the rail's word; the page is titled Agents) — the org's list, in this world. In the sandbox an admin sees every member's corner, whose each is, and a filter over the three |
-| `/live` | Live — every call up on the floor, whichever agent has it |
-| `/sessions` | Sessions — every agent's finished calls, one table, each naming its agent |
-| `/numbers` | Numbers (hosted) — the numbers people call and which agent picks up; one more imported or bought; the carrier last |
-| `/phone` | Phone testing (local) — the production numbers a developer's own phone dials to reach their copy |
-| `/keys` | Keys — the API keys this org's machines run on |
-| `/providers` | Providers — the vendor accounts this org brought |
-| `/team` | Team — the org's people, invited and changed |
-| `/usage` | Usage — what the org consumed, totals then rows |
+| `/` | Home — how today is going |
+| `/overview` | Overview — the agents held, the numbers, keys and vendors behind them |
+| `/live[/:call][?agent=]` | Live — the floor's calls, one watched, the desk |
+| `/sessions` · `/sessions/:call` | Sessions — every agent's calls; one read whole |
+| `/usage` | Usage (hosted) |
+| `/numbers` | Numbers (hosted) · `/phone` Phone testing (local) |
+| `/keys` · `/providers` · `/team` | Keys, Providers, Team (hosted) |
 | `/a/:agent/talk` | Talk |
-| `/a/:agent/chat[/:call]` | Chat — the class talked to in writing |
-| `/a/:agent/calls` | Calls, watching every live call at once |
-| `/a/:agent/calls/:call` | Calls, watching that one |
-| `/a/:agent/sessions` | Sessions — the finished ones |
-| `/a/:agent/sessions/:call` | One session, read whole (deep-linkable to a line: `#seq-93`) |
-| `/a/:agent/pipeline` | Pipeline |
-| `/a/:agent/knowledge` | Knowledge |
-| `/a/:agent/memory` | Memory |
+| `/a/:agent/chat[/:call]` | Chat (local) |
+| `/a/:agent/calls[/:call]` | Calls — the inbox; a call in the path opens the thread holding it |
+| `/a/:agent/sessions[/:call]` | the agent's sessions; one read whole (deep-linkable to a line: `#seq-93`) |
+| `/a/:agent/pipeline` · `knowledge` · `memory` · `widget` | one tab each |
 | `/a/:agent/evals?view=runs\|calls\|drift&run=<id>` | Evals |
-| `/a/:agent/widget` | Widget — the tag a site embeds for this agent, its look, and a live preview |
-| `/a/:agent/widget/preview?name=&company=&tagline=&phone=&accent=` | a blank page with nothing but the widget on it, outside the shell |
-| `/cli?c=<word>` | the card a person opens from `pinecall login` to sign that terminal in |
-| `/invitations/<token>` | with no key: the card where an invited person chooses a password |
+| `/a/:agent/widget/preview?name=&company=&tagline=&phone=&accent=&greeting=` | a blank page with nothing but the widget on it, outside the shell |
+| `/cli?c=<word>` | hosted: the card a person opens from `pinecall login` to sign that terminal in |
+| `/invitations/<token>` | with no key: the card where an invited — or reset — person chooses a password |
 
-A slug in the path that the gateway does not list for this org and world draws no agent screens: the shell says
-*no agent called <slug> is held here*, and then — hosted — that nothing by that name is deployed and a copy of one's own
-is on `pinecall serve`, or — local — that no copy of the reader's is running, and `pinecall run` starts one.
+A path nobody routes lands on `/`. A slug the gateway does not list for this org and world draws no
+agent screens: *No agent called <slug> is held here*, and then — hosted — that nothing by that name
+is deployed and a copy of one's own is on `pinecall serve`, or — local — that no copy of the
+reader's is running, and `pinecall run` starts one.
 
-**Signing in.** With no key the console is one card: email, password, the org only when the person belongs to
-several (*the oldest of yours when left empty*). It signs in to production; under the button it says where the
-sandbox is (*on your own machine: `pinecall serve`*). A `?login=<code>` that a production `pinecall run` printed
-skips the card. The key is kept by the **browser** (`localStorage`, in one file: `lib/session-key.ts`), so a second
-tab is the same person; a sandbox key left from before 2026-09-17 is turned into the same person's production one
-and forgotten. Signing out forgets every key. **Local has none of this**: no card, no key, no sign out — and when
-the gateway refuses the sidecar's key, one card, *This machine is not signed in*, with `pinecall login` and
-`pinecall serve`.
+**The sidebar** (`shell/sidebar.tsx`, 244px, folds to 62px of icons; folded by itself under 720px):
 
-The shell carries, on every screen:
+- **the workspace**: the org's word (`whoami.slug`, else its id) on a tile with its first letter, and
+  *N agents*. Hosted, for a person of two orgs or more, it opens *Your organizations* — each with the
+  person's role, the current one marked *here* — and picking one mints their key there (`POST
+  /v1/login/org`), replaces every key the browser held and reopens the console at `/`;
+- **Search ⌘K** — the palette, below;
+- **Agents**: one row per slug the gateway holds (one per slug however many copies — `lib/corners.ts`),
+  opening its Talk; a green icon and a `live` badge while any call of it is up. None: *none held here*;
+- **Gateway** (local: **Sandbox**) and **Settings**: the table's rows, each drawn only when the key's
+  scopes open it (`lib/scopes.ts`: Talk, Chat and Widget need `talk`; Overview, Live, Calls and both
+  Sessions `calls`; the rest their own name; Home and Phone testing are ungated). Badges: Overview
+  the agents held · Live `N live` · Sessions the corner's total (`insights.sessions_total`, else the
+  rows the floor read, `200+` at the door's cap);
+- **the foot**: the person's initials and name (`whoami.name`, else the key's label), their role in
+  this org (off `GET /v1/login/orgs`; *A machine's key* for a key that names nobody), and the fold.
 
-- a brand mark and the two words `pinecall` / `console`;
-- a breadcrumb, built from the path: `fleet / <agent> / <screen>`, last segment emphasised;
-- **one Viewing control** (`shell/viewing.tsx`) — the header's single answer to *what am I looking at*. Its trigger
-  reads the agent (or *choose an agent*), whose copy it is (`<person> · you`, a teammate's name, `<org> · deployed
-  on the box`, or *not running*), the world, and the person's initials. Its panel holds:
-  - **the person**: name, org and key id off `GET /v1/whoami` — never the key;
-  - when an admin opened a teammate's copy, *Looking at <name>'s copy* and **back to yours**;
-  - **the org switch**, for a person in two orgs or more: the orgs off `GET /v1/login/orgs`; picking one mints the
-    same person's key there (`POST /v1/login/org`), replaces every key the browser held and reopens the console
-    at its root. A person of one org, and a machine key, see nothing here;
-  - the world is a badge and not a control: `production` hosted, `sandbox · local` local. The org switch is
-    hosted's alone — a machine's org is its profile's (`pinecall use`);
-  - **every agent** the gateway holds in this org and world (`GET /v1/agents`, re-read when the panel opens), its
-    channels, and under it **each copy**: the reader's own (*open*), the org's — in production the one *deployed on
-    the box*, the only copy there is — and a teammate's. A teammate's copy is *theirs* and disabled, except to a key
-    that opens `team` in the sandbox, which opens it: from then on every request the page makes carries the header
-    `pinecall-corner: <member id>` (`shared/api.ts`, `headersFor`), kept for that tab alone
-    (`keptCorner`), and the gateway answers each door in that member's corner. Picking another agent keeps the
-    screen when it is one every agent has, and drops a call id;
-  - with nothing held: *Nothing is running here. `pinecall run` in an agent's folder puts it on this list.*
-- **sign out**, and a light/dark toggle;
-- a rail (`shell/rail.tsx`) with two groups. **GATEWAY**: Overview, Live, Sessions, Numbers, Keys, Providers, Team,
-  Usage; Overview carries the count of agents held. **AGENTS**: one row per agent the gateway holds (one per slug,
-  however many copies), and the agent on screen stands open with its screens indented under it (Chat in local only) — Talk, Chat,
-  Calls, Sessions, Pipeline, Knowledge, Memory, Evals, Widget. With none: *none held here*. Every screen is drawn
-  only when the key's `scopes` open it (`lib/scopes.ts`: Talk, Chat and Widget need `talk`; Overview, Live, Calls
-  and both Sessions `calls`; the rest their own name), so no click meets a 403 — plus a fixed foot:
-  `web · whatsapp · phone` / `one agent, three doors`;
-- when a screen has nothing to show it says so **in a sentence, never a spinner** (`shared/frame.tsx`, `Nothing`).
+**The top bar** (`shell/top.tsx`, 54px): `<org> /` or `<agent> /`, then the page's title (*Phone
+numbers* for Numbers, *Session* one level under Sessions, *Sign in a terminal* at `/cli`); on the
+right **the switcher** and — hosted only — **Sign out**, which forgets every key.
 
-Data reaches it through the gateway's doors and one stream shape. What needs the agent's **directory** — its
-goldens, personas, knowledge folder, memory goldens, a chat with the class — is asked of the gateway too, at
-`POST /v1/agents/{slug}/dev/{family}/{verb}`, and the gateway relays it to the `pinecall run` holding the agent
-(the runtime's `docs/protocol/dev-verbs.md`). Gateway doors:
+**The switcher** (`shell/switcher.tsx`) is the one answer to *what am I looking at*. Its trigger: a
+dot and a pill in the world's colour (green `production`, amber `sandbox`), the agent or *choose an
+agent*, the person's initials. Its panel:
+
+- **the person**: name, org and `key <key_id>` off `GET /v1/whoami` — never the key;
+- when an admin opened a teammate's copy: *Looking at <name>'s copy* · **Back to yours**;
+- **Organization** — hosted, two orgs or more: one chip each, the same move as the workspace menu;
+- **Environment** — two chips, and they are the two consoles, not a toggle: the one this tab is
+  stands selected, and the other **opens the other console at the same path in a new tab** —
+  `http://localhost:4100` from the gateway's page, the gateway (`lib/mode.ts`, `gatewayOrigin`) from
+  the sidecar's. Under them, where the other world is watched;
+- **agents in <org> · <world>**: one card per copy — slug, whose it is (`<person> · you`, `<name> ·
+  theirs`, `<org> · deployed on the box`, `<org> · shared`) and its channels, ending *Viewing* ·
+  *Open* · *Theirs*. A teammate's copy is disabled except to a key that opens `team` in the sandbox:
+  opening it makes every request carry `pinecall-corner: <member id>` (`shared/api.ts`,
+  `headersFor`), kept for the browser (`keptCorner`). Picking another agent keeps the tab when every
+  agent has it, and drops a call id. With nothing held, the sentence says what would put one there.
+
+**An agent's head** (`shell/agent-head.tsx`), over every `/a/:agent/…`: a dot, the slug, `on a call`
+/ `on N calls` (green) or `idle`, its channels (`web · phone · whatsapp`, or *no doors*), and the
+tabs — the table's agent rows this console has and the key opens.
+
+**⌘K** (`shell/palette.tsx`; Ctrl-K too): screens, agents, the current agent's tabs, and — once
+something is typed — the sessions the floor has listed, matched on id, agent, channel, who and
+outcome. A whole call id pasted opens that session even when no list holds it. Arrows, Enter,
+Escape. It asks no door of its own.
+
+**The shared org** (`lib/org.tsx`): the shell reads the floor once — `GET /v1/sessions?limit=200`
+every 3 s and the moment `GET /v1/events` says something moved — plus `GET /v1/agents` (re-read when
+an agent registers or detaches), `GET /v1/login/orgs` and `GET /v1/insights` (every 15 s), and every
+screen that needs them reads that one copy (`useOrg`).
+
+When a screen has nothing to show it says so **in a sentence, never a spinner**.
+
+Data reaches it through the gateway's doors and one stream shape. What needs the agent's
+**directory** — its goldens, personas, knowledge folder, memory goldens, a chat with the class — is
+asked of the gateway too, at `POST /v1/agents/{slug}/dev/{family}/{verb}`, and the gateway relays it
+to the `pinecall run` holding the agent (the runtime's `docs/protocol/dev-verbs.md`). Gateway doors:
 
 | door | who reads it |
 |---|---|
-| `POST /v1/login` · `POST /v1/invitations/{token}` | the sign-in card, the invitation card |
-| `GET /v1/login/orgs` · `POST /v1/login/org` | the Viewing panel's org switch (hosted) |
+| `POST /v1/login` · `POST /v1/login/orgs {email,password}` · `POST /v1/invitations/{token}` | the sign-in card and its workspaces, the password card |
+| `GET /v1/login/orgs` · `POST /v1/login/org` | the workspace menu, the switcher, the role in the sidebar's foot (hosted) |
 | `POST /v1/login/env` | the boot, once: a sandbox key left in the browser becomes the same person's production one |
-| `GET /v1/line/numbers` | Phone testing (local): production's numbers, the agent each reaches, the reader's phones |
-| `GET /v1/agents` | Overview, the Viewing panel, the rail |
-| `GET /v1/agents/{slug}/sessions` | Calls list (re-asked every 3 s), Sessions, Evals ▸ calls — the corner's own |
-| `GET /v1/calls/{call}/events` (SSE) | Talk, Calls, Chat, Sessions ▸ one |
-| `GET /v1/calls/{call}/recording` (byte ranges) | the audio player |
-| `GET /v1/agents/{slug}/config` | the state panel's visibility declarations |
-| `GET /v1/agents/{slug}/pipeline` · `PUT …/pipeline/overrides` | Pipeline |
+| `GET /v1/whoami` | the person, the scopes every screen is gated by |
+| `GET /v1/agents` · `GET /v1/sessions` · `GET /v1/events` (SSE) · `GET /v1/insights[?day=]` | the shared org: sidebar, Home, Overview, Live, Sessions, ⌘K |
+| `GET /v1/org/judging` · `PUT /v1/org/judging {on}` | Home's setup step |
+| `GET /v1/agents/{slug}/sessions[?q=&channel=&limit=]` | Calls, the agent's Sessions, Evals ▸ scored calls — the corner's own |
+| `GET /v1/agents/{slug}/threads` · `POST …/threads/{contact}/read` · `POST …/threads/{contact}/messages` | Calls: names and unread, read marks, a message into a WhatsApp thread |
+| `GET /v1/calls/{call}/events` (pages, then SSE) | Talk, Live, Calls, Chat, one session |
+| `GET /v1/calls/{call}/recording` | the audio player |
+| `GET /v1/agents/{slug}/config` | the state pane's visibility declarations |
+| `POST /v1/tokens` · `POST /v1/calls/{call}/listen` · `POST /v1/calls/{call}/supervise` · `POST /v1/calls/{call}/verbs` | Talk, the Widget preview; the desk's ear, its seat and its verbs; *write as the agent* |
+| `POST /v1/evals/replay/{call}` · `POST /v1/evals/judge/{call}` | one session: re-check by code, attach a judge |
 | `GET /v1/evals/runs?agent=&limit=200` | Evals |
-| `POST /v1/tokens` · `POST /v1/calls/{call}/listen` · `POST /v1/calls/{call}/supervise` | Talk, the Widget preview, listen, the desk |
-| `POST /v1/calls/{call}/verbs` | the desk's six verbs |
-| `GET /v1/whoami` | the Viewing control, the rail's scopes |
-| `GET/POST /v1/keys`, `POST /v1/keys/{fingerprint}/revoke` | Keys |
-| `GET /v1/providers` · `GET/PUT/DELETE /v1/provider-keys[/{vendor}]` | Providers |
+| `GET /v1/agents/{slug}/pipeline` · `PUT …/pipeline/overrides` | Pipeline |
 | `GET /v1/knowledge` · `DELETE /v1/knowledge/{base}` | Knowledge (push and golden go through `pinecall run`) |
-| `GET/DELETE /v1/contacts/{contact}/memory` | Memory |
-| `POST /v1/evals/replay/{call}` | Sessions ▸ one: re-check a call by code |
-| `GET /v1/numbers` · `POST /v1/numbers[/buy]?dry_run=` · `DELETE /v1/numbers/{number}` · `GET /v1/numbers/available` · `GET/PUT/DELETE /v1/carrier` | Numbers |
-| `GET /v1/sessions` · `GET /v1/events` · `GET/POST /v1/members`, `PATCH /v1/members/{id}` · `GET /v1/usage` | Live, Sessions, Team, Usage |
+| `GET /v1/agents/{slug}/memory` · `DELETE /v1/memory/facts/{id}` · `GET/DELETE /v1/contacts/{contact}/memory` | Memory |
+| `GET/PUT /v1/agents/{slug}/widget` · `GET /widget/pinecall-widget.js` | Widget |
+| `GET /v1/numbers` · `POST /v1/numbers[/buy]?dry_run=` · `DELETE /v1/numbers/{number}` · `GET /v1/numbers/available` · `GET/PUT/DELETE /v1/carrier` | Numbers, Overview, Home's setup |
+| `GET /v1/line/numbers` | Phone testing (local) |
+| `GET/POST /v1/keys`, `POST /v1/keys/{fingerprint}/revoke` | Keys, Overview |
+| `GET /v1/providers` · `GET/PUT/DELETE /v1/provider-keys[/{vendor}]` | Providers, Overview |
+| `GET/POST /v1/members`, `PATCH /v1/members/{id}`, `POST /v1/members/{id}/reset` | Team, Home's setup |
+| `GET /v1/usage` | Usage |
 | `GET/POST /v1/login/pairings/{code}` | the `/cli` card |
 
 The directory's verbs, through `pinecall run`: `chat` (roster, start, say, end) · `personas` + `simulate` ·
 `goldens` + the suite run · `knowledge` (roster, push, eval) · `memory` (roster, recall eval, extraction) ·
 `candidates` + `promote` · `drift` · `reproductions`.
 
+**A door a gateway does not have yet is an element not drawn.** Insights, judging, threads, the
+agent's memory, the widget's settings and the workspaces a password opens are each probed; a `404`
+(for the keyless one, a `405` too) means the older reading below it, never an error on screen.
+
 The stream has four honest states and never guesses: `connecting · live · reconnecting · ended`. It
 paints at most ten times a second; a burst of interim transcripts inside one turn is one repaint.
-Reconnection resumes on the browser's own `Last-Event-ID`, so a gap is a fact the log carries
-(`log.gap`), not a hole the page invents.
+Reconnection resumes on the reader's own `Last-Event-ID`, so a gap is a fact the log carries
+(`log.gap`), not a hole the page invents. An entry whose seq is not past the last one kept is
+dropped (`use-watched-call.ts`), so a remount never doubles a row.
+
+### 0.1 What it is drawn with — `ui/`
+
+`ui/tokens.css` is the only file of the console with a colour in it: seven inks (`--ink` …
+`--ink-7`), the lines, six grounds, the accent `#5b3df5` with its hover, soft, selected, second and
+third steps and its focus ring, the tints (green, amber, red, indigo, pink, teal), five shadows,
+Inter and a system monospace, the sidebar's two widths and the top bar's height. **Light only.**
+`ui/ui.css` is the vocabulary and `ui/*.tsx` its parts, imported as one (`../../ui`):
+
+| part | what it is |
+|---|---|
+| `Page` · `PageHead` | the scrolling column (max 1180 · 1060 · 900 · 760) with its title, lede, a back link and actions |
+| `Card` · `CardHead` · `CardAction` · `CardFoot` · `Row` · `Item` · `Empty` · `Refused` | a bordered card; a list row with a lead, a name, a tag, a line under it and an end; the compact side-card row; the sentence for nothing; a door's refusal in its own words |
+| `Stats` · `Stat` | the numbers across a page, four sizes: `big` (Home, with a delta `up · down · flat`), `medium` (Overview, with *of N*), `small` (Usage, Evals; `accent` for cost), `fact` (a session's words) |
+| `TableHead` · `TableRow` | a grid table: grey labels (a label ending `>` is right-aligned) and rows on the same columns; under 720px a table scrolls inside its card |
+| `Button` (`secondary · primary · dashed · danger`; 28–42px) · `ButtonLink` · `TextAction` · `Field` · `Label` · `Input` · `Select` · `TextArea` · `Segmented` · `Chips` · `Choice` · `Switch` · `Check` | the controls |
+| `Pill` | seven tones: `green · amber · red · indigo · violet · gray · muted` |
+| `Tag` · `Dot` · `Avatar` · `Bar` · `SectionLabel` · `KV` · `Icon` | a channel tag; a status dot (green, amber); initials on a tint (a name always wears the same one — `tintOf`; a list hands them out in order — `tintAt`); a share bar; a pane's label; a key beside its value; twelve stroke icons drawn in the repo |
 
 ## 1. The vocabulary — values shared by more than one screen
 
@@ -170,314 +206,429 @@ screen, and each has a default reading when it is not known yet (`null` → `—
 | time | unix seconds; a live call's timer is `m:ss`, a finished one's duration is `1m 04s` |
 | seq | an integer per call, monotonic, written before control returns. Every row of every log view is addressable by it |
 
-## 2. Overview — `/`
+## 2. Home — `/`
 
-The front page, titled Agents: which agents this gateway is holding right now, so the console offers a list and
-not a URL shape. A row opens that agent's Calls.
+How today is going, UTC like every clock here. Titled *Good morning* · *afternoon* · *evening*, the
+person's first name when the key names one; the lede is one sentence: calls on the floor, how many
+need a look, *everything else handled*.
 
-- **Per row:** the agent's slug; the channels it answers on, sorted (`phone · web · whatsapp`); and, for a key the gateway answers with more than its own corner (an admin's, the operator's), **whose** copy it is — a member's name, or *the org's* — with a filter over *everything* · *mine* · *the team's*. Nothing else exists on this door.
-- **Empty:** "No app is holding an agent on this gateway right now" — and the command that changes that: `pinecall run` in the app's directory. A filter that leaves nothing: *Nothing here is mine* / *the team's*.
-- **Refused:** the gateway's own sentence, verbatim.
-- Read once, not polled: the list changes when a socket connects.
+- **Four numbers.** *Conversations* today with the change against yesterday (`+18%`, `−4%`,
+  *steady*); *Resolved without a human* as a percent with the change in points; *Median answer* (the
+  day's median `e2e_latency`, against yesterday's, to a tenth of a second); *Spend today* with *of
+  €N* when the org has a budget, else *today*. They are `GET /v1/insights` — the gateway's count of
+  every call of the day. **A gateway without the door**: the same numbers folded from the floor's 200
+  rows (resolved = ended neither `transferred` nor `supervisor_ended`; spend = the rows' `cost.eur`),
+  and no Median card at all.
+- **Needs a look** — *N of M today*: a row per call with who was on, a flag, its one-line reason,
+  `channel · duration` and how long ago, opening the session. Flags: `escalated` (red), `low score`
+  (amber), `promise made` (indigo) — the gateway's `flags` on the row (`escalated · low_score ·
+  promise`), the reason its `score.reason`, else the outcome. From an older gateway: the end reason
+  for escalated, and the first `broken` judge of the first twenty scores read (`lib/use-scores.ts`)
+  for low score. None: *Nothing today needs a look: no call went to a person, and no judge said no.*
+  Foot: *N more handled cleanly* · *See all sessions*.
+- **On the floor now** — up to four live calls: who, `agent · channel · m:ss`, and **Listen**, which
+  opens that call on Live. None: *Nobody is on a call. A call that rings appears here the moment it does.*
+- **Where calls arrive** — Phone · Web · WhatsApp as shares of the day (insights' `channels`, else
+  the rows; with no call today, the rows the floor holds).
+- **Finish setting up** — drawn until every step is done, each only for a key that opens its door:
+  *Connect a phone carrier* and *Point a number at an agent* (`numbers`, hosted) → Numbers; *Add a
+  judge so calls get scored* — shown when `GET /v1/org/judging` answers and the key opens `usage`,
+  and **Turn on** is `PUT /v1/org/judging {on:true}`, right there; *Invite your team* (`team`,
+  hosted; done when two members are not disabled) → Team.
 
-## 3. Talk — `/a/:agent/talk`
+## 2b. Overview — `/overview`
 
-A person reaches the agent from this tab, with this machine's microphone, and reads the call
-underneath as the log carries it.
+Which agents this gateway is holding right now. **Issue a key** in the head (hosted, a key that
+opens `keys`) goes to Keys.
 
-- **The door:** one button. `Talk` → `joining…` (disabled) → `Hang up`; after the call, `Talk again`.
-- **Phase, and the sentence each one gets** (`idle · connecting · live · ended · failed`):
-  `not connected` · `joining the room…` · `on the call · speak` · `hung up` · `the room did not open`.
-  The empty transcript carries the same five as a hint: *press Talk: the browser asks for the microphone, and the agent answers* / *listening — say something* / *the call ended* / …
-- **The call id**, once there is one.
-- **The transcript**, drawn word by word as the voice says it: a line per speaker, interim lines grey with a cursor, final lines solid, and a word already on screen never re-animates. Between the lines, the supervisor's marks (below) as single sentences.
-- **The whole call underneath**: the same Live panel the Calls screen draws (§4.2), because it is the same log.
-- **Errors:** whatever refused, in its own words.
+- **Four numbers**, each only for a key that may read it: *Agents up* `N of M` (M counts the slugs
+  held and the agents a number routes to); *Numbers ringing* `N · F free` (what the carrier owns and
+  this org has not imported) — else *Calls live*; *Active keys* `N · R revoked` — else *Calls
+  today*; *Providers ready* `N of M`.
+- **Agents** — *watching* while the floor's stream is live, else the connection's word. Per row: a
+  lettered tile and the slug; `1 call live` / `N calls live` in green, or `idle · last call <ago>`
+  (whose copy first, for a key that sees the team's); its channels as tags; the numbers routed to
+  it; **Today** (insights' count for the slug, else the rows'); **Score** — the share of judges that
+  held over the agent's judged calls today, as a percent: green from 90, amber from 70, red under —
+  `—` when nothing was judged or the gateway does not count. A row opens Talk. A key the gateway
+  answers with more than its own corner gets chips: *everything* · *mine* · *the team's*.
+  Empty, local: *Nothing of yours is running. `pinecall run` in a project puts its agents here.*;
+  hosted: *Nothing is deployed here yet…*; a filter that leaves nothing: *Nothing here is mine*.
+- **Keys in use** (four, live ones first): label, `a machine` or the holder's name, what it may do
+  (`everything`, or the scopes; `sandbox` for a sandbox key), `active` / `revoked`. **Manage** → Keys.
+- **Providers** — *N ready · M need a key*; four ready vendors, the org's own first, then the box's
+  defaults: `decides · hears · speaks`, *the default* when the box names it for that job, and `ready`
+  (the org brought its key) or `box key`. **Bring one** → Providers.
 
-## 4. Calls — `/a/:agent/calls[/:call]`
+## 3. Live — `/live[/:call]`
 
-The floor: this agent's calls on the left, and the ones being watched beside them. No call in the
-path watches **every live call at once**; a call in the path watches that one alone.
+The floor. Three columns: the calls, the one watched, and what that call holds.
 
-### 4.0 Simulate (above the list)
+**Left.** `N calls up` · *re-asked every 3 s*; **Simulate a caller**; then *Sessions*: the org's
+calls, live first, eighty at most — who is on (name, else the number as people dial it, else the
+visitor id), and `m:ss` counting up, the status word while it is not active yet, or `ended`.
+`?agent=` keeps one agent's and says so, with *every agent* to clear it. No call in the path
+watches the newest live call, else the newest. Empty: *No calls yet. Leave this open — a call that
+reaches any agent shows up here as it rings.*
 
-A synthetic caller put on this agent from the page — `pinecall simulate` with the same defaults. Persona
-(one file per caller in `test/personas`, with its goal shown), `voice` (a real line, and the listen button
-beside it), `judge at hang-up`, turns (1–30, default 6); on a spoken line, `noisy line` with noise in dB
-under (0–60, default 15) and packets lost % (0–100, default 0). The call opens in Calls by its id. Needs the
-`pinecall run` holding the agent, in the agent's directory (`test/personas`, or `test/personas/<name>/` in a
-project of several): without a class there the form says so, and a process in another agent's directory is named.
+**Simulate** (`calls/simulate-form.tsx`; here with an agent picker, on Calls for that agent): a
+synthetic caller — `pinecall simulate` with the same defaults. Persona (one file per caller in
+`test/personas`, its goal shown), turns (1–30, default 6), `voice` (a real line), `judge at
+hang-up`; on a spoken line, `noisy line` with noise in dB under (0–60, default 15) and packets lost
+% (0–100, default 0). The call opens on `/live/:call`. Needs the `pinecall run` holding the agent,
+in its directory: without a class there the form says so, and a process in another agent's
+directory is named.
 
-### 4.1 The list (left)
+**Centre — one call** (`live/live.tsx`; Talk's inspector and Chat read the same hook).
 
-Re-asked every 3 s. Two groups, `Live` first, then `Recent`; a group with nothing in it is not drawn.
+*Head:* the call id · tags for channel and direction · `on a call · m:ss` in green, the status word
+before that, or the end reason in words · `<who> → <agent> · seq N · agent <state> · caller <state>
+· <connection, or the refusal>` · **Listen in** (a key that opens `supervise`; disabled once the
+call is over).
 
-Per line: the channel as one mark (`phone ☎` · `web ◍` · `whatsapp ✉` · unknown `–`); **who is on** —
-the contact's name when the platform recognised the caller, the number it came from when it did not,
-the call id when neither; and **when** — a live call counts up `m:ss`, a call that is not live shows
-its status word instead (`ringing`, `dialing`, `ended`). A standing line at the top says `live` or
-what the door refused with. Empty: *No calls yet. The first one to reach this agent appears here as
-it rings.*
-
-### 4.2 One call being watched (the Live panel — also used by Talk)
-
-**Head, in one strip:** the call id · `channel · direction · status` · `from → to` ·
-`agent_state · user_state` · `seq N · <connection or error>` · the desk (§4.3).
-
-**Recording:** when the call's summary points at audio, a player.
-
-**Centre — the timeline.** Every row carries the seq it happened at and nothing invented. Seven row kinds:
+*The rows.* Every row carries the seq it happened at and nothing invented:
 
 | row | what it carries |
 |---|---|
-| turn | who spoke, the text, the speech id, up to five latency chips, `interrupted` on an agent turn, the language on a user turn, and every metrics block joined to it by `speech_id`, one expand away, field by field under livekit's own names |
-| tool | `name(arg=value, …)`, the outcome or `…` while running, and one expand away: the arguments whole, the output whole, the error, the duration. Status colours the row: `running · done · failed` |
+| turn | who spoke (`caller` · `agent`), the text, the speech id, its latencies, `interrupted` on an agent turn, the language on a user turn, and every metrics block joined to it by `speech_id`, one click under it, field by field under livekit's own names |
+| tool | `name(arg=value, …)`, the outcome or `…` while running; one click under it the arguments whole, the output whole, the error, the duration. `running · done · failed` |
 | state | which of the app's fields changed here, and what moved them: a tool's result or a fact from outside |
+| lookup | a `memory.ops` or a `docs.sources` as one line — `op · n facts · ms`, `n sources · ms` — and what was found under it |
 | confirm | the tool that needed a yes, what the agent read back, and how it went |
 | event | a fact that arrived from outside the conversation: its name, its source (`app` / `participant`), its data |
-| supervisor | one sentence: *supervisor whispered: …* / *supervisor made the agent say: …* / *supervisor took the line* / *supervisor handed the line back* / *supervisor transferred the call to …* / *supervisor ended the call: …*, and who made it |
-| quiet | a stretch of entries nobody needs to read line by line, folded |
+| supervisor | one sentence: *supervisor whispered: …* / *made the agent say: …* / *took the line* / *handed the line back* / *transferred the call to …* / *ended the call: …*, and who made it |
+| quiet | a stretch of entries nobody needs to read line by line, folded, one click open |
 
-Under the rows, the words being said **right now** — the caller's and the agent's interim
-transcripts, cleared the moment the turn they belong to is final.
+Under the rows, the words being said **right now**, cleared the moment their turn is final; and at
+the end, when the summary points at audio, the recording.
 
-**Four panels beside it:**
+*The desk* (`live/desk.tsx`) opens under the head from **Listen in**, and opening it takes a
+hidden, silent seat in the room. Two seats, not one: the ear, and — minted the first time the line
+is taken — a seat that publishes a microphone.
 
-- **STATE** — the app's own declared fields, by name, sorted, with the value as the tenant projection left it and, per field, who may see it: `public` · `tenant` · `pii masked`. Empty: *The app has declared no state yet.*
-- **ROOM** — the room name and sid, the number a phone call rang, and every participant: identity or display name, kind, whether the room reports them speaking right now, and livekit's attributes verbatim one expand away (for a phone call, that is where the SIP headers are). A text session has no room and says so.
-- **PROMPT** — which blocks the app has written on this call, by name, each with its hash, its length and the seq it was written at — never its text (the text stays out of the log by design). Empty: *The app has written no block yet.*
-- **METRICS** — first the medians (per measure: the seconds, and over how many turns), because they are the answer; then every raw block by kind with a count, expandable field by field, because they are the truth. Empty: *Nothing measured yet: the first turn fills this in.*
-
-### 4.3 The desk — the supervisor's moves, in the head of the call being watched
-
-Two seats, not one: **listen** mints a hidden, silent ear; the five verbs mint a seat that publishes a
-microphone, and it is minted the first time the line is taken.
-
-- **listen** has five states and a label for each: `listen` (off, or after a failure) · `joining…`
-  (disabled) · in the room but muted → `hear it` + `stop` · hearing → `listening · mute` + `stop`.
-  On a call that is over the button is disabled and says why: *the call is over: read its log, or
+- **listen**: `Listen` (off, or after a failure) · `Joining…` · in the room and muted → `Hear it` +
+  `Stop` · hearing → `Listening · mute` + `Stop`.
+- **Whisper | Say** — one box, one segment. Whisper: the agent is told something the caller never
+  hears. Say: the agent says it to the caller, verbatim. Enter or **Send**.
+- **Take the line** / **Hand back** — `holding` is the one piece of state the desk keeps, because
+  the log cannot tell it fast enough to keep a button honest.
+- **Transfer** — irreversible, so it never leaves on a stray click: the button becomes a field, the
+  number is typed and entered. Escape or *Cancel* takes it back.
+- **End call** → `End · sure?` → sent; looking away disarms it.
+- On a call that is over: *The call is over: nothing is left to supervise. Read its log below, or
   play its recording.*
-- **whisper / say** — one box, one toggle. `whisper` = the agent is told something the caller never
-  hears; `say` = the agent says it to the caller, verbatim. The placeholder is whichever is armed.
-- **take over / hand back** — the button says which is possible; `holding` is the one piece of state
-  the desk keeps, because the log cannot tell it fast enough to keep a button honest.
-- **transfer** — irreversible, so it never leaves on a stray click: the button becomes a field, the
-  number is typed (E.164 or a SIP URI) and entered. Escape cancels.
-- **end** — irreversible: `end` → `end · sure?` → sent.
-- **A refusal is never rephrased.** The gateway's own sentence is what the strip shows (`409 the call
-  has ended`, `ONLY_COLD`, `call.transfer: this call has no SIP leg…`).
-- Nothing here draws the state of the call: what a verb did is the `supervisor.*` line in the timeline.
+- **A refusal is never rephrased**: the gateway's own sentence is what the desk shows. Nothing here
+  draws the state of the call — what a verb did is its `supervisor.*` row.
 
-Empty state for the screen: *Nothing live right now. Open a call from the list to read it, or leave
-this open — a call that arrives shows up here on its own.*
+**Right — four sections.** **STATE**: the app's declared fields by name, the value as the tenant
+projection left it, and `public` or `pii` beside a field that declared one (*The app has declared no
+state yet.*). **ROOM**: *Audio room open · N participants*, the number a phone call rang, each
+participant and its kind (*No room: this session carries no media.*). **PROMPT**: each block by
+name with its hash and length — never its text — and the cost so far (*The app has written no block
+yet.*). **METRICS**: the medians as bars, then every raw block by kind (*Nothing measured yet: the
+first turn fills this in.*).
 
-## 5. Sessions — `/a/:agent/sessions`
+## 4. Calls — `/a/:agent/calls[/:call]`
 
-Every conversation this agent has had, newest first, phone calls included — in the corner on screen. The door
-answers per corner: in the sandbox a developer sees only their own copy's calls, and an admin who opened a
-teammate's copy sees that copy's; production's calls are production's, and never mixed into the sandbox list.
+This agent's conversations as an inbox: one thread per person, what was said, and a way to answer.
 
-**The table, eight columns:** session (the call id, a link) · channel · from (name, else number, else
-`—`) · started · duration · outcome (the agent's one line, e.g. *booked*, *no slot*, *wrong number*,
-else the end reason) · score · cost.
+- **Threads** are the agent's sessions (re-asked every 3 s) grouped by contact — the id the app
+  resolved (`caller.id`), else the caller's phone, else the address the call came from — newest
+  first. A row: a round avatar (two letters of a name, `W` for a web visitor, a number's last two
+  digits), the name or handle, the time (`13:24` today, *Yesterday*, then the day), the latest
+  outcome — *On a call now* in green — and the **unread** count. Names and unread come from `GET
+  /v1/agents/{slug}/threads` (unread is per person: what arrived since they last opened the thread),
+  and opening a thread with some posts `…/read`. A search box filters by name, handle and last line;
+  **+** opens Simulate for this agent. Empty: *No conversations yet. The first call to reach <agent>
+  opens a thread here as it rings.*
+- **The open thread**: the avatar, the name, `handle · channel · handled by <agent>`; **Watch live**
+  while its latest call is up (→ Live) and **Session** (→ that call's session). Messages are read
+  from each call's own log, the thread's twelve newest calls at most, re-read only when a call's
+  last seq moves: day pills (*Today*, *Yesterday*, a date), the contact's turns on the left, the
+  agent's — and a sentence a supervisor made it say — on the right, each with its time, and a
+  spoken call as one centred pill, *Voice call · answered · 2m 34s*, followed by its turns.
+- **The composer** writes **as the agent**, in exactly two cases: the latest call is live and a text
+  one → `POST /v1/calls/{call}/verbs {verb:"say"}`; the latest call is over and WhatsApp, on a
+  gateway with the threads door → `POST …/threads/{contact}/messages`, which the gateway refuses
+  (`409`, in its words) once WhatsApp's 24 h window closed or the conversation sealed. Otherwise it
+  is disabled and its placeholder says why: *A live voice call — Listen in on Live to speak into
+  it* · *The conversation is closed — nothing can be written into it from here*.
+- **Call back is not here**: the gateway has no door that dials out (the runtime's
+  `console-api.md` §4). It returns with that door.
 
-**The score cell has four readings, and they are four different facts:**
-`…` (nobody has read that call's log yet) · `—` (its log carries no verdict) · `not judged` (with the
-reason: the judges are not installed on this box, or judging failed) · `passed` / `did not pass` with
-`held/total`, and every judge's verdict in the tooltip.
+## 5. Sessions — `/sessions`, `/a/:agent/sessions`
 
-Also: a box to **open a call by id** (a call older than the door's screenful is still readable), a
-count line, and the note that these are the same rows `pinecall-runtime sessions list` prints.
-Empty: *No session recorded yet* — the log is append-only and written during the call, so a session
-appears the moment one ends, from the browser, from `pinecall chat`, or from the telephone.
+Every conversation, newest first, live ones first with a green dot — in the corner on screen: a
+developer sees their own copy's calls, an admin who opened a teammate's copy sees that copy's, and
+production's are never mixed into the sandbox list.
 
-### 5.1 One session — `/a/:agent/sessions/:call`
+- **Filters**: *Search a session id, number or outcome*; on the org's list, *Every agent* and
+  *Every channel*. A whole call id and Enter opens it, on the page or not.
+- **The table**: Session (the id, and who was on under it) · Agent (the org's list) · Channel ·
+  Started (`hh:mm:ss`) · Duration (`1m 04s`, `live` while it runs) · Outcome (the agent's one line,
+  else the end reason). A row opens the session.
+- **Who searches.** The list asks the sessions door with `q`, `agent`, `channel` and `limit` (fifty
+  a page, 250 ms after the last key). A gateway that answers a `total` is believed: its rows, *N of
+  total* in the foot and **Load more** (the limit grows; the door caps it at 200). One that does not
+  is never asked again, and the rows the screen already follows are filtered in the browser —
+  *No session here matches. The search reads the sessions this page has listed.*
+- Empty: *No session recorded yet. The log is written during the call, so one appears here the
+  moment it starts — from the browser, from `pinecall chat`, or from the telephone.*
 
-The order is an auditor's: what this call was, how fast it was, what it was allowed to do, what the
-judges made of it, and only then the rows that prove all of it.
+### 5.1 One session — `…/sessions/:call`
 
-1. **Eleven facts:** agent · channel · from · started · duration · ended (the end reason, or `running`) · outcome · cost · score · turns · events.
-2. **The recording**, when the summary points at one, with the path on the box that took the call.
-3. **Latency across this call** — per measure: the median, the max, and `n=` how many turns carried it. When nothing was measured it says why: a chat session times nothing, and a voice call that dropped before its first answer has nothing to time.
-4. **Consent proof**, when the call asked for any: per tool call, the join from the request to the grant or the decline, and to the tool call it authorised — seq to seq. Matched by `call_id`, so two bookings in one call each have their own.
-5. **Score** — judge by judge: the judge's name (`consent`, `grounded`, `register`, `leakage`), its verdict, the question it was asked, the sentence it answered with, and the seqs it cites as evidence — each of them a link into the log below (`#seq-93`). A judge of the declared panel that answered nothing is drawn as such rather than as a pass. Plus what the opinions cost and how many model calls they took (zero is the happy path: a policy answers by code). No score at all: *ask for one with `pinecall eval <call>`.*
-6. **Cost by model**, when the summary priced any: provider · model · unit · quantity · euros, plus the USD→EUR rate and its date, and any unpriced model named.
-7. **What to do with it** — two moves on a call just read: re-check it by code (`POST /v1/evals/replay/{call}`, answers passed / did not pass with the judges' lines) or write it down as a golden candidate.
-8. **The prompt, block by block** — when the log carries blocks: name, hash, length, seq.
-9. **The log** — every entry in seq order, one row each, the metric fields one click under the turn they timed, an "expand all", and a count line: *N entries, append-only, numbered by seq. Live ≡ stored.*
+*← Sessions*, the call id, and two moves: **Re-check by code** (`POST /v1/evals/replay/{call}`:
+each check as a pill with its line) and **Promote to a golden** (the directory's `promote`: the
+path written, and its notes). Then, in an auditor's order:
 
-Failure states: *That session did not load* with the gateway's sentence; and, while it is reading,
-`reading <call>…` versus `no call <call> in the log`.
+1. **Seven facts**: Agent · Channel (`· outbound` when it was) · Started (`16 Sep, 15:10`) ·
+   Duration (*still going*) · Ended (the end reason in words, *not yet*) · Cost · Turns · events.
+2. **Outcome**, when the summary wrote one.
+3. **Transcript · N turns** *with <caller>* — beside it **Latency across this call** (per measure
+   the median and the max, LLM first token and End to end first; when nothing was measured it says
+   why) and **Score**: *Passed* / *Did not pass* with `N of M held`, judge by judge — name, verdict
+   pill (`held` green · `broken` red · `deferred` amber · `skipped` muted), the sentence it answered
+   with, the seqs it cites as links into the log — a judge of the panel that answered nothing drawn
+   as *on the panel*, never as a pass, and what the opinions cost. *No judge was given to this
+   session* (with the log's own reason) and *Not scored yet* both carry **Attach a judge** for a key
+   that opens `evals`, once the call has ended: `POST /v1/evals/judge/{call}` runs the hang-up's
+   judges now, under the same ceiling, and the verdict replaces the card's at once.
+4. **Cost by model**: model · unit, quantity, euros, the total, the USD→EUR rate and its date, any
+   unpriced model named.
+5. **Listen to this call**, when the summary points at a recording.
+6. **Consent proof**, when the call asked for any: per tool call, the join from the request to the
+   grant or the decline, and to the tool call it authorised — seq to seq.
+7. **The prompt, block by block** — name, hash, length; the text never enters the log.
+8. **The log** — every entry in seq order, the metric fields one click under the turn they timed,
+   each row an anchor (`#seq-N`).
 
-## 6. Evals — `/a/:agent/evals`
+While it reads: *Reading <call>…*; nothing there: *No call <call> in the log.*; a refusal in the
+gateway's words.
 
-Two halves, both of ONE agent, both addressable in the URL so a regression is a link you can paste to
-whoever wrote it.
+## 6. Talk — `/a/:agent/talk`
 
-**Runs** (`?view=runs`, `&run=<id>` opens one):
+*Talk to <agent>*: this machine's microphone reaches the agent, and the call is the same log
+everything else reads.
 
-- **Run a suite from here**: tick the goldens (each shown as its first line and what it expects — the keys of `expect`, or *consent only*), pick the model or keep the one the class declared, `voice` for ring 2, and on a spoken line the same noisy-line knobs as Simulate. The run is opened by the process holding the agent's directory and scored by the gateway; it appears in the table the moment it opens. Without goldens — none written, or no goldens folder at all, which is the same answer and not an error: *No goldens in test/goldens: write one, and it appears here.*
-- **The table:** run id · started · status (`running · done · failed`) · goldens · models · held (`held/total`, marked when not all held) · judge calls · **since the run before**.
-- That last column is never an average: it names the judgments that changed hands — `broke: <golden>`, `held again: <golden>`, `±0`, or `first of its kind`.
-- **One run opened:** run · started · finished · status (with its error, when it failed) · what changed since the run before; then the matrix, one row per judgment: golden · model · metric · score · held · **the judge's own sentence** · the call it opened (a link into that call's log). A run with no matrix says why: still opening its calls, or it failed before a judge answered.
-- **Reproductions**: what a broken run left on disk — one file per golden that did not hold, opened from the run. A run with no folder is every green run.
-- Empty: *No run has been stored yet* — one appears the moment it opens, from a laptop or from CI.
+- **The button**: `Talk` → joining (disabled) → `Hang up`. Five phases, a line and a sentence each:
+  *Ready — press Talk* · *Joining the room…* · *On the call — speak* · the call ended (*Its session
+  is in Sessions, judged at hang-up*) · *The room did not open* (*the reason is under the button*).
+  The five bars under it move while a call is up; they are not a level meter.
+- **Speaking as** `<person> · you` and **Lands in** `<world> · counts in usage`.
+- **This call**, once there are lines: the transcript word by word — interim grey, final solid, the
+  supervisor's marks between them as single sentences.
+- **The Inspector** (`talk/inspector.tsx`, Chat's too), beside the page: a pill for the stream's
+  state; *This session* — or *Last session*, the agent's newest call, before one is made — with
+  Turns, ttft and e2e (medians), Cost, Tokens in (cached ones counted) and out, and the call id;
+  **Turns** with each one's measures; **Tool calls** (name, arguments, result; *No tool has run.*);
+  **State**. Before the agent has taken any call: *Nothing to read yet…*
 
-**Calls** (`?view=calls`): ring four — what the judges sealed each finished call with, within a minute
-of the caller hanging up. Same score vocabulary as §5. Empty: *No call of this agent has finished yet.*
+## 6b. Chat — `/a/:agent/chat[/:call]` (local)
 
-**Drift** (`?view=drift`): each judge's held-rate over two windows of finished calls — a week against a
-month when nobody names one — as `percent (held/settled)`, the delta between them, and one threshold:
-a drop past it is the one coloured number on the screen, because it means somebody does something
-tonight. Empty: *No finished call of this agent carries a verdict in either window.*
+The class talked to **in writing**, on the call's own log — `pinecall chat` from a page, so a
+breakpoint in a `@tool` is reachable in the terminal serving it.
+
+- **Start a conversation**: `As` (a phone number, a customer id — or nobody; it files the call under
+  a contact so memory has a name) and `From` — the call's own opening, or **the state one of this
+  directory's goldens declares**. *Start the chat* → the call id lands in the URL.
+- **In the call**: your turns on the right in the accent, the agent's on the left, a tool the model
+  called between them as a centred pill (`name · running|done|failed`); **Session** and **Hang up**
+  in the head — a button, never a navigation: hanging up seals the log and runs the judges. After
+  it, the session. **A chat that has ended reads as a transcript**: no Hang up, no box — *This chat
+  has ended — it is on the session, whole.*
+- **A reply streams** (`chat/streaming.ts`): every model delta is its own `agent.transcript`; the
+  chat adds them up per `speech_id` and reveals the text toward that sum on `requestAnimationFrame`.
+  A reply that reached `turn.agent` is settled and its own text wins, carrying on from the character
+  the stream reached. A call opened after the fact draws every reply whole.
+- **A line you send is on screen at once**, pending, until the log's `turn.user` confirms it; a
+  refusal takes it back and puts the words in the box again, with the gateway's sentence. Three dots
+  stand in the agent's column while it thinks.
+- The Inspector beside it. Needs the `pinecall run` holding the agent, in its directory.
 
 ## 7. Pipeline — `/a/:agent/pipeline`
 
 The three legs of a voice turn as data, with this agent's overrides already applied — so the screen
 cannot show a pipeline the next call will not run.
 
-- **Providers, three panels:** `hears` / `decides` / `speaks`, each with its vendor, its model (or *the provider's default*), and the rows that matter to it — the ear's language; the prompt's three regions (`static · history · view`, in that order, never reordered) and where the tools come from; the voice by name and the aligned transcript. A leg that cannot run right now carries the reason, in the gateway's words.
-- **Anatomy of a turn:** one bar per stage over the agent's recent calls, in seconds, in the order a turn happens, with the count of calls behind the medians. A stage nobody measured says so in words — never a zero-width bar, which reads as instant. The stages overlap in real time; they are laid out to show proportion, not to claim they sum.
-- **Control — five knobs**, applied to the NEXT session, never to a call already running:
-  `stt` (vendor/model, or a model alone to keep the vendor) · `llm` (same) · `voice` (a name from the list this build curates, never a pasted vendor id) · `tts_model` · `greeting` (spoken verbatim as the call opens — said, never generated).
-  A field left empty **gives the knob back to the app**, and the placeholder says what the app declared for it, so an empty field never reads as a blank. Saving answers with the whole report, so the panels above are the gateway's answer and not a local guess. A refusal is the gateway's sentence (a model this build has no file for is a 422, in its own words), and the console hides nothing to prevent one.
-- **What is turned right now**, listed apart from the form.
-- While it is asking: *Asking the gateway what `<agent>` runs on…*
+- **Three cards**, `hears` / `decides` / `speaks`, each headed by its vendor, with a `turned` pill
+  when an operator moved it and the gateway's reason in red when the leg cannot run. Hears:
+  Language, Model, *Switchable to*. Decides: Model, Prompt (`identity · knowledge · tools · history
+  · view`), Tools. Speaks: Voice, Model, Aligned transcript. An unset value reads *the vendor's default*.
+- **Anatomy of a turn** — *medians over the last N calls · M turns*: Transcription · End of turn ·
+  LLM first token · Speech starts · End to end, a bar each scaled to the slowest, and the
+  milliseconds. A stage nobody measured is `—`, never a zero-width bar read as instant.
+- **Control** — *applies to the next session*: Hears, Decides and Speaks as vendor plus model (the
+  vendors off `GET /v1/providers`, ready ones first), the voice (a list for the vendor this build
+  curates, else that vendor's own id), the tts model, and the greeting — *spoken verbatim as the
+  call opens — said, never generated*. *An empty field gives the knob back to what the app
+  declared.* Saving answers with the whole report, so the cards above are the gateway's answer.
+- **Turned**: what is overridden right now, apart from the form.
 
 ## 7b. Knowledge — `/a/:agent/knowledge`
 
-What this agent answers from. *The folder is pushed whole and the base is replaced, never merged. A
-golden is fixed and the index is the variable.*
+*What this agent answers from. The folder is pushed whole and the base is replaced, never merged.*
 
-- **This directory**: the path, how many markdown files, the base name (editable), `push the folder`; the golden beside it (`N questions`, or *no golden beside it*) and `run the golden`.
-- **After a push**: `base · files · chunks · ms`.
-- **After the golden**: base · embedder model · questions · `recall@k` · `nDCG@10` · ms, and every miss: the question, what it wanted, what came back first (or *nothing*). All found: *Every question found what it asked for.*
-- **Every base this org has pushed**: base · chunks · embedder · pushed (day and minute) · `drop`. Empty: *No base pushed yet.*
-- Needs the agent's directory for push and golden; the list and drop are the gateway's.
+- **This directory** (the directory's `knowledge.roster`): the base name (editable), the folder's
+  path, *N markdown files*, **Push the folder**, *N questions*, **Run the golden**. While asking:
+  *Asking the process that holds <agent>…*; when it does not answer, the sentence says so — and the
+  bases below still load.
+- **The golden**, after a run: `base · embedder · N questions · ms`, `recall@k`, `nDCG@10`, and
+  every miss: the question, what it wanted, what came back first.
+- **Every base this org has pushed**: Base · Chunks · Embedder · Pushed · **Drop** (asks first).
+  Empty: *No base pushed yet…*
 
 ## 7c. Memory — `/a/:agent/memory`
 
-What the agent keeps about one contact, the right to be forgotten, and the two goldens it is held to.
+*What this agent carries between calls with the same caller.*
 
-- **A contact** (a phone number, a customer id): `read` → every fact, its category, and *superseded <when>* on the ones a later fact replaced; `forget` → a confirm in place (*There is no undo*), then `forgotten: N`. Empty: *Memory keeps nothing about <contact>.*
-- **Recall golden** (`memory/golden.json`, or `memory/<name>.golden.json` in a project of several): N questions, scored by code with no model, on a scratch contact — `model · recall@k · nDCG@10 · N missed`, and each miss as *asks → wanted …, got …*.
-- **Extraction golden** (`test/memory`, or `test/memory/<name>/`): one written call per case and one model call each — `model · held/cases · ms`, and each broken case with `check: detail`.
-- Both goldens need the agent's directory.
+- **Callers.** On a gateway with `GET /v1/agents/{slug}/memory`: every **current** fact this agent's
+  calls taught, across every caller, newest first — Caller · Remembered · Written · **Drop**, which
+  ends that one fact (`DELETE /v1/memory/facts/{id}`; the contact's history still shows it,
+  superseded). The box in the head filters them by caller as it is typed; entered, it reads that one contact (and offers **Forget**, the contact whole). Both drops ask first.
+  On an older gateway the box is the only way in: *Look up a caller…* → that contact's facts with
+  their category, superseded ones dimmed with the day they stopped holding (`GET
+  /v1/contacts/{contact}/memory`), and **Forget** the contact whole, after a confirm.
+  Empty: *Memory keeps nothing about any caller of this agent yet.*
+- **Recall** (`memory/golden.json`, or `memory/<name>.golden.json` in a project of several): N
+  questions, scored by code with no model on a scratch contact — `recall@k · nDCG@10`, each miss.
+- **Extraction** (`test/memory`, or `test/memory/<name>/`): one written call per case and one model
+  call each — `held/cases`, each broken case with `check: detail`.
+- Both goldens are the directory's; when its process does not answer, the card says so.
 
-## 7d. Chat — `/a/:agent/chat[/:call]`
+## 7d. Evals — `/a/:agent/evals`
 
-The class talked to **in writing**, in the browser, on the call's own log — `pinecall chat` from a page,
-so a breakpoint in a `@tool` is reachable in the terminal serving it.
+*A golden is fixed and the agent is the variable: never soften a golden so a change can pass.*
 
-- **Opening**: `as` (a phone number, a customer id — or nobody; it files the call under a contact so memory has a name) and `from` — the call's own opening, or **the state one of this directory's goldens declares** (a conversation opened part-way through). `start a chat` → the call id lands in the URL.
-- **In the call**: the turns as bubbles — yours on the right (`you`), the agent's on the left (`agent`), a tool the model called between them as its name, a dot for `running · done · failed` and its outcome — read from the call's own log (the same rows `screens/live/timeline-rows.ts` builds), with the whole call (panels, desk) one link away on Calls (*the whole call, row by row*); plus a composer — `say`, and `hang up` as a button, never a navigation: hanging up seals the log and runs the judges, and leaving the page would keep the socket open. After hang-up it lands on the session.
-- **A reply streams** (`screens/chat/streaming.ts`). A written call logs every model delta as its own `agent.transcript`, a piece of a word; the chat adds them up per `speech_id` and reveals the text toward that sum on `requestAnimationFrame` — at least a character a frame, and a share of what is still hidden, so a burst catches up in a few hundred milliseconds and a slow reply reads at the speed it arrives. A reply that reached `turn.agent` is settled and its own text wins, carrying on from the character the stream reached rather than drawing again. A caret stands at the end while it is still coming. A call opened after the fact draws every reply whole.
-- **A line you send is on screen at once**, greyed as pending, until the log's `turn.user` with that text confirms it; a refusal takes it back and puts the words in the box again, with the gateway's sentence. While the agent is thinking and nothing has streamed yet, three typing dots stand in its column.
-- Needs the `pinecall run` holding the agent, in its directory: without a class there, *No agent class in the directory the agent's `pinecall run` runs in*; a process in another agent's directory is named.
+- **Four numbers**: Goldens (the directory's roster) · Passing · Failing (the latest run) · Last run.
+- **Golden questions**: each golden as the caller's first line, the kind of check its `expect`
+  implies — `tool call` (tools, not_tools) · `exact phrase` (says, not) · `judge` (grounded,
+  register) · `a reply` · `consent` (nothing declared) — and `pass` · `fail` · `not run` from the
+  latest run (held = every judgment on it, under every model, held). **Run all** (local) opens a
+  suite with every golden.
+- Under them a segment, addressable as `?view=`: **Runs** (local) — *Run a suite* (tick the goldens,
+  name the models or keep the class's, `voice` for ring 2 and its noisy-line knobs), the runs table
+  (run · started · status `running · done · failed` · goldens · models · held · judge calls · since
+  the run before: `broke: <golden>`, `held again: <golden>`, `±0`, `first of its kind`), and one run
+  opened by `&run=`: the matrix judgment by judgment with the judge's own sentence and the call it
+  opened, and the **reproductions** a broken run left on disk. **Scored calls** — what the judges
+  sealed each finished call with, with re-check and promote. **Drift** — each judge's held-rate over
+  two windows (a week against a month unsaid), the delta, and one threshold: a drop past it is the
+  one coloured number on the screen.
 
-## 7e. Keys — `/keys` (org level)
+## 7e. Widget — `/a/:agent/widget`
 
-The API keys this org's machines run on. A key a person holds by being logged in does not hold an
-agent in production — the process on the box does — so the key that answers the org's numbers is
-issued here.
+*The web door for <agent> — one script tag on your site, and the call lands in the same log as the phone.*
 
-- **Issue one for a machine**: a label (`prod server`) and a world; it holds the app socket and nothing else, and names nobody. The key comes back **once**, in a card that says so, and is kept by nothing.
-- **The list**: label · world · whose (`a machine` when nobody) · scopes, each live row with `revoke`; a revoked row stays, dimmed, because the calls it wrote name it. Empty: *No key of this org yet: the first one is what a deploy runs on.*
+- **Embed**: the snippet to paste, with the gateway as the CDN — `<script type="module"
+  src="<gateway>/widget/pinecall-widget.js">` and `<pinecall-widget agent= name= company= tagline=
+  phone= greeting= autostart token-url="/pinecall/token" log-url="/pinecall/log">`, plus a `<style>`
+  line setting `--pc-accent` when the accent is not the first — and **Copy**. Under it, what the
+  site's two endpoints do (`token-url` mints a visit token with a key holding `talk`; `log-url`
+  relays the call's log with a key holding `calls`), and `github.com/pinecall/widget`.
+- **Appearance**: Name (default *Assistant*), Tagline, **Greeting** (what the widget says before the
+  call starts), Company, Phone, four accents (and the kept one, when it is none of them), **Open
+  with the microphone ready** (`autostart`). Greeting and autostart are drawn only on a gateway that
+  keeps widget settings — the widget that reads them ships with it. **Save** (a key that opens
+  `pipeline`, enabled once something differs) replaces the set at `PUT /v1/agents/{slug}/widget`
+  (`title · tagline · greeting · accent · autostart`, per org, world and agent); company and phone
+  live in the snippet only. The gateway keeps the words and injects nothing: the snippet is where
+  they become attributes.
+- **Preview**: the very file the snippet loads, mounted inline and minting through `POST
+  /v1/tokens` with this console's key; every field redraws it. *Open on a blank page ↗* is
+  `/a/:agent/widget/preview`, the same attributes in the query.
 
-## 7e′. Providers — `/providers` (org level)
+## 8. The org's settings
 
-The vendor accounts this org brought of its own; every vendor nobody brought runs on the box's key.
+**Numbers** — `/numbers` (hosted), titled *Phone numbers*: **Numbers in <world>** — the number as
+people dial it (`+1 (417) 674-3169`) `→` the agent, `bought` when the box bought it, **Remove** on a
+row an operator made; the agents answering on the web with no number, one line under. **Add a
+number** — *One I already have · N* (the carrier's numbers not imported yet) or *Buy a new one*
+(country, area code), each with the agent that answers; the first button is always **Review**
+(`?dry_run=true`: *Nothing changes yet — you will see exactly what is going to happen, and
+confirm.*), the gateway's steps verbatim, then **Confirm**. **The carrier** last: a `TWILIO` / `SIP`
+badge, *Account connected*, the account, **Change** · **Disconnect** — or *Connect your phone
+carrier*: Twilio (account SID, API key SID, secret) or a SIP peer (username, password, the networks
+its calls come from).
 
-- **Bring one**: vendor (e.g. `elevenlabs`) + the key, `type=password`, sent once; the field empties the moment it left. **Nothing reads a key back** — not this page, not the CLI, not the log.
-- **The list**: vendor names only, each with `give it back`. Empty: *No provider key brought: every call runs on the keys of the box.*
+**Phone testing** — `/phone` (local): *Call the number your customers call, from your own mobile,
+and your copy answers.* The commands (`pinecall line from +1XXXXXXXXXX` once per machine; `pinecall
+run --serve`, `pinecall line forget` while you work); **The numbers to call** off `GET
+/v1/line/numbers`, each `→` its agent with one pill — green *your copy answers <your phone>* · amber
+*production answers: say which phone is yours* · gray *production answers: you are not running it*;
+and **What a call from your phone reaches right now**, in a sentence.
 
-## 7f. The org's layer — `/live`, `/sessions`, `/numbers`, `/team`, `/usage`
+**Keys** — `/keys`: **Issue one for a machine** — a label and a world; *It will hold the app socket
+and nothing else, and name nobody.* The key comes back **once**, in a card with Copy, and is kept by
+nothing. The table: Name · Env · Who holds it (`a machine` when nobody) · May do (`everything`, or
+the scopes) · Status (`active` green, `revoked` gray, the name dimmed); **Revoke** on a live row,
+pressed twice. Empty: *No key of this org yet: the first one is what a deploy runs on.*
 
-Before anybody picks an agent. **Live**: every call still going across the org (`GET /v1/sessions`
-filtered to `live`, re-asked on a clock and the moment `GET /v1/events` says the floor changed), a row per
-call — channel mark, agent, who, status, id — linking into that agent's Calls. Empty: *Nothing live right
-now. Leave this open — a call that reaches any agent shows up here as it rings.* **Sessions**: the very
-table §5 draws, plus an `agent` column, off `GET /v1/sessions`. **Numbers** (`screens/numbers/`), in plain
-words and in the order a person asks, titled *Phone numbers* — *The numbers people call, and which agent picks
-up. You are looking at <world>.*:
+**Providers** — `/providers`: **Bring one** — a vendor and *the key, sent once* (`type=password`,
+emptied the moment it left; nothing reads a key back). Chips *All N · LLM n · STT n · TTS n*. Per
+vendor: its name, what it is or what it still wants (*the box needs <ENV>*, *livekit-agents[<extra>]*),
+its kinds, and `your key` · `ready` · the standing in gray (`no key · no plugin · its own`);
+**Give back** on a vendor the org brought.
 
-1. **Numbers in <world>** — one card per number that rings in this world (`GET /v1/numbers`): the number as
-   people dial it (a US number reads `+1 (417) 674-3169`), `→` the agent that answers, the world, `bought` when
-   the box bought it, and `remove` on a row an operator made (*The number stops ringing this agent. It stays in
-   your carrier account.*). Empty: *No phone number rings in <world> yet.* The agents answering on the web with
-   no number are one line under the cards.
-2. **Phone testing** is a screen of its own, `/phone`, and the local console's alone (`screens/numbers/phone.tsx`):
-   *Call the number your customers call, from your own mobile, and your copy answers. Everybody else who calls
-   still reaches production. You do not need a sandbox number.*; the commands (`pinecall line from +1XXXXXXXXXX`
-   once per machine; `pinecall run --serve`, `pinecall line forget`); **The numbers to call** — a card per production
-   number off `GET /v1/line/numbers`, `→` its agent, and one of *your copy answers <your phone>* · *production
-   answers: say which phone is yours* · *production answers: you are not running it*; and **What a call from
-   your phone reaches right now**, in a sentence. A gateway older than the door shows the commands alone.
-3. **Add a number to <world>** — two tabs, *Use one I already have* (a `<select>` of the carrier's numbers not
-   imported yet, off `GET /v1/numbers/available`, with how many are free, or a typed E.164; disabled until a
-   carrier is connected) and *Buy a new one* (country, area code, on the box's own account), each with the
-   agent that answers. The first button is always **Review** (`?dry_run=true`): *Nothing changes yet* / *Nothing
-   is bought yet*, then *This is what will happen … Nothing is deleted.* with the gateway's steps drawn verbatim,
-   the first word of each as its kind, before **Confirm** / **Buy it and connect it** sends the same request
-   for real. Done: *<number> now rings <agent> in <world>*, and the steps taken.
-4. **Phone carrier**, last — standing: the kind, *Twilio account connected* or *SIP peer connected*, the
-   account, `change` · `disconnect` (off `GET /v1/carrier`, never a secret); or *Connect your phone carrier*:
-   Twilio (account SID, API key SID or the account SID again, secret) or SIP peer (username, password, the
-   networks its calls come from as CIDRs), with what happens to the credentials said under the button.
+**Team** — `/team`: **Invite** — Email, Name, Role (`qa · supervisor · manager · admin ·
+developer`), Agents (*every agent* when empty); the answer's link is shown **once**, in a card with
+Copy. The table: Name · Email · Role and Agents (each edited in place on a click) · Status
+(`active` green · `invited` amber · `disabled` gray) and one move — **Resend invite** (the same
+invitation again: a fresh one-use link, no second seat), **Reset password** and **Disable** on an
+active member, **Bring back** on a disabled one. **Reset password** is `POST
+/v1/members/{id}/reset`: a one-use link, shown once in the same card (*A new password for <name>*),
+handed on by the admin because this box sends no email; it opens the password card and spends every
+older link of theirs.
 
-A refusal is one line at the head, in the gateway's words. **Team**: every member (name, email, role,
-agents, status) off `GET /v1/members`; an invite form (`POST /v1/members`) whose answer's token is shown
-ONCE with the sentence that it is never shown again; role and agents edited in place, and one move on the
-standing — disable, or bring back — never `active` by hand (`PATCH /v1/members/{id}`). **Usage**: the totals
-(calls, minutes, messages, tokens in and out, characters, judge calls, cost) then every metered row with its
-call linked, off `GET /v1/usage`, in the runtime's own field names; empty: *Nothing metered yet: the first
-call to end writes the first row.*
+**Usage** — `/usage`: Calls · Minutes · Messages · Judge calls · Cost, added up over the pages read;
+then every metered row — At · Agent · Call (a link to the session) · Type (`call.summary` ·
+`call.score`) · Min · Cost — and **Load more** while the door has a `next`. Empty: *Nothing metered
+yet: the first call to end writes the first row.*
 
-## 7g. Widget — `/a/:agent/widget`
+## 9. The way in
 
-The button a site embeds for this agent: *One button on any page: the phone number with the call's live log, a
-voice call from the browser, and a chat. This gateway serves the script; the site adds two endpoints of its own
-that mint the visit token and relay the log with the org's key.*
+Every card of it wears one frame (`screens/login/way-in.tsx`): the logo, the form, a line at the
+foot, and on the right half an illustration of the inbox — drawn, not data.
 
-- **1 · The tag** — the snippet to paste, with the gateway as the CDN: `<script type="module"
-  src="https://<gateway>/widget/pinecall-widget.js">` and `<pinecall-widget agent= name= company= tagline= phone=
-  token-url="/pinecall/token" log-url="/pinecall/log">`, plus a `<style>` line setting `--pc-accent` when the
-  accent is not the first. Under it, what the site's two endpoints do: `token-url` posts `{agent, scope}` to
-  `/v1/tokens` with a key holding `talk`; `log-url` relays the sessions list and a call's events with a key holding
-  `calls`; ready-made PHP and Laravel endpoints at `github.com/pinecall/widget`.
-- **2 · The look** — `name` (default *Assistant*), `company`, `tagline`, `phone` (*shows Call us*), and five
-  accents to pick from. The note says every colour, the radius, the font and the offset are custom properties on
-  the tag (`--pc-accent`, `--pc-radius`, `--pc-font`…), the button and the panel are parts (`::part(button)`), and
-  the font is the page's own.
-- **3 · On a blank page** — *Open the preview ↗*: `/a/:agent/widget/preview` in a new tab, the same attributes in
-  the query, the button bottom-right on an empty page, the way a site has it.
-- **The live preview**, beside the column (*preview · minting with this console's key*): the very file the snippet
-  loads, imported from this gateway and mounted inline (`position="inline"`); every field redraws it. It mints
-  its tokens through a `tokenProvider` that posts to `POST /v1/tokens` with the console's key (sixty seconds,
-  labelled as the console preview) instead of a site's endpoint. A script that did not load says so, with the URL.
+- **Sign in** (hosted, no key): Email, Password, **Sign in**. Leaving the password asks `POST
+  /v1/login/orgs {email, password}` — which orgs those open, no key minted, the login's own throttle
+  — and a **Workspace** select appears with them (one org: shown, not a choice). A gateway without
+  that door gets the old free-text field, *only if you belong to several*. **Forgot password** says
+  who to ask: an admin of the workspace hands a one-use link from Team. It signs in to production;
+  a refusal is the gateway's one sentence for every wrong thing. A `?login=<code>` that a production
+  `pinecall run` printed skips the card. The key is kept by the **browser** (`lib/session-key.ts`),
+  so a second tab is the same person; signing out forgets every key.
+- **Choose your password** — `/invitations/<token>`: the link an invitation or a reset is. Password
+  (the box's own minimum, read off `/.well-known/pinecall`) and again; **Join**. It knows the token
+  and nothing else about the person.
+- **This machine is not signed in** (local, the sidecar's key refused): `pinecall login`, then
+  `pinecall serve`. There is no form: the page holds no key to fix.
+- **`/cli?c=<word>`** (hosted, signed in): *Sign this terminal in?* — a terminal calling itself
+  <device> asked to be signed in as you — **Yes, that is my terminal**; then *Your terminal is
+  signed in*. No word: *No terminal is asking*; a dead one: *That link is no good*. What the
+  approval mints is the terminal's own key, and it never travels through this page.
 
-## 8. Doors that exist and have no screen
+## 10. Doors that exist and have no screen
 
-Everything below is already an authenticated door of the same gateway; nothing on it is drawn today.
-They are the honest candidates for a console that grows:
+- **Dialling out** — no door yet (the runtime's `console-api.md` §4); Calls' *Call back* waits for it.
+- **SSO** — no door yet; the sign-in card has no such button until there is one.
+- **A number moved between worlds** — `PUT /v1/numbers/{number}/env` (`pinecall numbers move`).
+- **The operator's tables** — `/ops/orgs`, their keys, quotas (the budget among them), usage and routes: the box's key, never a tenant's; the admin page's.
+- **The agent's own declaration** — `GET /v1/agents/{slug}/config`: tools, stages, state fields, events. Only the visibility half is read today.
+- **Fleet and callbacks** — `GET /v1/fleet/standing`, `GET/POST /v1/callbacks`, events `fleet.full` and `callback.requested`.
+- **`GET /v1/calls/{call}/state`**, `GET /v1/evals/runs/{id}`, `POST /v1/evals/run`, `PUT /v1/knowledge/{base}` and the two goldens' own doors: the console goes through the log, the runs list and `pinecall run` instead.
 
-- **The operator's tables** — `/ops/orgs`, `/ops/orgs/{org}/keys`, `POST /ops/keys/{fingerprint}/revoke`, `PUT /ops/orgs/{org}/quotas` (`minutes · messages · agents · concurrent_calls · memory_facts · knowledge_chunks`), `GET /ops/usage`, `GET/POST /ops/routes`: the box's key, never a tenant's.
-- **Provider keys** — `GET/PUT/DELETE /ops/orgs/{org}/provider-keys/{vendor}`, and per agent `GET /v1/agents/{slug}/provider-keys`: managed vs BYOK, never the value.
-- **The agent's own declaration** — `GET /v1/agents/{slug}/config`: the tools it declares, their stages (`read · write · irreversible`), the state fields and their visibility, the events it accepts. Only the visibility half is read today.
-- **Fleet and callbacks** — `GET /v1/fleet/standing`, `GET/POST /v1/callbacks` (the numbers people left when every seat was taken), events `fleet.full` and `callback.requested`; `/{worker}/cordon`.
-- **Routes** — `GET /v1/routes` on the tenant side too.
-- **In the log, unread by any panel** — `memory.ops` (`recall · remember · forget`) and `docs.sources` (`retrieved · tool`).
+## 11. What the console must keep true
 
-## 9. What a redesign must keep true
+Not a style rule among them — each is pinned by a test or by a decision.
 
-Not a style rule among them — each is pinned by a test or by a decision doc.
-
-1. **The page holds a person's key and never the org's, and one file touches the browser's storage.** `lib/session-key.ts` keeps one key per world, the world last looked at and the corner an admin opened; `test/cli/ui/pages/the-key-is-never-in-the-page.test.ts` fails the build if any other file reaches `localStorage` or `sessionStorage`. The key rides a header, never a URL.
-2. **The URL is the state** of what is on screen. No selection in memory; a reload lands on the same thing; `?run=` and `#seq-` are links people paste.
-3. **The console holds no truth of its own.** No reducer, no wire type: both come from `@pinecall/protocol`, the same reducer the runtime folds a log with in Python.
-4. **A refusal is shown in the gateway's own words**, never rephrased, never swallowed.
-5. **Nothing is invented.** A value that is not known is `—`, not a zero; a stage nobody measured says so; a judge that did not answer is not a pass.
-6. **A screen's class carries the thing it belongs to** — one stylesheet per screen, no class defined twice: `test/cli/ui/pages/one-stylesheet-one-class.test.ts` fails the build otherwise.
-7. **The desk sends one verb per move** (`test/cli/ui/console/the-desk-sends-one-verb.test.ts`), and **a supervisor's move reads as one line** wherever the log is drawn (`a-supervisor-reads-as-one-line.test.ts`).
-8. **Empty is a sentence, never a spinner.**
-9. Two irreversible verbs (transfer, end) never leave on a single click.
+1. **The page holds a person's key and never the org's, and one file touches the browser's storage.** `lib/session-key.ts`; `test/cli/ui/pages/the-key-is-never-in-the-page.test.ts` fails the build if any other file reaches `localStorage` or `sessionStorage`, or writes `authorization` outside `shared/api.ts`. The key rides a header, never a URL. Local holds none at all.
+2. **Which screens a console has is one table** — `lib/mode.ts`, drawn by the sidebar and routed by the router; `each-console-has-its-own-screens.test.ts` pins its names and order. No screen asks which mode it is in to decide whether it exists.
+3. **The URL is the state** of what is on screen. A reload lands on the same thing; `?run=`, `?view=`, `?agent=` and `#seq-` are links people paste.
+4. **The console holds no truth of its own.** The reducer and the wire types are `@pinecall/protocol`'s. The one exception is named and temporary: `lib/sessions-wire.ts` reads a session list with the `score`, `flags`, `total` and `next` a newer gateway adds, all optional, because the protocol this package depends on is strict and predates them — a list read with it would be refused whole. It goes the day that protocol is published.
+5. **A refusal is shown in the gateway's own words**, never rephrased, never swallowed; **a door that is not there is an element not drawn**, never an error.
+6. **Nothing is invented.** A value that is not known is `—`, not a zero; a stage nobody measured says so; a judge that did not answer is not a pass; a number the gateway does not count is folded from rows the page holds, and says nothing it cannot.
+7. **Light only, and one file holds the colours**: `ui/tokens.css`. Every other stylesheet names a token.
+8. **A class lives in one stylesheet** — vite bundles them into one file, so a class name is global: `test/cli/ui/pages/one-stylesheet-one-class.test.ts`. A screen's classes carry its prefix (`fl-`, `lv-`, `ib-`, `ui-`…).
+9. **No dependency for looks**: the icons are paths in `ui/icon.tsx`, the fonts one request to Google Fonts; `test/the-imports.test.ts` lists what the page may import.
+10. **The desk is whole, whatever a design draws**: listen, whisper, say, take the line, hand back, transfer, end. It sends one verb per move (`the-desk-sends-one-verb.test.ts`), a supervisor's move reads as one line wherever the log is drawn (`a-supervisor-reads-as-one-line.test.ts`), and the two irreversible verbs never leave on a single click.
+11. **Empty is a sentence, never a spinner.**
