@@ -32,12 +32,23 @@ export function writtenOut(
   if (broken.length === 0) return [];
   const folder = join(under, run.id);
   mkdirSync(folder, { recursive: true });
+  // A matrix breaks one golden on two models as two cells, and one file per golden kept whichever
+  // was written last: the nightly's haiku reproduction was gpt-4.1-mini's (2026-09-17).
+  const models = new Set(broken.map((cell) => cell.model));
   return broken.map((cell) => {
     const call = callOf(run, cell);
-    const path = join(folder, `${cell.golden}.json`);
+    const path = join(folder, `${fileNameOf(cell, models.size > 1)}.json`);
     writeFileSync(path, `${JSON.stringify(aReproduction(run, cell, call, goldens, logs[call] ?? []), null, 2)}\n`);
     return path;
   });
+}
+
+/**
+ * The name a cell is written under: the golden's, and — when the run broke it on more than one
+ * model — the model's beside it, with its slash turned into a dash, since the name is a file's.
+ */
+export function fileNameOf(cell: Pick<Cell, "golden" | "model">, severalModels: boolean): string {
+  return severalModels ? `${cell.golden} · ${cell.model.replace(/[/\\]/g, "-")}` : cell.golden;
 }
 
 /** One broken cell as a file: the declaration, the requests, the log, and every verdict on it. */

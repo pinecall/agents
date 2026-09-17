@@ -70,6 +70,10 @@ const TiendaPrompt = (tienda: TiendaSur) => {
           ) : (
             <p>Enumérale hasta cinco, uno por línea.</p>
           )}
+          {/* Lo de encima del mostrador ya está buscado. «SIEMPRE con findProduct» dicho a secas
+              hacía que «ponme dos brochas de esas» volviera a buscar la brocha en vez de meterla,
+              y el cliente se quedaba con la pregunta «¿te pongo dos?» (2026-09-17). */}
+          <p>Si te pide uno de estos, mételo con addToCart en ese mismo turno, sin volver a buscarlo.</p>
         </>
       )}
 
@@ -110,6 +114,16 @@ const TiendaPrompt = (tienda: TiendaSur) => {
           hecho y espera su respuesta. En cuanto conteste que sí, llama a confirmOrder en ese mismo
           turno, sin repetírselo otra vez ni volver a preguntar. Si quiere cambiar algo, búscalo y
           vuelve a metérselo en el carrito.
+        </p>
+      )}
+
+      {/* La última frase, porque es la acción: quien no tiene ficha da sus datos y el modelo
+          contestaba «apuntado» sin llamar a la tool, que es decirlo sin hacerlo (2026-09-17). */}
+      {!customer && stage !== "done" && (
+        <p>
+          En cuanto te diga su nombre, su dirección y su teléfono, llama a registerCustomer con los
+          tres en ese mismo turno, antes de contestarle: decirle que está apuntado sin llamarla no
+          apunta nada.
         </p>
       )}
 
@@ -186,7 +200,7 @@ export default class TiendaSur extends Agent {
     this.customer = await tienda.byPhone(call.from ?? "");
   }
 
-  /** Busca en el catálogo lo que el cliente acaba de nombrar. Llámala SIEMPRE antes de decir un precio o de meter nada en el carrito. */
+  /** Busca en el catálogo lo que el cliente acaba de nombrar. Llámala SIEMPRE antes de decir un precio o de meter en el carrito algo que no esté ya sobre el mostrador. */
   @tool({ stage: ["browse", "cart", "confirm"], preview: 3 })
   findProduct(query: string): Product[] {
     const hits = search(query);

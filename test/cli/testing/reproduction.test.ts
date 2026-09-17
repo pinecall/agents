@@ -73,6 +73,20 @@ describe("a golden that broke is left on disk, whole", () => {
     expect(written).toEqual([join(at, "run_1", "ofrece-las-horas-del-martes.json")]);
   });
 
+  it("writes one file per model when a golden broke on two, and neither overwrites the other", () => {
+    const at = under();
+    const onHaiku = cell("mete-en-el-carrito", false);
+    const onGpt = { ...cell("mete-en-el-carrito", false), model: "openai/gpt-4.1-mini" };
+
+    const written = writtenOut(aRun([onHaiku, onGpt]), [GOLDEN], { [A_CALL]: LOG }, at);
+
+    expect(written).toEqual([
+      join(at, "run_1", "mete-en-el-carrito · haiku.json"),
+      join(at, "run_1", "mete-en-el-carrito · openai-gpt-4.1-mini.json"),
+    ]);
+    expect(JSON.parse(readFileSync(written[0]!, "utf8")).model).toBe("haiku");
+  });
+
   // The whole point of the file: the prompt is not in the log — `prompt.changed` carries a hash —
   // so a run that broke is the one reader that keeps the text, and it keeps the tools with it.
   it("carries the request the model answered, the tools it had, the golden and the log", () => {
