@@ -23,10 +23,10 @@ export function gatewayOrigin(): string {
 export const WORLD_OF: Record<Mode, World> = { hosted: "production", local: "sandbox" };
 
 /** Where a screen sits in the sidebar: the org's floor, or the org's settings. An agent's screens are its tabs. */
-export type Group = "gateway" | "settings";
+export type Group = "gateway" | "settings" | "box";
 
 /** The sidebar's icons, by name (ui/icon.tsx). */
-export type ScreenIcon = "home" | "grid" | "activity" | "list" | "chart" | "phone" | "key" | "plug" | "users";
+export type ScreenIcon = "home" | "grid" | "activity" | "list" | "chart" | "phone" | "key" | "plug" | "users" | "building" | "server" | "route" | "sliders";
 
 /** One screen: where it is, what the sidebar calls it, which group it sits in, and which console has it. */
 export interface Screen {
@@ -37,6 +37,8 @@ export interface Screen {
   in: readonly Mode[];
   group?: Group;
   icon?: ScreenIcon;
+  /** The box's own: drawn and routed only for a person the box made an operator. */
+  operator?: true;
 }
 
 const BOTH = ["hosted", "local"] as const;
@@ -63,6 +65,17 @@ export const ORG_SCREENS: readonly Screen[] = [
   { key: "team", path: "team", name: "Team", in: HOSTED, group: "settings", icon: "users" },
 ];
 
+// The BOX's screens: every tenant, the fleet under them, the doors, the bill of all of them, and
+// what the box itself is set to. They are not an org's — an org's admin never sees them — so they
+// are a table of their own, each row marked: only a person the box made an operator is shown one.
+export const BOX_SCREENS: readonly Screen[] = [
+  { key: "box-orgs", path: "box/orgs", name: "Organizations", in: HOSTED, group: "box", icon: "building", operator: true },
+  { key: "box-fleet", path: "box/fleet", name: "Fleet", in: HOSTED, group: "box", icon: "server", operator: true },
+  { key: "box-routes", path: "box/routes", name: "Routes", in: HOSTED, group: "box", icon: "route", operator: true },
+  { key: "box-usage", path: "box/usage", name: "Box usage", in: HOSTED, group: "box", icon: "chart", operator: true },
+  { key: "box-settings", path: "box/settings", name: "Box settings", in: HOSTED, group: "box", icon: "sliders", operator: true },
+];
+
 // An agent's screens, its tabs. Talk first: it is the screen a person opens an agent for. Chat is a
 // written call to the class in a developer's own directory, so it is the workshop's.
 export const AGENT_SCREENS: readonly Screen[] = [
@@ -77,9 +90,9 @@ export const AGENT_SCREENS: readonly Screen[] = [
   { key: "widget", path: "widget", name: "Widget", in: BOTH },
 ];
 
-/** The rows of a table this console has, in the table's order. */
-export function screensOf(table: readonly Screen[], mode: Mode = MODE): Screen[] {
-  return table.filter((screen) => screen.in.includes(mode));
+/** The rows of a table this console has, in the table's order; an operator's rows only for an operator. */
+export function screensOf(table: readonly Screen[], mode: Mode = MODE, operator = false): Screen[] {
+  return table.filter((screen) => screen.in.includes(mode) && (operator || screen.operator !== true));
 }
 
 /** Whether this console has that screen, by its key. */

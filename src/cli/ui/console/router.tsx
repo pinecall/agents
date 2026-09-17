@@ -4,10 +4,11 @@ import type { ReactNode } from "react";
 import { createBrowserRouter, Navigate, type RouteObject } from "react-router";
 
 import { BASE } from "./lib/base";
-import { AGENT_SCREENS, MODE, ORG_SCREENS, screensOf, type Screen } from "./lib/mode";
+import { AGENT_SCREENS, BOX_SCREENS, MODE, ORG_SCREENS, screensOf, type Screen } from "./lib/mode";
 // One import line per screen, and it is the screen's directory, never a file inside it: a screen
 // that reorganises itself renames nothing here.
 import { Agents } from "./screens/agents";
+import { BoxFleet, BoxOrg, BoxOrgs, BoxRoutes, BoxSettings, BoxUsage, OperatorOnly } from "./screens/box";
 import { Calls } from "./screens/calls";
 import { Chat } from "./screens/chat";
 import { Evals } from "./screens/evals";
@@ -43,6 +44,17 @@ const ORG: Record<string, ReactNode> = {
   usage: <Usage />,
 };
 
+// The box's. They are routed for anybody on the gateway's page, because the router is built before
+// anybody has signed in, and drawn for an operator only: anyone else lands on the front page
+// before a door of the box's is ever knocked at.
+const BOX: Record<string, ReactNode> = {
+  "box-orgs": <OperatorOnly><BoxOrgs /></OperatorOnly>,
+  "box-fleet": <OperatorOnly><BoxFleet /></OperatorOnly>,
+  "box-routes": <OperatorOnly><BoxRoutes /></OperatorOnly>,
+  "box-usage": <OperatorOnly><BoxUsage /></OperatorOnly>,
+  "box-settings": <OperatorOnly><BoxSettings /></OperatorOnly>,
+};
+
 const AGENT: Record<string, ReactNode> = {
   talk: <Talk />,
   chat: <Chat />,
@@ -62,7 +74,7 @@ const DEEPER: Record<string, ReactNode> = { chat: <Chat />, calls: <Calls />, se
 const ORG_DEEPER: Record<string, ReactNode> = { live: <FloorLive />, sessions: <Session /> };
 
 function routesOf(table: readonly Screen[], elements: Record<string, ReactNode>): RouteObject[] {
-  return screensOf(table).flatMap((screen): RouteObject[] => {
+  return screensOf(table, MODE, true).flatMap((screen): RouteObject[] => {
     const element = elements[screen.key];
     if (screen.path === "") return [{ index: true, element }];
     const deeper = (elements === AGENT ? DEEPER : ORG_DEEPER)[screen.key];
@@ -80,6 +92,9 @@ export const router = createBrowserRouter(
       element: <Shell />,
       children: [
         ...routesOf(ORG_SCREENS, ORG),
+        ...routesOf(BOX_SCREENS, BOX),
+        // One org of the box's, one level under its list.
+        ...(MODE === "hosted" ? [{ path: "box/orgs/:org", element: <OperatorOnly><BoxOrg /></OperatorOnly> }] : []),
         // Where `pinecall login` sends a person: the card that signs their terminal in. The
         // gateway's alone — a machine that serves its own console is signed in already.
         ...(MODE === "hosted" ? [{ path: "cli", element: <Terminal /> }] : []),

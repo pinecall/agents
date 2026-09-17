@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { useLocation } from "react-router";
 
 import { useLeaving } from "../lib/leaving";
-import { AGENT_SCREENS, MODE, ORG_SCREENS } from "../lib/mode";
+import { AGENT_SCREENS, BOX_SCREENS, MODE, ORG_SCREENS } from "../lib/mode";
 import { orgOf, useWhoami } from "../lib/whoami";
 import { Switcher } from "./switcher";
 
@@ -17,6 +17,10 @@ export function titleOf(pathname: string, agent: string): string {
     return screen.key === "sessions" && segments[3] !== undefined ? "Session" : screen.name;
   }
   if (segments[0] === "cli") return "Sign in a terminal";
+  if (segments[0] === "box") {
+    const box = BOX_SCREENS.find((one) => one.path === `box/${segments[1] ?? ""}`);
+    return box === undefined ? "Box" : box.key === "box-orgs" && segments[2] !== undefined ? "Organization" : box.name;
+  }
   const screen = ORG_SCREENS.find((one) => one.path === (segments[0] ?? ""));
   if (screen === undefined) return "Home";
   if (screen.key === "sessions" && segments[1] !== undefined) return "Session";
@@ -27,7 +31,8 @@ export function Top({ agent }: { agent: string }): ReactNode {
   const whose = useWhoami();
   const leave = useLeaving();
   const { pathname } = useLocation();
-  const context = agent !== "" ? agent : whose === null ? "" : orgOf(whose);
+  // The box's screens are about every org, so the crumb says the box and not the org the key opens.
+  const context = agent !== "" ? agent : pathname.startsWith("/box/") ? "box" : whose === null ? "" : orgOf(whose);
   return (
     <header className="top">
       {context !== "" && <span className="top-crumb">{context} /</span>}

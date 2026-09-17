@@ -1,13 +1,13 @@
 /** The org as every screen shares it: its floor, the agents it holds, and the person's orgs — read once, by the shell. */
 
-import type { HeldAgent } from "@pinecall/protocol";
+import type { HeldAgent, SessionLine } from "@pinecall/protocol";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { useCredentials } from "../../shared/credentials";
 import { bySlug, meIn } from "./corners";
 import { useInsights, type Insights } from "./insights";
 import { orgsOf, type OrgOf } from "./login";
-import type { SessionLine } from "@pinecall/protocol";
+import { useOperator } from "./operator";
 import type { Connection } from "./stream";
 import { useFloor } from "./use-floor";
 import { useHeldAgents } from "./use-held-agents";
@@ -34,6 +34,8 @@ export interface Org {
   here: OrgOf | null;
   /** Today at a glance, counted by the gateway; null from a gateway that does not count. */
   insights: Insights | null;
+  /** Whether this person runs the box — the Box screens are theirs and nobody else's. Null until the box has said. */
+  operator: boolean | null;
 }
 
 const Held = createContext<Org | null>(null);
@@ -43,6 +45,7 @@ export function OrgProvider({ children }: { children: ReactNode }): ReactNode {
   const whose = useWhoami();
   const floor = useFloor(ROWS);
   const insights = useInsights();
+  const operator = useOperator();
   const held = useHeldAgents(floor.agentsChanged);
   const [orgs, setOrgs] = useState<OrgOf[] | null>(null);
 
@@ -75,8 +78,9 @@ export function OrgProvider({ children }: { children: ReactNode }): ReactNode {
       orgs,
       here: orgs?.find((one) => one.here) ?? null,
       insights,
+      operator,
     }),
-    [floor.lines, floor.connection, floor.error, held.agents, held.loaded, held.error, orgs, me, insights],
+    [floor.lines, floor.connection, floor.error, held.agents, held.loaded, held.error, orgs, me, insights, operator],
   );
   return <Held value={value}>{children}</Held>;
 }

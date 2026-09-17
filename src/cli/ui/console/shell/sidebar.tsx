@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { NavLink, useLocation } from "react-router";
 
 import { GatewayError } from "../../shared/api";
-import { MODE, ORG_SCREENS, screensOf, type Group, type Screen } from "../lib/mode";
+import { BOX_SCREENS, MODE, ORG_SCREENS, screensOf, type Group, type Screen } from "../lib/mode";
 import { useOrg } from "../lib/org";
 import { opens } from "../lib/scopes";
 import { orgOf, useScopes, useWhoami } from "../lib/whoami";
@@ -14,13 +14,14 @@ import { Icon, initialsOf } from "../ui";
 const GROUPS: readonly { group: Group; label: string }[] = [
   { group: "gateway", label: MODE === "local" ? "Sandbox" : "Gateway" },
   { group: "settings", label: "Settings" },
+  { group: "box", label: "Box" },
 ];
 
 export function Sidebar({ agent, onSearch }: { agent: string; onSearch: () => void }): ReactNode {
   const [folded, setFolded] = useState(false);
   const scopes = useScopes();
   const whose = useWhoami();
-  const { agents, live, lines, here, insights } = useOrg();
+  const { agents, live, lines, here, insights, operator } = useOrg();
   const open = (screen: Screen): boolean => scopes === null || opens(scopes, screen.key);
   const person = whose?.name ?? whose?.label ?? "";
   const role = here?.role ?? (whose === null ? "" : whose.subject === null || whose.subject === undefined ? "a machine's key" : "");
@@ -63,7 +64,7 @@ export function Sidebar({ agent, onSearch }: { agent: string; onSearch: () => vo
         })}
 
         {GROUPS.map(({ group, label }) => {
-          const screens = screensOf(ORG_SCREENS).filter((screen) => screen.group === group && open(screen));
+          const screens = screensOf([...ORG_SCREENS, ...BOX_SCREENS], MODE, operator === true).filter((screen) => screen.group === group && open(screen));
           if (screens.length === 0) return null;
           return (
             <div key={group}>

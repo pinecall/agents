@@ -19,6 +19,10 @@ const PATHS = {
   bot: ["M12 8V4", { rect: [4, 8, 16, 12, 2] }, "M2 14h2", "M20 14h2", "M9 13v2", "M15 13v2"],
   search: [{ circle: [11, 11, 7] }, "m21 21-4.3-4.3"],
   panel: [{ rect: [3, 3, 18, 18, 2] }, "M9 3v18"],
+  building: [{ rect: [4, 2, 16, 20, 2] }, "M9 22v-4h6v4", "M8 6h.01", "M16 6h.01", "M12 6h.01", "M12 10h.01", "M12 14h.01", "M16 10h.01", "M16 14h.01", "M8 10h.01", "M8 14h.01"],
+  server: [{ rect: [2, 2, 20, 8, 2] }, { rect: [2, 14, 20, 8, 2] }, "M6 6h.01", "M6 18h.01"],
+  route: [{ circle: [6, 19, 3] }, "M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15", { circle: [18, 5, 3] }],
+  sliders: ["M21 4h-7", "M10 4H3", "M21 12h-9", "M8 12H3", "M21 20h-5", "M12 20H3", "M14 2v4", "M8 10v4", "M16 18v4"],
 } satisfies Record<string, readonly Segment[]>;
 
 export type IconName = keyof typeof PATHS;

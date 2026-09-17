@@ -4,7 +4,7 @@
 import { describe, expect, it } from "vitest";
 
 import { headersFor } from "../../../../src/cli/ui/shared/api.js";
-import { AGENT_SCREENS, ORG_SCREENS, WORLD_OF, has, screensOf } from "../../../../src/cli/ui/console/lib/mode.js";
+import { AGENT_SCREENS, BOX_SCREENS, ORG_SCREENS, WORLD_OF, has, screensOf } from "../../../../src/cli/ui/console/lib/mode.js";
 
 const names = (table: typeof ORG_SCREENS, mode: "local" | "hosted"): string[] => screensOf(table, mode).map((screen) => screen.name);
 
@@ -17,6 +17,25 @@ describe("the gateway's console", () => {
   it("has no Chat: a written call goes to the class in a developer's own directory", () => {
     expect(has(AGENT_SCREENS, "chat", "hosted")).toBe(false);
     expect(has(AGENT_SCREENS, "talk", "hosted")).toBe(true);
+  });
+});
+
+// The box is run from the page that shows production, by a person the box made an operator. The
+// rows are marked, so nobody else is drawn one — and a machine's own console has none at all.
+describe("the box's screens", () => {
+  it("are an operator's, on the gateway's console", () => {
+    expect(screensOf(BOX_SCREENS, "hosted", true).map((screen) => screen.name)).toEqual(["Organizations", "Fleet", "Routes", "Box usage", "Box settings"]);
+    expect(BOX_SCREENS.every((screen) => screen.operator === true && screen.group === "box" && screen.path.startsWith("box/"))).toBe(true);
+  });
+
+  it("are drawn for nobody else", () => {
+    expect(screensOf(BOX_SCREENS, "hosted")).toEqual([]);
+    expect(screensOf(BOX_SCREENS, "hosted", false)).toEqual([]);
+    expect(screensOf(BOX_SCREENS, "local", true)).toEqual([]);
+  });
+
+  it("leave an org's own screens as they were, operator or not", () => {
+    expect(screensOf(ORG_SCREENS, "hosted", true)).toEqual(screensOf(ORG_SCREENS, "hosted"));
   });
 });
 

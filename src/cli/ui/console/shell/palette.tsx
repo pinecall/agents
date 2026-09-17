@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router";
 
-import { AGENT_SCREENS, ORG_SCREENS, screensOf } from "../lib/mode";
+import { AGENT_SCREENS, BOX_SCREENS, MODE, ORG_SCREENS, screensOf } from "../lib/mode";
 import { useOrg } from "../lib/org";
 import { opens } from "../lib/scopes";
 import { useScopes } from "../lib/whoami";
@@ -24,7 +24,7 @@ const MOST = 40;
 export function Palette({ agent, onClose }: { agent: string; onClose: () => void }): ReactNode {
   const [query, setQuery] = useState("");
   const [cursor, setCursor] = useState(0);
-  const { agents, lines } = useOrg();
+  const { agents, lines, operator } = useOrg();
   const scopes = useScopes();
   const navigate = useNavigate();
   const input = useRef<HTMLInputElement>(null);
@@ -42,6 +42,9 @@ export function Palette({ agent, onClose }: { agent: string; onClose: () => void
     for (const screen of screensOf(ORG_SCREENS).filter((one) => open(one.key))) {
       all.push({ group: "Screens", label: screen.name, sub: "", to: `/${screen.path}` });
     }
+    for (const screen of screensOf(BOX_SCREENS, MODE, operator === true)) {
+      all.push({ group: "Box", label: screen.name, sub: "", to: `/${screen.path}` });
+    }
     for (const held of agents) {
       all.push({ group: "Agents", label: held.slug, sub: held.channels.join(" · "), to: `/a/${held.slug}/talk` });
     }
@@ -57,7 +60,7 @@ export function Palette({ agent, onClose }: { agent: string; onClose: () => void
     }
     if (words === "") return all.filter((hit) => hit.group !== "Sessions").slice(0, MOST);
     return all.filter((hit) => `${hit.label} ${hit.sub}`.toLowerCase().includes(words)).slice(0, MOST);
-  }, [query, agents, lines, agent, scopes]);
+  }, [query, agents, lines, agent, scopes, operator]);
 
   useEffect(() => setCursor(0), [query]);
 

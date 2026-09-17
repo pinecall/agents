@@ -129,6 +129,11 @@ export function ssoUrl(base: string, org: string): string {
   return new URL(`${base.replace(/\/$/, "")}/v1/login/sso?org=${encodeURIComponent(org)}`, window.location.origin).toString();
 }
 
+/** What an operator registers at Google as the redirect URI: where "Continue with Google" comes back to. */
+export function googleCallback(gateway: string): string {
+  return `${gateway.replace(/\/$/, "")}/v1/login/google/callback`;
+}
+
 // The one door a browser knocks at with no key at all: it is how this tab gets its own.
 async function login(base: string, body: unknown): Promise<Signed> {
   return knocked(base, "/v1/login", body);
