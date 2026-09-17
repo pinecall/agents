@@ -1,0 +1,73 @@
+/* The console's palette, type and measures: the redesign's values, named once. The only colours in the console. */
+
+:root {
+  /* ink, darkest to faintest */
+  --ink: #101014;
+  --ink-2: #3c3a47;
+  --ink-3: #6b6975;
+  --ink-4: #8a8895;
+  --ink-5: #9d9baa;
+  --ink-6: #a3a1ad;
+  --ink-7: #c0bdc9;
+
+  /* lines */
+  --line: #eeedf2;
+  --line-2: #f2f1f5;
+  --line-3: #f7f6fa;
+  --line-control: #e8e6ee;
+  --line-field: #e4e2ea;
+  --line-hover: #d6d3df;
+  --line-hover-2: #cfccd8;
+  --line-muted: #d8d4e4;
+
+  /* grounds */
+  --ground: #fff;
+  --ground-side: #fbfafc;
+  --ground-3: #f7f6fa;
+  --ground-4: #f4f3f7;
+  --ground-5: #f1f0f5;
+  --ground-tint: #faf9ff;
+
+  /* the accent */
+  --accent: #5b3df5;
+  --accent-hover: #4c2fe0;
+  --accent-soft: #ede9fe;
+  --accent-selected: #efeafe;
+  --accent-2: #8b6bff;
+  --accent-3: #c4b5fd;
+  --accent-line: #cfc7fb;
+  --accent-tint-line: #e6e0fd;
+  --accent-ink: #6b5fd0;
+  --accent-ring: 0 0 0 3px rgba(91, 61, 245, 0.12);
+  --selection: #ddd6fe;
+
+  /* the tints a pill, an avatar or a row wears */
+  --green: #15803d;
+  --green-dot: #16a34a;
+  --green-soft: #dcfce7;
+  --amber: #a16207;
+  --amber-dot: #f59e0b;
+  --amber-soft: #fef3c7;
+  --amber-tint: #fffdf5;
+  --red: #b91c1c;
+  --red-soft: #fee2e2;
+  --red-line: #f3c8c8;
+  --indigo: #4338ca;
+  --indigo-soft: #e0e7ff;
+  --pink: #be185d;
+  --pink-soft: #fce7f3;
+  --teal: #0f766e;
+
+  --shadow-pop: 0 16px 40px -16px rgba(16, 16, 20, 0.26), 0 2px 6px rgba(16, 16, 20, 0.05);
+  --shadow-card: 0 1px 2px rgba(16, 16, 20, 0.04);
+  --shadow-raised: 0 1px 2px rgba(16, 16, 20, 0.08);
+  --shadow-talk: 0 10px 24px -12px rgba(91, 61, 245, 0.9);
+  --shadow-preview: 0 8px 20px -14px rgba(16, 16, 20, 0.3);
+
+  --face: Inter, system-ui, -apple-system, sans-serif;
+  --face-fixed: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --side: 244px;
+  --side-folded: 62px;
+  --head: 54px;
+}

@@ -1,143 +1,71 @@
-/* The front page: the org's agents, one line each in a panel, and nothing else on the screen. */
+/* Overview: the agents table's cells, the corners filter, and the two cards under it. */
 
-.agents {
-  max-width: 760px;
-  padding: 26px 28px;
-}
-
-.agents-title {
-  font-size: 20px;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  margin: 0 0 6px;
-}
-
-.agents-lede {
-  color: var(--ink-soft);
-  font-size: 14px;
-  margin: 0 0 20px;
-  text-wrap: pretty;
-}
-
-.agents-table {
-  background: var(--panel);
-  border: 1px solid var(--edge);
-  border-radius: var(--radius-panel);
-  overflow: hidden;
-}
-
-.agents-head {
-  border-bottom: 1px solid var(--edge);
-  color: var(--ink-faint);
-  display: grid;
-  font-size: 10.5px;
-  gap: 16px;
-  grid-template-columns: minmax(0, 1fr) auto;
-  letter-spacing: 0.06em;
-  padding: 9px 16px;
-}
-
-.agents-one {
+.agents-watching {
+  margin-left: auto;
+  display: flex;
   align-items: center;
-  border-bottom: 1px solid var(--edge-soft);
-  color: var(--ink);
+  gap: 6px;
+  font-size: 12px;
+  color: var(--green-dot);
+}
+
+.agents-corners {
+  margin-left: 12px;
+}
+
+.agents-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.agents-live {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--green-dot);
+}
+
+.agents-idle {
+  font-size: 12px;
+  color: var(--ink-4);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.agents-numbers {
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.agents-figure {
+  font-size: 13px;
+  font-weight: 500;
+  text-align: right;
+}
+
+.agents-score {
+  color: var(--ink-6);
+}
+
+.agents-split {
   display: grid;
-  gap: 16px;
-  grid-template-columns: minmax(0, 1fr) auto;
-  padding: 13px 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
 }
 
-.agents-one .fixed {
-  font-size: 13.5px;
+.agents-none {
+  padding: 9px;
+  font-size: 12.5px;
+  color: var(--ink-4);
 }
 
-.agents-one:last-child {
-  border-bottom: none;
-}
-
-.agents-one:hover {
-  background: var(--hover);
-}
-
-.agents-one .agents-channels {
-  color: var(--ink-soft);
-  font-size: 11.5px;
-}
-
-/* Whose corner each row is, and the choice of which corners to draw. Both exist only for a key
-   that is answered more than its own — an admin's, the operator's — so the grid gains a column
-   only then, and the head and the rows are told apart by the same class. */
-.agents-corners {
-  display: flex;
-  gap: 6px;
-  margin: 0 0 14px;
-}
-
-.agents-corner {
-  background: var(--panel);
-  border: 1px solid var(--edge);
-  border-radius: var(--radius-control, 6px);
-  color: var(--ink-soft);
-  cursor: pointer;
-  font: inherit;
-  font-size: 11.5px;
-  padding: 5px 10px;
-}
-
-.agents-corner:hover {
-  background: var(--hover);
-}
-
-.agents-corner-here {
-  color: var(--ink);
-  border-color: var(--ink-faint);
-}
-
-.agents-head:has(> :nth-child(3)),
-.agents-one:has(> :nth-child(3)) {
-  grid-template-columns: minmax(0, 1fr) auto auto;
-}
-
-.agents-one .agents-whose {
-  color: var(--ink-soft);
-  font-size: 11.5px;
-}
-
-/* Whose corner each row is, and the choice of which corners to draw. Both exist only for a key
-   answered with more than its own — an admin's, the operator's — so the grid gains its third
-   column only when a row has one. */
-.agents-corners {
-  display: flex;
-  gap: 6px;
-  margin: 0 0 14px;
-}
-
-.agents-corner {
-  background: var(--panel);
-  border: 1px solid var(--edge);
-  border-radius: 6px;
-  color: var(--ink-soft);
-  cursor: pointer;
-  font: inherit;
-  font-size: 11.5px;
-  padding: 5px 10px;
-}
-
-.agents-corner:hover {
-  background: var(--hover);
-}
-
-.agents-corner-here {
-  border-color: var(--ink-faint);
-  color: var(--ink);
-}
-
-.agents-head:has(> :nth-child(3)),
-.agents-one:has(> :nth-child(3)) {
-  grid-template-columns: minmax(0, 1fr) auto auto;
-}
-
-.agents-one .agents-whose {
-  color: var(--ink-soft);
-  font-size: 11.5px;
+@media (max-width: 900px) {
+  .agents-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

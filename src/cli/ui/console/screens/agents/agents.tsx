@@ -1,81 +1,279 @@
-/** The front page: which agents this org holds in this world, so `/` offers a list and not a URL shape. */
+/** Overview: which agents this gateway holds, the numbers that ring them, the keys and vendors they run on. */
 
-import { useState, type ReactNode } from "react";
-import { Link } from "react-router";
+import type { HeldAgent } from "@pinecall/protocol";
+import { useEffect, useState, type ReactNode } from "react";
 
+import { useCredentials } from "../../../shared/credentials";
+import { READY, type Catalogue } from "../../lib/catalogue";
 import { CORNERS, meIn, somebodyElses, through, whoseCorner, type Corners } from "../../lib/corners";
-import { useHeldAgents } from "../../lib/use-held-agents";
-import { useWhoami } from "../../lib/whoami";
-import { Nothing } from "../../../shared/frame";
+import { ago, prettyNumber, startedOn, today } from "../../lib/format";
+import { has, MODE, ORG_SCREENS } from "../../lib/mode";
+import { useOrg } from "../../lib/org";
+import { opens, scopesLine } from "../../lib/scopes";
+import { useScopes, useWhoami } from "../../lib/whoami";
+import {
+  Avatar,
+  ButtonLink,
+  Card,
+  CardAction,
+  CardFoot,
+  CardHead,
+  Chips,
+  Dot,
+  Empty,
+  Item,
+  Page,
+  PageHead,
+  Pill,
+  Refused,
+  Stat,
+  Stats,
+  TableHead,
+  TableRow,
+  Tag,
+  tintAt,
+} from "../../ui";
+import { readKeys, type Listed } from "../keys/door";
+import { readAvailable, readNumbers, type Answering } from "../numbers/door";
+import { readCatalogue, readVendors } from "../providers/door";
 import "./agents.css";
 
+const COLUMNS = "minmax(0,1.5fr) minmax(0,1.3fr) minmax(0,1.1fr) 90px 90px";
+
+/** What the org's other doors answer, each read only when this console has that screen and the key opens it. */
+interface Accounts {
+  numbers: Answering[] | null;
+  free: number | null;
+  keys: Listed[] | null;
+  catalogue: Catalogue | null;
+  brought: string[];
+}
+
+function useAccounts(): Accounts {
+  const credentials = useCredentials();
+  const scopes = useScopes();
+  const [accounts, setAccounts] = useState<Accounts>({ numbers: null, free: null, keys: null, catalogue: null, brought: [] });
+  const may = (key: string): boolean => has(ORG_SCREENS, key) && scopes !== null && opens(scopes, key);
+  const numbers = may("numbers");
+  const keys = may("keys");
+  const providers = may("providers");
+
+  useEffect(() => {
+    let gone = false;
+    void (async () => {
+      const [routes, available, listed, catalogue, brought] = await Promise.all([
+        numbers ? readNumbers(credentials).catch(() => null) : Promise.resolve(null),
+        numbers ? readAvailable(credentials).catch(() => null) : Promise.resolve(null),
+        keys ? readKeys(credentials).catch(() => null) : Promise.resolve(null),
+        providers ? readCatalogue(credentials).catch(() => null) : Promise.resolve(null),
+        providers ? readVendors(credentials).catch(() => []) : Promise.resolve([]),
+      ]);
+      if (gone) return;
+      setAccounts({
+        numbers: routes,
+        free: available === null ? null : available.numbers.filter((one) => !one.imported).length,
+        keys: listed,
+        catalogue,
+        brought,
+      });
+    })();
+    return () => {
+      gone = true;
+    };
+  }, [credentials, numbers, keys, providers]);
+
+  return accounts;
+}
+
 export function Agents(): ReactNode {
-  const { agents, error } = useHeldAgents();
+  const { held, agents, live, lines, connection, agentsError, agentsLoaded } = useOrg();
   const me = meIn(useWhoami());
+  const scopes = useScopes();
+  const accounts = useAccounts();
   const [corners, setCorners] = useState<Corners>("everything");
-  // The filter is drawn only for a reader the gateway answers with more than their own corner —
-  // an admin's key, the operator's. For everybody else there is one corner and nothing to filter.
-  const theTeams = agents.some((held) => somebodyElses(held, me));
-  const shown = theTeams ? through(agents, corners, me) : agents;
+  const ofToday = startedOn(lines, today().today);
+
+  // The filter is drawn only for a reader the gateway answers with more than their own corner — an
+  // admin's key, the operator's. Everybody else has one corner and nothing to filter.
+  const theTeams = held.some((one) => somebodyElses(one, me));
+  const rows: HeldAgent[] = theTeams ? through(held, corners, me) : agents;
+  const routed = new Set((accounts.numbers ?? []).map((one) => one.route.agent));
+  const known = new Set([...agents.map((one) => one.slug), ...routed]);
+  const numbersOf = (slug: string): string[] =>
+    (accounts.numbers ?? []).filter((one) => one.route.agent === slug && one.route.number !== null).map((one) => prettyNumber(one.route.number));
+  const activeKeys = accounts.keys?.filter((key) => key.revoked_at === null) ?? [];
+  const ready = accounts.catalogue?.providers.filter((one) => one.standing === READY) ?? [];
+  const canIssue = MODE === "hosted" && scopes !== null && opens(scopes, "keys");
+
   return (
-    <section className="agents">
-      <h1 className="agents-title">Agents</h1>
-      <p className="agents-lede">Which agents this gateway is holding right now. Read once — the list changes when a socket connects.</p>
-      {theTeams && <Corner corners={corners} onPick={setCorners} />}
-      {error !== null && <Nothing>{error}</Nothing>}
-      {error === null && shown.length === 0 && (
-        <Nothing>
-          {corners === "everything" ? (
-            <>
-              No app is holding an agent on this gateway right now — run{" "}
-              <span className="fixed">pinecall run</span> in the app’s directory.
-            </>
-          ) : (
-            <>Nothing here is {corners}.</>
+    <Page>
+      <PageHead
+        title="Overview"
+        lede="Which agents this gateway is holding right now — the list changes the moment a socket connects."
+        actions={
+          canIssue ? (
+            <ButtonLink to="/keys" size="base">
+              Issue a key
+            </ButtonLink>
+          ) : undefined
+        }
+      />
+
+      <Stats min={170}>
+        <Stat label="Agents up" value={agents.length} of={`of ${known.size}`} />
+        {accounts.numbers !== null ? (
+          <Stat label="Numbers ringing" value={accounts.numbers.filter((one) => one.route.number !== null).length} of={accounts.free === null ? undefined : `· ${accounts.free} free`} />
+        ) : (
+          <Stat label="Calls live" value={live.length} />
+        )}
+        {accounts.keys !== null ? (
+          <Stat label="Active keys" value={activeKeys.length} of={`· ${accounts.keys.length - activeKeys.length} revoked`} />
+        ) : (
+          <Stat label="Calls today" value={ofToday.length} />
+        )}
+        {accounts.catalogue !== null && <Stat label="Providers ready" value={ready.length} of={`of ${accounts.catalogue.providers.length}`} />}
+      </Stats>
+
+      <Card>
+        <CardHead
+          title="Agents"
+          meta="the list changes the moment a socket connects"
+          action={
+            <span className="agents-watching">
+              <Dot tone={connection === "live" ? "green" : undefined} small />
+              {connection === "live" ? "watching" : connection}
+            </span>
+          }
+        >
+          {theTeams && (
+            <div className="agents-corners">
+              <Chips options={CORNERS.map((one) => ({ value: one, label: one }))} value={corners} onChange={setCorners} />
+            </div>
           )}
-        </Nothing>
-      )}
-      {shown.length > 0 && (
-        <div className="agents-table">
-          <div className="agents-head fixed">
-            <span>AGENT</span>
-            {theTeams && <span>WHOSE</span>}
-            <span>CHANNELS</span>
-          </div>
-          {shown.map((held) => (
-            <Link
-              className="agents-one"
-              key={`${held.slug}/${held.holder?.holder ?? ""}`}
-              to={`/a/${held.slug}/calls`}
-            >
-              <span className="fixed">{held.slug}</span>
-              {theTeams && <span className="fixed agents-whose">{whoseCorner(held)}</span>}
-              <span className="fixed agents-channels">{held.channels.join(" · ")}</span>
-            </Link>
-          ))}
+        </CardHead>
+        <Refused>{agentsError}</Refused>
+        {agentsLoaded && rows.length === 0 && (
+          <Empty>
+            {corners === "everything" ? (
+              MODE === "local" ? (
+                <>
+                  Nothing of yours is running. <span className="ui-fixed">pinecall run</span> in a project puts its agents here.
+                </>
+              ) : (
+                <>Nothing is deployed here yet: production is held by a process on a box, on a machine key.</>
+              )
+            ) : (
+              <>Nothing here is {corners}.</>
+            )}
+          </Empty>
+        )}
+        {rows.length > 0 && <TableHead columns={COLUMNS} padding="9px 16px" labels={["Agent", "Doors", "Numbers", "Today>", "Score>"]} />}
+        {rows.map((one, index) => {
+          const onCalls = live.filter((line) => line.agent === one.slug).length;
+          const last = lines.find((line) => line.agent === one.slug);
+          const numbers = numbersOf(one.slug);
+          return (
+            <TableRow key={`${one.slug}/${one.holder?.holder ?? ""}`} columns={COLUMNS} padding="13px 16px" to={`/a/${one.slug}/talk`}>
+              <div className="agents-name">
+                <Avatar name={one.slug} letters={one.slug.slice(0, 1).toUpperCase()} tint={tintAt(index)} />
+                <div style={{ minWidth: 0 }}>
+                  <div className="ui-cell-strong ui-clip">{one.slug}</div>
+                  {onCalls > 0 ? (
+                    <div className="agents-live">
+                      <Dot tone="green" small />
+                      {onCalls === 1 ? "1 call live" : `${onCalls} calls live`}
+                    </div>
+                  ) : (
+                    <div className="agents-idle">
+                      {theTeams ? `${whoseCorner(one)} · ` : ""}idle{last === undefined ? "" : ` · last call ${ago(last.started_at)}`}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="ui-tags">
+                {one.channels.map((channel) => (
+                  <Tag key={channel}>{channel}</Tag>
+                ))}
+              </div>
+              <span className="agents-numbers ui-clip">{numbers.length === 0 ? "—" : numbers.join(", ")}</span>
+              <span className="agents-figure">{ofToday.filter((line) => line.agent === one.slug).length}</span>
+              <span className="agents-figure agents-score">—</span>
+            </TableRow>
+          );
+        })}
+        {rows.length > 0 && (
+          <CardFoot>
+            <span>{rows.length > 1 ? "Every agent writes the same log — open one to read its turns." : "Open the agent to read its turns."}</span>
+          </CardFoot>
+        )}
+      </Card>
+
+      {(accounts.keys !== null || accounts.catalogue !== null) && (
+        <div className="agents-split">
+          {accounts.keys !== null && <KeysInUse keys={accounts.keys} />}
+          {accounts.catalogue !== null && <ProvidersInUse catalogue={accounts.catalogue} brought={accounts.brought} />}
         </div>
       )}
-    </section>
+    </Page>
   );
 }
 
-// The sandbox holds one agent per person, so a key that sees the whole team sees the same slug
-// several times. Which of them you are looking at is a choice, not a sort: "mine" is what a
-// developer came for, "the team's" is what an admin opened this page to find.
-function Corner({ corners, onPick }: { corners: Corners; onPick: (one: Corners) => void }): ReactNode {
+function KeysInUse({ keys }: { keys: Listed[] }): ReactNode {
+  const shown = [...keys].sort((a, b) => Number(a.revoked_at !== null) - Number(b.revoked_at !== null)).slice(0, 4);
   return (
-    <div className="agents-corners fixed" role="group" aria-label="whose corners">
-      {CORNERS.map((one) => (
-        <button
-          key={one}
-          type="button"
-          className={one === corners ? "agents-corner agents-corner-here" : "agents-corner"}
-          onClick={() => onPick(one)}
-          aria-pressed={one === corners}
-        >
-          {one}
-        </button>
-      ))}
-    </div>
+    <Card>
+      <CardHead title="Keys in use" action={<CardAction to="/keys">Manage</CardAction>} />
+      <div className="ui-card-list">
+        {shown.length === 0 && <div className="agents-none">No key has been issued yet.</div>}
+        {shown.map((key) => (
+          <Item
+            key={key.fingerprint}
+            name={key.label ?? key.fingerprint}
+            sub={`${key.name ?? (key.subject === null ? "a machine" : key.subject)} · ${key.env === "sandbox" ? "sandbox" : scopesLine(key.scopes)}`}
+            end={key.revoked_at === null ? <Pill tone="green">active</Pill> : <Pill tone="muted">revoked</Pill>}
+          />
+        ))}
+      </div>
+    </Card>
   );
+}
+
+function ProvidersInUse({ catalogue, brought }: { catalogue: Catalogue; brought: string[] }): ReactNode {
+  const ready = catalogue.providers.filter((one) => one.standing === READY);
+  // What this org runs on: the vendors it brought, then the ones the box's defaults name, then the rest that are ready.
+  const defaults = new Set(Object.values(catalogue.defaults).map((one) => one.split("/")[0] ?? one));
+  const ranked = [...ready].sort(
+    (a, b) =>
+      Number(brought.includes(b.name)) - Number(brought.includes(a.name)) ||
+      Number(defaults.has(b.name)) - Number(defaults.has(a.name)) ||
+      a.name.localeCompare(b.name),
+  );
+  return (
+    <Card>
+      <CardHead
+        title="Providers"
+        meta={`${ready.length} ready · ${catalogue.providers.length - ready.length} need a key`}
+        action={<CardAction to="/providers">Bring one</CardAction>}
+      />
+      <div className="ui-card-list">
+        {ranked.slice(0, 4).map((one) => (
+          <Item
+            key={one.name}
+            name={one.name.charAt(0).toUpperCase() + one.name.slice(1)}
+            sub={providerLine(one, catalogue)}
+            end={brought.includes(one.name) ? <Pill tone="green">ready</Pill> : <Pill tone="amber">box key</Pill>}
+          />
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+const JOB: Record<string, string> = { llm: "decides", stt: "hears", tts: "speaks" };
+
+/** What a vendor does, the job it is the box's default for first, and what it is. */
+function providerLine(one: Catalogue["providers"][number], catalogue: Catalogue): string {
+  const defaultFor = one.does.filter((job) => (catalogue.defaults[job] ?? "").split("/")[0] === one.name);
+  if (defaultFor.length > 0) return `${defaultFor.map((job) => JOB[job]).join(", ")} · the default`;
+  return `${one.does.map((job) => JOB[job]).join(", ")} · ${one.note}`;
 }

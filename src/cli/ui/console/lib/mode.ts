@@ -22,20 +22,28 @@ export function gatewayOrigin(): string {
 /** The world a console looks at. It is not a choice: the mode IS the world. */
 export const WORLD_OF: Record<Mode, World> = { hosted: "production", local: "sandbox" };
 
-/** One screen: where it is, what the rail calls it, and which console has it. */
+/** Where a screen sits in the sidebar: the org's floor, or the org's settings. An agent's screens are its tabs. */
+export type Group = "gateway" | "settings";
+
+/** The sidebar's icons, by name (ui/icon.tsx). */
+export type ScreenIcon = "home" | "grid" | "activity" | "list" | "chart" | "phone" | "key" | "plug" | "users";
+
+/** One screen: where it is, what the sidebar calls it, which group it sits in, and which console has it. */
 export interface Screen {
   /** The key the scopes table gates it by (lib/scopes.ts). */
   key: string;
   path: string;
   name: string;
   in: readonly Mode[];
+  group?: Group;
+  icon?: ScreenIcon;
 }
 
 const BOTH = ["hosted", "local"] as const;
 const HOSTED = ["hosted"] as const;
 const LOCAL = ["local"] as const;
 
-// THE table. The rail draws it and the router routes it, so a screen a console does not have is
+// THE table. The sidebar draws it and the router routes it, so a screen a console does not have is
 // neither linked nor reachable by typing its path. A redesign moves rows here and nothing else:
 // no screen asks which mode it is in to decide whether it exists.
 //
@@ -43,19 +51,20 @@ const LOCAL = ["local"] as const;
 // business and lives on the gateway. A developer's machine has the floor of their own sandbox, and
 // how to reach their copy by phone.
 export const ORG_SCREENS: readonly Screen[] = [
-  { key: "agents", path: "", name: "Overview", in: BOTH },
-  { key: "live", path: "live", name: "Live", in: BOTH },
-  { key: "sessions", path: "sessions", name: "Sessions", in: BOTH },
-  { key: "numbers", path: "numbers", name: "Numbers", in: HOSTED },
-  { key: "phone", path: "phone", name: "Phone testing", in: LOCAL },
-  { key: "keys", path: "keys", name: "Keys", in: HOSTED },
-  { key: "providers", path: "providers", name: "Providers", in: HOSTED },
-  { key: "team", path: "team", name: "Team", in: HOSTED },
-  { key: "usage", path: "usage", name: "Usage", in: HOSTED },
+  { key: "home", path: "", name: "Home", in: BOTH, group: "gateway", icon: "home" },
+  { key: "agents", path: "overview", name: "Overview", in: BOTH, group: "gateway", icon: "grid" },
+  { key: "live", path: "live", name: "Live", in: BOTH, group: "gateway", icon: "activity" },
+  { key: "sessions", path: "sessions", name: "Sessions", in: BOTH, group: "gateway", icon: "list" },
+  { key: "usage", path: "usage", name: "Usage", in: HOSTED, group: "gateway", icon: "chart" },
+  { key: "numbers", path: "numbers", name: "Numbers", in: HOSTED, group: "settings", icon: "phone" },
+  { key: "phone", path: "phone", name: "Phone testing", in: LOCAL, group: "settings", icon: "phone" },
+  { key: "keys", path: "keys", name: "Keys", in: HOSTED, group: "settings", icon: "key" },
+  { key: "providers", path: "providers", name: "Providers", in: HOSTED, group: "settings", icon: "plug" },
+  { key: "team", path: "team", name: "Team", in: HOSTED, group: "settings", icon: "users" },
 ];
 
-// An agent's screens. Talk first: it is the screen a person opens an agent for. Chat is a written
-// call to the class in a developer's own directory, so it is the workshop's.
+// An agent's screens, its tabs. Talk first: it is the screen a person opens an agent for. Chat is a
+// written call to the class in a developer's own directory, so it is the workshop's.
 export const AGENT_SCREENS: readonly Screen[] = [
   { key: "talk", path: "talk", name: "Talk", in: BOTH },
   { key: "chat", path: "chat", name: "Chat", in: LOCAL },

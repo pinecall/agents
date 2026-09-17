@@ -11,7 +11,7 @@ const names = (table: typeof ORG_SCREENS, mode: "local" | "hosted"): string[] =>
 describe("the gateway's console", () => {
   it("looks at production, and runs the org", () => {
     expect(WORLD_OF.hosted).toBe("production");
-    expect(names(ORG_SCREENS, "hosted")).toEqual(["Overview", "Live", "Sessions", "Numbers", "Keys", "Providers", "Team", "Usage"]);
+    expect(names(ORG_SCREENS, "hosted")).toEqual(["Home", "Overview", "Live", "Sessions", "Usage", "Numbers", "Keys", "Providers", "Team"]);
   });
 
   it("has no Chat: a written call goes to the class in a developer's own directory", () => {
@@ -23,7 +23,7 @@ describe("the gateway's console", () => {
 describe("a machine's own console", () => {
   it("looks at the sandbox, and has none of the org's accounts", () => {
     expect(WORLD_OF.local).toBe("sandbox");
-    expect(names(ORG_SCREENS, "local")).toEqual(["Overview", "Live", "Sessions", "Phone testing"]);
+    expect(names(ORG_SCREENS, "local")).toEqual(["Home", "Overview", "Live", "Sessions", "Phone testing"]);
   });
 
   it("has every screen of an agent, Chat among them", () => {

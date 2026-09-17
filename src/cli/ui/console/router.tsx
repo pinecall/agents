@@ -12,6 +12,7 @@ import { Calls } from "./screens/calls";
 import { Chat } from "./screens/chat";
 import { Evals } from "./screens/evals";
 import { FloorLive, FloorSessions } from "./screens/floor";
+import { Home } from "./screens/home";
 import { Keys } from "./screens/keys";
 import { Providers } from "./screens/providers";
 import { Knowledge } from "./screens/knowledge";
@@ -30,6 +31,7 @@ import { Shell } from "./shell/shell";
 // has is that table's answer and not this file's: a row it leaves out gets no route, so a path
 // typed by hand lands on the front page and not on a screen whose doors would refuse.
 const ORG: Record<string, ReactNode> = {
+  home: <Home />,
   agents: <Agents />,
   live: <FloorLive />,
   sessions: <FloorSessions />,
@@ -56,12 +58,14 @@ const AGENT: Record<string, ReactNode> = {
 // A call in the path is the conversation, the call being watched, or the session read: the same
 // screen one level deeper.
 const DEEPER: Record<string, ReactNode> = { chat: <Chat />, calls: <Calls />, sessions: <Session /> };
+// The org's: a call watched on the floor, a session read whichever agent handled it.
+const ORG_DEEPER: Record<string, ReactNode> = { live: <FloorLive />, sessions: <Session /> };
 
 function routesOf(table: readonly Screen[], elements: Record<string, ReactNode>): RouteObject[] {
   return screensOf(table).flatMap((screen): RouteObject[] => {
     const element = elements[screen.key];
     if (screen.path === "") return [{ index: true, element }];
-    const deeper = elements === AGENT ? DEEPER[screen.key] : undefined;
+    const deeper = (elements === AGENT ? DEEPER : ORG_DEEPER)[screen.key];
     return deeper === undefined ? [{ path: screen.path, element }] : [{ path: screen.path, element }, { path: `${screen.path}/:call`, element: deeper }];
   });
 }
@@ -89,7 +93,7 @@ export const router = createBrowserRouter(
     // A blank page with nothing but the widget on it, the way a site would have it: outside the
     // shell, the same key.
     { path: "/a/:agent/widget/preview", element: <WidgetPreview /> },
-    { path: "*", element: <Agents /> },
+    { path: "*", element: <Navigate to="/" replace /> },
   ],
   { basename: BASE },
 );

@@ -16,10 +16,7 @@ import { WhoamiProvider } from "./lib/whoami";
 import { WorldProvider } from "./lib/world";
 import { router } from "./router";
 import { Accept, Login } from "./screens/login";
-import { followTheSystemTheme } from "../shared/theme";
-import "../shared/styles/app.css";
-
-followTheSystemTheme();
+import "./ui/ui.css";
 
 const root = document.getElementById("root");
 if (root === null) {

@@ -32,3 +32,14 @@ export function opens(scopes: readonly string[], screen: string): boolean {
 export function notOpened(screen: string): string {
   return `this key does not open ${SCOPE_OF[screen] ?? screen}`;
 }
+
+// Every scope a key may carry (runtime types/key.py). A person's key never holds `app` in production,
+// so a key with every other one is, as far as a person reading a list cares, everything.
+const EVERY_SCOPE = ["app", "calls", "evals", "keys", "knowledge", "memory", "numbers", "pipeline", "providers", "supervise", "talk", "team", "usage"];
+
+/** What a key may do, as one short line: "everything", or its scopes. */
+export function scopesLine(scopes: readonly string[]): string {
+  const missing = EVERY_SCOPE.filter((scope) => !scopes.includes(scope));
+  if (missing.length === 0 || (missing.length === 1 && missing[0] === "app")) return "everything";
+  return scopes.join(", ");
+}
