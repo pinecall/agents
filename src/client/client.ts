@@ -41,6 +41,7 @@ export class Pinecall implements AgentGateway {
   readonly #agents = new Map<string, Agent>();
   readonly #listeners: Listeners<Call | null>;
   readonly #errors = new Set<(error: Error) => void>();
+  readonly #connects = new Set<() => void>();
   readonly #connection: Connection;
 
   constructor(options: PinecallOptions = {}) {
@@ -96,6 +97,18 @@ export class Pinecall implements AgentGateway {
   /** Listen for every event across every agent. */
   onAny(listener: AnyListener<Call | null>): () => void {
     return this.#listeners.onAny(listener);
+  }
+
+  /**
+   * Hear every time the socket is up with every agent declared on it: the first connect, and each
+   * reconnect after a gateway that went away. What a gateway keeps only beside a live socket is
+   * said again from here.
+   */
+  onConnected(listener: () => void): () => void {
+    this.#connects.add(listener);
+    return () => {
+      this.#connects.delete(listener);
+    };
   }
 
   /** Hear what the client could not hand to anybody: a bad frame, a tool that threw, a lost socket. */
@@ -155,6 +168,13 @@ export class Pinecall implements AgentGateway {
   async #declareAll(): Promise<void> {
     for (const agent of this.#agents.values()) {
       await agent.open();
+    }
+    for (const listener of this.#connects) {
+      try {
+        listener();
+      } catch (failed) {
+        this.onError(asError(failed));
+      }
     }
   }
 

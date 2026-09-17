@@ -140,6 +140,27 @@ export async function run(argv: string[]): Promise<number> {
   // One socket for every agent of the project: the gateway takes several slugs on one app socket,
   // and every call is routed to the class it names.
   const pc = new Pinecall({ url, apiKey: door.apiKey });
+  // A gateway that restarts is a blip, not a crash: the client redials on its own, and what a
+  // person needs is one line saying so — not a stack per attempt. --events prints only its JSON.
+  let lost = false;
+  pc.onErrors((failed) => {
+    // Anything that is not the socket — a tool that threw where nobody waited, a frame that would
+    // not parse — is said whole, as it always was.
+    if (!aLostSocket(failed)) return console.error(failed);
+    if (!lost && values.events !== true && values.ui !== true) process.stderr.write(`gateway  ${failed.message} — reconnecting\n`);
+    lost = true;
+  });
+  // The gateway keeps whose phone is whose beside its live table and not in a row, because it is
+  // only meaningful next to a socket. So every connect says it again — the first and each
+  // reconnect, in every mode, for every agent and not only one that declares a number: a
+  // production number is the box's route and no class declares it, yet a developer's own phone
+  // dialling it reaches their copy (the runtime's rings-for door). A restarted gateway learns it
+  // here rather than sending the person's test call to production.
+  pc.onConnected(() => {
+    if (lost && values.events !== true && values.ui !== true) process.stderr.write("gateway  back\n");
+    lost = false;
+    if (who.env !== PRODUCTION) void sayWhoCallsFromHere(door);
+  });
   // Whoever opens the app socket closes it. Left open it keeps this process alive after the
   // signal has been read — a plain `kill` on `pinecall run` did nothing until this landed —
   // and the gateway holds the slug until it shuts.
@@ -229,14 +250,17 @@ export async function run(argv: string[]): Promise<number> {
 // worth failing the run over: a gateway that refuses says so on its own line and the app runs on.
 async function onceUp(door: Door, slug: string, rings: boolean, where: string): Promise<string[]> {
   const said = [await consoleLine(door, slug, where)];
-  // The gateway keeps whose phone is whose beside its live table and not in a row, because it is
-  // only meaningful next to a socket. So every connect says it again — for every agent, and not
-  // only one that declares a number: a production number is the box's route and no class declares
-  // it, yet a developer's own phone dialling it reaches their copy (the runtime's rings-for door).
-  // A restarted gateway learns it here rather than sending the person's test call to production.
-  await sayWhoCallsFromHere(door);
   if (rings) said.push(await lineLine(door, slug));
   return said;
+}
+
+// What `ws` and the network say when the gateway is not there: a refused or reset connection, a
+// name that does not resolve, or a proxy in front of it answering for it while it restarts.
+const LOST = /^(Unexpected server response|WebSocket|socket hang up|connect |getaddrinfo |read ECONN|write E)/;
+
+/** Whether this failure is the gateway being away, which a reconnect answers, and not the app's own. */
+export function aLostSocket(failed: Error): boolean {
+  return typeof (failed as NodeJS.ErrnoException).code === "string" || LOST.test(failed.message);
 }
 
 /** Re-send the phone `pinecall line from` remembered for this gateway. Silent: it is upkeep. */
