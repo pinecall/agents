@@ -89,7 +89,8 @@ about memory needs no contact in a database and leaves nothing behind.
 | `expect.replies` | the agent answered at all |
 
 ```bash
-pinecall test                                  # every golden in test/goldens/
+pinecall test                                  # every golden in test/goldens/ (in a project: every agent's test/goldens/<name>/)
+pinecall test --agent sales                    # in a project: one agent's
 pinecall test test/goldens/reserva-*.json      # some of them
 pinecall test --grep reserva --watch           # while writing one
 pinecall test --model haiku --model openai/gpt-4.1-mini   # the matrix: models × goldens
