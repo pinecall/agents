@@ -22,14 +22,17 @@ cd examples/clinica-norte && pnpm exec pinecall prompt --state test/prompts/stat
 
 Nothing has to be built to lint or test: every package in the workspace exports its sources.
 `scripts/build` is for what gets published, and for the console — a browser reads no TypeScript,
-so `pinecall ui` in a checkout needs the bundle once.
+so `pinecall serve` (and `run --serve`) in a checkout needs the bundle once, and again after a
+change to `src/cli/ui/console/`: the sidecar serves `dist/cli/ui/console`, not the sources.
 
 ## Structure
 
 - `src/` — six directories, kept apart by the import table in `test/the-imports.test.ts`
   - `agent/` the class · `views/` JSX→text · `call/` the live call as a value
   - `client/` `pinecall/client`: the socket, and nothing above it · `runtime/` the bridge
-  - `cli/` `pinecall <verb>`, and under `cli/ui/console/` the browser page one of them serves
+  - `cli/` `pinecall <verb>`; `cli/serve/` the one place that binds a port (the sandbox's console,
+    `pinecall serve`); under `cli/ui/console/` the page, one bundle the gateway serves as production's
+    console and the sidecar as the sandbox's — which screens each has is `lib/mode.ts`, one table
 - `test/` mirrors `src/`; `the-tree`, `the-imports`, `index` and `client/index` are the tree's rules
 - `examples/` two tenants written the way a customer writes one — and what the nightly drives
 - `docs/` how to build an agent · `docs/decisions/` the maintainer's notebook, **git-ignored**:

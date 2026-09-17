@@ -60,11 +60,16 @@ cd examples/clinica-norte
 pnpm exec pinecall chat            the agent in this terminal, and a prompt against it
 pnpm exec pinecall prompt --state test/prompts/states.json   the exact prompt a state produces
 pnpm exec pinecall run             the app: the process you deploy
+pnpm exec pinecall run --serve     the same, and its console on http://localhost:4100
+pnpm exec pinecall serve           that console alone: your sandbox, on this machine
 pnpm exec pinecall knowledge push  ./knowledge/docs to the gateway, under the agent's name
 pnpm exec pinecall test            ring 1: the goldens, through the app in this process
-                                   `run` prints the console's URL: the gateway serves the page,
-                                   and the code in the URL signs this browser in, once
 ```
+
+Two consoles, one per world. What you are running is in the sandbox and is watched on your own
+machine — `pinecall serve` forwards every request to the gateway with the terminal's key, so there
+is nothing to sign in to. Production is watched on the gateway's own page, which shows production
+and nothing else. [docs/the-cli.md](docs/the-cli.md#serve).
 
 A tenant that installed `pinecall` from npm has it on the PATH and writes `pinecall run`. A
 repository of several agents keeps each in `agents/<name>.tsx`, and one `pinecall run` at its root

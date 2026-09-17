@@ -11,11 +11,11 @@ called, and the rest are the reference it points at.
 | [the-prompt.md](the-prompt.md) | the prompt: named blocks in two regions, `render()`, and where what a lookup found actually lands |
 | [testing-an-agent.md](testing-an-agent.md) | the five rings: unit tests, goldens, personas, one call replayed, and the score every real call gets |
 | [testing-memory-and-knowledge.md](testing-memory-and-knowledge.md) | the goldens that are not about one call: what the agent remembers, what it recalls, whether the index answers, and why a call has no retrieval score |
-| [the-cli.md](the-cli.md) | every verb: what it takes, what it prints, where its key comes from, and which gateway doors it knocks at |
-| [worlds-and-teams.md](worlds-and-teams.md) | from the sign-up to the deploy: production and the sandbox, what is yours and what is the org's, testing by phone, the team |
+| [the-cli.md](the-cli.md) | every verb — `run`, `serve` and the rest: what it takes, what it prints, where its key comes from, and which gateway doors it knocks at |
+| [worlds-and-teams.md](worlds-and-teams.md) | from the sign-up to the deploy: production and the sandbox, where each is watched (the gateway's console, and `pinecall serve` on your machine), what is yours and what is the org's, testing by phone, the team |
 
-Beside them, [console-content-brief.md](console-content-brief.md) is the console screen by screen:
-what each one says, and the door every value comes from.
+Beside them, [console-content-brief.md](console-content-brief.md) is the console screen by screen —
+both of them, the gateway's and the local one: what each says, and the door every value comes from.
 
 What the package IS, file by file, is [../ARCHITECTURE.md](../ARCHITECTURE.md). The two examples
 in `../examples/` are the same material as working code, and they are what CI and the nightly run.
