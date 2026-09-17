@@ -1,4 +1,4 @@
-/** The inbox's own doors: the threads the gateway keeps per contact, a call back, and a message to a closed thread. Absent until the gateway has them. */
+/** The inbox's own doors: the threads the gateway keeps per contact, and a message to a closed thread. Absent until the gateway has them. */
 
 import { VerbSchema } from "@pinecall/protocol";
 import { z } from "zod";
@@ -30,12 +30,6 @@ export async function readDoorThreads(credentials: Credentials, agent: string): 
 /** This reader has seen the thread. */
 export async function markRead(credentials: Credentials, agent: string, contact: string): Promise<void> {
   await post(credentials, `/v1/agents/${encodeURIComponent(agent)}/threads/${encodeURIComponent(contact)}/read`, {});
-}
-
-/** Dial the contact back, the agent on the line. Answers the new call's id. */
-export async function callBack(credentials: Credentials, agent: string, to: string): Promise<string | null> {
-  const answered = z.looseObject({ call: z.string().nullish() }).parse(await post(credentials, "/v1/calls", { agent, to }));
-  return answered.call ?? null;
 }
 
 /** Write to a closed thread as the agent, within the channel's window. */

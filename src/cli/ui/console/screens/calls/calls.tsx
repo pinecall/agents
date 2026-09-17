@@ -8,7 +8,7 @@ import { useCredentials } from "../../../shared/credentials";
 import { clockOf, dayOf, today, utcDay } from "../../lib/format";
 import { useAgentSessions } from "../../lib/use-agent-sessions";
 import { Avatar } from "../../ui";
-import { callBack, markRead, readDoorThreads, sayInto, writeTo, type DoorThread } from "./inbox-door";
+import { markRead, readDoorThreads, sayInto, writeTo, type DoorThread } from "./inbox-door";
 import { SimulateForm } from "./simulate-form";
 import { lastOf, lettersOf, threadsOf, titleOf, type Message, type Thread } from "./threads";
 import { useThread } from "./use-thread";
@@ -178,16 +178,6 @@ function OpenThread({ agent, thread, name, door }: { agent: string; thread: Thre
     }
   };
 
-  const dial = async (): Promise<void> => {
-    setRefused(null);
-    try {
-      const call = await callBack(credentials, agent, thread.contact);
-      if (call !== null) void navigate(`/live/${call}`);
-    } catch (failed) {
-      setRefused(failed instanceof GatewayError ? failed.message : String(failed));
-    }
-  };
-
   return (
     <div className="ib-thread">
       <div className="ib-head">
@@ -208,11 +198,6 @@ function OpenThread({ agent, thread, name, door }: { agent: string; thread: Thre
           <button type="button" className="ui-button ui-button-md" onClick={() => void navigate(`/a/${agent}/sessions/${latest.call}`)}>
             Session
           </button>
-          {door && phone && (
-            <button type="button" className="ui-button ui-button-primary ui-button-md" onClick={() => void dial()}>
-              Call back
-            </button>
-          )}
         </div>
       </div>
       <div className="ib-messages">
