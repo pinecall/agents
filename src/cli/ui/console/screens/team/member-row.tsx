@@ -8,7 +8,7 @@ import { ROLES, type Member } from "./door";
 type Change = { role?: Member["role"]; agents?: string[]; status?: Member["status"] };
 
 /** The table's columns: the design's five, and the move at the end of the row. */
-export const COLUMNS = "minmax(0,1fr) minmax(0,1.3fr) 110px 110px 90px 170px";
+export const COLUMNS = "minmax(0,1fr) minmax(0,1.3fr) 110px 110px 90px 230px";
 
 const TONE = { active: "green", invited: "amber", disabled: "gray" } as const;
 
@@ -23,12 +23,15 @@ export function MemberRow({
   onChange,
   onResend,
   onReset,
+  onRemove,
 }: {
   member: Member;
   onChange: (said: Change) => Promise<void>;
   onResend: () => Promise<void>;
   onReset: () => Promise<void>;
+  onRemove: () => Promise<void>;
 }): ReactNode {
+  const [removing, setRemoving] = useState(false);
   const [editing, setEditing] = useState<"role" | "agents" | null>(null);
   const [agents, setAgents] = useState(member.agents.join(" "));
   const [busy, setBusy] = useState(false);
@@ -101,25 +104,42 @@ export function MemberRow({
         <Pill tone={TONE[member.status]}>{member.status}</Pill>
       </span>
       <span className="ui-cell-end">
-        {member.status === "active" && (
+        {removing ? (
           <>
-            <TextAction disabled={busy} onClick={() => void act(onReset)} title="A one-use link to choose a new password">
-              Reset password
+            <span className="team-sure">Remove for good?</span>
+            <TextAction danger disabled={busy} onClick={() => void act(onRemove)}>
+              Remove
             </TextAction>
-            <TextAction danger disabled={busy} onClick={() => void act(() => onChange({ status: "disabled" }))}>
-              Disable
+            <TextAction disabled={busy} onClick={() => setRemoving(false)}>
+              Keep
             </TextAction>
           </>
-        )}
-        {member.status === "disabled" && (
-          <TextAction disabled={busy} onClick={() => void act(() => onChange({ status: "active" }))}>
-            Bring back
-          </TextAction>
-        )}
-        {member.status === "invited" && (
-          <TextAction disabled={busy} onClick={() => void act(onResend)}>
-            Resend invite
-          </TextAction>
+        ) : (
+          <>
+            {member.status === "active" && (
+              <>
+                <TextAction disabled={busy} onClick={() => void act(onReset)} title="A one-use link to choose a new password">
+                  Reset password
+                </TextAction>
+                <TextAction disabled={busy} onClick={() => void act(() => onChange({ status: "disabled" }))}>
+                  Disable
+                </TextAction>
+              </>
+            )}
+            {member.status === "disabled" && (
+              <TextAction disabled={busy} onClick={() => void act(() => onChange({ status: "active" }))}>
+                Bring back
+              </TextAction>
+            )}
+            {member.status === "invited" && (
+              <TextAction disabled={busy} onClick={() => void act(onResend)}>
+                Resend invite
+              </TextAction>
+            )}
+            <TextAction danger disabled={busy} onClick={() => setRemoving(true)} title="Out of the org for good: every key revoked, the seat freed">
+              Remove
+            </TextAction>
+          </>
         )}
       </span>
     </div>

@@ -14,9 +14,10 @@ describe("the gateway's console", () => {
     expect(names(ORG_SCREENS, "hosted")).toEqual(["Home", "Overview", "Live", "Sessions", "Usage", "Numbers", "Keys", "Providers", "Team"]);
   });
 
-  it("has no Chat: a written call goes to the class in a developer's own directory", () => {
-    expect(has(AGENT_SCREENS, "chat", "hosted")).toBe(false);
+  it("talks and chats with what is deployed, and has no Dev chat: that one mounts the class in a developer's own directory", () => {
     expect(has(AGENT_SCREENS, "talk", "hosted")).toBe(true);
+    expect(has(AGENT_SCREENS, "chat", "hosted")).toBe(true);
+    expect(has(AGENT_SCREENS, "devchat", "hosted")).toBe(false);
   });
 });
 
@@ -46,7 +47,7 @@ describe("a machine's own console", () => {
   });
 
   it("has every screen of an agent, Dev chat among them", () => {
-    expect(names(AGENT_SCREENS, "local")).toEqual(["Talk & Chat", "Dev chat", "Calls", "Sessions", "Pipeline", "Knowledge", "Memory", "Evals", "Widget"]);
+    expect(names(AGENT_SCREENS, "local")).toEqual(["Talk", "Chat", "Dev chat", "Calls", "Sessions", "Pipeline", "Knowledge", "Memory", "Evals", "Widget"]);
   });
 
   it("sends no authorization: `pinecall serve` signs what it forwards", () => {

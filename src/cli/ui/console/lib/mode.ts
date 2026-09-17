@@ -76,12 +76,14 @@ export const BOX_SCREENS: readonly Screen[] = [
   { key: "box-settings", path: "box/settings", name: "Box settings", in: HOSTED, group: "box", icon: "sliders", operator: true },
 ];
 
-// An agent's screens, its tabs. Talk & Chat first: it is the screen a person opens an agent for, by
-// voice or in writing, through the gateway's room. Dev chat is a written call to the class in a
-// developer's own directory, mounted in their terminal, so it is the workshop's.
+// An agent's screens, its tabs. Talk and Chat are the two ways into the gateway's room — the
+// microphone, or writing — and they are two tabs because they are two ways of working, not one
+// screen with a switch. Dev chat is a written call to the class in a developer's own directory,
+// mounted in their terminal, so it is the workshop's.
 export const AGENT_SCREENS: readonly Screen[] = [
-  { key: "talk", path: "talk", name: "Talk & Chat", in: BOTH },
-  { key: "chat", path: "chat", name: "Dev chat", in: LOCAL },
+  { key: "talk", path: "talk", name: "Talk", in: BOTH },
+  { key: "chat", path: "chat", name: "Chat", in: BOTH },
+  { key: "devchat", path: "dev-chat", name: "Dev chat", in: LOCAL },
   { key: "calls", path: "calls", name: "Calls", in: BOTH },
   { key: "sessions", path: "sessions", name: "Sessions", in: BOTH },
   { key: "pipeline", path: "pipeline", name: "Pipeline", in: BOTH },

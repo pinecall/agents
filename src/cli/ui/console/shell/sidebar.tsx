@@ -153,6 +153,7 @@ function Workspace(): ReactNode {
         <span className="side-label">
           <span className="side-org">{org || "…"}</span>
           <span className="side-org-sub">
+            {whose?.visiting === true ? "visiting as operator · " : ""}
             {agents.length} {agents.length === 1 ? "agent" : "agents"}
           </span>
         </span>
@@ -160,14 +161,23 @@ function Workspace(): ReactNode {
       </button>
       {open && orgs !== null && (
         <div className="side-orgs" role="menu">
-          <div className="side-orgs-label">Your organizations</div>
-          {orgs.map((one) => (
-            <button key={one.org} type="button" className="side-org-row" disabled={busy || one.here} onClick={() => void move(one.org)}>
-              <span className="side-tile">{initialsOf(one.slug ?? one.name ?? one.org).slice(0, 1)}</span>
-              <span>{one.slug ?? one.name ?? one.org}</span>
-              <span className="side-org-role">{one.here ? "here" : one.role}</span>
-            </button>
-          ))}
+          {[
+            { label: "Your organizations", rows: orgs.filter((one) => one.member !== false) },
+            { label: "Every other org on this box · as operator", rows: orgs.filter((one) => one.member === false) },
+          ]
+            .filter((group) => group.rows.length > 0)
+            .map((group) => (
+              <div key={group.label}>
+                <div className="side-orgs-label">{group.label}</div>
+                {group.rows.map((one) => (
+                  <button key={one.org} type="button" className="side-org-row" disabled={busy || one.here} onClick={() => void move(one.org)}>
+                    <span className="side-tile">{initialsOf(one.slug ?? one.name ?? one.org).slice(0, 1)}</span>
+                    <span className="ui-clip">{one.slug ?? one.name ?? one.org}</span>
+                    <span className="side-org-role">{one.here ? "here" : one.role}</span>
+                  </button>
+                ))}
+              </div>
+            ))}
           {refused !== null && <div className="ui-refused" style={{ padding: "6px 8px" }}>{refused}</div>}
         </div>
       )}

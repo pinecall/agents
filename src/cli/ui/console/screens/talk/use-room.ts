@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { post } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
+import { ours } from "../../lib/ours";
 import {
   A_BEAT_MS,
   CHAT_TOPIC,
@@ -168,6 +169,8 @@ export function useRoom(agent: string): Talking {
       if (joining === "talk") joined.on(RoomEvent.TrackSubscribed, playAloud);
       joined.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack) => track.detach().forEach((element) => element.remove()));
       joined.on(RoomEvent.Disconnected, () => setPhase("ended"));
+      // This tab's own conversation: the shell's corner windows leave it alone.
+      ours(minted.call);
       setCall(minted.call);
       await joined.connect(minted.server_url, minted.participant_token);
       if (joining === "talk") await joined.localParticipant.setMicrophoneEnabled(true);

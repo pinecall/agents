@@ -17,7 +17,7 @@ The same page is served in two places, and it is a different product in each:
 | sidebar ▸ Gateway (local: *Sandbox*) | Home `/`, Overview `/overview`, Live, Sessions, Usage | Home, Overview, Live, Sessions |
 | sidebar ▸ Settings | Numbers, Keys, Providers, Team | Phone testing |
 | outside the sidebar | `/cli` | — |
-| an agent's tabs | Talk & Chat, Calls, Sessions, Pipeline, Knowledge, Memory, Evals (scored calls, drift), Widget | the same, plus **Dev chat**, Evals ▸ runs and *Run all* |
+| an agent's tabs | Talk, Chat, Calls, Sessions, Pipeline, Knowledge, Memory, Evals (scored calls, drift), Widget | the same, plus **Dev chat**, Evals ▸ runs and *Run all* |
 | copies | one: the org's, *deployed on the box* | the reader's; a key with `team` opens a teammate's |
 
 Which is which is a `<meta name="pinecall-console" content="local">` the sidecar puts in the page
@@ -42,7 +42,8 @@ and the ⌘K box are the tab's and die with it.
 | `/usage` | Usage (hosted) |
 | `/numbers` | Numbers (hosted) · `/phone` Phone testing (local) |
 | `/keys` · `/providers` · `/team` | Keys, Providers, Team (hosted) |
-| `/a/:agent/talk` | Talk & Chat |
+| `/a/:agent/talk` | Talk |
+| `/a/:agent/chat` | Chat |
 | `/a/:agent/chat[/:call]` | Chat (local) |
 | `/a/:agent/calls[/:call]` | Calls — the inbox; a call in the path opens the thread holding it |
 | `/a/:agent/sessions[/:call]` | the agent's sessions; one read whole (deep-linkable to a line: `#seq-93`) |
@@ -411,31 +412,24 @@ path written, and its notes). Then, in an auditor's order:
 While it reads: *Reading <call>…*; nothing there: *No call <call> in the log.*; a refusal in the
 gateway's words.
 
-## 6. Talk & Chat — `/a/:agent/talk`
+## 6. Talk — `/a/:agent/talk`, and Chat — `/a/:agent/chat`
 
-One conversation with the agent through the gateway's room, by voice or in writing, on the same
-log everything else reads.
+Two tabs, the two ways into the gateway's room, on the same log everything else reads. A call this
+tab starts never pops a corner window (`lib/ours.ts`): it is not news to whoever started it.
 
-- **The lobby** (out of the room): *Call <agent>* or *Chat with <agent>*, a sentence for the mode,
-  **Voice call · Chat**, and **Join room** or **Start chat**; under it *As <person> · lands in
-  <world> · counts in usage*. After a conversation ends the screen comes back here, with *The call
-  ended — judged at hang-up.* and **Open session**. A room that did not open says why, in the lobby.
-- **Voice call** mints a `talk` token (`POST /v1/tokens`): the microphone opens and the agent's
-  voice plays. **Chat** mints a `chat` token: no microphone and no voice — the session is written,
-  and the agent's words arrive at the pace it writes them.
-- **In the room**: a bar with the mode, *On the call · 0:42* (or *Chatting*, *muted*), the five
-  moving bars and **Mute/Unmute** on a voice call, and **Leave** or **End chat**. The conversation
-  fills the page as bubbles — yours on the right in the accent, the agent's on the left filling word
-  by word, a tool or a supervisor's move as a centred pill — and the **composer** sits at its foot:
-  what is typed goes into the same room (`sendText` on `lk.chat`), on a voice call too. A line shows
-  at once, dimmed, until the log's `turn.user` carries it; a send that fails takes it back and says why.
-- **The Inspector** (`talk/inspector.tsx`, Dev chat's too), beside the page: a pill for the stream's
+- **Talk** (voice, a `talk` token): the round **Call** button → *Joining the room…* → red **Hang
+  up** with the clock inside; **Mute/Unmute** beside the five moving bars; *Speaking as* and *Lands
+  in*; the conversation as a card of bubbles with a **composer** at its foot — what is typed goes
+  into the same call (`sendText` on `lk.chat`). A call that ends gives the page back, with **Open
+  the session**.
+- **Chat** (written, a `chat` token — no microphone, no voice): one bar (*Chat with <agent>*, how it
+  stands, **Start a chat** / **End chat**, **Open the session** once ended), the conversation
+  filling the page, the composer at its foot.
+- **The Inspector** (`talk/inspector.tsx`, Dev chat's too), beside both: a pill for the stream's
   state and four tabs — **Call** (*This session*, or *Last session* before one is made: Turns, ttft
-  and e2e medians, Cost, Tokens in and out, the call id), **Turns** with each one's measures,
-  **Tools** (name, arguments, result) and **State**. Before the agent has taken any call: *Nothing
-  to read yet…*
+  and e2e medians, Cost, Tokens in and out, the call id), **Turns**, **Tools** and **State**.
 
-## 6b. Dev chat — `/a/:agent/chat[/:call]` (local)
+## 6b. Dev chat — `/a/:agent/dev-chat[/:call]` (local)
 
 The class talked to **in writing**, on the call's own log — `pinecall chat` from a page, so a
 breakpoint in a `@tool` is reachable in the terminal serving it.

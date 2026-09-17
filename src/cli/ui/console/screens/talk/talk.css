@@ -175,6 +175,20 @@
   font-weight: 550;
 }
 
+.talk-whole {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.talk-whole .talk-lines {
+  flex: 1;
+  max-height: none;
+  padding: 22px 24px;
+  background: var(--ground-side);
+}
+
 .talk-lines {
   min-height: 120px;
   max-height: 420px;

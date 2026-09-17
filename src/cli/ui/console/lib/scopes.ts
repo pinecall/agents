@@ -6,6 +6,7 @@
 export const SCOPE_OF: Record<string, string> = {
   talk: "talk",
   chat: "talk",
+  devchat: "talk",
   calls: "calls",
   sessions: "calls",
   pipeline: "pipeline",

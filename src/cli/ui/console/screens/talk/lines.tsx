@@ -14,11 +14,13 @@ export function Transcript({ lines, mode, children }: { lines: Line[]; mode: "ta
   }, [lines]);
 
   return (
-    <div className="ui-card">
-      <div className="ui-card-head">
-        <span className="ui-card-title">{mode === "talk" ? "This call" : "This chat"}</span>
-        <span className="ui-card-meta">{mode === "talk" ? "spoken or written, as the room says it" : "written, as the room says it"}</span>
-      </div>
+    <div className={mode === "chat" ? "talk-whole" : "ui-card"}>
+      {mode === "talk" && (
+        <div className="ui-card-head">
+          <span className="ui-card-title">This call</span>
+          <span className="ui-card-meta">spoken or written, as the room says it</span>
+        </div>
+      )}
       <div className="talk-lines" ref={stream}>
         {lines.length === 0 && <p className="talk-quiet">Nothing said yet. {mode === "talk" ? "What you say and what you write both land here." : "What you write and the agent's replies land here."}</p>}
         {lines.map((line) => (line.kind === "said" ? <SaidLine key={line.id} line={line} /> : <MarkLine key={line.id} mark={line} />))}

@@ -6,11 +6,17 @@ import { answered } from "./api";
 
 // `/.well-known/pinecall` takes no key, which is the point: a card asking somebody to choose a
 // password has to say the rule before they type, and it has nothing to authenticate with yet.
-const DiscoveredSchema = z.object({
+// Read loosely: a gateway newer than this page says more, and one older says less — which is why
+// the ways in it may not have are optional and read as absent.
+const DiscoveredSchema = z.looseObject({
   version: z.string(),
   cloud: z.boolean(),
   signup: z.boolean(),
   min_password: z.number(),
+  /** The box itself can send mail: a forgotten password is a letter away. */
+  mail: z.boolean().optional(),
+  /** An operator wired "Continue with Google" for the whole box. */
+  google: z.boolean().optional(),
 });
 
 /** What the gateway says about itself to a client that knows only its URL. */

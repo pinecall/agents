@@ -14,7 +14,7 @@ import { Avatar, Choice, Dot, Pill } from "../ui";
 
 // The screens under an agent that make sense for every agent. A call or a session in the path is
 // one agent's alone, so a move to another agent lands on the screen and drops the id.
-const FLEET_SCREENS = new Set(["talk", "chat", "calls", "sessions", "pipeline", "knowledge", "memory", "evals", "widget"]);
+const FLEET_SCREENS = new Set(["talk", "chat", "dev-chat", "calls", "sessions", "pipeline", "knowledge", "memory", "evals", "widget"]);
 
 // Where the sandbox is watched: the sidecar on this machine (src/cli/serve/sidecar.ts's port).
 const SIDECAR = "http://localhost:4100";
@@ -222,7 +222,7 @@ function Orgs(): ReactNode {
       <div className="switch-label">Organization</div>
       <div className="switch-choices">
         {orgs.map((one) => (
-          <Choice key={one.org} on={one.here} disabled={busy} title={one.role} onClick={() => !one.here && void move(one.org)}>
+          <Choice key={one.org} on={one.here} disabled={busy} title={one.member === false ? "as the box's operator" : one.role} onClick={() => !one.here && void move(one.org)}>
             {one.slug ?? one.name ?? one.org}
           </Choice>
         ))}

@@ -11,6 +11,7 @@ import { Agents } from "./screens/agents";
 import { BoxFleet, BoxOrg, BoxOrgs, BoxRoutes, BoxSettings, BoxUsage, OperatorOnly } from "./screens/box";
 import { Calls } from "./screens/calls";
 import { Chat } from "./screens/chat";
+import { RoomChat } from "./screens/talk";
 import { Evals } from "./screens/evals";
 import { FloorLive, FloorSessions } from "./screens/floor";
 import { Home } from "./screens/home";
@@ -57,7 +58,8 @@ const BOX: Record<string, ReactNode> = {
 
 const AGENT: Record<string, ReactNode> = {
   talk: <Talk />,
-  chat: <Chat />,
+  chat: <RoomChat />,
+  devchat: <Chat />,
   calls: <Calls />,
   sessions: <Sessions />,
   pipeline: <Pipeline />,
@@ -69,7 +71,7 @@ const AGENT: Record<string, ReactNode> = {
 
 // A call in the path is the conversation, the call being watched, or the session read: the same
 // screen one level deeper.
-const DEEPER: Record<string, ReactNode> = { chat: <Chat />, calls: <Calls />, sessions: <Session /> };
+const DEEPER: Record<string, ReactNode> = { devchat: <Chat />, calls: <Calls />, sessions: <Session /> };
 // The org's: a call watched on the floor, a session read whichever agent handled it.
 const ORG_DEEPER: Record<string, ReactNode> = { live: <FloorLive />, sessions: <Session /> };
 

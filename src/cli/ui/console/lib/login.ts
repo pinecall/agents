@@ -45,6 +45,8 @@ const OrgsOfSchema = z.object({
       role: z.string(),
       status: z.string(),
       here: z.boolean(),
+      /** False where the person is not a member and enters as the box's operator. Unsaid by an older gateway: a member. */
+      member: z.boolean().optional(),
     }),
   ),
 });
@@ -127,6 +129,11 @@ export async function ssoOrgsFor(base: string, email: string): Promise<SsoOrg[]>
 /** Where a browser goes to sign in to that org with its provider; it comes back with a one-use `?login=` code. */
 export function ssoUrl(base: string, org: string): string {
   return new URL(`${base.replace(/\/$/, "")}/v1/login/sso?org=${encodeURIComponent(org)}`, window.location.origin).toString();
+}
+
+/** Where a browser goes to sign in with Google, box-wide; it comes back with `?login=`, or `?refused=` and a sentence. */
+export function googleUrl(base: string): string {
+  return new URL(`${base.replace(/\/$/, "")}/v1/login/google`, window.location.origin).toString();
 }
 
 /** What an operator registers at Google as the redirect URI: where "Continue with Google" comes back to. */

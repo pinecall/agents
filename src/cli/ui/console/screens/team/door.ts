@@ -45,6 +45,11 @@ export async function resetLink(credentials: Credentials, id: string): Promise<I
   return InvitedSchema.parse(await post(credentials, `/v1/members/${encodeURIComponent(id)}/reset`, {}));
 }
 
+/** Remove a member for good: their keys revoked, their seat freed. The row the log names them by stays text. */
+export async function removeMember(credentials: Credentials, id: string): Promise<void> {
+  await drop(credentials, `/v1/members/${encodeURIComponent(id)}`);
+}
+
 /** Replace the role, the agents or the standing. A field left out keeps what the member had. */
 export async function change(
   credentials: Credentials,

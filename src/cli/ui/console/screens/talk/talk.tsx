@@ -1,4 +1,4 @@
-/** Talk & Chat: a human reaches the agent from this tab by voice or in writing, and reads the call underneath as the log carries it. */
+/** Talk: a human reaches the agent from this tab with the microphone, and reads the call underneath as the log carries it. */
 
 import type { Entry } from "@pinecall/protocol";
 import { useEffect, useState, type ReactNode } from "react";
@@ -8,16 +8,11 @@ import { elapsed } from "../../lib/format";
 import { useCall } from "../../lib/use-call";
 import { useWhoami } from "../../lib/whoami";
 import { useWorld } from "../../lib/world";
-import { Button, ButtonLink, Page, PageHead, Refused, Segmented } from "../../ui";
+import { Button, ButtonLink, Page, PageHead, Refused } from "../../ui";
 import { Inspector } from "./inspector";
 import { Composer, Transcript } from "./lines";
-import { useRoom, type Mode, type Talking } from "./use-room";
+import { useRoom, type Talking } from "./use-room";
 import "./talk.css";
-
-const MODES: readonly { value: Mode; label: string }[] = [
-  { value: "talk", label: "Voice call" },
-  { value: "chat", label: "Chat" },
-];
 
 /**
  * The screen: the door and the words as they are said; the call, read off its log, beside them.
@@ -29,24 +24,21 @@ export function Talk(): ReactNode {
   const live = useRoom(agent);
   const whose = useWhoami();
   const { world } = useWorld();
-  const [chosen, setChosen] = useState<Mode>("talk");
   const on = live.phase === "live" || live.phase === "connecting";
-  const mode = on ? live.mode : chosen;
   const person = whose?.name ?? whose?.label ?? "this key";
 
   return (
     <div className="talk-grid">
       <Page width={760}>
-        <PageHead title={`Talk to ${agent}`} lede="Call it or chat with it from this tab. On a call you can also write — a number, an address — into the same conversation." />
+        <PageHead title={`Talk to ${agent}`} lede="This machine's microphone reaches the agent, and it answers out loud. You can write into the same call too — a number, an address, a name nobody spells out loud." />
 
         <div className="talk-card">
-          {!on && <Segmented options={MODES} value={chosen} onChange={setChosen} />}
-          <Door live={live} mode={mode} />
+          <Door live={live} />
           <div className="talk-standing">
-            <div className="talk-phase">{standing(live, mode)}</div>
-            <div className="talk-hint">{hint(live, mode)}</div>
+            <div className="talk-phase">{standing(live)}</div>
+            <div className="talk-hint">{hint(live)}</div>
           </div>
-          {live.phase === "live" && live.mode === "talk" && (
+          {live.phase === "live" && (
             <div className="talk-mic">
               <span className={live.muted ? "talk-bars" : "talk-bars talk-bars-on"} aria-hidden>
                 <span />
@@ -80,8 +72,8 @@ export function Talk(): ReactNode {
         </div>
 
         <Refused>{live.error}</Refused>
-        <Transcript lines={on ? live.lines : []} mode={mode}>
-          <Composer open={live.phase === "live"} mode={mode} onWrite={live.write} />
+        <Transcript lines={on ? live.lines : []} mode="talk">
+          <Composer open={live.phase === "live"} mode="talk" onWrite={live.write} />
         </Transcript>
         {live.call !== null && <Marks call={live.call} heard={live.heard} />}
       </Page>
@@ -92,19 +84,19 @@ export function Talk(): ReactNode {
 }
 
 // One round button: the accent while out of the room, red while in it, with the clock inside.
-function Door({ live, mode }: { live: Talking; mode: Mode }): ReactNode {
+function Door({ live }: { live: Talking }): ReactNode {
   const now = useNow(live.phase === "live");
   if (live.phase === "live" || live.phase === "connecting") {
     return (
       <button type="button" className="talk-door talk-door-on" disabled={live.phase === "connecting"} onClick={() => void live.close()}>
-        <span>{live.mode === "talk" ? "Hang up" : "End chat"}</span>
+        <span>Hang up</span>
         {live.phase === "live" && <span className="talk-door-clock">{elapsed(live.since, now)}</span>}
       </button>
     );
   }
   return (
-    <button type="button" className="talk-door" onClick={() => void live.open(mode)}>
-      {mode === "talk" ? "Call" : "Chat"}
+    <button type="button" className="talk-door" onClick={() => void live.open("talk")}>
+      Call
     </button>
   );
 }
@@ -118,33 +110,31 @@ function Marks({ call, heard }: { call: string; heard: (entry: Entry) => void })
 
 // What the line under the button says. Nothing is wrong before the button is pressed, so the idle
 // line says what to do rather than "not connected", which reads as a fault.
-function standing(live: Talking, mode: Mode): string {
-  const voice = mode === "talk";
+function standing(live: Talking): string {
   switch (live.phase) {
     case "idle":
-      return voice ? "Ready — press Call" : "Ready — press Chat";
+      return "Ready — press Call";
     case "connecting":
-      return voice ? "Joining the room…" : "Opening the chat…";
+      return "Joining the room…";
     case "live":
-      return voice ? (live.muted ? "On the call — muted" : "On the call — speak or write") : "Chatting — write below";
+      return live.muted ? "On the call — muted" : "On the call — speak or write";
     case "ended":
-      return live.mode === "talk" ? "The call ended" : "The chat ended";
+      return "The call ended";
     case "failed":
       return "The room did not open";
   }
 }
 
-function hint(live: Talking, mode: Mode): string {
-  const voice = mode === "talk";
+function hint(live: Talking): string {
   switch (live.phase) {
     case "idle":
-      return voice ? "The browser asks for the microphone, and the agent answers straight away." : "No microphone and no voice: the agent writes back as it thinks.";
+      return "The browser asks for the microphone, and the agent answers straight away.";
     case "connecting":
-      return voice ? "The microphone opens as soon as the room does." : "The agent greets you in a moment.";
+      return "The microphone opens as soon as the room does.";
     case "live":
       return "Everything said lands in the log beside you.";
     case "ended":
-      return "Judged at hang-up. Press the button to start another.";
+      return "Judged at hang-up. Press the button to call again.";
     case "failed":
       return "Nothing reached the agent. The reason is under the facts.";
   }

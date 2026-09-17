@@ -1,0 +1,105 @@
+/* Chat: one bar, the conversation as the page, the composer at its foot. The Inspector is its own. */
+
+.rchat-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 330px);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.rchat {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--ground);
+}
+
+.rchat-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.rchat-light {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--line-muted);
+}
+
+.rchat-light-on {
+  background: var(--green-dot);
+  box-shadow: 0 0 0 4px var(--green-soft);
+}
+
+.rchat-words {
+  min-width: 0;
+}
+
+.rchat-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.rchat-standing {
+  font-size: 12.5px;
+  color: var(--ink-4);
+  margin-top: 1px;
+}
+
+.rchat-moves {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rchat-empty {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 32px 24px;
+  background: var(--ground-side);
+}
+
+.rchat-empty-words {
+  margin: 0;
+  max-width: 460px;
+  text-align: center;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--ink-3);
+}
+
+.rchat-empty-failed {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--red);
+}
+
+.rchat-refused {
+  flex: none;
+  margin: 0;
+  padding: 10px 20px;
+  border-top: 1px solid var(--line-2);
+  font-size: 12.5px;
+  color: var(--red);
+}
+
+@media (max-width: 900px) {
+  .rchat-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    overflow: auto;
+  }
+}

@@ -6,6 +6,7 @@ import { useLocation, useNavigate } from "react-router";
 
 import { elapsed, whoOn } from "../lib/format";
 import { useOrg } from "../lib/org";
+import { isOurs } from "../lib/ours";
 import "./ringing.css";
 
 // A corner that fills is a corner nobody reads: three at most, the newest on top.
@@ -40,7 +41,9 @@ export function Ringing(): ReactNode {
       return;
     }
     const seen = known.current;
-    const arrived = live.filter((line) => !seen.has(line.call));
+    // A call this tab started — Talk, Chat, the widget's preview — is not news to whoever started it.
+    const arrived = live.filter((line) => !seen.has(line.call) && !isOurs(line.call));
+    live.forEach((line) => seen.add(line.call));
     arrived.forEach((line) => seen.add(line.call));
     setNotices((shown) => {
       const refreshed = shown.map((notice) => {

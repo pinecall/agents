@@ -18,6 +18,10 @@ const WhoseSchema = z.object({
   scopes: z.array(z.string()),
   subject: z.string().nullish(),
   name: z.string().nullish(),
+  /** This person runs the box. */
+  operator: z.boolean().optional(),
+  /** They are inside an org they are not a member of, as the box's operator. */
+  visiting: z.boolean().optional(),
 });
 export type Whose = z.infer<typeof WhoseSchema>;
 

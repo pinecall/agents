@@ -6,7 +6,7 @@ import { useSearchParams } from "react-router";
 import { GatewayError } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
 import { Button, Card, CardHead, Empty, Field, Input, Page, PageHead, Refused, Select, TableHead, Tabs, TextAction } from "../../ui";
-import { change, invite, readMembers, resetLink, ROLES, type Invited, type Member } from "./door";
+import { change, invite, readMembers, removeMember, resetLink, ROLES, type Invited, type Member } from "./door";
 import { COLUMNS, MemberRow } from "./member-row";
 import { Roles } from "./roles";
 import { SingleSignOn } from "./sso";
@@ -77,6 +77,16 @@ export function Team(): ReactNode {
     }
   };
 
+  const remove = async (id: string): Promise<void> => {
+    setRefused(null);
+    try {
+      await removeMember(credentials, id);
+      await reread();
+    } catch (failed) {
+      setRefused(saidBy(failed));
+    }
+  };
+
   const reset = async (id: string): Promise<void> => {
     setRefused(null);
     try {
@@ -138,6 +148,7 @@ export function Team(): ReactNode {
                         await inviteOne({ email: member.email, name: member.name, role: member.role, agents: member.agents });
                       }}
                       onReset={() => reset(member.id)}
+                      onRemove={() => remove(member.id)}
                     />
                   ))}
                 </>

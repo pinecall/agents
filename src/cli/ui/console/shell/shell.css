@@ -334,6 +334,8 @@
 }
 
 .side-orgs {
+  max-height: 60vh;
+  overflow: auto;
   position: absolute;
   top: 54px;
   left: 10px;

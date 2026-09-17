@@ -74,7 +74,7 @@ function Opening({ agent }: { agent: string }): ReactNode {
     setOpening(true);
     setRefused(null);
     try {
-      void navigate(`/a/${agent}/chat/${await startChat(credentials, agent, as.trim(), golden)}`);
+      void navigate(`/a/${agent}/dev-chat/${await startChat(credentials, agent, as.trim(), golden)}`);
     } catch (failed) {
       setRefused(failed instanceof GatewayError ? failed.message : String(failed));
     } finally {
