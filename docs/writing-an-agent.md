@@ -388,12 +388,15 @@ pinecall chat                      # the app in THIS terminal, and a written cal
 pinecall chat --as +34600123456    # the same call, from somebody memory can file it under
 pinecall prompt --state test/prompts/states.json    # what the model would read, offline
 pinecall knowledge push            # ./knowledge/docs to the gateway, under the agent's slug
-pinecall run                       # the app registered and answering: the process you deploy —
-                                   # and it prints the console's URL: talk, chat, calls, sessions, evals, widget
+pinecall run                       # the app registered and answering: the process you deploy
+pinecall run --serve               # the same, and your console on http://localhost:4100:
+                                   # talk, chat, calls, sessions, evals, knowledge, memory, widget
 ```
 
 `pinecall run` is the same process in the sandbox and in production: it runs the agent, binds no
-port and serves no page. What a person looks at is `--ui` in the terminal, or the console.
+port and serves no page. What a person looks at is `--ui` in the terminal, or a console — the
+sandbox's on their own machine (`pinecall serve`, which `--serve` opens beside the agent), and
+production's on the gateway.
 
 Next: [the-prompt.md](the-prompt.md) for the view, and [testing-an-agent.md](testing-an-agent.md)
 for the goldens.

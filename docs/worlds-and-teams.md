@@ -18,8 +18,15 @@ all — `pinecall run` on it is refused, in a sentence that names what the key d
 laptop answers the org's numbers by accident.
 
 **The sandbox is yours.** Your sandbox key holds an agent in a corner of your own: your
-`pinecall run`, your `pinecall chat`, your suite, your console in the sandbox. A colleague running
+`pinecall run`, your `pinecall chat`, your suite, your console. A colleague running
 the same agent is in their own corner, and neither of you takes the other's.
+
+**Each world is watched in its own place.** The gateway's console — the page you sign in to —
+shows production and only production: what is deployed, its calls, the org's numbers, keys, people
+and usage. The sandbox is watched on your own machine: `pinecall serve` puts the same console on
+`http://localhost:4100`, looking at your corner, with nothing to sign in to because the terminal's
+key signs what the page asks ([the-cli.md](the-cli.md#serve)). Sentry's split, if you know it: the
+hosted dashboard for production, a local sidecar for what you are building.
 
 Yours to hold, not yours to hide: **an admin, and whoever runs the gateway, see every corner of
 the sandbox**. The agent listing answers a key that opens `team` with one row per corner and the
@@ -38,6 +45,7 @@ production because of whichever key was active is the accident this exists to pr
 | `pinecall run` | refused on a person's key | yours |
 | web and chat (`pinecall chat`, the console's talk) | the org's agent | your own |
 | a phone or WhatsApp number | the org's. A call from a developer's [own phone](#which-phone-is-yours) reaches that developer's sandbox copy while they hold the agent; every other caller reaches production | **optional, and the org's, shared**: a call lands in the corner of whoever's phone dialled it, else on [the line](#the-line) |
+| where it is watched | the gateway's console, signed in to | `pinecall serve`, on your machine: `http://localhost:4100` |
 | the calls a console lists | production's | the corner's own: a developer sees only their own sandbox calls, and an admin who opens a teammate's copy sees that copy's |
 | a contact's memory | production's facts | the sandbox's facts, apart |
 | the knowledge base | the one the telephone answers from | yours; `knowledge push` replaces this one |
@@ -58,7 +66,7 @@ console  https://box.pinecall.io/?login=lc_…   (opens within five minutes, onc
    org's numbers, people and usage are — Stripe's split, if you know it: the dashboard on live, the
    CLI on test.
 2. **Write and run.** Everything in [tutorial.md](tutorial.md) happens here, in the sandbox. Your
-   memory, your base, your calls.
+   memory, your base, your calls — and `pinecall run --serve` puts them on `http://localhost:4100`.
 3. **The key the box runs on.** `pinecall keys issue --label "prod server"` mints a key for a
    machine: production, `app`, naming nobody, printed once. Put it in the box's environment. That
    `pinecall run` is the one that answers the org's numbers, and nothing else can.
@@ -97,18 +105,20 @@ kept. The word in the link dies in ten minutes and on first collection — open 
 second time says so. A terminal on a server with no browser prints the same link, and you open it
 from your phone: that is why it is a printed link and not a port on localhost.
 
-What it keeps is that machine's **sandbox** key. The console's toggle is how the same person
-looks at production; `pinecall keys issue` is how a box gets one.
+What it keeps is that machine's **sandbox** key, and `pinecall serve` is where what it holds is
+watched. Production is the gateway's console, signed in to with the password; `pinecall keys issue`
+is how a box gets a key there.
 
 **A person is their email, and may belong to several orgs.** One password is theirs across every
 org they are in, whichever org it was chosen in, and an email is matched trimmed and lower-cased,
 so `Nico@TiendaSur.uy ` is the same person. Signing in to the console asks for the email and the
-password; the org only when they belong to several — left empty, it is the oldest of theirs — and
-the world, the sandbox unless that browser last looked at production. The keys are kept by that
-browser, so a second tab is the same person. The console's header then switches between their orgs
-(`GET /v1/login/orgs` lists them, `POST /v1/login/org` mints the same person's key in the one they
-pick, in the same world) and between the two worlds (`POST /v1/login/env`). A machine key names
-nobody, so it has no orgs to switch between and opens one world.
+password, and the org only when they belong to several — left empty, it is the oldest of theirs. It
+signs in to production, and the key is kept by that browser, so a second tab is the same person.
+The console's header then switches between their orgs (`GET /v1/login/orgs` lists them, `POST
+/v1/login/org` mints the same person's key in the one they pick). A terminal moves between orgs by
+profile — `pinecall use` — and `POST /v1/login/env` is how `pinecall login` turns the key a person
+signed in with into their sandbox one. A machine key names nobody, so it has no orgs to switch
+between and opens one world.
 
 A machine has no browser and no person: `--key-stdin` reads a key from one line of stdin, and in
 a container `pinecall login --key-stdin` writes the same profile, with `PINECALL_HOME` saying where.
@@ -148,11 +158,12 @@ calls. Berna's test call writes Berna's sandbox memory and nobody else's. Neithe
 production: the box does. Both count against the plan once, because a slug is one agent however
 many corners hold it.
 
-An admin's console lists every copy — each agent with Berna's, Carla's and, in production, the
-org's one deployed on the box — and in the sandbox it can open a teammate's: every request the page
-makes then carries that member's corner (the `pinecall-corner` header), and the gateway answers
-each door there, or refuses a key that may not. A developer's console lists their own copy and
-the org's, which is what they can open anyway.
+An admin's own console — their `pinecall serve` — lists every copy, Berna's and Carla's, and opens
+a teammate's: every request the page makes then carries that member's corner (the
+`pinecall-corner` header, which the sidecar forwards as the page sent it), and the gateway answers
+each door there, or refuses a key that may not. A developer's lists their own copy and the org's
+shared one, which is what they can open anyway. The gateway's console has no copies to list:
+production has one, the org's, deployed on the box.
 
 ### Which phone is yours
 
@@ -206,6 +217,10 @@ Web and chat need none of this. They name the agent AND the person, so they alwa
 - **`this key does not open app: it opens …`** on `pinecall run` — you are on a production key.
   A person's never opens `app` there; issue a machine key (`pinecall keys issue`) and run on that,
   or log in to the sandbox.
+- **The gateway's console says `no agent called … is held here`.** It shows production, and what
+  your laptop holds is in the sandbox: `pinecall serve`, and look at `http://localhost:4100`.
+- **`pinecall serve` refused the key.** It is a production key; the sandbox is a person's. `pinecall
+  use <profile>` for the one `pinecall login` kept — `pinecall config` lists them.
 - **A verb answered for an org you did not expect.** It cannot be an export any more — the CLI
   reads none — so it is the active profile. `pinecall config` says which one, `pinecall use`
   moves it, and `pinecall whoami` says which key that is and in which world.

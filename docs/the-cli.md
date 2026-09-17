@@ -27,6 +27,7 @@ path end to end, with every output under it.
 | verb | what it is | needs the gateway |
 |---|---|---|
 | [`run`](#run) | the app registered and answering — **the process you deploy** | yes |
+| [`serve`](#serve) | the sandbox's console on this machine, `http://localhost:4100`: your copies, your calls | yes |
 | [`chat`](#chat) | the same app in this terminal, and a written caller against it | yes |
 | [`prompt`](#prompt) | the exact prompt a state would produce, offline | **no** |
 | [`test`](#test) | ring 1 (and ring 2 with `--voice`): the goldens through this process | yes |
@@ -119,7 +120,7 @@ its own folders, or on the one `--agent <name>` names — by its file's name (`s
 
 | at the root | does |
 |---|---|
-| `pinecall run` | every agent at once, **on one socket, in one process**; each line prefixed by the slug, one console URL each. `--show-prompt` prints every agent's prompt under its slug |
+| `pinecall run` | every agent at once, **on one socket, in one process**; each line prefixed by the slug, one console URL each (`--serve` puts them all on one page). `--show-prompt` prints every agent's prompt under its slug |
 | `pinecall test` | each agent's goldens through its own class, one after another; the exit code is the worst. Paths and `--watch` are for one agent, so they need `--agent` |
 | `pinecall knowledge push` · `eval` | every agent that has `knowledge/<name>/` · `knowledge/<name>.golden.json`; the rest are named and skipped |
 | `pinecall personas list` | every agent's callers, under its name |
@@ -140,7 +141,7 @@ this project, by name or by slug. In a verb that only asks the gateway — `sess
 ## `run`
 
 ```
-pinecall run [agent.tsx] [--agent <name>] [--env production] [--ui] [--events] [--show-prompt]
+pinecall run [agent.tsx] [--agent <name>] [--env production] [--serve] [--ui] [--events] [--show-prompt]
 ```
 
 At a project's root with no file named, every `agents/*.tsx` is held at once, on one socket: see
@@ -159,27 +160,28 @@ every corner of the sandbox rather than only their own — somebody has to be ab
 team is running. **`--env` asserts and never selects**: a key opens one world, so the flag is you
 saying which one you believe you hold, and `run` stops when the key disagrees. Nothing said means
 the sandbox — a deployment types `--env production`, which is the deliberate act it should be.
-It binds no
-port and serves no page — the gateway serves the console, at `/` — and nothing in this CLI answers
-a browser. One line per log entry on stdout, and under the connected line the console's URL:
-`console  https://box.pinecall.io/a/clinica-norte?login=lc_…`. The code in it is one-use and dies
-in five minutes; the page spends it for a key of its own (a person's, scoped, kept by that browser)
-and never sees this process's. Opening the console cold instead asks for an email, a password, the
-org only when the person belongs to several, and the world — the sandbox unless that browser last
-looked at production.
+It binds no port and serves no page. One line per log entry on stdout, and under the connected
+line where its console is — **and there are two consoles, one per world**. The sandbox is watched
+on your own machine: [`pinecall serve`](#serve) puts it on `http://localhost:4100`, `--serve` does
+that from this same terminal, and the line reads `console  http://localhost:4100/a/clinica-norte`
+— or names the verb, when none is up. Production is watched on the gateway's own page, which shows
+production and nothing else: there the line is `console  https://box.pinecall.io/a/clinica-norte?login=lc_…`,
+a one-use code that dies in five minutes, which the page spends for a key of its own (a person's,
+scoped, kept by that browser) and never sees this process's. Opening that console cold asks for an
+email, a password, and the org only when the person belongs to several.
 
-Once the socket is up, `run` also re-sends the phone `pinecall line from` kept for this gateway —
-whatever agents it holds, not only one that declares a number, because a production number is the
-box's route and no class declares it. The gateway keeps that phone only beside its live table, so
-a gateway that has lost it learns it back from the next `pinecall run` that starts, instead of
-sending your test call to production. It is said once per start, in the plain log; `--ui` and
-`--events` do not say it.
+Every time the socket comes up — the first connect and each reconnect, in every mode — `run`
+re-sends the phone `pinecall line from` kept for this gateway, whatever agents it holds and not
+only one that declares a number, because a production number is the box's route and no class
+declares it. The gateway keeps that phone only beside its live table, so a gateway that restarted
+learns it back at once instead of sending your test call to production. A gateway that goes away
+is one line — `gateway  … — reconnecting`, then `gateway  back` — and never a stack per redial.
 
 ```console
-$ pinecall run
+$ pinecall run --serve
 gateway http://127.0.0.1:8080 · key from profile
 clinica-norte · clinica · sandbox · connected to http://127.0.0.1:8080 · key from profile · tools 4 · doors web
-console  http://127.0.0.1:8080/a/clinica-norte?login=lc_…   (opens within five minutes, once)
+console  http://localhost:4100/a/clinica-norte
 line     rings in this terminal · also running: carla@clinica.test
 › Clínica Norte, buenos días. ¿En qué puedo ayudarle?
 ‹ Quería cambiar una cita
@@ -189,6 +191,7 @@ line     rings in this terminal · also running: carla@clinica.test
 
 | flag | |
 |---|---|
+| `--serve` | also serve the sandbox's console on `http://localhost:4100`, or point at the one already up. Refused on a production key |
 | `--ui` | the full-screen terminal view. `p` pause · `c` clear · `e` events · `s` prompt · `q` quit |
 | `--events` | one JSON line per log entry instead of the lines, for a pipe |
 | `--show-prompt` | the prompt a fresh instance would produce, then exit. No key, no gateway |
@@ -200,6 +203,44 @@ the drift, a reproduction a broken run left — the console asks the gateway, an
 THIS process over the socket it already holds (`dev.request` → `dev.answer`; the runtime's
 `docs/protocol/dev-verbs.md`). The lines those verbs print land here, as if you had typed them.
 A `pinecall run` in a directory with no personas answers `simulate` with a sentence saying so.
+
+## `serve`
+
+```
+pinecall serve [--port <n>] [--no-open]
+```
+
+**The sandbox's console, on your own machine.** The gateway's page shows production and only
+production — what customers reach, watched by the people who run it. What YOU are running is
+watched here: `http://localhost:4100`, the same console, looking at your corner of the sandbox —
+your copies of the agents, their calls as they happen, chat, evals and their suites, knowledge,
+memory, the widget and its preview, and how to reach your copy by phone. It mounts no agent: `run`
+does that, and `pinecall run --serve` does both in one terminal.
+
+```console
+$ pinecall serve
+gateway  https://box.pinecall.io · key from profile
+console  http://localhost:4100   (your sandbox; Ctrl-C closes it)
+```
+
+It is a sidecar and keeps nothing: every request the page makes is forwarded to the gateway with
+this machine's sandbox key on it. **The key never reaches the browser**, so the page has no login,
+no sign-out and no key in its storage. Only this machine's own page may ask: the port is bound to
+the loopback, and a request whose `Host` is not this loopback, or whose `Origin` is another page's,
+is answered `403` before the key is spent.
+
+**One per machine.** A second `serve` — or a `run --serve` — for the same gateway and org finds the
+first and says where it is, so two projects share one page and `run` can be restarted under it
+without the console going away. A port held by anything else is stepped past (4101, …), and
+`--port` names one. `pinecall run` with no `--serve` still names a sidecar that is up.
+
+Which screens this console has and which the gateway's has is one table in the console's source
+(`src/cli/ui/console/lib/mode.ts`): running the org — numbers, keys, providers, the team, usage —
+is the gateway's; **Chat**, running a suite and **Phone testing** are this one's. An admin opens a
+colleague's copy from here, never from the gateway's page ([worlds-and-teams.md](worlds-and-teams.md)).
+
+A production key is refused, in a sentence that says where production is watched; a machine with
+no browser prints the URL and `--no-open` says not to try.
 
 ## `line`
 
@@ -714,8 +755,8 @@ the key itself is stopped from the Keys screen, and a row left behind is a key s
 tomorrow and a refusal they will read as the gateway's fault.
 
 **The key it keeps is this laptop's sandbox key.** `pinecall run` and `pinecall chat` answer in
-a world of your own and never in the one your customers call — the console's toggle is the same
-person looking the other way ([worlds-and-teams.md](worlds-and-teams.md)).
+a world of your own and never in the one your customers call — and it is watched from this
+machine too, on [`pinecall serve`](#serve) ([worlds-and-teams.md](worlds-and-teams.md)).
 
 `--key-stdin` reads a **key** from one line of stdin instead, for a machine: a server, a CI job, a
 container. That is what `pinecall keys issue` mints, and it writes the same profile — so a machine
@@ -820,7 +861,7 @@ code can call — over HTTP, in any language, with the same key.
 | verb | doors |
 |---|---|
 | `run` · `chat` · `test` · `simulate` · `remember` | `WS /v1/apps` — the class is mounted in the process that typed the verb |
-| `run`, once connected | `POST /v1/login/codes` (the console's URL), `PUT /v1/line/from` (the kept phone), `GET /v1/agents/{slug}/line` (for an agent that declares a number) |
+| `run`, once connected | `POST /v1/login/codes` (the console's URL, in production), `PUT /v1/line/from` (the kept phone, on every connect), `GET /v1/agents/{slug}/line` (for an agent that declares a number) |
 | `chat` | `WS /v1/chat?agent=&app=&contact=` |
 | `run --events` · `sessions` · `supervise` | `GET /v1/calls/{call}/events` (SSE), `GET /v1/agents/{slug}/sessions` |
 | `supervise` | `POST /v1/calls/{call}/verbs` — with the **org key**: a desk that only reads and types needs no seat. A seat (`POST …/supervise`) is for audio, and that is the console's |
@@ -837,7 +878,7 @@ code can call — over HTTP, in any language, with the same key.
 | `providers` | `GET /v1/providers` · `PUT`·`DELETE`·`GET /v1/provider-keys[/{vendor}]` |
 | `callbacks` | `GET /v1/callbacks[?agent=&after=]` |
 | `line` | `GET`·`POST`·`DELETE /v1/agents/{slug}/line`, `PUT`·`DELETE /v1/line/from` |
+| `serve` | every door the console asks, forwarded as the page sent it with the profile's key: `GET /v1/whoami`, `/v1/agents`, the logs, `…/dev/*`, `GET /v1/line/numbers` |
 | `login` | `POST /v1/login/pairings`, `GET …/{code}/key` — then `GET /v1/whoami` to prove what it got |
 | `whoami` | `GET /v1/whoami` |
-| `ui` | all of the above, plus its own `ui/*` doors on 127.0.0.1 |
 | `prompt` | none. It is the one verb that needs no gateway and no key |
