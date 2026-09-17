@@ -84,7 +84,8 @@ PINECALL` is the first thing to run when a door refuses you and will not say why
 
 | file | what it holds |
 |---|---|
-| `credentials` | `{ "api_key": …, "gateways": { "<url>": { api_key, org, logged_in_at } } }`. The top-level `api_key` is v1's and is never touched |
+| `config.json` | `{ "active": …, "profiles": { "<name>": { url, key, org, env, calling } } }` — every verb reads this one. `calling` is the phone `pinecall line from` kept for that gateway |
+| `credentials` | `{ "api_key": …, "gateways": { "<url>": { api_key, org, logged_in_at } } }`, written beside the profile for v1's CLI on the same machine and read once, to seed `config.json`. The top-level `api_key` is v1's and is never touched |
 
 The directory is `0700` and every file `0600`. A key is never printed, never logged, and never put
 in a URL.
@@ -118,16 +119,23 @@ its own folders, or on the one `--agent <name>` names — by its file's name (`s
 
 | at the root | does |
 |---|---|
-| `pinecall run` | every agent at once, **on one socket, in one process**; each line prefixed by the slug, one console URL each |
-| `pinecall test` | each agent's goldens through its own class, one after another; the exit code is the worst |
+| `pinecall run` | every agent at once, **on one socket, in one process**; each line prefixed by the slug, one console URL each. `--show-prompt` prints every agent's prompt under its slug |
+| `pinecall test` | each agent's goldens through its own class, one after another; the exit code is the worst. Paths and `--watch` are for one agent, so they need `--agent` |
 | `pinecall knowledge push` · `eval` | every agent that has `knowledge/<name>/` · `knowledge/<name>.golden.json`; the rest are named and skipped |
 | `pinecall personas list` | every agent's callers, under its name |
 | `pinecall chat` · `simulate` · `prompt` · `remember` · `memory eval` · `line` · `personas show\|try` · `run --ui` | one agent: `--agent <name>` is required when there are several |
 
 A directory that holds an `agent.tsx` of its own is one agent's folder, and everything reads
-beside that file as it always has: `knowledge/docs`, `knowledge/golden.json`, `test/goldens`,
-`test/personas`. The two layouts are one idea — an agent's *home* (`src/cli/home.ts`) — and a verb
-never computes a path of its own.
+beside that file as it always has: `knowledge/docs`, `knowledge/golden.json`, `memory/golden.json`,
+`test/goldens`, `test/personas`, `test/memory`. The two layouts are one idea — an agent's *home*
+(`src/cli/home.ts`) — and a verb never computes a path of its own. A folder the verb reads and
+nobody has written yet is empty, not an error: an agent with no `test/goldens` has no goldens, the
+console's roster says so, and `pinecall test` names the folder to write one in.
+
+`--agent` means two things, one per kind of verb. In a verb that loads a class it names an agent of
+this project, by name or by slug. In a verb that only asks the gateway — `sessions`, `pipeline`,
+`runs drift`, `numbers import`, `callbacks` — it is a slug, because there is no class to find.
+`--file` is always a file.
 
 ## `run`
 
@@ -144,8 +152,9 @@ run holds a sandbox agent, and what holds the production one is a key issued for
 ([`keys`](#keys)) put in that box's environment. A key you hold by being logged in does not open
 `app` in production at all, so a `pinecall run` on it is refused there, in a sentence naming what
 the key does open. **In the sandbox the agent is held per person**: two developers of one tenant
-each run the same agent and each reaches their own, while the org's sandbox *number* is one
-door and rings where it was claimed ([`line`](#line)). An admin, and whoever runs the gateway, see
+each run the same agent and each reaches their own, while a *number* is one door and rings in
+one place: a developer's own phone reaches their copy, and anybody else's call lands where the line
+was claimed ([`line`](#line)). An admin, and whoever runs the gateway, see
 every corner of the sandbox rather than only their own — somebody has to be able to tell what the
 team is running. **`--env` asserts and never selects**: a key opens one world, so the flag is you
 saying which one you believe you hold, and `run` stops when the key disagrees. Nothing said means
@@ -154,8 +163,17 @@ It binds no
 port and serves no page — the gateway serves the console, at `/` — and nothing in this CLI answers
 a browser. One line per log entry on stdout, and under the connected line the console's URL:
 `console  https://box.pinecall.io/a/clinica-norte?login=lc_…`. The code in it is one-use and dies
-in five minutes; the page spends it for a key of its own (a person's, scoped, kept for the tab)
-and never sees this process's. Opening the console cold instead asks for org, email and password.
+in five minutes; the page spends it for a key of its own (a person's, scoped, kept by that browser)
+and never sees this process's. Opening the console cold instead asks for an email, a password, the
+org only when the person belongs to several, and the world — the sandbox unless that browser last
+looked at production.
+
+Once the socket is up, `run` also re-sends the phone `pinecall line from` kept for this gateway —
+whatever agents it holds, not only one that declares a number, because a production number is the
+box's route and no class declares it. The gateway keeps that phone only beside its live table, so
+a gateway that has lost it learns it back from the next `pinecall run` that starts, instead of
+sending your test call to production. It is said once per start, in the plain log; `--ui` and
+`--events` do not say it.
 
 ```console
 $ pinecall run
@@ -186,22 +204,25 @@ A `pinecall run` in a directory with no personas answers `simulate` with a sente
 ## `line`
 
 ```
-pinecall line [from <+number> | forget | claim | release] [agent.tsx]
+pinecall line [from <+number> | forget | claim | release] [agent.tsx] [--agent <name>]
 ```
 
-**An org shares one sandbox number, and a number rings in one place.** With one developer that
-is not a decision: the first `pinecall run` to hold the agent answers its ring and you never learn
-the word. With three it used to be whoever restarted last — so you would dial the number to test
-your change and be answered in a colleague's scrollback, with nothing on either screen saying so.
+**A number rings in one place, and a team shares its numbers.** With one developer that is not a
+decision: the first `pinecall run` to hold the agent answers its ring and you never learn the word.
+With three it used to be whoever restarted last — so you would dial the number to test your change
+and be answered in a colleague's scrollback, with nothing on either screen saying so.
 
 **Say which phone is yours, once.** Then every call you make lands in your own agent: no claim, no
 coordination, three of you testing at the same time.
 
-**It works on the production number too.** A call from your phone to a number that answers in
-production reaches your sandbox copy while you are holding that agent — your class, your tools,
-your terminal, a sandbox log marked `diverted_from: production` — and every other caller reaches
-production exactly as before. Stop `pinecall run`, or `pinecall line forget`, and your own calls go
-back to production. That is how a team tests on the line its customers use, with one number.
+**It works on the production number, and that is the usual case.** A call from your phone to a
+number that answers in production reaches your sandbox copy while you are holding that agent — your
+class, your tools, your terminal, a sandbox log marked `diverted_from: production` — and every other
+caller reaches production exactly as before. Stop `pinecall run`, or `pinecall line forget`, and
+your own calls go back to production. That is how a team tests on the line its customers use, with
+one number: a sandbox number is optional, and when an org has one, your phone reaches your copy
+there too. The gateway's worker asks for this on every production ring
+(`GET /v1/agents/{slug}/rings-for`), so nothing here knocks at that door.
 
 ```console
 $ pinecall line from +59899111111
@@ -209,10 +230,12 @@ calls from +59899111111 reach this terminal
 ```
 
 A phone is a **person's** and not an agent's, so it works in whatever directory you are standing
-in and on every agent you hold. It is remembered for that gateway and re-sent by every `pinecall
-run` — the gateway keeps it beside its live table and not in a row, because it is only meaningful
-next to a socket: a developer running nothing has no corner for a call to land in. `forget` undoes
-it. A number that is not in E.164 form is refused with the shape in the sentence, and an org's own
+in and on every agent you hold. It is kept on that gateway's profile (`calling` in
+`~/.pinecall/config.json`) and re-sent by every `pinecall run` when it starts — the gateway keeps
+it beside its live table and not in a row, because it is only meaningful next to a socket: a
+developer running nothing has no corner for a call to land in. `forget` undoes it. `claim`,
+`release` and the bare `line` are about one agent: at a project's root with several, name it with
+`--agent`. A number that is not in E.164 form is refused with the shape in the sentence, and an org's own
 key is refused outright: it names nobody, so there is no *their own agent* to reach.
 
 **And for a call from a number nobody said was theirs** — a customer, a colleague's phone — there
@@ -229,13 +252,14 @@ rings in this terminal · also running: berna@clinica.test
 `release` gives it up, and whoever else is still running the agent picks it up — which is also
 what happens on its own when the terminal holding it closes. A claim on an agent this terminal is
 not running is refused: a ring lands on the line, so a corner with no app in it would take the
-call and drop it. Production has one corner and the box holds it, so there is nothing to route or
-claim there; `pinecall run` prints the line only for an agent that answers at a number at all.
+call and drop it. Production has one corner and the box holds it, so there is nothing to claim
+there — only your own phone is diverted, as above; `pinecall run` prints the line only for an
+agent that declares a number.
 
 ## `chat`
 
 ```
-pinecall chat [agent] [--file agent.tsx] [--env production] [--as <contact>]
+pinecall chat [agent] [--agent <name>] [--file agent.tsx] [--env production] [--as <contact>]
              [--state file [--case n]] [--events]
 ```
 
@@ -255,9 +279,9 @@ $ pinecall chat clinica-norte
 **The positional is an agent's slug, never a file.** Named one, `chat` mounts nothing and is only
 the caller's side: a written call at whatever is already holding that slug — your own `pinecall
 run` in the other terminal, or a colleague's, in the corner your key reaches. `--file` is how you
-name the class to mount when the directory holds more than one, and it is the same word in every
-verb that loads a file (`test`, `simulate`, `remember`, `personas`, `knowledge`, `memory`);
-`--agent` is a slug in every verb that takes one.
+name the class to mount by its path, and it is the same word in every verb that loads a file
+(`test`, `simulate`, `remember`, `personas`, `knowledge`, `memory`); `--agent` names one agent of a
+project of several, by its name or its slug, and is required there because a chat talks to one.
 
 `--as` is who is calling — the id memory files the call under. `--state file [--case n]` opens the
 call in a state: the same goldens file `prompt` reads, and it is refused beside a slug, because
@@ -267,7 +291,7 @@ nothing is mounted here to open. `--events` prints the wire instead. `--env` ass
 ## `prompt`
 
 ```
-pinecall prompt [agent.tsx] --state <file> [--case n]
+pinecall prompt [agent.tsx] --state <file> [--case n] [--agent <name>]
 ```
 
 The exact prompt a state would produce, offline: **no gateway, no key, no call**. The three
@@ -293,12 +317,14 @@ Eres la recepción de Clínica Norte. Hablas de usted, con frases cortas. …
 ## `test`
 
 ```
-pinecall test [paths] [--file agent.tsx] [--model m]… [--grep x] [--watch] [--json]
+pinecall test [paths] [--agent <name>] [--file agent.tsx] [--model m]… [--grep x] [--watch] [--json]
 pinecall test --voice [--background-noise dB] [--packet-loss 0.05]
 ```
 
-Ring 1: every golden of `test/goldens` through the class **this terminal holds**, scored by the
-gateway's judges, printed as a matrix. Exits 1 when a golden did not hold. Every broken golden is
+Ring 1: every golden of `test/goldens` (in a project, `test/goldens/<name>/` for each agent) through
+the class **this terminal holds**, scored by the gateway's judges, printed as a matrix. Exits 1
+when a golden did not hold. One agent with no goldens yet is told where to write one and exits 2;
+in a project, an agent with none is named and skipped. Every broken golden is
 written whole to `.pinecall/evals/<run>/<golden>.json` — the golden as written, the verdicts, and
 **the requests the model answered**, which the log deliberately keeps only a hash of.
 
@@ -319,7 +345,7 @@ at that many dB under them, and `--packet-loss` drops that share of their packet
 
 ```
 pinecall simulate --persona <name> [--judge] [--turns n] [--voice] [--listen]
-                  [--background-noise dB] [--packet-loss percent] [--file agent.tsx]
+                  [--background-noise dB] [--packet-loss percent] [--agent <name>] [--file agent.tsx]
 ```
 
 A model in the gateway plays the caller — every turn improvised from the persona's goal, its style
@@ -347,8 +373,11 @@ written call has no audio in it. `--judge` reads back the `call.score` the log s
 ## `personas`
 
 ```
-pinecall personas list | show <name> | try <name> [--file agent.tsx]
+pinecall personas list | show <name> | try <name> [--agent <name>] [--file agent.tsx]
 ```
+
+The callers are `test/personas` beside the agent, or `test/personas/<name>/` in a project, where
+`list` prints every agent's under its name and `show` and `try` need `--agent`.
 
 ```console
 $ pinecall personas list
@@ -706,14 +735,16 @@ org default · key dev · sandbox · the local gateway
 ## `knowledge`
 
 ```
-pinecall knowledge push [dir] [--base <name>] [--file agent.tsx]
+pinecall knowledge push [dir] [--base <name>] [--agent <name>] [--file agent.tsx]
 pinecall knowledge list
 pinecall knowledge drop <base>
-pinecall knowledge eval [golden.json] [--base <name>] [--k <n>] [--file agent.tsx]
+pinecall knowledge eval [golden.json] [--base <name>] [--k <n>] [--agent <name>] [--file agent.tsx]
 ```
 
 `push` reads every `*.md` under the directory — `./knowledge/docs` beside the agent file when none
-is named — and sends the folder **whole**: the base is replaced, never merged. The base is the
+is named, or `knowledge/<name>/` for each agent of a project — and sends the folder **whole**: the
+base is replaced, never merged. At a project's root with nothing typed, `push` and `eval` act on
+every agent that has documents or a golden (`knowledge/<name>.golden.json`), and name the rest. The base is the
 agent's slug unless `--base` says otherwise, and the class names it with `docs = "<base>"`.
 
 **The base you push is your key's world's.** A push with the sandbox key a login keeps
@@ -738,7 +769,7 @@ never soften a question so a change can pass.
 ```
 pinecall memory <contact>
 pinecall memory forget <contact>
-pinecall memory eval [golden.json] [--k <n>] [--file agent.tsx]
+pinecall memory eval [golden.json] [--k <n>] [--agent <name>] [--file agent.tsx]
 ```
 
 Everything memory kept about one contact — the caller's number, or the id the app named — with the
@@ -746,14 +777,17 @@ current facts first and the ones a later call superseded dimmed, with the date t
 holding. `forget` erases all of it, the right to be forgotten; on a terminal it asks once, and
 prints how many facts went.
 
-`eval` holds **recall** to a golden of `{holds, asks, expects}`: each question brings its own facts,
-so no contact of yours is read or written — they go to a scratch contact and are deleted again.
+`eval` holds **recall** to a golden of `{holds, asks, expects}` — `memory/golden.json` beside the
+agent, or `memory/<name>.golden.json` in a project: each question brings its own facts, so no
+contact of yours is read or written — they go to a scratch contact and are deleted again.
 
 ## `remember`
 
 ```
-pinecall remember [paths] [--file agent.tsx] [--grep x] [--json]
+pinecall remember [paths] [--agent <name>] [--file agent.tsx] [--grep x] [--json]
 ```
+
+The cases are `test/memory` beside the agent, or `test/memory/<name>/` in a project.
 
 The other half of memory: the **write** side. A case is one call written down — both speakers,
 because nothing is re-run — the facts memory already holds, and what must come of it: which
@@ -786,6 +820,7 @@ code can call — over HTTP, in any language, with the same key.
 | verb | doors |
 |---|---|
 | `run` · `chat` · `test` · `simulate` · `remember` | `WS /v1/apps` — the class is mounted in the process that typed the verb |
+| `run`, once connected | `POST /v1/login/codes` (the console's URL), `PUT /v1/line/from` (the kept phone), `GET /v1/agents/{slug}/line` (for an agent that declares a number) |
 | `chat` | `WS /v1/chat?agent=&app=&contact=` |
 | `run --events` · `sessions` · `supervise` | `GET /v1/calls/{call}/events` (SSE), `GET /v1/agents/{slug}/sessions` |
 | `supervise` | `POST /v1/calls/{call}/verbs` — with the **org key**: a desk that only reads and types needs no seat. A seat (`POST …/supervise`) is for audio, and that is the console's |

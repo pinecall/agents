@@ -37,7 +37,8 @@ production because of whichever key was active is the accident this exists to pr
 | the agent | the org's: one holder, the box's machine key | **yours**: one per person. CI's, on a key naming nobody, is the org's own, and a person holding none falls back to it |
 | `pinecall run` | refused on a person's key | yours |
 | web and chat (`pinecall chat`, the console's talk) | the org's agent | your own |
-| a phone or WhatsApp number | the org's | **the org's, shared**: a call lands in the corner of whoever's phone dialled it, else on [the line](#the-line) |
+| a phone or WhatsApp number | the org's. A call from a developer's [own phone](#which-phone-is-yours) reaches that developer's sandbox copy while they hold the agent; every other caller reaches production | **optional, and the org's, shared**: a call lands in the corner of whoever's phone dialled it, else on [the line](#the-line) |
+| the calls a console lists | production's | the corner's own: a developer sees only their own sandbox calls, and an admin who opens a teammate's copy sees that copy's |
 | a contact's memory | production's facts | the sandbox's facts, apart |
 | the knowledge base | the one the telephone answers from | yours; `knowledge push` replaces this one |
 | the quotas | the org's | the org's — agents, seats, facts, chunks and numbers are counted over both worlds |
@@ -46,7 +47,7 @@ production because of whichever key was active is the accident this exists to pr
 
 ```console
 $ pinecall signup --org tienda-sur --name "Tienda Sur" --email nico@tiendasur.uy --person "Nico"
-Password (8 characters at least):
+Password (12 characters at least):
 created org tienda-sur on https://box.pinecall.io — signed in as Nico, sandbox key kept in ~/.pinecall/credentials
 console  https://box.pinecall.io/?login=lc_…   (opens within five minutes, once)
 ```
@@ -88,7 +89,7 @@ open this to sign in:
 https://box.pinecall.io/cli?c=cli_…
 
 waiting…
-logged in to https://box.pinecall.io as org tienda-sur · sandbox
+▸ box · https://box.pinecall.io · org tienda-sur · sandbox
 ```
 
 **With no URL it is the cloud, and it says so** in the line above the link, before anything is
@@ -98,6 +99,16 @@ from your phone: that is why it is a printed link and not a port on localhost.
 
 What it keeps is that machine's **sandbox** key. The console's toggle is how the same person
 looks at production; `pinecall keys issue` is how a box gets one.
+
+**A person is their email, and may belong to several orgs.** One password is theirs across every
+org they are in, whichever org it was chosen in, and an email is matched trimmed and lower-cased,
+so `Nico@TiendaSur.uy ` is the same person. Signing in to the console asks for the email and the
+password; the org only when they belong to several — left empty, it is the oldest of theirs — and
+the world, the sandbox unless that browser last looked at production. The keys are kept by that
+browser, so a second tab is the same person. The console's header then switches between their orgs
+(`GET /v1/login/orgs` lists them, `POST /v1/login/org` mints the same person's key in the one they
+pick, in the same world) and between the two worlds (`POST /v1/login/env`). A machine key names
+nobody, so it has no orgs to switch between and opens one world.
 
 A machine has no browser and no person: `--key-stdin` reads a key from one line of stdin, and in
 a container `pinecall login --key-stdin` writes the same profile, with `PINECALL_HOME` saying where.
@@ -132,26 +143,40 @@ the thing a full org cannot do.
 ## Two developers, one agent
 
 Berna and Carla both run `tienda-sur`. Each `pinecall run` holds it in its own corner; each
-`pinecall chat` reaches its own; each console, toggled to sandbox, lists its own. Berna's test
-call writes Berna's sandbox memory and nobody else's. Neither can hold production: the box
-does. Both count against the plan once, because a slug is one agent however many corners hold it.
+`pinecall chat` reaches its own; each console, in the sandbox, opens its own copy and lists its own
+calls. Berna's test call writes Berna's sandbox memory and nobody else's. Neither can hold
+production: the box does. Both count against the plan once, because a slug is one agent however
+many corners hold it.
+
+An admin's console lists every copy — each agent with Berna's, Carla's and, in production, the
+org's one deployed on the box — and in the sandbox it can open a teammate's: every request the page
+makes then carries that member's corner (the `pinecall-corner` header), and the gateway answers
+each door there, or refuses a key that may not. A developer's console lists their own copy and
+the org's, which is what they can open anyway.
 
 ### Which phone is yours
 
-The org's sandbox **number** is one door — a number exists once in a world — so a call at it
-rings in **one** terminal. Which one is answered by the phone that dialled:
+A number exists once in a world, so a call at it rings in **one** place. The number your
+customers call is enough to test on: a sandbox number is optional. Which place is answered by the
+phone that dialled:
 
 ```console
 $ pinecall line from +59899111111
 calls from +59899111111 reach this terminal
 ```
 
-Said once, and from then on every call Berna makes to the sandbox number lands in Berna's
-agent and every call Carla makes lands in Carla's — at the same time, with no coordination between
-them. A phone is a **person's** and not an agent's, so it works on every agent they hold. The
-gateway keeps it beside its live table and not in a row, because it is only meaningful next to a
-socket: a developer who is running nothing has no corner for a call to land in. Every `pinecall
-run` says it again, so a restarted gateway learns it back.
+Said once, and from then on every call Berna makes to the org's production number, while Berna
+is running `tienda-sur`, reaches Berna's sandbox copy, and every call Carla makes reaches Carla's —
+at the same time, with no coordination between them — while every customer who calls reaches
+production as before. The sandbox log of such a call is marked `diverted_from: production`. An org
+that also has a sandbox number gets the same routing there. Stop `pinecall run`, or `pinecall line
+forget`, and your calls go back to production.
+
+A phone is a **person's** and not an agent's, so it works on every agent they hold. The gateway
+keeps it beside its live table and not in a row, because it is only meaningful next to a socket: a
+developer who is running nothing has no corner for a call to land in. Every `pinecall run` says it
+again when it starts, for every agent it holds, so a restarted gateway learns it back from the next
+one.
 
 ### The line
 
@@ -171,8 +196,8 @@ rings in this terminal · also running: berna@tiendasur.uy
 what happens on its own when the terminal holding it closes. A claim on an agent this terminal is
 not running is refused: a ring lands on the line, so a corner with no app in it would take the
 call and drop it. Production has one corner and the box holds it, so there is nothing to claim
-there; `pinecall run` prints the line under the console's URL for any agent that answers at a
-number at all.
+there — only a developer's own phone is diverted, as above; `pinecall run` prints the line under
+the console's URL for any agent that declares a number.
 
 Web and chat need none of this. They name the agent AND the person, so they always reach your own.
 
@@ -187,14 +212,20 @@ Web and chat need none of this. They name the agent AND the person, so they alwa
 - **The number answered somebody else's laptop.** You never told it which phone is yours, so the
   call fell through to whoever holds [the line](#the-line). `pinecall line from +<your number>`,
   once, and it stops happening. Web and chat are yours already; only the telephone is shared.
+- **Your phone reached production and not your copy.** Your copy is reached only while a
+  `pinecall run` of yours holds that agent, from the phone `pinecall line from` named on this
+  gateway, in the org that agent is yours in. `pinecall line` says what the gateway knows; a
+  `pinecall run` started again says the phone again.
 - **`knowledge push` "did nothing" to production.** It replaced your sandbox base, which is
   the right thing. Promote with the machine's key.
 
 ## The doors underneath
 
 `POST /v1/signup` · `POST /v1/login` · `POST /v1/login/env` (the same person's key in the other
-world) · the four under `/v1/login/pairings` (signing a terminal in) · `GET`/`POST /v1/keys`,
+world) · `GET /v1/login/orgs`, `POST /v1/login/org` (the person's orgs, and their key in another) ·
+the four under `/v1/login/pairings` (signing a terminal in) · `GET`/`POST /v1/keys`,
 `POST /v1/keys/{fingerprint}/revoke` · `GET`/`POST /v1/members`, `PATCH /v1/members/{id}` ·
 `POST /v1/invitations/{token}` · `GET`/`POST`/`DELETE /v1/agents/{slug}/line` ·
-`PUT`/`DELETE /v1/line/from`. Shapes and
+`PUT`/`DELETE /v1/line/from` · `GET /v1/agents/{slug}/rings-for` (the worker's, on every
+production ring: whose sandbox copy a caller's phone reaches). Shapes and
 refusals: the runtime's `docs/protocol/people.md` and `gateway-api.md` §1, §5, §7, §8.

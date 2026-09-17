@@ -9,9 +9,9 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ### Added
 - **Test on the production number.** `pinecall line from <+your-phone>` now reaches your sandbox
   copy on a production number too (the runtime's `rings-for` door): your phone reaches the agent
-  you are running, every other caller reaches production. `pinecall run` re-sends the phone on
-  every connect for every agent, not only one that declares a number, so a gateway restart does
-  not quietly send your test call to production.
+  you are running, every other caller reaches production. `pinecall run` re-sends the phone when
+  it starts, for every agent, not only one that declares a number, so a gateway that lost it learns
+  it back from the next run instead of quietly sending your test call to production.
 
 ## 0.2.0 — A project of several agents
 
