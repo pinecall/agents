@@ -1,11 +1,12 @@
 /** The org as every screen shares it: its floor, the agents it holds, and the person's orgs — read once, by the shell. */
 
-import type { HeldAgent, SessionLine } from "@pinecall/protocol";
+import type { HeldAgent } from "@pinecall/protocol";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { useCredentials } from "../../shared/credentials";
 import { bySlug, meIn } from "./corners";
 import { orgsOf, type OrgOf } from "./login";
+import type { Line } from "./sessions-wire";
 import type { Connection } from "./stream";
 import { useFloor } from "./use-floor";
 import { useHeldAgents } from "./use-held-agents";
@@ -17,8 +18,8 @@ const ROWS = 200;
 
 export interface Org {
   /** Every call the door lists, newest first, and the live ones among them. */
-  lines: SessionLine[];
-  live: SessionLine[];
+  lines: Line[];
+  live: Line[];
   connection: Connection;
   floorError: string | null;
   /** Every copy the gateway holds, and one row per slug with the reader's own winning. */

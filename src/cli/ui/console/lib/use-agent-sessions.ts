@@ -1,6 +1,6 @@
 /** An agent's calls as the sessions door lists them, and which of them are still going. */
 
-import { SessionListSchema, type SessionLine } from "@pinecall/protocol";
+import { LinesSchema, type Line } from "./sessions-wire";
 import { useEffect, useState } from "react";
 
 import { read } from "../../shared/api";
@@ -14,14 +14,14 @@ export const EVERY_MS = 3000;
 
 /** The agent's calls, newest first, and whatever the door refused with. */
 export interface AgentSessions {
-  lines: SessionLine[];
+  lines: Line[];
   error: string | null;
 }
 
 /** Follow an agent's calls. The list is the door's answer; nothing here folds a log. */
 export function useAgentSessions(slug: string): AgentSessions {
   const credentials = useCredentials();
-  const [lines, setLines] = useState<SessionLine[]>([]);
+  const [lines, setLines] = useState<Line[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -29,7 +29,7 @@ export function useAgentSessions(slug: string): AgentSessions {
 
     const ask = async (): Promise<void> => {
       try {
-        const listed = SessionListSchema.parse(
+        const listed = LinesSchema.parse(
           await read(credentials, `/v1/agents/${slug}/sessions`),
         );
         if (!stopped) {
@@ -55,11 +55,11 @@ export function useAgentSessions(slug: string): AgentSessions {
 }
 
 /** A call the platform has not finished with: it is ringing, being dialled, or up. */
-export function isLive(line: SessionLine): boolean {
+export function isLive(line: Line): boolean {
   return line.status !== "ended";
 }
 
 /** The live calls first, and the door's own order — newest first — inside each group. */
-export function liveFirst(lines: SessionLine[]): SessionLine[] {
+export function liveFirst(lines: Line[]): Line[] {
   return [...lines.filter(isLive), ...lines.filter((line) => !isLive(line))];
 }
