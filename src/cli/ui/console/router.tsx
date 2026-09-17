@@ -11,6 +11,7 @@ import { Agents } from "./screens/agents";
 import { BoxFleet, BoxOrg, BoxOrgs, BoxRoutes, BoxSettings, BoxUsage, OperatorOnly } from "./screens/box";
 import { Calls } from "./screens/calls";
 import { Chat } from "./screens/chat";
+import { OrgEvals } from "./screens/org-evals";
 import { RoomChat } from "./screens/talk";
 import { Evals } from "./screens/evals";
 import { FloorLive, FloorSessions } from "./screens/floor";
@@ -37,6 +38,7 @@ const ORG: Record<string, ReactNode> = {
   agents: <Agents />,
   live: <FloorLive />,
   sessions: <FloorSessions />,
+  "org-evals": <OrgEvals />,
   numbers: <Numbers />,
   phone: <PhoneTesting />,
   keys: <Keys />,

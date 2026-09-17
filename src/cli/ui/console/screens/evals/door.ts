@@ -70,6 +70,11 @@ const EvalRunListSchema = z.object({ runs: z.array(EvalRunSchema) });
 // one of them off the end of the page — see docs/decisions/evals-screen.md.
 const AS_MANY_AS_IT_MAY = 200;
 
+/** Every agent's runs in this world, newest first: what the org's Evals screen folds per agent. */
+export async function readEveryRun(credentials: Credentials): Promise<EvalRun[]> {
+  return EvalRunListSchema.parse(await read(credentials, "/v1/evals/runs", { limit: AS_MANY_AS_IT_MAY })).runs;
+}
+
 /** The runs of ONE agent, newest first. No other agent's run is ever in the answer. */
 export async function readRuns(credentials: Credentials, agent: string): Promise<EvalRun[]> {
   const listed = EvalRunListSchema.parse(

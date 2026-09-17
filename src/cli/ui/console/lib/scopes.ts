@@ -16,6 +16,7 @@ export const SCOPE_OF: Record<string, string> = {
   widget: "talk",
   agents: "calls",
   live: "calls",
+  "org-evals": "evals",
   numbers: "numbers",
   keys: "keys",
   providers: "providers",

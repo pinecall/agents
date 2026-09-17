@@ -9,6 +9,8 @@ import { useScopes } from "../../lib/whoami";
 import { Button, Field, Input, Page, PageHead, Refused, Switch } from "../../ui";
 import { readSettings, saveSettings, type WidgetSettings } from "./door";
 import { loadWidget, mountWidget, widgetUrl } from "./mount";
+import { prettyNumber } from "../../lib/format";
+import { readNumbers } from "../numbers/door";
 import "./widget.css";
 
 // The accents a site may start from. They are data — the value the tag's --pc-accent receives — so
@@ -54,6 +56,23 @@ export function Widget(): ReactNode {
         if (settings.greeting !== null) setGreeting(settings.greeting);
         if (settings.accent !== null) setAccent(settings.accent);
         setAutostart(settings.autostart);
+      },
+      () => undefined,
+    );
+    return () => {
+      gone = true;
+    };
+  }, [credentials, agent]);
+
+  // The number this agent answers at is the org's route, not a field anybody should retype: the
+  // widget's "Call us" is on from the start for an agent that has one. A key that may not read
+  // numbers leaves the field to the person.
+  useEffect(() => {
+    let gone = false;
+    readNumbers(credentials).then(
+      (doors) => {
+        const answered = doors.find((door) => door.route.agent === agent && door.route.number !== null)?.route.number;
+        if (!gone && answered != null) setPhone((typed) => (typed === "" ? prettyNumber(answered) : typed));
       },
       () => undefined,
     );
@@ -191,7 +210,7 @@ export function Widget(): ReactNode {
                 <Input value={company} placeholder="whose agent it is" onChange={(event) => setCompany(event.target.value)} />
               </Field>
               <Field label="Phone">
-                <Input value={phone} placeholder="+1 (417) 674-3169" onChange={(event) => setPhone(event.target.value)} />
+                <Input value={phone} placeholder="the number it answers, if it has one" onChange={(event) => setPhone(event.target.value)} />
               </Field>
             </div>
             <div>

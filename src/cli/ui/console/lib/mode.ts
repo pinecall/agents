@@ -26,7 +26,7 @@ export const WORLD_OF: Record<Mode, World> = { hosted: "production", local: "san
 export type Group = "gateway" | "settings" | "box";
 
 /** The sidebar's icons, by name (ui/icon.tsx). */
-export type ScreenIcon = "home" | "grid" | "activity" | "list" | "chart" | "phone" | "key" | "plug" | "users" | "building" | "server" | "route" | "sliders";
+export type ScreenIcon = "home" | "grid" | "activity" | "list" | "chart" | "phone" | "key" | "plug" | "users" | "building" | "server" | "route" | "sliders" | "check";
 
 /** One screen: where it is, what the sidebar calls it, which group it sits in, and which console has it. */
 export interface Screen {
@@ -57,6 +57,7 @@ export const ORG_SCREENS: readonly Screen[] = [
   { key: "agents", path: "overview", name: "Overview", in: BOTH, group: "gateway", icon: "grid" },
   { key: "live", path: "live", name: "Live", in: BOTH, group: "gateway", icon: "activity" },
   { key: "sessions", path: "sessions", name: "Sessions", in: BOTH, group: "gateway", icon: "list" },
+  { key: "org-evals", path: "evals", name: "Evals", in: BOTH, group: "gateway", icon: "check" },
   { key: "usage", path: "usage", name: "Usage", in: HOSTED, group: "gateway", icon: "chart" },
   { key: "numbers", path: "numbers", name: "Numbers", in: HOSTED, group: "settings", icon: "phone" },
   { key: "phone", path: "phone", name: "Phone testing", in: LOCAL, group: "settings", icon: "phone" },
