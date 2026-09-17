@@ -7,6 +7,31 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **`pinecall serve`: the sandbox's console, on your machine.** `http://localhost:4100` is the
+  console for what YOU are running — your copies, their calls, chat, suites, knowledge, memory, the
+  widget, phone testing. It is a sidecar: every request is forwarded to the gateway with the
+  profile's sandbox key, which never reaches the browser, so there is no login. One per machine (a
+  second one for the same gateway and org points at the first), loopback only, and a foreign `Host`
+  or `Origin` is refused. `pinecall run --serve` is both in one terminal; a plain `run` names a
+  sidecar that is up. A production key is refused with where production is watched.
+- **Phone testing**, a screen of the local console: the org's production numbers, the agent each
+  reaches, and whether the gateway knows which phone is yours (the runtime's `GET /v1/line/numbers`).
+- `Pinecall#onConnected(listener)`: heard on the first connect and on every reconnect.
+
+### Changed
+- **The gateway's console shows production, and only production.** The world toggle, the world
+  choice at sign-in and the copies per person are gone from it; Chat and running a suite are the
+  local console's. One bundle, two modes, and which screens each has is one table
+  (`src/cli/ui/console/lib/mode.ts`). A browser that held a sandbox key from before is moved to the
+  same person's production key.
+- `pinecall run` in the sandbox prints the local console's URL, or the verb that opens it, instead
+  of a gateway link with a login code. In production it prints the gateway's, as before.
+- The phone `pinecall line from` kept is re-sent on **every** connect, in every mode, not once per
+  start in the plain log only.
+
+### Fixed
+- A gateway that restarted printed a stack per redial under `pinecall run`. It is one line now,
+  `gateway  … — reconnecting`, and `gateway  back`.
 - **Test on the production number.** `pinecall line from <+your-phone>` now reaches your sandbox
   copy on a production number too (the runtime's `rings-for` door): your phone reaches the agent
   you are running, every other caller reaches production. `pinecall run` re-sends the phone when

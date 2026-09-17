@@ -332,12 +332,14 @@ discount, and it cannot open the confirmation gate anyway, because that gate is 
 Everything above wrote lines. Read them:
 
 ```
-pinecall run
-console  https://box.pinecall.io/a/clinica-norte?login=lc_…   (opens within five minutes, once)
+pinecall run --serve
+console  http://localhost:4100/a/clinica-norte
 ```
 
-Open that URL. The gateway serves the console; the code signs this browser in with a key of its
-own, and your org key never reaches it. The agent's Calls screen shows a call as it happens: the turns, the tools, the state after each
+Open that URL. It is the console of your sandbox, served by that same terminal: every request the
+page makes is forwarded to the gateway with the terminal's key, so there is nothing to sign in to
+and the key never reaches the browser. (Production is watched on the gateway's own page, which you
+sign in to.) The agent's Calls screen shows a call as it happens: the turns, the tools, the state after each
 one, `recall · 1 fact · 138 ms`, `search · 3 chunks · 181 ms`, and the verdicts at hang-up.
 
 The same thing without a browser:

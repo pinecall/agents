@@ -5,9 +5,28 @@ redesign: what each screen must be able to state, which door the fact comes from
 field can actually take. It says nothing about layout, hierarchy or visual direction — those are the
 redesign's to decide.
 
+## Two consoles, one bundle
+
+The same page is served in two places, and it is a different product in each (2026-09-17):
+
+| | the gateway's — **hosted** | a developer's machine — **local** (`pinecall serve`, `http://localhost:4100`) |
+|---|---|---|
+| looks at | production, and only production | the sandbox: the reader's own corner |
+| who uses it | whoever runs the org: the owner, a supervisor, qa | whoever writes the agent |
+| signing in | email and password; a key kept by the browser | none: the sidecar signs what the page asks, the page holds no key, and there is no sign out |
+| org screens | Overview, Live, Sessions, Numbers, Keys, Providers, Team, Usage, `/cli` | Overview, Live, Sessions, Phone testing |
+| agent screens | Talk, Calls, Sessions, Pipeline, Knowledge, Memory, Evals (calls, drift), Widget | the same, plus **Chat**, and Evals ▸ runs |
+| copies | one: the org's, *deployed on the box* | the reader's; a key with `team` opens a teammate's |
+
+Which is which is a `<meta name="pinecall-console" content="local">` the sidecar puts in the page
+(absent: hosted), read once in `lib/mode.ts`, where **one table** lists every screen and the modes
+that have it. The rail draws that table and the router routes it; a screen a console does not have
+is neither linked nor reachable. A redesign moves rows there. Everything below describes a screen
+once, and says when it belongs to one console only.
+
 ## 0. The frame every screen hangs in
 
-Seventeen screens behind the rail, one shell, one router (`agents/src/cli/ui/console/router.tsx`) — plus the
+Eighteen screens behind the rail across the two consoles, one shell, one router (`agents/src/cli/ui/console/router.tsx`) — plus the
 widget's blank preview, the `/cli` card and the two cards shown with no key. React 19 + react-router: **the URL is
 the state** of what is on screen, so a reload lands on exactly the same thing, and no screen keeps a selection in
 memory. What the browser keeps is who is signed in and where they are looking (below).
@@ -17,7 +36,8 @@ memory. What the browser keeps is who is signed in and where they are looking (b
 | `/` | Overview (the rail's word; the page is titled Agents) — the org's list, in this world. In the sandbox an admin sees every member's corner, whose each is, and a filter over the three |
 | `/live` | Live — every call up on the floor, whichever agent has it |
 | `/sessions` | Sessions — every agent's finished calls, one table, each naming its agent |
-| `/numbers` | Numbers — the numbers people call and which agent picks up, in the world on screen; testing by phone; one more imported or bought; the carrier last |
+| `/numbers` | Numbers (hosted) — the numbers people call and which agent picks up; one more imported or bought; the carrier last |
+| `/phone` | Phone testing (local) — the production numbers a developer's own phone dials to reach their copy |
 | `/keys` | Keys — the API keys this org's machines run on |
 | `/providers` | Providers — the vendor accounts this org brought |
 | `/team` | Team — the org's people, invited and changed |
@@ -38,14 +58,17 @@ memory. What the browser keeps is who is signed in and where they are looking (b
 | `/invitations/<token>` | with no key: the card where an invited person chooses a password |
 
 A slug in the path that the gateway does not list for this org and world draws no agent screens: the shell says
-*no agent called <slug> is held here — this org, in this world*, and names the org, the toggle and `pinecall run`.
+*no agent called <slug> is held here*, and then — hosted — that nothing by that name is deployed and a copy of one's own
+is on `pinecall serve`, or — local — that no copy of the reader's is running, and `pinecall run` starts one.
 
 **Signing in.** With no key the console is one card: email, password, the org only when the person belongs to
-several (*the oldest of yours when left empty*), and the world — `sandbox` · `production`, the sandbox unless this
-browser last looked at production. A `?login=<code>` that `pinecall run` printed skips the card and opens the world
-that process's key was in. The keys are kept by the **browser** (`localStorage`, one per world, in one file:
-`lib/session-key.ts`), so a second tab is the same person; the world last looked at is kept for the tab and for the
-browser, so a new tab opens where the last one was. Signing out forgets every world's key.
+several (*the oldest of yours when left empty*). It signs in to production; under the button it says where the
+sandbox is (*on your own machine: `pinecall serve`*). A `?login=<code>` that a production `pinecall run` printed
+skips the card. The key is kept by the **browser** (`localStorage`, in one file: `lib/session-key.ts`), so a second
+tab is the same person; a sandbox key left from before 2026-09-17 is turned into the same person's production one
+and forgotten. Signing out forgets every key. **Local has none of this**: no card, no key, no sign out — and when
+the gateway refuses the sidecar's key, one card, *This machine is not signed in*, with `pinecall login` and
+`pinecall serve`.
 
 The shell carries, on every screen:
 
@@ -59,8 +82,8 @@ The shell carries, on every screen:
   - **the org switch**, for a person in two orgs or more: the orgs off `GET /v1/login/orgs`; picking one mints the
     same person's key there (`POST /v1/login/org`), replaces every key the browser held and reopens the console
     at its root. A person of one org, and a machine key, see nothing here;
-  - **the world toggle** `production` · `sandbox`: a key kept for the other world, or one minted for the same person
-    (`POST /v1/login/env`); a machine key's refusal is shown beside it, verbatim;
+  - the world is a badge and not a control: `production` hosted, `sandbox · local` local. The org switch is
+    hosted's alone — a machine's org is its profile's (`pinecall use`);
   - **every agent** the gateway holds in this org and world (`GET /v1/agents`, re-read when the panel opens), its
     channels, and under it **each copy**: the reader's own (*open*), the org's — in production the one *deployed on
     the box*, the only copy there is — and a teammate's. A teammate's copy is *theirs* and disabled, except to a key
@@ -72,7 +95,7 @@ The shell carries, on every screen:
 - **sign out**, and a light/dark toggle;
 - a rail (`shell/rail.tsx`) with two groups. **GATEWAY**: Overview, Live, Sessions, Numbers, Keys, Providers, Team,
   Usage; Overview carries the count of agents held. **AGENTS**: one row per agent the gateway holds (one per slug,
-  however many copies), and the agent on screen stands open with its nine screens indented under it — Talk, Chat,
+  however many copies), and the agent on screen stands open with its screens indented under it (Chat in local only) — Talk, Chat,
   Calls, Sessions, Pipeline, Knowledge, Memory, Evals, Widget. With none: *none held here*. Every screen is drawn
   only when the key's `scopes` open it (`lib/scopes.ts`: Talk, Chat and Widget need `talk`; Overview, Live, Calls
   and both Sessions `calls`; the rest their own name), so no click meets a 403 — plus a fixed foot:
@@ -87,7 +110,9 @@ goldens, personas, knowledge folder, memory goldens, a chat with the class — i
 | door | who reads it |
 |---|---|
 | `POST /v1/login` · `POST /v1/invitations/{token}` | the sign-in card, the invitation card |
-| `GET /v1/login/orgs` · `POST /v1/login/org` · `POST /v1/login/env` | the Viewing panel: the org switch, the world toggle |
+| `GET /v1/login/orgs` · `POST /v1/login/org` | the Viewing panel's org switch (hosted) |
+| `POST /v1/login/env` | the boot, once: a sandbox key left in the browser becomes the same person's production one |
+| `GET /v1/line/numbers` | Phone testing (local): production's numbers, the agent each reaches, the reader's phones |
 | `GET /v1/agents` | Overview, the Viewing panel, the rail |
 | `GET /v1/agents/{slug}/sessions` | Calls list (re-asked every 3 s), Sessions, Evals ▸ calls — the corner's own |
 | `GET /v1/calls/{call}/events` (SSE) | Talk, Calls, Chat, Sessions ▸ one |
@@ -381,11 +406,13 @@ up. You are looking at <world>.*:
    the box bought it, and `remove` on a row an operator made (*The number stops ringing this agent. It stays in
    your carrier account.*). Empty: *No phone number rings in <world> yet.* The agents answering on the web with
    no number are one line under the cards.
-2. **Testing by phone** — in the sandbox only: *You do not need a sandbox number. Tell Pinecall which mobile is
-   yours, keep `pinecall run` going, and call a production number from it: your copy answers. Everybody else
-   who calls still reaches production.*, the two commands (`pinecall line from +1XXXXXXXXXX`, `pinecall run`),
-   and production's number cards, read with the production key this browser holds — or, when it holds none,
-   *Switch to production (top right) to see the numbers you can call.*
+2. **Phone testing** is a screen of its own, `/phone`, and the local console's alone (`screens/numbers/phone.tsx`):
+   *Call the number your customers call, from your own mobile, and your copy answers. Everybody else who calls
+   still reaches production. You do not need a sandbox number.*; the commands (`pinecall line from +1XXXXXXXXXX`
+   once per machine; `pinecall run --serve`, `pinecall line forget`); **The numbers to call** — a card per production
+   number off `GET /v1/line/numbers`, `→` its agent, and one of *your copy answers <your phone>* · *production
+   answers: say which phone is yours* · *production answers: you are not running it*; and **What a call from
+   your phone reaches right now**, in a sentence. A gateway older than the door shows the commands alone.
 3. **Add a number to <world>** — two tabs, *Use one I already have* (a `<select>` of the carrier's numbers not
    imported yet, off `GET /v1/numbers/available`, with how many are free, or a typed E.164; disabled until a
    carrier is connected) and *Buy a new one* (country, area code, on the box's own account), each with the
