@@ -5,7 +5,7 @@
   min-width: 0;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(190px, 244px);
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
   grid-template-rows: minmax(0, 1fr);
 }
 
@@ -424,19 +424,54 @@ details.lv-row > .lv-line {
   background: var(--ground-side);
 }
 
+/* The pane breathes more than a card does: it is read at a glance, beside a call that moves. */
+.lv-pane .ui-section-label {
+  padding: 18px 20px 10px;
+}
+
+.lv-pane .ui-kv-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* One block of the prompt on one line: its name, the start of its hash, how long it is. */
+.lv-prompt-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 12.5px;
+}
+
+.lv-prompt-name {
+  color: var(--ink-3);
+}
+
+.lv-prompt-hash {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+  color: var(--ink-6);
+}
+
+.lv-prompt-chars {
+  margin-left: auto;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .lv-pane-body {
-  padding: 0 15px 14px;
+  padding: 0 20px 18px;
   display: flex;
   flex-direction: column;
   gap: 9px;
 }
 
 .lv-pane-body-tight {
-  gap: 7px;
+  gap: 9px;
 }
 
 .lv-pane-text {
-  padding: 0 15px 14px;
+  padding: 0 20px 18px;
   font-size: 12.5px;
   color: var(--ink-3);
   line-height: 1.55;
@@ -490,7 +525,7 @@ details.lv-row > .lv-line {
 
 .lv-meter {
   display: grid;
-  grid-template-columns: 104px minmax(0, 1fr) auto;
+  grid-template-columns: 132px minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
 }

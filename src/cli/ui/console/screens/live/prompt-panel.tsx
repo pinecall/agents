@@ -14,9 +14,13 @@ export function PromptPanel({ prompt, cost }: { prompt: PromptState; cost: Cost 
       <div className="lv-pane-body lv-pane-body-tight">
         {blocks.length === 0 && <div className="lv-sub">The app has written no block yet.</div>}
         {blocks.map(([name, block]) => (
-          <KV key={name} label={name}>
-            <span title={block.hash}>{block.hash.slice(0, 16)}</span> · {block.chars.toLocaleString("en").replace(/,/g, " ")} chars
-          </KV>
+          <div key={name} className="lv-prompt-row">
+            <span className="lv-prompt-name">{name}</span>
+            <span className="lv-prompt-hash" title={block.hash}>
+              {block.hash.slice(0, 8)}
+            </span>
+            <span className="lv-prompt-chars">{block.chars.toLocaleString("en").replace(/,/g, " ")} chars</span>
+          </div>
         ))}
         {cost !== null && <KV label="cost so far">{euros(cost.eur)}</KV>}
       </div>
