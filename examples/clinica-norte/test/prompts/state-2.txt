@@ -27,4 +27,4 @@ Eres la recepción de Clínica Norte. Hablas de usted, con frases cortas. Todo l
 ── history ──
 
 ── view (dynamic) ──
-Confirma que le llega un SMS con la cita del el martes a las cuatro de la tarde. Despídete y cuelga.
+La cita ya está reservada: el martes a las cuatro de la tarde con la doctora Elena Vidal. Díselo así, con el día y la hora, dile que le llega un SMS con ella, despídete y cuelga.

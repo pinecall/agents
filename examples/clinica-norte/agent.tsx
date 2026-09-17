@@ -224,6 +224,11 @@ export default class ClinicaNorte extends Agent {
 
         {(this.stage === "choose" || this.stage === "book") && (
           <>
+            {/* La llamada ya empezó: el saludo es la primera frase y ya se dijo. Sin esto, un turno
+                que arranca con la ficha delante —una llamada retomada, una golden— se contestaba
+                con «Buenos días, ¿en qué puedo ayudarle?» y la hora que el paciente eligió se
+                perdía detrás del saludo (2026-09-17). */}
+            <p>La llamada ya está en curso y ya has saludado: no vuelvas a saludar.</p>
             {/* Quién está al teléfono, y que ya sabemos quién es. Sin la segunda frase el modelo ve
                 `findPatient` en la lista de herramientas del prefijo estático — que las lleva todas,
                 porque ese prefijo no cambia entre turnos — y vuelve a pedir nombre y teléfono a una
@@ -256,7 +261,9 @@ export default class ClinicaNorte extends Agent {
               <p>
                 Si todavía no ha nombrado ningún día, pregúntale para qué día quiere
                 {this.patient!.cita ? " cambiarla." : " la cita."} En cuanto nombre uno, consulta
-                SIEMPRE la agenda de ese día con freeSlots, aunque su ficha ya tenga cita ese día.
+                SIEMPRE la agenda de ese día con freeSlots, aunque su ficha ya tenga cita ese día y
+                aunque creas que ese día el centro cierra, {this.specialtyToAskFor()} antes de
+                contestarle nada.
               </p>
             )}
             {this.slots.length > 0 && this.hoursOnTheTable()}
@@ -264,7 +271,12 @@ export default class ClinicaNorte extends Agent {
         )}
 
         {this.stage === "done" && (
-          <p>Confirma que le llega un SMS con la cita del {this.booking!.when}. Despídete y cuelga.</p>
+          // La cita dicha entera, día y hora, en la despedida: «le llega un SMS con los datos» a
+          // secas no le dice al paciente qué se lleva, y fue lo que haiku contestaba (2026-09-17).
+          <p>
+            La cita ya está reservada: {this.booking!.when} con {this.booking!.professional}. Díselo
+            así, con el día y la hora, dile que le llega un SMS con ella, despídete y cuelga.
+          </p>
         )}
       </>
     );
@@ -272,6 +284,17 @@ export default class ClinicaNorte extends Agent {
 
   override onMemory(ops: MemoryOp[], call: Call): void {
     crmFor(this).apply(call.contact, ops);
+  }
+
+  // Qué especialidad lleva freeSlots, dicho en la frase que decide. freeSlots la pide desde que un
+  // hueco la tiene (2026-09-13), y sin decirla aquí el modelo le preguntaba «¿para qué
+  // especialidad?» a una paciente que llamaba para mover SU cita, cuatro goldens de once cada
+  // noche. Lo que la memoria recuerda no llega a la vista hasta el turno siguiente, así que el
+  // médico habitual se nombra como regla y no como dato.
+  private specialtyToAskFor(): string {
+    const known = this.specialty ?? (this.patient?.cita ? this.patient.specialty : undefined);
+    if (known) return `con la especialidad «${known}»: no se la preguntes`;
+    return "con la especialidad de su médico habitual si la memoria te lo dice —la de ese médico en el cuadro del centro, sin confirmársela—, y si no, preguntándosela";
   }
 
   // Las horas libres y qué hacer con ellas. Es un método aparte porque es una idea entera —la mesa

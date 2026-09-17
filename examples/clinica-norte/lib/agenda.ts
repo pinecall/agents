@@ -8,6 +8,8 @@ export interface Patient {
   /** Su cita actual, tal y como se lee en voz alta. Un paciente recién dado de alta no tiene. */
   cita?: string | undefined;
   doctor?: string | undefined;
+  /** De qué es esa cita. Quien llama para cambiarla no tiene que decirlo: la ficha ya lo sabe. */
+  specialty?: string | undefined;
 }
 
 /**
@@ -103,9 +105,9 @@ const TIMEZONE = "+02:00";
 // Las fichas. Los teléfonos son los del rango de pruebas de España, y la cita actual es la que el
 // paciente llama para cambiar: la clínica no tiene pacientes sin cita en este ejemplo.
 const PATIENTS: Patient[] = [
-  { id: "p-1041", name: "Ana García", phone: "+34 600 000 001", cita: "jueves a las diez", doctor: "la doctora Vidal" },
-  { id: "p-1042", name: "Luis Ferrer", phone: "+34 600 000 002", cita: "lunes a las nueve y media", doctor: "el doctor Sáez" },
-  { id: "p-1043", name: "Marta Ruiz", phone: "+34 600 000 003", cita: "miércoles a las seis de la tarde", doctor: "la doctora Vidal" },
+  { id: "p-1041", name: "Ana García", phone: "+34 600 000 001", cita: "jueves a las diez", doctor: "la doctora Vidal", specialty: "medicina de familia" },
+  { id: "p-1042", name: "Luis Ferrer", phone: "+34 600 000 002", cita: "lunes a las nueve y media", doctor: "el doctor Sáez", specialty: "medicina interna" },
+  { id: "p-1043", name: "Marta Ruiz", phone: "+34 600 000 003", cita: "miércoles a las seis de la tarde", doctor: "la doctora Vidal", specialty: "medicina de familia" },
 ];
 
 /**
@@ -283,7 +285,8 @@ function slotAt(date: string, hour: number, one: Clinician): Slot {
   return {
     id: `s-${date.replace(/-/g, "")}-${String(whole).padStart(2, "0")}${minutes}-${initials}`,
     startsAt: `${date}T${String(whole).padStart(2, "0")}:${minutes}:00${TIMEZONE}`,
-    when: `el ${weekdayOf(date)} a las ${spoken(hour)}`,
+    // «a la una», no «a las una»: la única hora que se dice en singular.
+    when: `el ${weekdayOf(date)} ${whole === 13 || whole === 1 ? "a la" : "a las"} ${spoken(hour)}`,
     professional: one.professional,
     specialty: one.specialty,
   };

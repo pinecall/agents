@@ -206,3 +206,16 @@ jobs:
       - name: what the gateway said, when something went wrong
         if: failure()
         run: cat "$RUNNER_TEMP/gateway.log" || true
+
+      # A golden that broke is written out whole under the directory its suite ran in — the golden,
+      # every verdict, the call's log and every request the model answered. On a laptop that is
+      # the next thing a person opens; on a runner it died with the machine, and a red night said
+      # which goldens broke and never why (2026-09-17). Kept a fortnight.
+      - name: the reproductions of every golden that broke
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reproductions
+          path: agents/examples/*/.pinecall/evals/
+          if-no-files-found: ignore
+          retention-days: 14
