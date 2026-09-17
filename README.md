@@ -66,7 +66,9 @@ pnpm exec pinecall test            ring 1: the goldens, through the app in this 
                                    and the code in the URL signs this browser in, once
 ```
 
-A tenant that installed `pinecall` from npm has it on the PATH and writes `pinecall run`.
+A tenant that installed `pinecall` from npm has it on the PATH and writes `pinecall run`. A
+repository of several agents keeps each in `agents/<name>.tsx`, and one `pinecall run` at its root
+holds them all — [docs/writing-an-agent.md](docs/writing-an-agent.md#several-agents-in-one-project).
 
 Working on the framework itself:
 
@@ -94,7 +96,7 @@ file by file, is [ARCHITECTURE.md](ARCHITECTURE.md).
 | `call/` | the live call as a value: the room, the turns, the verbs. Reduced from entries |
 | `client/` | `pinecall/client` — the socket, and nothing above it. Knows only the wire |
 | `runtime/` | the bridge: what the class does, become what the wire sees |
-| `cli/` | `pinecall <verb>`, and under `cli/ui/console/` the page one of them serves |
+| `cli/` | `pinecall <verb>`, and under `cli/ui/console/` the console: built here, served by the gateway |
 
 Beside it:
 
@@ -123,7 +125,7 @@ means editing a list on purpose, which is the point.
 | [docs/the-prompt.md](docs/the-prompt.md) | the prompt: named blocks in two regions, `render()`, where what a lookup found lands, and where a rule belongs |
 | [docs/testing-an-agent.md](docs/testing-an-agent.md) | the five rings: unit tests, goldens, personas, one call replayed, the score every call gets |
 | [docs/testing-memory-and-knowledge.md](docs/testing-memory-and-knowledge.md) | memory's own goldens, the index's, and why a call has no retrieval score |
-| [docs/the-cli.md](docs/the-cli.md) | every verb, what it needs, and where its key comes from |
+| [docs/the-cli.md](docs/the-cli.md) | every verb, what it needs, and where its key comes from — one agent, or a project of several |
 | [docs/worlds-and-teams.md](docs/worlds-and-teams.md) | from the sign-up to the deploy: the two worlds, what is yours and what is the org's, the team and its seats |
 | [CHANGELOG.md](CHANGELOG.md) · [CLAUDE.md](CLAUDE.md) | what changed · the working agreement |
 

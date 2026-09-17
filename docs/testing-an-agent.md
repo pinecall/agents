@@ -1,6 +1,6 @@
 # Testing an agent
 
-Four rings, and each one asks a different question. They are not levels of thoroughness: a green
+Five rings, and each one asks a different question. They are not levels of thoroughness: a green
 ring 0 says nothing about ring 1, and a green ring 1 says nothing about a real line.
 
 | ring | the question | what runs it | costs |
@@ -49,7 +49,10 @@ notices when a render starts writing into the cached half.
 ## Ring 1 — the goldens
 
 A golden is one conversation written down: where it starts, what the caller says, and what is
-expected of it. One file per case, in `test/goldens/`, named after what it is about.
+expected of it. One file per case, in `test/goldens/` — `test/goldens/<name>/` for each agent of a
+project of several — named after what it is about. An agent with no goldens yet has none, which
+is an answer and not an error: the console's roster is empty and `pinecall test` says where to
+write the first.
 
 ```jsonc
 {
@@ -131,6 +134,9 @@ export default {
   state: { stage: "choose", patient: { … } },   // where their call opens
 };
 ```
+
+One file per caller in `test/personas/`, or `test/personas/<name>/` in a project, where
+`personas list` prints every agent's and `show`, `try` and `simulate` take `--agent`.
 
 ```bash
 pinecall personas list                      # one line each: the name, and the goal

@@ -40,8 +40,11 @@ memory/<name>.golden.json
 ```
 
 At that root `pinecall run` holds every agent on one socket, and every verb acts on each agent
-against its own folders, or on the one `--agent <name|slug>` names. The CLI's page says which verb
-does what: [A project of several agents](the-cli.md#a-project-of-several-agents).
+against its own folders, or on the one `--agent <name|slug>` names; a verb about one agent —
+`chat`, `simulate`, `prompt`, `remember`, `line`, among others — needs `--agent` when there are
+several. A
+folder nobody has written yet is empty, not an error. The CLI's page says which verb does what:
+[A project of several agents](the-cli.md#a-project-of-several-agents).
 
 The file is `agent.tsx` because the class renders JSX. That is the only reason, and it changes
 nothing else: a class that writes no `render()` may stay in `agent.ts`, and the CLI finds either.
@@ -111,7 +114,7 @@ diffed, never rendered, never in a snapshot:
 | `greeting` | how the call opens: the words, or what the model reads before finding its own |
 | `says` | `{ DKV: "de ka uve" }` — how a word the voice would misread is said |
 | `hears` | the words the ears must know: names, brands, the doctor's surname |
-| `knowledge` | one file, read beside `agent.tsx` and sent whole: cached ahead of everything |
+| `knowledge` | one file, its path relative to the class's own file, sent whole: cached ahead of everything |
 | `docs` | the knowledge base retrieved per turn, **by the name it was pushed under** |
 | `memory` | what to remember about a caller across calls, and what never to |
 
@@ -169,13 +172,14 @@ memory = {
 };
 ```
 
-**`knowledge`** is the one file the agent knows by heart. The path is relative to `agent.tsx`; the
-CLI reads it there and sends `{ path, text }` in the declaration, and the runtime writes the text
+**`knowledge`** is the one file the agent knows by heart. The path is relative to the class's own
+file — `agent.tsx`, or `agents/<name>.tsx` in a project, where it reads
+`"../knowledge/<name>.md"`; the CLI reads it there and sends `{ path, text }` in the declaration, and the runtime writes the text
 into the `knowledge` block, once per call, in the cached prefix. A file that is not there is
 refused at load: `knowledge ./knowledge/nadie.md: no such file at /…/knowledge/nadie.md`.
 
-**`docs`** names the knowledge base the agent answers from — the folder under `knowledge/docs/`,
-pushed to the gateway under a name:
+**`docs`** names the knowledge base the agent answers from — the folder under `knowledge/docs/`
+(`knowledge/<name>/` in a project), pushed to the gateway under a name:
 
 ```bash
 pinecall knowledge push                       # ./knowledge/docs beside agent.tsx, base = the slug
@@ -385,7 +389,7 @@ pinecall chat --as +34600123456    # the same call, from somebody memory can fil
 pinecall prompt --state test/prompts/states.json    # what the model would read, offline
 pinecall knowledge push            # ./knowledge/docs to the gateway, under the agent's slug
 pinecall run                       # the app registered and answering: the process you deploy —
-                                   # and it prints the console's URL: talk, calls, sessions, evals
+                                   # and it prints the console's URL: talk, chat, calls, sessions, evals, widget
 ```
 
 `pinecall run` is the same process in the sandbox and in production: it runs the agent, binds no

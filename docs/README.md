@@ -1,6 +1,6 @@
 # Docs
 
-How to build an agent with this package. Six pages, in the order a person meets them: the first
+How to build an agent with this package. Seven pages, in the order a person meets them: the first
 is a walk from an empty directory to an agent that answers from your documents and remembers who
 called, and the rest are the reference it points at.
 
@@ -12,6 +12,10 @@ called, and the rest are the reference it points at.
 | [testing-an-agent.md](testing-an-agent.md) | the five rings: unit tests, goldens, personas, one call replayed, and the score every real call gets |
 | [testing-memory-and-knowledge.md](testing-memory-and-knowledge.md) | the goldens that are not about one call: what the agent remembers, what it recalls, whether the index answers, and why a call has no retrieval score |
 | [the-cli.md](the-cli.md) | every verb: what it takes, what it prints, where its key comes from, and which gateway doors it knocks at |
+| [worlds-and-teams.md](worlds-and-teams.md) | from the sign-up to the deploy: production and the sandbox, what is yours and what is the org's, testing by phone, the team |
+
+Beside them, [console-content-brief.md](console-content-brief.md) is the console screen by screen:
+what each one says, and the door every value comes from.
 
 What the package IS, file by file, is [../ARCHITECTURE.md](../ARCHITECTURE.md). The two examples
 in `../examples/` are the same material as working code, and they are what CI and the nightly run.
@@ -22,4 +26,4 @@ and that contract is documented door by door in the **runtime** repo's
 vault — with a thirty-line app in it that uses no Pinecall package at all.
 
 > `docs/decisions/` is the maintainer's engineering notebook — dates, measurements, the arguments
-> as they happened — and it is git-ignored. A clone has these four pages and no such directory.
+> as they happened — and it is git-ignored. A clone has the pages above and no such directory.

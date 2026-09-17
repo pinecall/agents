@@ -19,7 +19,7 @@ in four ways that all cost a business:
 
 An extraction golden is one call **already held** — both speakers, because nothing is re-run — the
 facts memory already holds about that caller, and what must come of it. One file per case, in
-`test/memory/`:
+`test/memory/` (`test/memory/<name>/` for each agent of a project of several):
 
 ```jsonc
 {
@@ -44,7 +44,7 @@ facts memory already holds about that caller, and what must come of it. One file
 | `expect.invalidates` | every held fact named here was superseded — and, the mirror, **no other held fact was**. That is the half that catches a model which replaces whatever it touches |
 
 ```bash
-pinecall remember                            # every case in test/memory/
+pinecall remember                            # every case in test/memory/ (in a project: --agent <name>)
 pinecall remember test/memory/alergia.json   # one of them
 pinecall remember --grep tarjeta             # while writing one
 pinecall remember --json                     # for a pipe
@@ -121,7 +121,7 @@ whitespace. A fact is a sentence a model wrote and you know the substance, not t
 `"Alérgica a la penicilina"` is not answered by *"Alérgica"*, which says less than you asked for.
 
 ```bash
-pinecall memory eval                  # memory/golden.json beside the agent file
+pinecall memory eval                  # memory/golden.json beside the agent file (memory/<name>.golden.json in a project)
 pinecall memory eval --k 1            # the best fact alone: is the right one first?
 ```
 
@@ -181,7 +181,7 @@ Naming a file alone accepts any chunk of it; naming a heading accepts that secti
 under it. Fifty to a hundred questions per base is the size that stops being noise.
 
 ```bash
-pinecall knowledge eval                        # knowledge/golden.json beside the agent file
+pinecall knowledge eval                        # knowledge/golden.json beside the agent file (knowledge/<name>.golden.json in a project)
 pinecall knowledge eval --k 4                  # as many chunks as the class asks for
 pinecall knowledge eval golden.json --base clinica-norte
 ```

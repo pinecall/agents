@@ -337,7 +337,7 @@ console  https://box.pinecall.io/a/clinica-norte?login=lc_…   (opens within fi
 ```
 
 Open that URL. The gateway serves the console; the code signs this browser in with a key of its
-own, and your org key never reaches it. The Live screen shows a call as it happens: the turns, the tools, the state after each
+own, and your org key never reaches it. The agent's Calls screen shows a call as it happens: the turns, the tools, the state after each
 one, `recall · 1 fact · 138 ms`, `search · 3 chunks · 181 ms`, and the verdicts at hang-up.
 
 The same thing without a browser:
@@ -392,7 +392,7 @@ is for.
 |---|---|
 | every declaration a class may carry | [writing-an-agent.md](writing-an-agent.md) |
 | the three regions, and what goes in each | [the-prompt.md](the-prompt.md) |
-| the four rings, and how a golden is written | [testing-an-agent.md](testing-an-agent.md) |
+| the five rings, and how a golden is written | [testing-an-agent.md](testing-an-agent.md) |
 | every verb | [the-cli.md](the-cli.md) |
 | working with a team, and putting the agent on a box | [worlds-and-teams.md](worlds-and-teams.md) |
 | why retrieval is shaped this way | `runtime/docs/security/prompt-injection.md` |

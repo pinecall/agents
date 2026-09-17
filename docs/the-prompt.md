@@ -42,9 +42,9 @@ export default class ClinicaNorte extends Agent {
 getters, `this.call` and `this.remembers(…)`. A class that writes no `render()` sends an empty
 view, which is a fine agent — its prompt is its docstring and its tools.
 
-Because the class carries JSX, the file is **`agent.tsx`**. Nothing else changes: the same
-`tsconfig.json`, the same decorators, the same imports. `agent.ts` still loads, for a class that
-renders nothing.
+Because the class carries JSX, the file is **`agent.tsx`** — or `agents/<name>.tsx` in a project of
+several. Nothing else changes: the same `tsconfig.json`, the same decorators, the same imports.
+`agent.ts` still loads, for a class that renders nothing.
 
 Print any of it with no gateway, no key and no network:
 
@@ -63,8 +63,8 @@ is in with the tools that stage shows.
 call a tool, read back an irreversible action, offer a person when you cannot help).
 
 **`knowledge`** is the file the class named, once per call, in the cached prefix. The file travels
-in the declaration — the CLI reads it beside `agent.tsx` and sends `{ path, text }` — and the
-runtime writes its text into this block. The app sends nothing for it: the file is already on the
+in the declaration — the CLI reads it relative to the class's own file and sends `{ path, text }`
+— and the runtime writes its text into this block. The app sends nothing for it: the file is already on the
 wire, and the same file twice would be a worse bug than an empty block. A file that is not there is
 refused when the class is loaded, with the path that was looked at.
 
