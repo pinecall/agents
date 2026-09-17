@@ -5,12 +5,13 @@ import { useParams } from "react-router";
 
 import { GatewayError } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
+import { Pill, Refused, SectionLabel } from "../../ui";
 import { readReproduction, readWritten, type Reproduction } from "./door";
 
 /**
  * The panel. A suite writes one file per broken golden into `.pinecall/evals/<run>/` in the
  * directory it ran in, and it carries the one thing the log deliberately does not keep: the
- * requests the model answered, verbatim. A green run wrote none, and this says so quietly.
+ * requests the model answered, verbatim. A green run wrote none, and this says nothing.
  */
 export function Reproductions({ run }: { run: string }): ReactNode {
   const credentials = useCredentials();
@@ -38,7 +39,7 @@ export function Reproductions({ run }: { run: string }): ReactNode {
     return () => {
       gone = true;
     };
-  }, [credentials, run]);
+  }, [credentials, agent, run]);
 
   if (goldens === null || goldens.length === 0) return null;
 
@@ -53,39 +54,38 @@ export function Reproductions({ run }: { run: string }): ReactNode {
 
   return (
     <div className="ev-repro">
-      <p className="note">
-        {goldens.length} reproduction{goldens.length === 1 ? "" : "s"} in <span className="mono">{folder}/</span> — the
-        golden as written, every verdict on it, and the requests the model answered.
-      </p>
-      <span className="chips">
-        {goldens.map((golden) => (
-          <button key={golden} type="button" className="chip" onClick={() => void read(golden)}>
-            <span className="chip-key">golden</span>
-            <span className="chip-val">{golden}</span>
-          </button>
-        ))}
-      </span>
-      {refused !== null && <p className="note note-warn">{refused}</p>}
-      {open !== null && (
-        <div className="panel">
-          <div className="panel-head">
-            <span className="panel-title">
-              {open.golden} · {open.model}
-            </span>
-            <span className="fixed dim">{open.call}</span>
-          </div>
-          <div className="panel-body">
+      <SectionLabel ruled>Reproductions</SectionLabel>
+      <div className="ev-repro-body">
+        <div className="ui-note">
+          {goldens.length} in <span className="ui-fixed">{folder}/</span> — the golden as written, every verdict on it, and the requests the model answered.
+        </div>
+        <div className="ui-chips">
+          {goldens.map((golden) => (
+            <button key={golden} type="button" className={open?.golden === golden ? "ui-chip ui-chip-on" : "ui-chip"} onClick={() => void read(golden)}>
+              {golden}
+            </button>
+          ))}
+        </div>
+        <Refused>{refused}</Refused>
+        {open !== null && (
+          <div className="ev-repro-open">
+            <div className="ev-repro-title">
+              {open.golden} · {open.model} <span className="ui-cell-faint">{open.call}</span>
+            </div>
             {open.verdicts
               .filter((verdict) => !verdict.passed)
               .map((verdict) => (
-                <p key={verdict.metric} className="ev-reason">
-                  <span className="ev-bad mono">{verdict.metric}</span> {verdict.reason}
-                </p>
+                <div key={verdict.metric} className="ev-repro-verdict">
+                  <Pill tone="red" small>
+                    {verdict.metric}
+                  </Pill>
+                  <span className="ev-reason">{verdict.reason}</span>
+                </div>
               ))}
-            <pre className="ev-asked mono">{JSON.stringify(open.asked, null, 2)}</pre>
+            <pre className="ui-code ev-asked">{JSON.stringify(open.asked, null, 2)}</pre>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

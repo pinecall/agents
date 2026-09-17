@@ -4,81 +4,94 @@ import type { CallScore, Judgment } from "@pinecall/protocol";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 
-import { euros } from "./finished-calls";
+import { euros } from "../../lib/format";
+import { Card, CardHead, Pill, type Tone } from "../../ui";
 
-// The panel is ordered the way the scorer runs: every judge that answered, then the bill. A judge
-// of the panel that answered nothing is drawn dim with a dash rather than green: a panel that
-// pretended otherwise would be the console lying about coverage.
-export function ScoreBreakdown({
-  agent,
-  call,
-  score,
-  turns,
-}: {
-  agent: string;
-  call: string;
-  score: CallScore | null;
-  turns: number;
-}): ReactNode {
-  if (score === null) {
-    return (
-      <p className="note">
-        This call has no score: it is still running, or its log was sealed before the judges existed. Ask for one
-        with <code className="mono">pinecall eval {call}</code>.
-      </p>
-    );
-  }
-  const answered = new Set(score.judges.map((judge) => judge.name));
-  const silent = (score.panel ?? []).filter((name) => !answered.has(name));
+const VERDICT_TONE: Record<string, Tone> = { held: "green", broken: "red", deferred: "amber", skipped: "muted" };
+
+// The card is ordered the way the scorer runs: the standing, every judge that answered, the judges
+// of the panel that answered nothing (drawn dim, never green: a card that pretended otherwise would
+// be the console lying about coverage), then the bill.
+export function ScoreCard({ call, back, score, turns }: { call: string; back: string; score: CallScore | null; turns: number }): ReactNode {
   return (
-    <div className="panel">
-      <div className="panel-body">
-        <ul className="score-list">
-          {score.judges.map((judge) => (
-            <ScoreRow key={judge.name} agent={agent} call={call} judgment={judge} />
-          ))}
-          {silent.map((name) => (
-            <li key={name} className="score-row score-row-na">
-              <span className="score-row-mark">–</span>
-              <span className="score-row-name mono">{name}</span>
-              <span className="score-row-kind">on the panel</span>
-              <span className="score-row-reason">was run over this call and answered nothing</span>
-            </li>
-          ))}
-        </ul>
-        {score.not_judged != null && <p className="note note-warn">{score.not_judged}</p>}
-        <p className="note">{billOf(score, turns)}</p>
+    <Card>
+      <CardHead title="Score" meta={score !== null && score.passed != null ? `${held(score)} of ${score.judges.length} held` : undefined} />
+      <div className="ui-card-body">
+        {score === null ? (
+          <>
+            <div className="session-standing session-standing-amber">Not scored yet</div>
+            <p className="session-sentence">
+              The call is still running, or its log was sealed before the judges existed. Ask for one with{" "}
+              <span className="ui-fixed">pinecall eval {call}</span>.
+            </p>
+          </>
+        ) : score.passed == null ? (
+          <>
+            <div className="session-standing session-standing-amber">No judge was given to this session</div>
+            {saysMore(score.not_judged) && <p className="session-sentence">{score.not_judged}</p>}
+            <p className="session-sentence">{billOf(score, turns)}</p>
+          </>
+        ) : (
+          <>
+            <div className={score.passed ? "session-standing session-standing-green" : "session-standing session-standing-red"}>
+              {score.passed ? "Passed" : "Did not pass"}
+            </div>
+            <div className="session-judges">
+              {score.judges.map((judge) => (
+                <JudgeRow key={judge.name} back={back} call={call} judgment={judge} />
+              ))}
+              {(score.panel ?? [])
+                .filter((name) => !score.judges.some((judge) => judge.name === name))
+                .map((name) => (
+                  <div key={name} className="session-judge">
+                    <div className="session-judge-line">
+                      <span className="session-judge-name">{name}</span>
+                      <Pill tone="muted">on the panel</Pill>
+                    </div>
+                    <div className="session-judge-reason">Was run over this call and answered nothing.</div>
+                  </div>
+                ))}
+            </div>
+            <p className="session-sentence">{billOf(score, turns)}</p>
+          </>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+function JudgeRow({ back, call, judgment }: { back: string; call: string; judgment: Judgment }): ReactNode {
+  return (
+    <div className="session-judge">
+      <div className="session-judge-line">
+        <span className="session-judge-name">{judgment.name}</span>
+        <Pill tone={VERDICT_TONE[judgment.verdict] ?? "muted"}>{judgment.verdict}</Pill>
+        {judgment.evidence.seqs.map((seq) => (
+          <Link key={seq} className="session-seq" to={`${back}/${call}#seq-${seq}`}>
+            seq {seq}
+          </Link>
+        ))}
+      </div>
+      <div className="session-judge-reason">
+        {judgment.reason}
+        {judgment.evidence.said != null && <span className="session-judge-said"> “{judgment.evidence.said}”</span>}
       </div>
     </div>
   );
 }
 
-function ScoreRow({ agent, call, judgment }: { agent: string; call: string; judgment: Judgment }): ReactNode {
-  const held = judgment.verdict === "held";
-  return (
-    <li className={held ? "score-row score-row-pass" : "score-row score-row-fail"}>
-      <span className="score-row-mark">{held ? "✓" : "✗"}</span>
-      <span className="score-row-name mono">{judgment.name}</span>
-      <span className="score-row-kind">{judgment.verdict}</span>
-      <span className="score-row-reason">
-        {judgment.reason}
-        {judgment.evidence.said != null && <span className="score-row-said"> “{judgment.evidence.said}”</span>}
-      </span>
-      <span className="score-row-seqs">
-        {judgment.evidence.seqs.map((seq) => (
-          <Link key={seq} className="chip" to={`/a/${agent}/sessions/${call}#seq-${seq}`}>
-            <span className="chip-key">seq</span>
-            <span className="chip-val">{seq}</span>
-          </Link>
-        ))}
-      </span>
-    </li>
-  );
+// The runtime's own reason, when it says more than the heading above it already does.
+function saysMore(reason: string | null | undefined): reason is string {
+  return reason !== null && reason !== undefined && reason.trim().toLowerCase() !== "no judge was given to this session";
+}
+
+function held(score: CallScore): number {
+  return score.judges.filter((judge) => judge.verdict === "held").length;
 }
 
 /** One sentence about the only part of this that cost money. */
 function billOf(score: CallScore, turns: number): string {
-  const replayed = `${turns} turns replayed from the log`;
+  const replayed = `${turns === 1 ? "One turn" : `${turns} turns`} replayed from the log`;
   if (score.judge_calls === 0) return `${replayed}; the hard policies alone, and they cost nothing.`;
   return `${replayed}; ${score.judge_calls} judge call${score.judge_calls === 1 ? "" : "s"} for ${euros(score.judge_cost_eur)}.`;
 }

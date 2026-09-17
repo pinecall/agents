@@ -3,20 +3,18 @@
 import type { ReactNode } from "react";
 
 import type { Reading } from "../../lib/metrics";
+import { KV } from "../../ui";
 
 /** Every field a block filled, one row each: the name on the left, what was measured on the right. */
 export function Readings({ rows }: { rows: Reading[] }): ReactNode {
   return (
-    <dl className="readings">
+    <div className="lv-readings">
       {rows.map((reading) => (
-        <div className="reading" key={reading.field}>
-          <dt className="reading-field fixed">{reading.field}</dt>
-          <dd className="reading-value fixed">
-            {reading.value}
-            {reading.unit !== null && <span className="reading-unit"> {reading.unit}</span>}
-          </dd>
-        </div>
+        <KV key={reading.field} label={reading.field} keyWidth={150}>
+          {reading.value}
+          {reading.unit !== null && <span className="lv-seen"> {reading.unit}</span>}
+        </KV>
       ))}
-    </dl>
+    </div>
   );
 }

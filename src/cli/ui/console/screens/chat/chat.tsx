@@ -5,7 +5,8 @@ import { Link, useNavigate, useParams } from "react-router";
 
 import { GatewayError } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
-import { Nothing } from "../../../shared/frame";
+import { Button, Field, Input, Refused, Select } from "../../ui";
+import { Inspector } from "../talk/inspector";
 import { Bubbles, type Pending } from "./bubbles";
 import { endChat, readChatRoster, sayInChat, startChat, type Roster } from "./door";
 import "./chat.css";
@@ -17,11 +18,35 @@ import "./chat.css";
  * being talked to, so a reload lands back in the same conversation.
  */
 export function Chat(): ReactNode {
-  const credentials = useCredentials();
-  const navigate = useNavigate();
   const params = useParams();
   const agent = params["agent"] ?? "";
   const call = params["call"];
+  return (
+    <div className="chat-grid">
+      <div className="chat-column">
+        {call === undefined ? <Opening agent={agent} /> : <Conversation agent={agent} call={call} />}
+      </div>
+      <Inspector agent={agent} call={call ?? null} />
+    </div>
+  );
+}
+
+function ChatHead({ agent, children }: { agent: string; children?: ReactNode }): ReactNode {
+  return (
+    <div className="chat-head">
+      <div className="chat-head-words">
+        <div className="chat-title">Chat with {agent}</div>
+        <div className="chat-sub">The same agent, typed instead of spoken — every turn still lands in the log.</div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/** Before a conversation: who is writing, and the state it may open in. */
+function Opening({ agent }: { agent: string }): ReactNode {
+  const credentials = useCredentials();
+  const navigate = useNavigate();
   const [roster, setRoster] = useState<Roster | null>(null);
   const [as, setAs] = useState("");
   const [golden, setGolden] = useState("");
@@ -41,29 +66,14 @@ export function Chat(): ReactNode {
     return () => {
       gone = true;
     };
-  }, [credentials]);
-
-  if (roster === null) {
-    return <section className="chat">{refused !== null && <p className="note note-warn">{refused}</p>}</section>;
-  }
-  if (roster.agent !== agent) {
-    return (
-      <section className="chat">
-        <Nothing>
-          {roster.agent === null
-            ? "No agent class in the directory the agent's `pinecall run` runs in, so there is nothing to chat with. Run `pinecall run` where the agent's agent.tsx is."
-            : `The process holding the agent runs in ${roster.agent}'s directory: to chat with ${agent}, run \`pinecall run\` there.`}
-        </Nothing>
-      </section>
-    );
-  }
+  }, [credentials, agent]);
 
   const open = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
     setOpening(true);
     setRefused(null);
     try {
-      navigate(`/a/${agent}/chat/${await startChat(credentials, agent, as.trim(), golden)}`);
+      void navigate(`/a/${agent}/chat/${await startChat(credentials, agent, as.trim(), golden)}`);
     } catch (failed) {
       setRefused(failed instanceof GatewayError ? failed.message : String(failed));
     } finally {
@@ -71,79 +81,110 @@ export function Chat(): ReactNode {
     }
   };
 
-  if (call === undefined) {
-    return (
-      <section className="chat">
-        <h1 className="chat-title">Chat with {agent}</h1>
-        <p className="chat-lede">
-          The class of this directory, in writing. The tools run in the terminal that serves this
-          page, on the same log every other screen reads — and a conversation can open part-way
-          through, in the state one of this directory's goldens declares.
-        </p>
-        <form className="chat-open" onSubmit={(event) => void open(event)}>
-          <label className="chat-field">
-            <span className="chat-label fixed">as</span>
-            <input
-              className="input"
-              value={as}
-              placeholder="a phone number, a customer id — or nobody"
-              onChange={(event) => setAs(event.target.value)}
-            />
-          </label>
-          {roster.states.length > 0 && (
-            <label className="chat-field">
-              <span className="chat-label fixed">from</span>
-              <select className="input" value={golden} onChange={(event) => setGolden(event.target.value)}>
-                <option value="">the call's own opening</option>
-                {roster.states.map((name) => (
-                  <option key={name} value={name}>
-                    the state of {name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          <button type="submit" className="button button-accent chat-start" disabled={opening}>
-            {opening ? "opening…" : "start a chat"}
-          </button>
-          {refused !== null && <p className="note note-warn">{refused}</p>}
-        </form>
-      </section>
-    );
-  }
-
   return (
-    <section className="chat">
-      <div className="chat-facts fixed">
-        <span>
-          call <b>{call}</b>
-        </span>
-        <Link className="chat-whole" to={`/a/${agent}/calls/${call}`}>
-          the whole call, row by row
-        </Link>
+    <>
+      <ChatHead agent={agent} />
+      <div className="chat-lines">
+        <div className="chat-start ui-card">
+          <div className="ui-card-head">
+            <span className="ui-card-title">Start a conversation</span>
+          </div>
+          <div className="ui-card-body">
+            {roster === null && refused === null && <p className="chat-note">Asking the terminal that holds {agent}…</p>}
+            {roster !== null && roster.agent !== agent && (
+              <p className="chat-note">
+                {roster.agent === null
+                  ? "No agent class in the directory this agent's `pinecall run` runs in, so there is nothing to chat with. Run `pinecall run` where its agent.tsx is."
+                  : `The process holding the agent runs in ${roster.agent}'s directory: to chat with ${agent}, run \`pinecall run\` there.`}
+              </p>
+            )}
+            {roster !== null && roster.agent === agent && (
+              <form className="chat-start-form" onSubmit={(event) => void open(event)}>
+                <p className="chat-note">
+                  The class of this directory, in writing. Its tools run in the terminal that serves this page, and a conversation can
+                  open part-way through, in the state one of the goldens declares.
+                </p>
+                <Field label="As">
+                  <Input value={as} placeholder="a phone number, a customer id — or nobody" onChange={(event) => setAs(event.target.value)} />
+                </Field>
+                {roster.states.length > 0 && (
+                  <Field label="From">
+                    <Select value={golden} onChange={(event) => setGolden(event.target.value)}>
+                      <option value="">the call's own opening</option>
+                      {roster.states.map((name) => (
+                        <option key={name} value={name}>
+                          the state of {name}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                )}
+                <div>
+                  <Button kind="primary" size="form" type="submit" disabled={opening}>
+                    {opening ? "Opening…" : "Start the chat"}
+                  </Button>
+                </div>
+              </form>
+            )}
+            <Refused>{refused}</Refused>
+          </div>
+        </div>
       </div>
-      <Conversation agent={agent} call={call} />
-    </section>
+    </>
   );
 }
 
 /** The bubbles and the composer together: a line you send is on screen before the log confirms it. */
 function Conversation({ agent, call }: { agent: string; call: string }): ReactNode {
+  const credentials = useCredentials();
+  const navigate = useNavigate();
   const [pending, setPending] = useState<Pending[]>([]);
+  const [refused, setRefused] = useState<string | null>(null);
   const next = useRef(0);
+
+  // Hanging up is what seals the log and runs the judges at ring 4, so it is a button and not a
+  // navigation: leaving the page would keep the socket open in the terminal behind it.
+  const hangUp = async (): Promise<void> => {
+    try {
+      await endChat(credentials, agent, call);
+    } catch (failed) {
+      setRefused(failed instanceof GatewayError ? failed.message : String(failed));
+      return;
+    }
+    void navigate(`/a/${agent}/sessions/${call}`);
+  };
+
   return (
     <>
+      <ChatHead agent={agent}>
+        <div className="chat-head-actions">
+          <Link className="chat-whole" to={`/a/${agent}/sessions/${call}`}>
+            Session
+          </Link>
+          <Button size="md" onClick={() => void hangUp()} title="hanging up seals the log and runs the judges">
+            Hang up
+          </Button>
+        </div>
+      </ChatHead>
       <Bubbles
         call={call}
         pending={pending}
-        onConfirmed={(text) => setPending((now) => {
-          const at = now.findIndex((line) => line.text === text);
-          return at === -1 ? now : [...now.slice(0, at), ...now.slice(at + 1)];
-        })}
+        onConfirmed={(text) =>
+          setPending((now) => {
+            const at = now.findIndex((line) => line.text === text);
+            return at === -1 ? now : [...now.slice(0, at), ...now.slice(at + 1)];
+          })
+        }
       />
+      {refused !== null && (
+        <div className="chat-refused">
+          <Refused>{refused}</Refused>
+        </div>
+      )}
       <Composer
         agent={agent}
         call={call}
+        onRefused={setRefused}
         onSent={(text) => {
           next.current += 1;
           const line = { id: next.current, text };
@@ -155,12 +196,20 @@ function Conversation({ agent, call }: { agent: string; call: string }): ReactNo
   );
 }
 
-/** The caller's side: one line at a time down the socket the terminal holds, and the hangup. */
-function Composer({ agent, call, onSent }: { agent: string; call: string; onSent: (text: string) => () => void }): ReactNode {
+/** The caller's side: one line at a time down the socket the terminal holds. */
+function Composer({
+  agent,
+  call,
+  onSent,
+  onRefused,
+}: {
+  agent: string;
+  call: string;
+  onSent: (text: string) => () => void;
+  onRefused: (refused: string | null) => void;
+}): ReactNode {
   const credentials = useCredentials();
-  const navigate = useNavigate();
   const [text, setText] = useState("");
-  const [refused, setRefused] = useState<string | null>(null);
 
   // The line leaves the box at once and stands greyed in the conversation; the log's turn.user
   // settles it. A refusal takes it back and puts the words in the box again.
@@ -169,50 +218,23 @@ function Composer({ agent, call, onSent }: { agent: string; call: string; onSent
     const said = text.trim();
     if (said === "") return;
     setText("");
-    setRefused(null);
+    onRefused(null);
     const takeBack = onSent(said);
     try {
       await sayInChat(credentials, agent, call, said);
     } catch (failed) {
       takeBack();
       setText(said);
-      setRefused(failed instanceof GatewayError ? failed.message : String(failed));
+      onRefused(failed instanceof GatewayError ? failed.message : String(failed));
     }
-  };
-
-  // Hanging up is what seals the log and runs the judges at ring 4, so it is a button and not a
-  // navigation: leaving the page would keep the socket open in the terminal behind it.
-  const hangUp = async (): Promise<void> => {
-    try {
-      await endChat(credentials, agent, call);
-    } catch (failed) {
-      setRefused(failed instanceof GatewayError ? failed.message : String(failed));
-      return;
-    }
-    navigate(`/a/${agent}/sessions/${call}`);
   };
 
   return (
-    <div className="chat-composer">
-      <form className="chat-box" onSubmit={(event) => void say(event)}>
-        <input
-          className="chat-say"
-          value={text}
-          autoFocus
-          placeholder="say something to the agent…"
-          onChange={(event) => setText(event.target.value)}
-        />
-        <button type="submit" className="button button-accent chat-send" disabled={text.trim() === ""}>
-          say
-        </button>
-      </form>
-      <p className="chat-foot fixed">
-        <button type="button" className="chat-hangup" onClick={() => void hangUp()}>
-          hang up
-        </button>
-        <span>hanging up seals the log and runs the judges, then lands on the session</span>
-      </p>
-      {refused !== null && <p className="note note-warn">{refused}</p>}
-    </div>
+    <form className="chat-composer" onSubmit={(event) => void say(event)}>
+      <input className="chat-say" value={text} autoFocus placeholder="Ask the agent something" onChange={(event) => setText(event.target.value)} />
+      <button type="submit" className="chat-send" disabled={text.trim() === ""}>
+        Send
+      </button>
+    </form>
   );
 }

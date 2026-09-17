@@ -1,336 +1,173 @@
-/* Numbers: the carrier, the doors, and the two ways to add one — each a section, the plan in a sunk box. */
+/* Numbers and Phone testing: a number and who answers it, adding one, the carrier. */
 
-.numbers {
-  max-width: 940px;
-  padding: 26px 28px;
-}
-
-.numbers-title {
-  font-size: 20px;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  margin: 0 0 6px;
-}
-
-.numbers-lede {
-  color: var(--ink-soft);
-  font-size: 14px;
-  margin: 0 0 22px;
-}
-
-/* ── sections ───────────────────────────────────────────────────────────── */
-
-.numbers-carrier,
-.numbers-doors,
-.numbers-adding {
-  border-top: 1px solid var(--edge);
-  padding: 18px 0 22px;
-}
-
-.numbers-form-head {
-  align-items: center;
+.num-row {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 12px;
-  justify-content: space-between;
-  margin-bottom: 14px;
-}
-
-.numbers-form-title {
-  font-size: 13px;
-  font-weight: 500;
-}
-
-/* ── the carrier standing ───────────────────────────────────────────────── */
-
-.numbers-carrier-standing {
-  align-items: center;
-  background: var(--panel);
-  border: 1px solid var(--edge);
-  border-radius: var(--radius-panel);
-  display: flex;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--line-3);
   flex-wrap: wrap;
-  font-size: 12.5px;
-  gap: 14px;
-  padding: 12px 16px;
 }
 
-.numbers-kind {
-  background: var(--accent-soft);
-  border-radius: 4px;
-  color: var(--accent);
-  font-size: 10.5px;
-  letter-spacing: 0.06em;
-  padding: 2px 7px;
-  text-transform: uppercase;
+.num-number {
+  font-size: 14px;
+  font-weight: 550;
 }
 
-.numbers-carrier-moves {
-  display: flex;
-  gap: 14px;
+.num-arrow {
+  color: var(--ink-6);
+  font-size: 13px;
+}
+
+.num-agent {
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+
+.num-remove,
+.num-end {
   margin-left: auto;
 }
 
-/* ── forms ──────────────────────────────────────────────────────────────── */
-
-.numbers-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.num-foot {
+  padding: 11px 16px;
+  font-size: 12.5px;
+  color: var(--ink-4);
 }
 
-.numbers-fields {
-  display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+.num-ways {
+  margin-left: auto;
 }
 
-.numbers-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.num-ways .ui-segment:disabled {
+  cursor: default;
+  opacity: 0.5;
 }
 
-.numbers-field > span {
-  color: var(--ink-soft);
-  font-family: var(--face-fixed);
-  font-size: 10.5px;
-}
-
-.numbers-field > span > em {
-  color: var(--ink-faint);
-  font-style: normal;
-  margin-left: 6px;
-}
-
-.numbers-field > .input {
-  height: 30px;
-}
-
-.numbers-form-foot {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-}
-
-.numbers-form-foot > .numbers-note {
-  flex: 1 1 260px;
-  margin: 0;
-}
-
-/* ── the plan ───────────────────────────────────────────────────────────── */
-
-.numbers-plan {
-  background: var(--sunk);
-  border: 1px solid var(--accent-line);
-  border-radius: var(--radius-panel);
-  margin-top: 14px;
+.num-fields {
   padding: 14px 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
 }
 
-.numbers-done {
-  border-color: var(--edge);
+.num-fields-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.numbers-plan-title {
-  font-size: 13px;
-  margin: 0 0 10px;
-  text-wrap: pretty;
-}
-
-.numbers-steps {
+.num-actions {
   display: flex;
-  flex-direction: column;
-  font-size: 12px;
-  gap: 5px;
-  list-style: none;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px 14px;
+  flex-wrap: wrap;
+}
+
+.num-note {
+  font-size: 12.5px;
+  color: var(--ink-4);
+}
+
+.num-plan {
+  border-top: 1px solid var(--line-2);
+  padding: 14px 16px;
+  background: var(--ground-side);
+}
+
+.num-plan-done {
+  background: var(--ground);
+}
+
+.num-plan-title {
+  font-size: 13px;
+  font-weight: 550;
+  margin-bottom: 10px;
+}
+
+.num-steps {
   margin: 0 0 12px;
   padding: 0;
-}
-
-.numbers-steps > li {
-  display: grid;
-  gap: 12px;
-  grid-template-columns: 64px minmax(0, 1fr);
-}
-
-.numbers-step-kind {
-  color: var(--accent);
-}
-
-/* ── the doors table ────────────────────────────────────────────────────── */
-
-.numbers-panel {
-  background: var(--panel);
-  border: 1px solid var(--edge);
-  border-radius: var(--radius-panel);
-  overflow: auto;
-}
-
-.numbers-row {
-  align-items: center;
-  border-bottom: 1px solid var(--edge-soft);
-  display: grid;
-  gap: 12px;
-  grid-template-columns: 190px 92px minmax(0, 1fr) 110px 84px 60px;
-  min-width: 700px;
-  padding: 11px 16px;
-}
-
-.numbers-row:last-child {
-  border-bottom: none;
-}
-
-.numbers-row-head {
-  border-bottom-color: var(--edge);
-  color: var(--ink-faint);
-  font-size: 10.5px;
-  letter-spacing: 0.06em;
-  padding: 9px 16px;
-}
-
-.numbers-row-moves {
-  text-align: right;
-}
-
-.numbers-managed {
-  background: var(--panel-2);
-  border: 1px solid var(--edge);
-  border-radius: 3px;
-  color: var(--ink-soft);
-  font-size: 9.5px;
-  letter-spacing: 0.05em;
-  margin-left: 8px;
-  padding: 1px 5px;
-  text-transform: uppercase;
-}
-
-.numbers-channel {
-  color: var(--ink-soft);
-  font-size: 12.5px;
-}
-
-.numbers-dim {
-  color: var(--ink-soft);
-}
-
-.numbers-operator {
-  color: var(--accent);
-}
-
-.numbers-note {
-  color: var(--ink-faint);
-  font-size: 11px;
-  margin: 12px 0 0;
-  text-wrap: pretty;
-}
-
-.numbers-refused {
-  color: var(--accent);
-  margin: 0 0 14px;
-}
-
-
-/* ── the screen in plain words: headings, number cards, the world it answers in ───────── */
-
-.numbers-heading {
-  font-size: 14px;
-  font-weight: 500;
-  margin: 0 0 12px;
-}
-
-.numbers-empty,
-.numbers-text {
-  color: var(--ink-soft);
-  font-size: 13.5px;
-  line-height: 1.55;
-  margin: 0 0 12px;
-  max-width: 68ch;
-}
-
-.numbers-text b {
-  color: var(--ink);
-  font-weight: 500;
-}
-
-.numbers-text code {
-  font-family: var(--face-fixed);
-  font-size: 12.5px;
-}
-
-.numbers-hint {
-  color: var(--ink-faint);
-  font-size: 12px;
-  margin: 10px 0 0;
-}
-
-.numbers-cards {
+  list-style: none;
   display: flex;
   flex-direction: column;
+  gap: 6px;
+}
+
+.num-steps li {
+  display: flex;
+  gap: 10px;
+  font: 12.5px var(--face-fixed);
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+
+.num-step-kind {
+  flex: none;
+  min-width: 70px;
+  color: var(--accent-hover);
+  font-weight: 500;
+}
+
+.num-step-text {
+  min-width: 0;
+  word-break: break-word;
+}
+
+.num-plan-moves {
+  display: flex;
   gap: 8px;
 }
 
-.numbers-card {
-  align-items: center;
-  background: var(--panel);
-  border: 1px solid var(--edge);
-  border-radius: var(--radius-panel);
+.num-carrier {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 12px;
   padding: 14px 16px;
 }
 
-.numbers-card-number {
-  color: var(--ink);
-  font-size: 16px;
+.num-kind {
+  flex: none;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--accent-hover);
+  background: var(--accent-soft);
+  padding: 3px 9px;
+  border-radius: 7px;
 }
 
-.numbers-card-arrow {
-  color: var(--ink-faint);
+.num-carrier-standing {
+  flex: none;
+  font-size: 13.5px;
+  font-weight: 500;
 }
 
-.numbers-card-agent {
-  color: var(--ink);
-  font-size: 13px;
+.num-carrier-account {
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--ink-4);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.numbers-card-remove {
+.num-carrier-moves {
   margin-left: auto;
+  flex: none;
+  display: flex;
+  gap: 8px;
 }
 
-.numbers-world {
-  border-radius: 4px;
-  font-size: 10.5px;
-  letter-spacing: 0.04em;
-  padding: 2px 6px;
-}
 
-.numbers-world-sandbox {
-  background: color-mix(in srgb, var(--warn) 16%, transparent);
-  color: var(--warn);
-}
-
-.numbers-world-production {
-  background: color-mix(in srgb, var(--ok) 16%, transparent);
-  color: var(--ok);
-}
-
-.numbers-callout {
-  background: var(--panel-2, var(--panel));
-  border: 1px solid var(--edge);
-  border-radius: var(--radius-panel);
-  padding: 16px 18px;
-}
-
-.numbers-code {
-  background: var(--sunk);
-  border: 1px solid var(--edge);
-  border-radius: 6px;
-  font-size: 12px;
+.num-body {
+  padding: 14px 16px;
+  font-size: 13.5px;
   line-height: 1.6;
-  margin: 0 0 12px;
-  overflow-x: auto;
-  padding: 10px 12px;
+  color: var(--ink-2);
+}
+
+@media (max-width: 720px) {
+  .num-fields,
+  .num-fields-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

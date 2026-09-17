@@ -5,6 +5,7 @@ import { useSearchParams } from "react-router";
 
 import { GatewayError } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
+import { Button } from "../../ui";
 import { approve, asking, type Asked } from "./door";
 import "./terminal.css";
 
@@ -74,9 +75,9 @@ export function Terminal(): ReactNode {
       title="Sign this terminal in?"
       lede={`A terminal calling itself ${asked?.device ?? A_TERMINAL} asked to be signed in as you. Approve it only if you just ran "pinecall login" on that machine yourself.`}
     >
-      <button className="terminal-go" type="button" onClick={() => void sign()} disabled={busy || asked === null}>
-        {busy ? "signing in…" : "Yes, that is my terminal"}
-      </button>
+      <Button kind="primary" size="lg" onClick={() => void sign()} disabled={busy || asked === null}>
+        {busy ? "Signing in…" : "Yes, that is my terminal"}
+      </Button>
       {refused !== null && <p className="terminal-refused">{refused}</p>}
     </Card>
   );
@@ -90,6 +91,7 @@ function Card({ title, lede, children }: { title: string; lede: string; children
   return (
     <div className="terminal">
       <div className="terminal-card">
+        <img className="terminal-mark" src="/pinecall-mark.png" alt="" />
         <h1 className="terminal-title">{title}</h1>
         <p className="terminal-lede">{lede}</p>
         {children}

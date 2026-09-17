@@ -4,8 +4,9 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 
 import { GatewayError } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
+import { Button, Card, CardHead, Empty, Field, Input, Page, PageHead, Refused, Select, TableHead } from "../../ui";
 import { change, invite, readMembers, ROLES, type Invited, type Member } from "./door";
-import { MemberRow } from "./member-row";
+import { COLUMNS, MemberRow } from "./member-row";
 import "./team.css";
 
 /**
@@ -47,56 +48,75 @@ export function Team(): ReactNode {
     }
   };
 
+  // An invitation, first or again: the gateway mints a fresh one-use link for an email it already
+  // holds as invited, and takes no second seat for it.
+  const inviteOne = async (who: Parameters<typeof invite>[1]): Promise<void> => {
+    setRefused(null);
+    try {
+      setInvited(await invite(credentials, who));
+      await reread();
+    } catch (failed) {
+      setRefused(saidBy(failed));
+    }
+  };
+
   return (
-    <div className="team">
-      <h1 className="team-title">Team</h1>
-      <p className="team-lede">The org's people: who they are, what their keys may do, and which agents they work on.</p>
+    <Page width={1060} tight>
+      <PageHead title="Team" lede="The org's people: who they are, what their keys may do, and which agents they work on." />
 
-      <InviteForm
-        onInvite={async (who) => {
-          setRefused(null);
-          try {
-            setInvited(await invite(credentials, who));
-            await reread();
-          } catch (failed) {
-            setRefused(saidBy(failed));
-          }
-        }}
-      />
+      <InviteForm onInvite={inviteOne} />
 
-      {invited !== null && (
-        <div className="team-token">
-          <p className="team-token-title">
-            {invited.member.name} is invited. Send them this link — copy it now: the table keeps the fingerprint, and it is never shown again.
-          </p>
-          <code className="team-token-code fixed">{invitationLink(invited.token)}</code>
-          <p className="team-note fixed">
-            one use · dies {invited.expires_at} · it opens a card where they choose their password and take their first key
-          </p>
-        </div>
+      {invited !== null && <InvitationLink invited={invited} onClose={() => setInvited(null)} />}
+
+      <Refused>{refused}</Refused>
+
+      {members !== null && (
+        <Card>
+          {members.length === 0 ? (
+            <Empty>Nobody is a member yet: the org's machine key alone opens its doors. Invite the first person above.</Empty>
+          ) : (
+            <>
+              <TableHead columns={COLUMNS} labels={["Name", "Email", "Role", "Agents", "Status>", ""]} />
+              {members.map((member) => (
+                <MemberRow
+                  key={member.id}
+                  member={member}
+                  onChange={(said) => changed(member.id, said)}
+                  onResend={() => inviteOne({ email: member.email, name: member.name, role: member.role, agents: member.agents })}
+                />
+              ))}
+            </>
+          )}
+        </Card>
       )}
+    </Page>
+  );
+}
 
-      {refused !== null && <p className="team-note team-refused fixed">{refused}</p>}
-
-      {members !== null && members.length === 0 && (
-        <p className="team-note fixed">Nobody is a member yet: the org's machine key alone opens its doors. Invite the first person above.</p>
-      )}
-      {members !== null && members.length > 0 && (
-        <div className="team-panel">
-          <div className="team-row team-row-head fixed">
-            <span>NAME</span>
-            <span>EMAIL</span>
-            <span>ROLE</span>
-            <span>AGENTS</span>
-            <span>STATUS</span>
-            <span />
-          </div>
-          {members.map((member) => (
-            <MemberRow key={member.id} member={member} onChange={(said) => changed(member.id, said)} />
-          ))}
-        </div>
-      )}
-    </div>
+/** The link an invitation is, shown the one time it exists in the clear. */
+function InvitationLink({ invited, onClose }: { invited: Invited; onClose: () => void }): ReactNode {
+  const link = invitationLink(invited.token);
+  const [copied, setCopied] = useState(false);
+  return (
+    <Card>
+      <CardHead title={`${invited.member.name} is invited`} meta="copy it now: the table keeps the fingerprint, and it is never shown again">
+        <span className="team-link-moves">
+          <Button
+            size="xs"
+            onClick={() => {
+              void navigator.clipboard.writeText(link).then(() => setCopied(true));
+            }}
+          >
+            {copied ? "Copied" : "Copy"}
+          </Button>
+          <Button size="xs" onClick={onClose}>
+            Done
+          </Button>
+        </span>
+      </CardHead>
+      <pre className="ui-code">{link}</pre>
+      <div className="ui-card-foot">One use · dies {invited.expires_at} · it opens a card where they choose their password and take their first key.</div>
+    </Card>
   );
 }
 
@@ -127,25 +147,34 @@ function InviteForm({ onInvite }: { onInvite: (who: Parameters<typeof invite>[1]
   };
 
   return (
-    <form className="team-invite" onSubmit={(event) => void submit(event)}>
-      <p className="team-panel-label fixed">INVITE ONE</p>
-      <div className="team-invite-fields">
-        <input className="team-input fixed" placeholder="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required aria-label="email" />
-        <input className="team-input" placeholder="name" value={name} onChange={(event) => setName(event.target.value)} required aria-label="name" />
-        <select className="team-input fixed" value={role} onChange={(event) => setRole(event.target.value as Member["role"])} aria-label="role">
-          {ROLES.map((one) => (
-            <option key={one} value={one}>
-              {one}
-            </option>
-          ))}
-        </select>
-        <input className="team-input fixed" placeholder="agents · empty is every one" value={agents} onChange={(event) => setAgents(event.target.value)} aria-label="agents" />
-        <button className="team-button" type="submit" disabled={busy}>
-          {busy ? "inviting…" : "Invite"}
-        </button>
+    <Card pad>
+      <form className="ui-form" onSubmit={(event) => void submit(event)}>
+        <Field label="Email" grow minWidth={180}>
+          <Input placeholder="name@company.com" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+        </Field>
+        <Field label="Name" grow minWidth={150}>
+          <Input placeholder="Full name" value={name} onChange={(event) => setName(event.target.value)} required />
+        </Field>
+        <Field label="Role" minWidth={130}>
+          <Select value={role} onChange={(event) => setRole(event.target.value as Member["role"])}>
+            {ROLES.map((one) => (
+              <option key={one} value={one}>
+                {one}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Agents" minWidth={150}>
+          <Input placeholder="every agent" value={agents} onChange={(event) => setAgents(event.target.value)} />
+        </Field>
+        <Button kind="primary" size="form" type="submit" disabled={busy}>
+          {busy ? "Inviting…" : "Invite"}
+        </Button>
+      </form>
+      <div className="team-roles">
+        A role is a preset of what their keys open · qa reads · supervisor sits beside a live call · manager runs the org · admin everything · developer writes the agent
       </div>
-      <p className="team-note fixed">a role is a preset of what their keys open · qa reads · supervisor sits beside a live call · manager runs the org · admin everything · developer writes the agent</p>
-    </form>
+    </Card>
   );
 }
 

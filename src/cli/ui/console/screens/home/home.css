@@ -100,7 +100,7 @@
   height: 16px;
   border-radius: 50%;
   background: var(--green-dot);
-  color: #fff;
+  color: var(--on-accent);
   display: grid;
   place-items: center;
   font-size: 10px;

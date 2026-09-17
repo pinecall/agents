@@ -5,22 +5,23 @@ import { useEffect, useState, type ReactNode } from "react";
 import { read } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
 import { meIn } from "../../lib/corners";
-import { useHeldAgents } from "../../lib/use-held-agents";
+import { prettyNumber } from "../../lib/format";
+import { useOrg } from "../../lib/org";
 import { useWhoami } from "../../lib/whoami";
-import { pretty } from "./numbers";
+import { Card, CardHead, Empty, Page, PageHead, Pill, SectionLabel } from "../../ui";
 import "./numbers.css";
 
-/**
- * The local console's one screen about numbers. A sandbox needs none of its own: the gateway sends
- * a call from the phone a developer named to the copy they are running, and everybody else's to
- * production. So this says the two commands, and which copies a call would reach right now.
- */
 /** One production number, and the agent it reaches: what `GET /v1/line/numbers` lists. */
 interface ToCall {
   number: string;
   agent: string;
 }
 
+/**
+ * The local console's one screen about numbers. A sandbox needs none of its own: the gateway sends
+ * a call from the phone a developer named to the copy they are running, and everybody else's to
+ * production. So this says the two commands, and which copies a call would reach right now.
+ */
 export function PhoneTesting(): ReactNode {
   const credentials = useCredentials();
   const me = meIn(useWhoami());
@@ -47,76 +48,82 @@ export function PhoneTesting(): ReactNode {
     };
   }, [credentials]);
 
-  const mine = useHeldAgents().agents.filter((held) => me !== null && held.holder?.holder === me);
+  const mine = useOrg().held.filter((held) => me !== null && held.holder?.holder === me);
 
   return (
-    <div className="numbers">
-      <h1 className="numbers-title">Phone testing</h1>
-      <p className="numbers-lede">
-        Call the number your customers call, from your own mobile, and <b>your copy answers</b>. Everybody else who
-        calls still reaches production. You do not need a sandbox number.
-      </p>
+    <Page width={900}>
+      <PageHead
+        title="Phone testing"
+        ledeWidth={660}
+        lede={
+          <>
+            Call the number your customers call, from your own mobile, and <b>your copy answers</b>. Everybody else who calls still reaches
+            production. You do not need a sandbox number.
+          </>
+        }
+      />
 
-      <section className="numbers-doors numbers-callout">
-        <h2 className="numbers-heading">Once per machine</h2>
-        <pre className="numbers-code fixed">pinecall line from +1XXXXXXXXXX    # this mobile is mine</pre>
-        <h2 className="numbers-heading">While you work</h2>
-        <pre className="numbers-code fixed">pinecall run --serve               # your copies up, and this console{"\n"}pinecall line forget               # give your calls back to production</pre>
-        <p className="numbers-hint">
-          The call shows up here, in Sessions, marked <span className="fixed">diverted_from: production</span>.
-        </p>
-      </section>
+      <Card>
+        <SectionLabel>Once per machine</SectionLabel>
+        <pre className="ui-code">pinecall line from +1XXXXXXXXXX     # this mobile is mine</pre>
+        <SectionLabel ruled>While you work</SectionLabel>
+        <pre className="ui-code">{"pinecall run --serve                # your copies up, and this console\npinecall line forget                # give your calls back to production"}</pre>
+        <div className="ui-card-foot">
+          <span>
+            The call shows up here, in Sessions, marked <span className="ui-fixed">diverted_from: production</span>.
+          </span>
+        </div>
+      </Card>
 
       {numbers !== null && (
-        <section className="numbers-doors">
-          <h2 className="numbers-heading">The numbers to call</h2>
-          {numbers.length === 0 ? (
-            <p className="numbers-empty">This org has no phone number in production yet. The gateway's console adds one, under Numbers.</p>
-          ) : (
-            <div className="numbers-cards">
-              {numbers.map((one) => {
-                const running = mine.some((held) => held.slug === one.agent);
-                const yours = running && calling.length > 0;
-                const why = !running ? "production answers: you are not running it" : "production answers: say which phone is yours";
-                return (
-                  <div key={one.number} className="numbers-card">
-                    <span className="numbers-card-number fixed">{pretty(one.number)}</span>
-                    <span className="numbers-card-arrow" aria-hidden>→</span>
-                    <span className="numbers-card-agent fixed">{one.agent}</span>
-                    <span className={yours ? "numbers-world numbers-world-sandbox" : "numbers-world numbers-world-production"}>
-                      {yours ? `your copy answers ${calling.map(pretty).join(", ")}` : why}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
+        <Card>
+          <CardHead title="The numbers to call" />
+          {numbers.length === 0 && <Empty>This org has no phone number in production yet. The gateway's console adds one, under Numbers.</Empty>}
+          {numbers.map((one) => {
+            const running = mine.some((held) => held.slug === one.agent);
+            const yours = running && calling.length > 0;
+            return (
+              <div key={one.number} className="num-row">
+                <span className="num-number">{prettyNumber(one.number)}</span>
+                <span className="num-arrow" aria-hidden>
+                  →
+                </span>
+                <span className="num-agent">{one.agent}</span>
+                <span className="num-end">
+                  {yours ? (
+                    <Pill tone="green">your copy answers {calling.map(prettyNumber).join(", ")}</Pill>
+                  ) : running ? (
+                    <Pill tone="amber">production answers: say which phone is yours</Pill>
+                  ) : (
+                    <Pill tone="gray">production answers: you are not running it</Pill>
+                  )}
+                </span>
+              </div>
+            );
+          })}
+        </Card>
       )}
 
-      <section className="numbers-doors">
-        <h2 className="numbers-heading">What a call from your phone reaches right now</h2>
-        {mine.length === 0 ? (
-          <p className="numbers-empty">
-            Nothing: no copy of yours is running, so your calls reach production. Start <code>pinecall run</code> in the
-            project.
-          </p>
-        ) : (
-          <p className="numbers-text">
-            {calling.length === 0 ? (
-              <>
-                Production, still: you are running {mine.map((held) => held.slug).join(", ")}, and the gateway does not
-                know which phone is yours. <code>pinecall line from +1…</code>, once.
-              </>
-            ) : (
-              <>
-                Your copy of {mine.map((held) => held.slug).join(", ")}, from {calling.map(pretty).join(", ")} — for as
-                long as <code>pinecall run</code> stays up.
-              </>
-            )}
-          </p>
-        )}
-      </section>
-    </div>
+      <Card>
+        <CardHead title="What a call from your phone reaches right now" />
+        <div className="num-body">
+          {mine.length === 0 ? (
+            <>
+              Nothing: no copy of yours is running, so your calls reach production. Start <span className="ui-fixed">pinecall run</span> in the project.
+            </>
+          ) : calling.length === 0 ? (
+            <>
+              Production, still: you are running {mine.map((held) => held.slug).join(", ")}, and the gateway does not know which phone is yours.{" "}
+              <span className="ui-fixed">pinecall line from +1…</span>, once.
+            </>
+          ) : (
+            <>
+              Your copy of {mine.map((held) => held.slug).join(", ")}, from {calling.map(prettyNumber).join(", ")} — for as long as{" "}
+              <span className="ui-fixed">pinecall run</span> stays up.
+            </>
+          )}
+        </div>
+      </Card>
+    </Page>
   );
 }

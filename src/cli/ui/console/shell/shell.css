@@ -76,7 +76,7 @@
   height: 24px;
   border-radius: 7px;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   display: grid;
   place-items: center;
   font-size: 11px;
@@ -293,7 +293,7 @@
   height: 26px;
   border-radius: 8px;
   background: var(--ink);
-  color: #fff;
+  color: var(--on-accent);
   display: grid;
   place-items: center;
   font-size: 10.5px;

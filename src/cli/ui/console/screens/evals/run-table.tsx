@@ -1,108 +1,63 @@
-/** Every run as one dense line; the judgments collapse into a tally so a regression is visible. */
+/** Every run as one line; the judgments collapse into a tally so a regression is visible. */
 
 import type { ReactNode } from "react";
 
-import { started } from "../../lib/clock";
+import { dayAndTime } from "../../lib/format";
+import { Pill, TableHead } from "../../ui";
 import { deltaBetween, tallyOf, type Delta } from "./deltas";
 import type { EvalRun } from "./door";
 
-export function RunTable({
-  runs,
-  selected,
-  onSelect,
-}: {
-  runs: EvalRun[];
-  selected: string | null;
-  onSelect: (id: string) => void;
-}): ReactNode {
+const COLUMNS = "minmax(0,1.1fr) 120px 84px 70px 80px minmax(0,1.6fr)";
+
+const STATUS_TONE = { done: "green", running: "amber", failed: "red" } as const;
+
+export function RunTable({ runs, selected, onSelect }: { runs: EvalRun[]; selected: string | null; onSelect: (id: string) => void }): ReactNode {
   return (
     <>
-      <div className="table-wrap">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>run</th>
-              <th>started</th>
-              <th>status</th>
-              <th className="num">goldens</th>
-              <th className="num">models</th>
-              <th className="num">held</th>
-              <th className="num">judge calls</th>
-              <th>since the run before</th>
-            </tr>
-          </thead>
-          <tbody>
-            {runs.map((run, at) => (
-              <Row key={run.id} run={run} before={runs[at + 1]} open={run.id === selected} onSelect={onSelect} />
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <p className="note">
-        {runs.length} run{runs.length === 1 ? "" : "s"} · the same rows <code className="mono">pinecall runs list</code> prints
-      </p>
+      <TableHead columns={COLUMNS} labels={["Run", "Started", "Status", "Held>", "Judge calls>", "Since the run before"]} />
+      {runs.map((run, at) => {
+        const tally = tallyOf(run.matrix);
+        const open = run.id === selected;
+        return (
+          <div
+            key={run.id}
+            className={open ? "ui-table-row ui-table-row-link ev-row-open" : "ui-table-row ui-table-row-link"}
+            style={{ gridTemplateColumns: COLUMNS }}
+            onClick={() => onSelect(run.id)}
+          >
+            <span className="ui-cell-link ui-clip">{run.id}</span>
+            <span className="ui-cell-faint">{dayAndTime(run.started_at)}</span>
+            <span>
+              <Pill tone={STATUS_TONE[run.status]}>{run.status}</Pill>
+            </span>
+            <span className={tally.judgments > 0 && tally.held < tally.judgments ? "ev-num ev-num-bad" : "ev-num"}>
+              {tally.judgments === 0 ? "—" : `${tally.held}/${tally.judgments}`}
+            </span>
+            <span className="ev-num ev-num-faint">{run.matrix?.judge_calls ?? "—"}</span>
+            <Changed delta={deltaBetween(run, runs[at + 1])} />
+          </div>
+        );
+      })}
     </>
-  );
-}
-
-function Row({
-  run,
-  before,
-  open,
-  onSelect,
-}: {
-  run: EvalRun;
-  before: EvalRun | undefined;
-  open: boolean;
-  onSelect: (id: string) => void;
-}): ReactNode {
-  const tally = tallyOf(run.matrix);
-  return (
-    <tr className={open ? "ev-row is-open" : "ev-row"} onClick={() => onSelect(run.id)}>
-      <td className="id">
-        <button type="button" className="link">
-          {run.id}
-        </button>
-      </td>
-      <td className="mono dim">{started(run.started_at)}</td>
-      <td>
-        <span className={`ev-status-${run.status}`}>{run.status}</span>
-      </td>
-      <td className="num dim">{run.matrix?.goldens.length ?? "—"}</td>
-      <td className="num dim">{run.matrix?.models.length ?? "—"}</td>
-      <td className={tally.judgments > 0 && tally.held < tally.judgments ? "num ev-bad" : "num"}>
-        {tally.judgments === 0 ? "—" : `${tally.held}/${tally.judgments}`}
-      </td>
-      <td className="num faint">{run.matrix?.judge_calls ?? "—"}</td>
-      <td>
-        <Changed delta={deltaBetween(run, before)} />
-      </td>
-    </tr>
   );
 }
 
 // The delta names the judgments that changed hands. It is not a number about a run: an average
 // over goldens would say a run got worse without saying what a person should go and read.
 export function Changed({ delta }: { delta: Delta | null }): ReactNode {
-  if (delta === null) {
-    return <span className="faint mono">first of its kind</span>;
-  }
-  if (delta.broke.length === 0 && delta.recovered.length === 0) {
-    return <span className="dim mono">±0</span>;
-  }
+  if (delta === null) return <span className="ui-cell-faint">first of its kind</span>;
+  if (delta.broke.length === 0 && delta.recovered.length === 0) return <span className="ui-cell-faint">±0</span>;
   return (
-    <span className="chips">
+    <span className="ui-tags">
       {delta.broke.map((name) => (
-        <span className="chip" key={`broke-${name}`}>
-          <span className="chip-key ev-delta-down">broke</span>
-          <span className="chip-val">{name}</span>
-        </span>
+        <Pill key={`broke-${name}`} tone="red" small>
+          broke · {name}
+        </Pill>
       ))}
       {delta.recovered.map((name) => (
-        <span className="chip" key={`held-${name}`}>
-          <span className="chip-key ev-delta-up">held again</span>
-          <span className="chip-val">{name}</span>
-        </span>
+        <Pill key={`held-${name}`} tone="green" small>
+          held again · {name}
+        </Pill>
       ))}
     </span>
   );

@@ -559,7 +559,7 @@ textarea:focus {
 .ui-button-primary {
   border-color: transparent;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   font-weight: 550;
   padding: 0 14px;
 }
@@ -567,7 +567,7 @@ textarea:focus {
 .ui-button-primary:hover {
   background: var(--accent-hover);
   border-color: transparent;
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .ui-button-dashed {
@@ -779,7 +779,7 @@ textarea:focus {
 .ui-chip-on {
   background: var(--ink);
   border-color: var(--ink);
-  color: #fff;
+  color: var(--on-accent);
   font-weight: 550;
 }
 
@@ -797,7 +797,7 @@ textarea:focus {
 
 .ui-choice-on {
   background: var(--ink);
-  color: #fff;
+  color: var(--on-accent);
   font-weight: 550;
 }
 
@@ -826,7 +826,7 @@ textarea:focus {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--on-accent);
 }
 
 /* ── small things ─────────────────────────────────────────────────────────── */
@@ -995,7 +995,7 @@ textarea:focus {
 
 .ui-tint-ink {
   background: var(--ink);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .ui-code {
@@ -1031,5 +1031,15 @@ textarea:focus {
 @media (max-width: 720px) {
   .ui-page {
     padding: 20px 16px 40px;
+  }
+
+  /* A table keeps its columns and scrolls sideways inside its card; the page never does. */
+  .ui-card {
+    overflow-x: auto;
+  }
+
+  .ui-table-head,
+  .ui-table-row {
+    min-width: 640px;
   }
 }

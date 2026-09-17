@@ -1,4 +1,4 @@
-/** The console starts here: the theme, the key this browser holds — or the login, or an invitation; none at all on a machine's own — and the router. */
+/** The console starts here: the key this browser holds — or the login, or an invitation; none at all on a machine's own — and the router. */
 
 import { StrictMode, useCallback, useMemo, useState, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";

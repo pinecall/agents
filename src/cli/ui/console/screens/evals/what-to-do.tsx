@@ -5,6 +5,7 @@ import { useParams } from "react-router";
 
 import { GatewayError } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
+import { Button, Pill, Refused } from "../../ui";
 import { promoteCall, replayCall, type Promoted, type Replayed } from "./door";
 
 /**
@@ -36,31 +37,35 @@ export function WhatToDoWithIt({ call }: { call: string }): ReactNode {
   };
 
   return (
-    <>
-      <div className="ev-acts">
-        <button type="button" className="button" disabled={busy !== ""} onClick={() => void does("check")}>
-          {busy === "check" ? "checking…" : "re-check by code"}
-        </button>
-        <button type="button" className="button" disabled={busy !== ""} onClick={() => void does("promote")}>
-          {busy === "promote" ? "writing…" : "promote to a golden"}
-        </button>
-        {replayed !== null && (
-          <span className={replayed.passed ? "accent mono" : "ev-bad mono"}>
-            {replayed.verdicts.map((verdict) => `${verdict.check} ${verdict.status}`).join(" · ")}
-          </span>
-        )}
-        {promoted !== null && (
-          <span className="mono dim">
-            {promoted.path} · {promoted.candidate.input.length} caller turn(s)
-          </span>
-        )}
+    <div className="ev-acts">
+      <div className="ev-acts-buttons">
+        <Button size="md" disabled={busy !== ""} onClick={() => void does("check")}>
+          {busy === "check" ? "Checking…" : "Re-check by code"}
+        </Button>
+        <Button size="md" disabled={busy !== ""} onClick={() => void does("promote")}>
+          {busy === "promote" ? "Writing…" : "Promote to a golden"}
+        </Button>
       </div>
-      {refused !== null && <p className="note note-warn">{refused}</p>}
-      {promoted?.notes.map((note) => (
-        <p key={note} className="note">
-          {note}
-        </p>
-      ))}
-    </>
+      {replayed !== null && (
+        <div className="ui-tags">
+          {replayed.verdicts.map((verdict) => (
+            <span key={verdict.check} title={verdict.detail}>
+              <Pill tone={verdict.status === "passed" ? "green" : verdict.status === "failed" ? "red" : "muted"}>
+                {verdict.check} {verdict.status}
+              </Pill>
+            </span>
+          ))}
+        </div>
+      )}
+      {promoted !== null && (
+        <div className="ui-note">
+          Written to <span className="ui-fixed">{promoted.path}</span> · {promoted.candidate.input.length} caller turn(s)
+          {promoted.notes.map((note) => (
+            <div key={note}>{note}</div>
+          ))}
+        </div>
+      )}
+      <Refused>{refused}</Refused>
+    </div>
   );
 }

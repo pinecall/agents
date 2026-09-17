@@ -1,152 +1,131 @@
-/* The Widget screen: the snippet and the knobs on the left, the button itself on the right. */
+/* Widget: the embed, the look beside the preview, and the blank page the preview opens. */
 
-.widget-screen {
+.widget-copy {
+  margin-left: auto;
+}
+
+.widget-endpoints {
+  padding: 11px 16px 13px;
+  border-top: 1px solid var(--line-2);
+  font-size: 12.5px;
+  color: var(--ink-4);
+  line-height: 1.6;
+}
+
+.widget-endpoints a {
+  color: var(--accent);
+}
+
+.widget-split {
   display: grid;
-  gap: 28px;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
-  padding: 26px 28px;
-}
-
-@media (max-width: 900px) {
-  .widget-screen {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.widget-column {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-width: 0;
-}
-
-.widget-title {
-  font-size: 18px;
-  font-weight: 500;
-  margin: 0;
-}
-
-.widget-lede,
-.widget-note {
-  color: var(--ink-soft);
-  font-size: 13px;
-  line-height: 1.55;
-  margin: 0;
-  max-width: 64ch;
-}
-
-.widget-note code {
-  color: var(--ink);
-  font-family: var(--face-fixed);
-  font-size: 12px;
-}
-
-.widget-heading {
-  color: var(--ink-faint);
-  font-size: 10.5px;
-  font-weight: 400;
-  letter-spacing: 0.06em;
-  margin: 18px 0 0;
-  text-transform: uppercase;
-}
-
-.widget-snippet {
-  background: var(--sunk);
-  border: 1px solid var(--edge);
-  border-radius: var(--radius-panel);
-  font-size: 12px;
-  line-height: 1.55;
-  margin: 0;
-  overflow-x: auto;
-  padding: 14px 16px;
-  user-select: all;
-  white-space: pre;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 14px;
+  align-items: start;
 }
 
 .widget-fields {
-  display: grid;
-  gap: 10px 14px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  max-width: 560px;
-}
-
-.widget-fields label {
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 13px;
 }
 
-.widget-fields label span,
-.widget-accents > span {
-  color: var(--ink-faint);
-  font-size: 10.5px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+.widget-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.widget-accent-label {
+  margin-bottom: 7px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-2);
 }
 
 .widget-accents {
-  align-items: center;
   display: flex;
-  gap: 8px;
-  grid-column: 1 / -1;
+  gap: 7px;
 }
 
 .widget-accent {
-  border: 2px solid transparent;
-  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 0;
+  padding: 0;
   cursor: pointer;
-  height: 22px;
-  width: 22px;
 }
 
-.widget-accent-here {
-  border-color: var(--ink);
+.widget-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.widget-toggle-label {
+  flex: 1;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.widget-preview {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background: var(--ground-side);
+  min-width: 0;
+}
+
+.widget-preview-label {
+  font-size: 11.5px;
+  color: var(--ink-4);
+}
+
+.widget-stage {
+  width: 100%;
+  min-height: 120px;
+  display: flex;
+  justify-content: center;
 }
 
 .widget-open {
+  font-size: 12.5px;
+  font-weight: 500;
   color: var(--accent);
-}
-
-.widget-stage-column {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.widget-stage-label {
-  color: var(--ink-faint);
-  font-size: 10.5px;
-  letter-spacing: 0.05em;
-}
-
-/* A white card whatever the theme: the widget is drawn for a site's page, not for this console. */
-.widget-stage {
-  background: #fff;
-  border: 1px solid var(--edge);
-  border-radius: var(--radius-panel);
-  color: #1f2937;
-  min-height: 120px;
-  padding: 24px;
-}
-
-.widget-refused {
-  color: var(--accent);
-  font-size: 12px;
 }
 
 /* The blank page: white, empty, the button where a site would have it. */
 .widget-blank {
-  background: #fff;
-  color: #1f2937;
-  font-family: Inter, system-ui, sans-serif;
+  background: var(--ground);
   height: 100vh;
   position: relative;
 }
 
 .widget-blank-mark {
-  color: #9ca3af;
+  color: var(--ink-6);
   font-size: 11px;
   left: 16px;
   position: absolute;
   top: 12px;
+}
+
+.widget-blank-refused {
+  position: absolute;
+  top: 36px;
+  left: 16px;
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--red);
+}
+
+@media (max-width: 760px) {
+  .widget-split,
+  .widget-pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

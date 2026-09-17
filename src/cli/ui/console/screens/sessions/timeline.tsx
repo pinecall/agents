@@ -5,6 +5,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useLocation } from "react-router";
 
 import { headline } from "../../lib/metrics";
+import { Button, Card, CardHead } from "../../ui";
 import type { Line } from "./transcript";
 
 // A turn is written twice — as the entry that carried it and as the turn the reducer kept — and
@@ -41,28 +42,31 @@ export function Timeline({ lines, turns }: { lines: Line[]; turns: Turn[] }): Re
     });
 
   return (
-    <div className="table-wrap">
-      <div className="panel-head">
-        <span className="badge">seq · t · type · payload</span>
-        <button className="button" type="button" onClick={() => setAll(!all)}>
-          {all ? "hide the fields" : "show every field"}
-        </button>
+    <Card>
+      <CardHead
+        title="The log"
+        meta={`${lines.length} entries, append-only, numbered by seq`}
+        action={
+          <span className="session-log-action">
+            <Button size="sm" onClick={() => setAll(!all)}>
+              {all ? "Hide the fields" : "Show every field"}
+            </Button>
+          </span>
+        }
+      />
+      <div className="session-log">
+        {lines.map((line) => (
+          <Row
+            key={line.entry.seq}
+            line={line}
+            turn={spoken.get(keyOf(line.entry.type, line.entry.data))}
+            open={all || opened.has(line.entry.seq)}
+            cited={line.entry.seq === cited}
+            onToggle={() => toggle(line.entry.seq)}
+          />
+        ))}
       </div>
-      <table className="timeline fixed">
-        <tbody>
-          {lines.map((line) => (
-            <Row
-              key={line.entry.seq}
-              line={line}
-              turn={spoken.get(keyOf(line.entry.type, line.entry.data))}
-              open={all || opened.has(line.entry.seq)}
-              cited={line.entry.seq === cited}
-              onToggle={() => toggle(line.entry.seq)}
-            />
-          ))}
-        </tbody>
-      </table>
-    </div>
+    </Card>
   );
 }
 
@@ -93,49 +97,51 @@ function Row({
   onToggle: () => void;
 }): ReactNode {
   const fields = line.fields.length > 0;
+  const classes = ["session-entry", `session-entry-${familyOf(line.entry.type)}`];
+  if (fields) classes.push("session-entry-opens");
+  if (cited) classes.push("session-entry-cited");
   return (
-    <>
-      <tr
-        id={anchorOf(line.entry.seq)}
-        className={rowClass(fields, cited)}
-        onClick={fields ? onToggle : undefined}
-      >
-        <td className="mark">{line.mark}</td>
-        <td className="number seq">{line.entry.seq}</td>
-        <td className="number soft">{line.since}</td>
-        <td className="type">{line.entry.type}</td>
-        <td className="payload">
-          {line.payload}
-          {turn !== undefined && <Chips turn={turn} />}
-          {fields && <span className="soft"> {open ? "▾" : "▸"} </span>}
-        </td>
-      </tr>
-      {open &&
-        line.fields.map((field) => (
-          <tr key={field.name} className="field">
-            <td />
-            <td />
-            <td />
-            <td className="field-name">{field.name}</td>
-            <td className="field-value">{field.value}</td>
-          </tr>
-        ))}
-    </>
+    <div id={anchorOf(line.entry.seq)} className={classes.join(" ")} onClick={fields ? onToggle : undefined}>
+      <span className="session-entry-seq">{line.entry.seq}</span>
+      <span className="session-entry-since">{line.since}</span>
+      <span className="session-entry-type">
+        {line.mark !== "" && <span className="session-entry-mark">{line.mark} </span>}
+        {line.entry.type}
+      </span>
+      <span className="session-entry-payload">
+        {line.payload}
+        {fields && <span className="session-entry-caret"> {open ? "▾" : "▸"}</span>}
+        {turn !== undefined && <Chips turn={turn} />}
+        {open && (
+          <span className="session-fields">
+            {line.fields.map((field) => (
+              <span key={field.name} className="session-field">
+                <span className="session-field-name">{field.name}</span>
+                <span className="session-field-value">{field.value}</span>
+              </span>
+            ))}
+          </span>
+        )}
+      </span>
+    </div>
   );
 }
 
-// The row a verdict cites is marked where it stands: the reader arrived here for that one line.
-function rowClass(fields: boolean, cited: boolean): string {
-  return ["row", fields ? "row-opens" : "", cited ? "row-cited" : ""].filter(Boolean).join(" ");
+// The tint a row wears, by what kind of fact it is: what was said, what changed, what a tool did.
+function familyOf(type: string): string {
+  if (type.startsWith("turn.")) return "turn";
+  if (type.startsWith("state.")) return "state";
+  if (type.startsWith("tool.") || type.startsWith("confirm.")) return "tool";
+  if (type.startsWith("call.")) return "call";
+  return "quiet";
 }
 
 function Chips({ turn }: { turn: Turn }): ReactNode {
   return (
-    <span className="chips">
+    <span className="session-chips">
       {headline(turn).map((reading) => (
-        <span key={reading.field} className="chip">
-          <span className="chip-key">{reading.field}</span>
-          <span className="chip-val">{reading.value}</span>
+        <span key={reading.field} className="session-chip">
+          {reading.field} <b>{reading.value}</b>
         </span>
       ))}
     </span>

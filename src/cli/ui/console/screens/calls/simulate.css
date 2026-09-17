@@ -1,0 +1,71 @@
+/* The simulate form: a small panel of fields, opened from the floor or from an agent's inbox. */
+
+.sim {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 13px 14px;
+  background: var(--ground);
+  border: 1px solid var(--line-control);
+  border-radius: 12px;
+  box-shadow: var(--shadow-pop);
+}
+
+.sim-head {
+  display: flex;
+  align-items: center;
+}
+
+.sim-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sim-close {
+  margin-left: auto;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ink-4);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sim-close:hover {
+  background: var(--ground-5);
+  color: var(--ink);
+}
+
+.sim-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-3);
+  line-height: 1.5;
+}
+
+.sim-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 8px;
+}
+
+.sim-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sim-aside {
+  font-size: 11.5px;
+  color: var(--ink-4);
+}
+
+.sim-refused {
+  margin: 0;
+  font-size: 12px;
+  color: var(--red);
+  line-height: 1.5;
+}

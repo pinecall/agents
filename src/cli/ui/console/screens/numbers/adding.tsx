@@ -4,6 +4,8 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 
 import type { HeldAgent } from "@pinecall/protocol";
 
+import { prettyNumber } from "../../lib/format";
+import { Button, Card, CardHead, Input, Label, Select } from "../../ui";
 import type { Available, Carrier, Wired } from "./door";
 
 /** What the panel is told: the carrier (or none), the org's agents, and the two doors it knocks at. */
@@ -12,8 +14,6 @@ export interface AddingProps {
   agents: HeldAgent[];
   available: Available | null;
   busy: boolean;
-  /** The world the number will answer in: the one this console is looking at. */
-  world: string;
   onImport: (wanted: { number: string; agent: string }, dryRun: boolean) => Promise<Wired>;
   onBuy: (wanted: { country: string; area_code?: string; agent: string }, dryRun: boolean) => Promise<Wired>;
 }
@@ -27,7 +27,7 @@ type Way = "import" | "buy";
  * box's account that pays, and the plan names the number it found. Nothing is written on the
  * first click, ever.
  */
-export function Adding({ carrier, agents, available, busy, world, onImport, onBuy }: AddingProps): ReactNode {
+export function Adding({ carrier, agents, available, busy, onImport, onBuy }: AddingProps): ReactNode {
   const [way, setWay] = useState<Way>(carrier === null ? "buy" : "import");
   const [number, setNumber] = useState("");
   const [country, setCountry] = useState("US");
@@ -53,105 +53,188 @@ export function Adding({ carrier, agents, available, busy, world, onImport, onBu
   const planned = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
     setDone(null);
-    setPlan(await ask(true));
+    setPlan(await ask(true).catch(() => null));
   };
   const confirmed = async (): Promise<void> => {
-    const wired = await ask(false);
+    const wired = await ask(false).catch(() => null);
+    if (wired === null) return;
     setPlan(null);
     setDone(wired);
     setNumber("");
   };
 
   const owned = available !== null && available.kind === "twilio" ? available.numbers.filter((one) => !one.imported) : [];
+  const turn = (to: Way): void => {
+    setWay(to);
+    forget();
+  };
 
   return (
-    <section className="numbers-adding">
-      <div className="numbers-form-head">
-        <h2 className="numbers-heading">Add a number to {world}</h2>
-        <span className="tabs">
-          <button type="button" className={way === "import" ? "tab is-active" : "tab"} onClick={() => { setWay("import"); forget(); }} disabled={carrier === null} title={carrier === null ? "connect your phone carrier first, below" : undefined}>
-            {owned.length > 0 ? `Use one I already have (${owned.length} free)` : "Use one I already have"}
+    <Card>
+      <CardHead title="Add a number">
+        <div className="ui-segmented num-ways" role="group">
+          <button
+            type="button"
+            className={way === "import" ? "ui-segment ui-segment-on" : "ui-segment"}
+            aria-pressed={way === "import"}
+            onClick={() => turn("import")}
+            disabled={carrier === null}
+            title={carrier === null ? "connect your phone carrier first, below" : undefined}
+          >
+            {owned.length > 0 ? `One I already have · ${owned.length}` : "One I already have"}
           </button>
-          <button type="button" className={way === "buy" ? "tab is-active" : "tab"} onClick={() => { setWay("buy"); forget(); }}>
+          <button type="button" className={way === "buy" ? "ui-segment ui-segment-on" : "ui-segment"} aria-pressed={way === "buy"} onClick={() => turn("buy")}>
             Buy a new one
           </button>
-        </span>
-      </div>
+        </div>
+      </CardHead>
 
-      <form className="numbers-form" onSubmit={(event) => void planned(event)}>
-        <div className="numbers-fields">
+      <form onSubmit={(event) => void planned(event)}>
+        <div className={way === "buy" ? "num-fields num-fields-3" : "num-fields"}>
           {way === "import" ? (
-            <label className="numbers-field">
-              <span>Number</span>
+            <div>
+              <Label>Number</Label>
               {owned.length > 0 ? (
-                <select className="input fixed" value={number} onChange={(e) => { setNumber(e.target.value); forget(); }} required>
-                  <option value="">choose a number…</option>
-                  {owned.map((one) => <option key={one.number} value={one.number}>{one.number} — {one.name}</option>)}
-                </select>
+                <Select
+                  value={number}
+                  onChange={(e) => {
+                    setNumber(e.target.value);
+                    forget();
+                  }}
+                  required
+                >
+                  <option value="">Choose a number…</option>
+                  {owned.map((one) => (
+                    <option key={one.number} value={one.number}>
+                      {prettyNumber(one.number)} — {one.name}
+                    </option>
+                  ))}
+                </Select>
               ) : (
-                <input className="input fixed" value={number} onChange={(e) => { setNumber(e.target.value); forget(); }} placeholder="+14176743169" required autoComplete="off" />
+                <Input
+                  value={number}
+                  onChange={(e) => {
+                    setNumber(e.target.value);
+                    forget();
+                  }}
+                  placeholder="+14176743169"
+                  required
+                  autoComplete="off"
+                />
               )}
-            </label>
+            </div>
           ) : (
             <>
-              <label className="numbers-field"><span>Country <em>two letters, like US</em></span><input className="input fixed" value={country} onChange={(e) => { setCountry(e.target.value); forget(); }} maxLength={2} required autoComplete="off" /></label>
-              <label className="numbers-field"><span>Area code <em>optional</em></span><input className="input fixed" value={areaCode} onChange={(e) => { setAreaCode(e.target.value); forget(); }} placeholder="417" autoComplete="off" /></label>
+              <div>
+                <Label>Country · two letters</Label>
+                <Input
+                  value={country}
+                  onChange={(e) => {
+                    setCountry(e.target.value);
+                    forget();
+                  }}
+                  maxLength={2}
+                  required
+                  autoComplete="off"
+                />
+              </div>
+              <div>
+                <Label>Area code · optional</Label>
+                <Input
+                  value={areaCode}
+                  onChange={(e) => {
+                    setAreaCode(e.target.value);
+                    forget();
+                  }}
+                  placeholder="417"
+                  autoComplete="off"
+                />
+              </div>
             </>
           )}
-          <label className="numbers-field">
-            <span>Agent that answers</span>
+          <div>
+            <Label>Agent that answers</Label>
             {agents.length > 0 ? (
-              <select className="input fixed" value={agent} onChange={(e) => { setAgent(e.target.value); forget(); }} required>
-                {agents.map((held) => <option key={held.slug} value={held.slug}>{held.slug}</option>)}
-              </select>
+              <Select
+                value={agent}
+                onChange={(e) => {
+                  setAgent(e.target.value);
+                  forget();
+                }}
+                required
+              >
+                {agents.map((held) => (
+                  <option key={held.slug} value={held.slug}>
+                    {held.slug}
+                  </option>
+                ))}
+              </Select>
             ) : (
-              <input className="input fixed" value={agent} onChange={(e) => { setAgent(e.target.value); forget(); }} placeholder="the agent's slug" required autoComplete="off" />
+              <Input
+                value={agent}
+                onChange={(e) => {
+                  setAgent(e.target.value);
+                  forget();
+                }}
+                placeholder="the agent's slug"
+                required
+                autoComplete="off"
+              />
             )}
-          </label>
+          </div>
         </div>
-        <div className="numbers-form-foot">
-          <button className="button" type="submit" disabled={busy || plan !== null}>{busy && plan === null ? "checking…" : "Review"}</button>
-          <span className="numbers-note fixed">
+        <div className="num-actions">
+          <Button kind="primary" type="submit" disabled={busy || plan !== null}>
+            {busy && plan === null ? "Checking…" : "Review"}
+          </Button>
+          <span className="num-note">
             {way === "import"
-              ? "Nothing changes yet: you will see exactly what is going to happen, and confirm."
-              : "Nothing is bought yet: you will see the number that was found, and confirm."}
+              ? "Nothing changes yet — you will see exactly what is going to happen, and confirm."
+              : "Nothing is bought yet — you will see the number that was found, and confirm."}
           </span>
         </div>
       </form>
 
       {plan !== null && (
-        <div className="numbers-plan">
-          <p className="numbers-plan-title">
-            This is what will happen{way === "buy" && plan.route.number !== null ? <> with <span className="fixed">{plan.route.number}</span></> : null}. Nothing is deleted.
-          </p>
+        <div className="num-plan">
+          <div className="num-plan-title">
+            This is what will happen{way === "buy" && plan.route.number !== null ? <> with {prettyNumber(plan.route.number)}</> : null}. Nothing is deleted.
+          </div>
           <Steps steps={plan.steps} />
-          <div className="numbers-form-foot">
-            <button type="button" className="button button-accent" onClick={() => void confirmed()} disabled={busy}>
-              {busy ? "working…" : way === "buy" ? "Buy it and connect it" : "Confirm"}
-            </button>
-            <button type="button" className="link" onClick={forget} disabled={busy}>cancel</button>
+          <div className="num-plan-moves">
+            <Button kind="primary" size="md" onClick={() => void confirmed()} disabled={busy}>
+              {busy ? "Working…" : way === "buy" ? "Buy it and connect it" : "Confirm"}
+            </Button>
+            <Button size="md" onClick={forget} disabled={busy}>
+              Cancel
+            </Button>
           </div>
         </div>
       )}
 
       {done !== null && (
-        <div className="numbers-plan numbers-done">
-          <p className="numbers-plan-title">Done. <span className="fixed">{done.route.number}</span> now rings <span className="fixed">{done.route.agent}</span> in {done.route.env}.</p>
+        <div className="num-plan num-plan-done">
+          <div className="num-plan-title">
+            Done. {prettyNumber(done.route.number)} now rings {done.route.agent} in {done.route.env}.
+          </div>
           <Steps steps={done.steps} />
         </div>
       )}
-    </section>
+    </Card>
   );
 }
 
 /** The gateway's own steps, one per line, in its words — the first token is what kind of thing each is. */
 function Steps({ steps }: { steps: string[] }): ReactNode {
   return (
-    <ol className="numbers-steps fixed">
+    <ol className="num-steps">
       {steps.map((step, index) => {
         const [kind, ...rest] = step.split(/\s+/);
         return (
-          <li key={index}><span className="numbers-step-kind">{kind}</span><span>{rest.join(" ")}</span></li>
+          <li key={index}>
+            <span className="num-step-kind">{kind}</span>
+            <span className="num-step-text">{rest.join(" ")}</span>
+          </li>
         );
       })}
     </ol>

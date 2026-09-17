@@ -1,11 +1,13 @@
-/** Simulate: pick a persona, choose the line, and put a synthetic caller on this agent from the page. */
+/** Simulate: pick a persona, choose the line, and put a synthetic caller on an agent from the page. */
 
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useNavigate } from "react-router";
 
 import { GatewayError } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
+import { Button, Check, Field, Input, Select } from "../../ui";
 import { readRoster, startSimulation, type Roster } from "./simulating";
+import "./simulate.css";
 
 // How many turns a caller improvises when nobody said: the same six `pinecall simulate` uses.
 const TURNS = 6;
@@ -16,15 +18,25 @@ const NOISE_DB = 15;
 const LOSS_PERCENT = 0;
 
 /**
- * The form, folded until somebody wants a caller. It asks the console's own server, never the
- * gateway: a simulation mounts the class of the directory `pinecall run` runs in, so only that
- * process can start one. The call is answered by its id and the page goes to it — the log is the
- * transcript, and on a spoken line the listen button beside it is the speakers `--listen` never had.
+ * The form. It asks the process holding the agent, through the gateway: a simulation mounts the
+ * class of the directory `pinecall run` runs in, so only that process can start one. The call is
+ * answered by its id and the page goes to it on the floor — the log is the transcript, and on a
+ * spoken line the desk's Listen is the speakers `--listen` never had.
  */
-export function SimulateForm({ agent }: { agent: string }): ReactNode {
+export function SimulateForm({
+  agent: fixed,
+  agents,
+  onClose,
+}: {
+  /** The agent to call, when the screen is one agent's. */
+  agent?: string | undefined;
+  /** The agents to choose from, when the screen is the org's floor. */
+  agents?: readonly string[] | undefined;
+  onClose: () => void;
+}): ReactNode {
   const credentials = useCredentials();
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
+  const [agent, setAgent] = useState(fixed ?? agents?.[0] ?? "");
   const [roster, setRoster] = useState<Roster | null>(null);
   const [persona, setPersona] = useState("");
   const [voice, setVoice] = useState(false);
@@ -37,7 +49,10 @@ export function SimulateForm({ agent }: { agent: string }): ReactNode {
   const [refused, setRefused] = useState<string | null>(null);
 
   useEffect(() => {
+    if (agent === "") return;
     let gone = false;
+    setRoster(null);
+    setRefused(null);
     readRoster(credentials, agent).then(
       (read) => {
         if (gone) return;
@@ -51,25 +66,10 @@ export function SimulateForm({ agent }: { agent: string }): ReactNode {
     return () => {
       gone = true;
     };
-  }, [credentials]);
+  }, [credentials, agent]);
 
-  if (roster === null) {
-    return refused === null ? null : <p className="note note-warn sim-aside">{refused}</p>;
-  }
-  if (roster.agent !== agent) {
-    return (
-      <p className="sim-aside">
-        {roster.agent === null
-          ? "No agent class in the directory the agent's `pinecall run` runs in, so nothing to simulate against."
-          : `The process holding the agent runs in ${roster.agent}'s directory; a simulated caller is for that agent.`}
-      </p>
-    );
-  }
-  if (roster.personas.length === 0) {
-    return <p className="sim-aside">No personas in test/personas: one file per caller, default-exporting one.</p>;
-  }
-
-  const chosen = roster.personas.find((one) => one.name === persona);
+  const chosen = roster?.personas.find((one) => one.name === persona);
+  const why = whyNot(roster, agent);
 
   const start = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
@@ -84,7 +84,8 @@ export function SimulateForm({ agent }: { agent: string }): ReactNode {
         turns,
         ...(voice && spoiled ? { background_noise: noise, packet_loss: loss } : {}),
       });
-      navigate(`/a/${agent}/calls/${call}`);
+      onClose();
+      void navigate(`/live/${call}`);
     } catch (failed) {
       setRefused(failed instanceof GatewayError ? failed.message : String(failed));
     } finally {
@@ -93,92 +94,81 @@ export function SimulateForm({ agent }: { agent: string }): ReactNode {
   };
 
   return (
-    <div className="sim">
-      <button type="button" className="sim-toggle" onClick={() => setOpen(!open)} aria-expanded={open}>
-        <span>{open ? "close" : "simulate a caller"}</span>
-        <span className="sim-toggle-mark fixed">{open ? "−" : "+"}</span>
-      </button>
-      {open && (
-        <form className="sim-fields" onSubmit={(event) => void start(event)}>
-          <label className="sim-field">
-            <span className="sim-label fixed">persona</span>
-            <select className="input" value={persona} onChange={(event) => setPersona(event.target.value)}>
+    <form className="sim" onSubmit={(event) => void start(event)}>
+      <div className="sim-head">
+        <span className="sim-title">Simulate a caller</span>
+        <button type="button" className="sim-close" onClick={onClose} aria-label="close">
+          ×
+        </button>
+      </div>
+      {agents !== undefined && (
+        <Field label="Agent">
+          <Select size="sm" value={agent} onChange={(event) => setAgent(event.target.value)}>
+            {agents.map((one) => (
+              <option key={one} value={one}>
+                {one}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      )}
+      {roster === null && refused === null && <p className="sim-note">Asking the process that holds {agent || "the agent"} for its personas…</p>}
+      {why !== null && <p className="sim-note">{why}</p>}
+      {roster !== null && why === null && (
+        <>
+          <Field label="Persona">
+            <Select size="sm" value={persona} onChange={(event) => setPersona(event.target.value)}>
               {roster.personas.map((one) => (
                 <option key={one.name} value={one.name}>
                   {one.name}
                 </option>
               ))}
-            </select>
-          </label>
-          {chosen !== undefined && <p className="sim-goal">goal: {chosen.goal}</p>}
+            </Select>
+          </Field>
+          {chosen !== undefined && <p className="sim-note">Goal: {chosen.goal}</p>}
           <div className="sim-pair">
-            <label className="sim-field">
-              <span className="sim-label fixed">turns</span>
-              <input
-                className="input"
-                type="number"
-                min={1}
-                max={30}
-                value={turns}
-                onChange={(event) => setTurns(Number(event.target.value))}
-              />
-            </label>
+            <Field label="Turns">
+              <Input size="sm" type="number" min={1} max={30} value={turns} onChange={(event) => setTurns(Number(event.target.value))} />
+            </Field>
             {voice && spoiled && (
-              <label className="sim-field">
-                <span className="sim-label fixed">noise, dB under</span>
-                <input
-                  className="input"
-                  type="number"
-                  min={0}
-                  max={60}
-                  value={noise}
-                  onChange={(event) => setNoise(Number(event.target.value))}
-                />
-              </label>
+              <Field label="Noise, dB under">
+                <Input size="sm" type="number" min={0} max={60} value={noise} onChange={(event) => setNoise(Number(event.target.value))} />
+              </Field>
             )}
             {voice && spoiled && (
-              <label className="sim-field">
-                <span className="sim-label fixed">packets lost, %</span>
-                <input
-                  className="input"
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={loss}
-                  onChange={(event) => setLoss(Number(event.target.value))}
-                />
-              </label>
+              <Field label="Packets lost, %">
+                <Input size="sm" type="number" min={0} max={100} value={loss} onChange={(event) => setLoss(Number(event.target.value))} />
+              </Field>
             )}
           </div>
           <div className="sim-checks">
-            <Switch on={voice} turn={setVoice}>
-              voice <span className="sim-check-aside fixed">a real line, and you can listen</span>
-            </Switch>
-            <Switch on={judge} turn={setJudge}>
-              judge at hang-up
-            </Switch>
+            <Check checked={voice} onChange={setVoice}>
+              Voice <span className="sim-aside">a real line, and you can listen</span>
+            </Check>
+            <Check checked={judge} onChange={setJudge}>
+              Judge at hang-up
+            </Check>
             {voice && (
-              <Switch on={spoiled} turn={setSpoiled}>
-                noisy line <span className="sim-check-aside fixed">a TV behind the caller, packets lost</span>
-              </Switch>
+              <Check checked={spoiled} onChange={setSpoiled}>
+                Noisy line <span className="sim-aside">a TV behind the caller, packets lost</span>
+              </Check>
             )}
           </div>
-          <button type="submit" className="button button-accent sim-call" disabled={starting || persona === ""}>
-            {starting ? "calling…" : "Call the agent"}
-          </button>
-          {refused !== null && <p className="note note-warn">{refused}</p>}
-        </form>
+          <Button type="submit" kind="primary" size="md" disabled={starting || persona === ""}>
+            {starting ? "Calling…" : "Call the agent"}
+          </Button>
+        </>
       )}
-    </div>
+      {refused !== null && <p className="sim-refused">{refused}</p>}
+    </form>
   );
 }
 
-/** One switch: a pill with the knob on the side that is on, and what it turns on beside it. */
-function Switch({ on, turn, children }: { on: boolean; turn: (on: boolean) => void; children: ReactNode }): ReactNode {
-  return (
-    <label className="sim-check">
-      <input className="sim-switch" type="checkbox" checked={on} onChange={(event) => turn(event.target.checked)} />
-      <span>{children}</span>
-    </label>
-  );
+// The three answers the roster can give that are not "here are the callers", each in one sentence.
+function whyNot(roster: Roster | null, agent: string): string | null {
+  if (roster === null) return null;
+  if (roster.agent === null) return "No agent class in the directory the agent's `pinecall run` runs in, so nothing to simulate against.";
+  if (roster.agent !== agent) return `The process holding the agent runs in ${roster.agent}'s directory; a simulated caller is for that agent.`;
+  if (roster.personas.length === 0) return "No personas in test/personas: one file per caller, default-exporting one.";
+  return null;
 }

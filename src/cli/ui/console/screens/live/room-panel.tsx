@@ -3,38 +3,37 @@
 import type { Room } from "@pinecall/protocol";
 import type { ReactNode } from "react";
 
+import { Dot, SectionLabel } from "../../ui";
+
 /** The room's participants as the room reported them. A text session has none and says so. */
-export function RoomPanel({ room, from }: { room: Room | null; from: string | null }): ReactNode {
+export function RoomPanel({ room, from, over }: { room: Room | null; from: string | null; over: boolean }): ReactNode {
   return (
-    <section className="live-panel">
-      <h3 className="live-panel-name">ROOM</h3>
+    <>
+      <SectionLabel ruled>Room</SectionLabel>
       {room === null ? (
-        <p className="live-panel-empty">No room: this session carries no media.</p>
+        <div className="lv-pane-text">No room: this session carries no media.</div>
       ) : (
-        <>
-          <p className="live-panel-line">
-            {room.name}
-            <br />
-            {room.sid}
-            {from !== null && <> · rang from {from}</>}
-          </p>
-          <ul className="participants">
+        <div className="lv-pane-text">
+          {over ? "Audio room closed" : "Audio room open"} · {room.participants.length}{" "}
+          {room.participants.length === 1 ? "participant" : "participants"}
+          {from !== null && <> · rang from {from}</>}
+          <ul className="lv-people">
             {room.participants.map((who) => (
-              <li className="participant" key={who.identity}>
+              <li className="lv-person" key={who.identity}>
                 <details>
-                  <summary className="participant-line">
-                    <span className={who.speaking ? "participant-dot participant-speaking" : "participant-dot participant-quiet"} />
+                  <summary>
+                    <Dot tone={who.speaking ? "green" : undefined} small />
                     <span>{who.name ?? who.identity}</span>
-                    <span className="participant-kind fixed">{who.kind}</span>
+                    <span className="lv-person-kind">{who.kind}</span>
                   </summary>
                   {/* The trunk's own headers: for a phone call this is where the SIP number is. */}
-                  <pre className="log-data fixed">{JSON.stringify(who.attributes, null, 2)}</pre>
+                  <pre className="lv-data">{JSON.stringify(who.attributes, null, 2)}</pre>
                 </details>
               </li>
             ))}
           </ul>
-        </>
+        </div>
       )}
-    </section>
+    </>
   );
 }

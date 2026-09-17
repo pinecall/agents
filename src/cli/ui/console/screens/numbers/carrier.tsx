@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent, type ReactNode } from "react";
 
+import { Button, Card, CardHead, Input, Label } from "../../ui";
 import type { Carrier, WantedCarrier } from "./door";
 
 /** What the panel is told: the carrier standing, and the two moves. */
@@ -22,31 +23,30 @@ export function CarrierPanel({ carrier, busy, onBring, onDrop }: CarrierPanelPro
   const [replacing, setReplacing] = useState(false);
   if (carrier !== null && !replacing) {
     return (
-      <section className="numbers-carrier">
-        <h2 className="numbers-heading">Phone carrier</h2>
-        <div className="numbers-carrier-standing">
-          <span className="numbers-kind fixed">{carrier.kind}</span>
-          <span>{carrier.kind === "twilio" ? "Twilio account connected" : "SIP peer connected"}</span>
-          <span className="numbers-dim fixed">{carrier.account}</span>
-          <span className="numbers-carrier-moves">
-            <button type="button" className="link" onClick={() => setReplacing(true)} disabled={busy}>change</button>
-            <button type="button" className="link" onClick={() => void onDrop()} disabled={busy}>disconnect</button>
-          </span>
-        </div>
-      </section>
+      <div className="ui-card num-carrier">
+        <span className="num-kind">{carrier.kind.toUpperCase()}</span>
+        <span className="num-carrier-standing">{carrier.kind === "twilio" ? "Account connected" : "SIP peer connected"}</span>
+        <span className="num-carrier-account">{carrier.account}</span>
+        <span className="num-carrier-moves">
+          <Button size="xs" onClick={() => setReplacing(true)} disabled={busy}>
+            Change
+          </Button>
+          <Button size="xs" kind="danger" onClick={() => void onDrop()} disabled={busy}>
+            Disconnect
+          </Button>
+        </span>
+      </div>
     );
   }
   return (
-    <section className="numbers-carrier">
-      <CarrierForm
-        busy={busy}
-        onBring={async (wanted) => {
-          await onBring(wanted);
-          setReplacing(false);
-        }}
-        onCancel={carrier === null ? null : () => setReplacing(false)}
-      />
-    </section>
+    <CarrierForm
+      busy={busy}
+      onBring={async (wanted) => {
+        await onBring(wanted);
+        setReplacing(false);
+      }}
+      onCancel={carrier === null ? null : () => setReplacing(false)}
+    />
   );
 }
 
@@ -69,36 +69,63 @@ function CarrierForm({ busy, onBring, onCancel }: { busy: boolean; onBring: (wan
   };
 
   return (
-    <form className="numbers-form" onSubmit={submit}>
-      <div className="numbers-form-head">
-        <h2 className="numbers-heading">Connect your phone carrier</h2>
-        <span className="tabs">
-          <button type="button" className={kind === "twilio" ? "tab is-active" : "tab"} onClick={() => setKind("twilio")}>Twilio</button>
-          <button type="button" className={kind === "sip" ? "tab is-active" : "tab"} onClick={() => setKind("sip")}>SIP peer</button>
-        </span>
-      </div>
-      {kind === "twilio" ? (
-        <div className="numbers-fields">
-          <label className="numbers-field"><span>account SID</span><input className="input fixed" value={accountSid} onChange={(e) => setAccountSid(e.target.value)} placeholder="AC…" required autoComplete="off" /></label>
-          <label className="numbers-field"><span>API key SID <em>or leave it: the account SID</em></span><input className="input fixed" value={user} onChange={(e) => setUser(e.target.value)} placeholder="SK…" autoComplete="off" /></label>
-          <label className="numbers-field"><span>secret <em>the key's, or the auth token</em></span><input className="input fixed" type="password" value={secret} onChange={(e) => setSecret(e.target.value)} required autoComplete="off" /></label>
+    <Card>
+      <CardHead title="Connect your phone carrier">
+        <div className="ui-segmented num-ways" role="group">
+          <button type="button" className={kind === "twilio" ? "ui-segment ui-segment-on" : "ui-segment"} onClick={() => setKind("twilio")}>
+            Twilio
+          </button>
+          <button type="button" className={kind === "sip" ? "ui-segment ui-segment-on" : "ui-segment"} onClick={() => setKind("sip")}>
+            SIP peer
+          </button>
         </div>
-      ) : (
-        <div className="numbers-fields">
-          <label className="numbers-field"><span>username</span><input className="input fixed" value={username} onChange={(e) => setUsername(e.target.value)} required autoComplete="off" /></label>
-          <label className="numbers-field"><span>password</span><input className="input fixed" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="off" /></label>
-          <label className="numbers-field"><span>networks its calls come from <em>CIDR, comma separated</em></span><input className="input fixed" value={addresses} onChange={(e) => setAddresses(e.target.value)} placeholder="203.0.113.0/24" required autoComplete="off" /></label>
+      </CardHead>
+      <form onSubmit={submit}>
+        <div className="num-fields num-fields-3">
+          {kind === "twilio" ? (
+            <>
+              <div>
+                <Label>Account SID</Label>
+                <Input value={accountSid} onChange={(e) => setAccountSid(e.target.value)} placeholder="AC…" required autoComplete="off" />
+              </div>
+              <div>
+                <Label>API key SID · or the account SID</Label>
+                <Input value={user} onChange={(e) => setUser(e.target.value)} placeholder="SK…" autoComplete="off" />
+              </div>
+              <div>
+                <Label>Secret · the key's, or the auth token</Label>
+                <Input type="password" value={secret} onChange={(e) => setSecret(e.target.value)} required autoComplete="off" />
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <Label>Username</Label>
+                <Input value={username} onChange={(e) => setUsername(e.target.value)} required autoComplete="off" />
+              </div>
+              <div>
+                <Label>Password</Label>
+                <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="off" />
+              </div>
+              <div>
+                <Label>Networks its calls come from · CIDR</Label>
+                <Input value={addresses} onChange={(e) => setAddresses(e.target.value)} placeholder="203.0.113.0/24" required autoComplete="off" />
+              </div>
+            </>
+          )}
         </div>
-      )}
-      <div className="numbers-form-foot">
-        <button className="button button-accent" type="submit" disabled={busy}>{busy ? "connecting…" : "Connect"}</button>
-        {onCancel !== null && <button type="button" className="link" onClick={onCancel}>cancel</button>}
-        <span className="numbers-note fixed">
-          {kind === "twilio"
-            ? "The account is checked once. The credentials are stored encrypted and never shown again."
-            : "Calls are accepted only from these networks, with this username and password."}
-        </span>
-      </div>
-    </form>
+        <div className="num-actions">
+          <Button kind="primary" type="submit" disabled={busy}>
+            {busy ? "Connecting…" : "Connect"}
+          </Button>
+          {onCancel !== null && <Button onClick={onCancel}>Cancel</Button>}
+          <span className="num-note">
+            {kind === "twilio"
+              ? "The account is checked once. The credentials are stored encrypted and never shown again."
+              : "Calls are accepted only from these networks, with this username and password."}
+          </span>
+        </div>
+      </form>
+    </Card>
   );
 }

@@ -1,10 +1,10 @@
-/** Login: a person's org, email and password, for a key of their own in this tab. */
+/** Login: a person's email, password and — when they belong to several — the workspace, for a key of their own in this tab. */
 
 import { useState, type FormEvent, type ReactNode } from "react";
 
 import { GatewayError } from "../../../shared/api";
-import "../../shell/shell.css";
 import { loginWithPassword, type Signed } from "../../lib/login";
+import { WayIn } from "./way-in";
 
 /**
  * The one screen shown with no key, and it signs a person IN and nothing else.
@@ -39,67 +39,64 @@ export function Login({ base, onSigned }: { base: string; onSigned: (signed: Sig
   };
 
   return (
-    <div className="way">
-      <form className="way-card" onSubmit={(event) => void submit(event)}>
-        <div className="way-mark">
-          <b>pinecall</b> <span>/</span> console
-        </div>
-        <h1 className="way-title">Sign in</h1>
-        <p className="way-lede">The email and password you were invited with. Name the org only if you belong to several; you can switch later.</p>
+    <WayIn>
+      <form onSubmit={(event) => void submit(event)}>
+        <h1 className="login-title">Sign in</h1>
+        <p className="login-lede">Use the email and password you were invited with.</p>
 
-        <div className="way-fields">
-          <label className="way-field">
-            <span className="way-label">email</span>
-            <input
-              className="way-input"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              autoComplete="username"
-              autoFocus
-              required
-            />
+        <label className="login-label" htmlFor="login-email">
+          Email
+        </label>
+        <input
+          id="login-email"
+          className="login-input"
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          autoComplete="username"
+          autoFocus
+          required
+        />
+
+        <label className="login-label" htmlFor="login-password">
+          Password
+        </label>
+        <input
+          id="login-password"
+          className="login-input login-input-secret"
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          autoComplete="current-password"
+          required
+        />
+
+        <div className="login-label-row">
+          <label className="login-label" htmlFor="login-org">
+            Workspace
           </label>
-          <label className="way-field">
-            <span className="way-label">password</span>
-            <input
-              className="way-input"
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              autoComplete="current-password"
-              required
-            />
-          </label>
-          <label className="way-field">
-            <span className="way-label">org · optional</span>
-            <input
-              className="way-input"
-              value={org}
-              onChange={(event) => setOrg(event.target.value)}
-              autoComplete="organization"
-              placeholder="the oldest of yours when left empty"
-            />
-          </label>
+          <span className="login-hint">only if you belong to several</span>
+        </div>
+        <div className="login-workspace">
+          <span className="login-workspace-tile">{(org.trim()[0] ?? "·").toUpperCase()}</span>
+          <input
+            id="login-org"
+            className="login-workspace-input"
+            value={org}
+            onChange={(event) => setOrg(event.target.value)}
+            autoComplete="organization"
+            placeholder="the oldest of yours"
+          />
         </div>
 
-        <button className="way-go" type="submit" disabled={busy}>
-          {busy ? "signing in…" : "sign in"}
+        <button className="login-go" type="submit" disabled={busy}>
+          {busy ? "Signing in…" : "Sign in"}
         </button>
 
-        {refused !== null && <p className="way-refused">{refused}</p>}
+        {refused !== null && <p className="login-refused">{refused}</p>}
 
-        <div className="way-else">
-          <p>
-            Invited and no password yet? Open the link in your invitation — it is where you choose one.
-          </p>
-          <p>
-            Looking for the copy your terminal runs? That is the sandbox, on your own machine:{" "}
-            <code>pinecall serve</code>.
-          </p>
-        </div>
+        <p className="login-note">Invited and no password yet? Open the link in your invitation — that is where you choose one.</p>
       </form>
-    </div>
+    </WayIn>
   );
 }
-

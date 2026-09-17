@@ -30,6 +30,7 @@
 
   /* the accent */
   --accent: #5b3df5;
+  --on-accent: #fff;
   --accent-hover: #4c2fe0;
   --accent-soft: #ede9fe;
   --accent-selected: #efeafe;

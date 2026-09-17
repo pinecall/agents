@@ -1,245 +1,289 @@
-/* Evals — the run table and the score sheet, the scored calls and their evidence.
- * The palette says three things and nothing else: the ok means a judgment that held or a run that
- * is done, `--warn` means one that did not hold or did not finish, and the accent is the id. */
+/* Evals: the goldens list, a run's rows and score sheet, the scored calls and their evidence, the drift. */
 
-.ev-row {
-  cursor: pointer;
+.ev-last {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  padding-top: 4px;
 }
 
-.ev-status-done,
-.ev-held,
-.ev-delta-up {
-  color: var(--ok);
+.ev-run-all {
+  margin-left: auto;
 }
 
-.ev-status-failed,
-.ev-status-running,
-.ev-bad,
-.ev-delta-down {
-  color: var(--warn);
+.ev-goldens > .ui-table-row:first-child {
+  border-top: 0;
 }
 
-/* ── the score sheet ─────────────────────────────────────────────────────── */
-
-.ev-detail {
-  display: grid;
-  gap: 14px;
+.ev-golden {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
-.ev-scores td {
-  vertical-align: middle;
+.ev-golden-says {
+  font-size: 13px;
+  color: var(--ink-2);
 }
 
-.ev-score {
-  align-items: center;
-  display: inline-flex;
-  gap: 8px;
-  justify-content: flex-end;
-}
-
-.ev-score-value {
-  font-family: var(--face-fixed);
+.ev-golden-name,
+.ev-golden-call {
   font-size: 11.5px;
-  font-variant-numeric: tabular-nums;
+  color: var(--ink-6);
 }
 
-.ev-track {
-  background: var(--sunk);
-  border-radius: 2px;
-  height: 4px;
-  width: 96px;
-}
-
-.ev-bar {
-  background: var(--ok);
-  border-radius: 2px;
-  display: block;
-  height: 100%;
-}
-
-.ev-bar-bad {
-  background: var(--warn);
-}
-
-.ev-reason {
-  color: var(--ink-soft);
-  font-size: 12.5px;
-  line-height: 1.55;
-  margin: 0;
-  max-width: 48ch;
-}
-
-/* ── the evidence under an open call ─────────────────────────────────────── */
-
-.ev-said .panel-body {
-  display: grid;
-  gap: 10px;
-}
-
-.ev-quote {
-  border-left: 2px solid var(--edge);
-  color: var(--ink);
-  font-size: 13.5px;
-  line-height: 1.55;
-  margin: 0;
-  padding-left: 12px;
-}
-
-a.chip:hover .chip-val {
+.ev-golden-call:hover {
   color: var(--accent);
 }
 
-/* Run a suite: the goldens as a ticked list, the line above them. */
-.suite-lede,
-.suite-aside {
-  color: var(--ink-soft);
+.ev-views {
+  display: flex;
+}
+
+.ev-row-open,
+.ev-row-open:hover {
+  background: var(--ground-tint);
+}
+
+.ev-num {
   font-size: 13px;
-  margin: 0 0 14px;
-  max-width: 68ch;
-  text-wrap: pretty;
+  font-weight: 500;
+  text-align: right;
 }
 
-.suite {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+.ev-num-faint {
+  color: var(--ink-4);
+  font-weight: 400;
 }
 
-.suite-head {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
+.ev-num-bad {
+  color: var(--red);
 }
 
-.suite-check {
-  align-items: center;
-  color: var(--ink-2);
-  display: flex;
-  font-size: 12.5px;
-  gap: 7px;
+.ev-head-end {
+  margin-left: auto;
 }
 
-.suite-field {
-  align-items: center;
-  color: var(--ink-soft);
-  display: flex;
-  font-family: var(--face-fixed);
-  font-size: 10.5px;
-  gap: 8px;
-}
-
-.suite-input {
-  width: 6ch;
-}
-
-.suite-list {
-  display: flex;
-  flex-direction: column;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.suite-golden {
-  align-items: baseline;
-  border-top: 1px solid var(--edge-soft);
+.ev-facts {
+  padding: 14px 16px;
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 9px 22px;
+  border-bottom: 1px solid var(--line-2);
+}
+
+.ev-score {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.ev-score-value {
+  font-size: 12.5px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.ev-reason {
+  font-size: 12.5px;
+  color: var(--ink-3);
+  line-height: 1.55;
+  min-width: 0;
+}
+
+.ev-repro-body {
+  padding: 0 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ev-repro-open {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.ev-repro-title {
+  padding: 11px 14px;
   font-size: 13px;
-  gap: 14px;
-  grid-template-columns: minmax(18ch, 1fr) 2fr 2fr;
-  padding: 8px 0;
+  font-weight: 600;
+  border-bottom: 1px solid var(--line-2);
 }
 
-.suite-says {
-  color: var(--ink-2);
-  font-size: 12.5px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.suite-expects {
-  color: var(--ink-soft);
-  font-size: 12.5px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Drift: two windows above the table, and the calls that broke under it. */
-.drift-windows {
-  align-items: center;
+.ev-repro-verdict {
   display: flex;
-  gap: 14px;
-  margin-bottom: 14px;
-}
-
-.drift-field {
-  align-items: center;
-  color: var(--ink-soft);
-  display: flex;
-  font-family: var(--face-fixed);
-  font-size: 10.5px;
-  gap: 8px;
-}
-
-/* Wide enough for three digits and the spinner a number input draws beside them. */
-.drift-field .input {
-  width: 5rem;
-}
-
-.drift-broke {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  list-style: none;
-  margin: 14px 0 0;
-  padding: 0;
-}
-
-.drift-broke li {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-/* The two things a person does to a judged call, beside the evidence for it. */
-.ev-acts {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-
-/* What a broken run left on disk: the goldens as chips, and one of them opened whole. */
-.ev-repro {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 22px;
-}
-
-.ev-repro .chip {
-  cursor: pointer;
+  gap: 9px;
+  align-items: baseline;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--line-3);
 }
 
 .ev-asked {
-  background: var(--sunk);
-  border: 1px solid var(--edge);
-  border-radius: var(--radius-control);
-  color: var(--ink-2);
-  font-size: 11px;
-  margin: 0;
-  max-height: 26rem;
+  max-height: 360px;
   overflow: auto;
-  padding: 10px 12px;
-  white-space: pre-wrap;
-  word-break: break-word;
 }
 
-/* One column of the matrix per model named here, comma by comma, as --model is repeated. */
-.suite-models {
-  width: 22rem;
+.ev-judge {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--green);
+  background: var(--green-soft);
+  padding: 2px 8px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+
+.ev-judge-bad {
+  color: var(--red);
+  background: var(--red-soft);
+}
+
+.ev-evidence {
+  padding: 12px 16px 16px;
+  background: var(--ground-side);
+  border-top: 1px solid var(--line-3);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ev-evidence-head {
+  display: flex;
+}
+
+.ev-acts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ev-acts-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ev-warn {
+  font-size: 12.5px;
+  color: var(--amber);
+  line-height: 1.55;
+}
+
+.ev-said {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--ground);
+}
+
+.ev-said-body {
+  padding: 0 15px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.ev-quote {
+  border-left: 2px solid var(--line-control);
+  padding-left: 10px;
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.55;
+}
+
+.ev-suite-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+}
+
+.ev-suite-models {
+  flex: 1;
+  min-width: 240px;
+}
+
+.ev-suite-number {
+  width: 120px;
+}
+
+.ev-suite-controls .ui-check {
+  height: 34px;
+}
+
+.ev-suite-go {
+  margin-left: auto;
+}
+
+.ev-suite-all {
+  padding: 9px 16px;
+  background: var(--ground-side);
+  border-top: 1px solid var(--line-2);
+  border-bottom: 1px solid var(--line-2);
+}
+
+.ev-suite-golden {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 10px 16px;
+  border-top: 1px solid var(--line-3);
+}
+
+.ev-suite-golden:first-of-type {
+  border-top: 0;
+}
+
+.ev-suite-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.ev-suite-says {
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.ev-suite-expects {
+  font-size: 12px;
+  color: var(--ink-4);
+}
+
+.ev-drift-windows {
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+}
+
+.ev-drift-field {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--ink-4);
+  white-space: nowrap;
+}
+
+.ev-drift-field .ui-input {
+  width: 64px;
+  height: 30px;
+}
+
+.ev-broke {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 2fr);
+  gap: 12px;
+  align-items: baseline;
+  padding: 10px 16px;
+  border-top: 1px solid var(--line-3);
+}
+
+@media (max-width: 720px) {
+  .ev-suite-golden {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

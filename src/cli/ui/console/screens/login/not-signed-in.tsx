@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 
-import "../../shell/shell.css";
+import { WayIn } from "./way-in";
 
 /**
  * The local console holds no key — `pinecall serve` signs what it forwards — so a refusal is not
@@ -11,18 +11,12 @@ import "../../shell/shell.css";
  */
 export function NotSignedIn(): ReactNode {
   return (
-    <div className="way">
-      <div className="way-card">
-        <div className="way-mark">
-          <b>pinecall</b> <span>/</span> console · local
-        </div>
-        <h1 className="way-title">This machine is not signed in</h1>
-        <p className="way-lede">
-          The gateway refused the key <code>pinecall serve</code> is using. Sign this machine in again, then start it
-          once more:
-        </p>
-        <pre className="fixed">pinecall login{"\n"}pinecall serve</pre>
-      </div>
-    </div>
+    <WayIn foot={<>This is your sandbox, on this machine. Production is watched on the gateway's console.</>}>
+      <h1 className="login-title">This machine is not signed in</h1>
+      <p className="login-lede">
+        The gateway refused the key <span className="login-command">pinecall serve</span> is using. Sign this machine in again, then start it once more:
+      </p>
+      <pre className="login-commands">pinecall login{"\n"}pinecall serve</pre>
+    </WayIn>
   );
 }

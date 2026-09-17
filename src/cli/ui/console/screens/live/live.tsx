@@ -1,16 +1,17 @@
-/** One call being watched: its head, the desk, the transcript in the middle, and the four panels beside it. */
+/** One call being watched: its head, the desk, the log's rows, and the STATE · ROOM · PROMPT · METRICS pane beside them. */
 
-import type { ReactNode } from "react";
-
-import type { Entry } from "@pinecall/protocol";
+import type { Entry, State } from "@pinecall/protocol";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { useDeclaredState } from "../../lib/declared-state";
+import { elapsed, prettyNumber } from "../../lib/format";
+import { useScopes } from "../../lib/whoami";
 import { Player, recordingIn } from "../sessions/recording";
+import { Desk } from "./desk";
 import { MetricsPanel } from "./metrics-panel";
 import { PromptPanel } from "./prompt-panel";
 import { RoomPanel } from "./room-panel";
 import { StatePanel } from "./state-panel";
-import { Supervise } from "./supervise";
 import { Timeline } from "./timeline";
 import { useWatchedCall } from "./use-watched-call";
 import "./live.css";
@@ -18,51 +19,113 @@ import "./live.css";
 // Everything on screen comes out of this one hook, so two Lives share nothing at all: two calls
 // side by side are two streams, two states and two timelines, keyed by call id in the screen above.
 /** A whole call, live or finished. Mounting it opens the stream; leaving closes it. */
-export function Live({ call }: { call: string }): ReactNode {
+export function Live({ call, agent }: { call: string; agent?: string | undefined }): ReactNode {
   const watched = useWatchedCall(call);
   const state = watched.state;
   const declared = useDeclaredState(state.agent);
+  const scopes = useScopes();
+  const [desk, setDesk] = useState(false);
+  const over = state.status === "ended";
   const recorded = recordingIn(summaryOf(watched.entries));
+  // A key that does not open `supervise` is refused every move: the desk is not drawn for it.
+  const supervises = scopes === null || scopes.includes("supervise");
+
+  useEffect(() => setDesk(false), [call]);
+
   return (
-    <article className="live">
-      <header className="live-head fixed">
-        <span className="live-call">{call}</span>
-        <span>
-          {[state.channel, state.direction].filter((said) => said !== null).join(" · ")}
-          {(state.channel !== null || state.direction !== null) && " · "}
-          <span className="live-status">{state.status}</span>
-        </span>
-        {(state.from !== null || state.to !== null) && (
-          <span>
-            {state.from} <span className="live-arrow">→</span> {state.to}
-          </span>
-        )}
-        <span>
-          agent <b>{state.agent_state ?? "—"}</b> · user <b>{state.user_state ?? "—"}</b>
-        </span>
-        <span>
-          seq {state.seq} · <span className="live-connection">{watched.error ?? watched.connection}</span>
-        </span>
-      </header>
-      <Supervise call={call} live={state.status !== "ended"} />
-      <div className="live-body">
-        <div className="live-middle">
-          {recorded !== null && (
-            <div className="live-recording">
-              <Player call={call} />
-            </div>
+    <div className="lv">
+      <div className="lv-middle">
+        <Head call={call} agent={agent} state={state} connection={watched.error ?? watched.connection} failed={watched.error !== null}>
+          {supervises && (
+            <button
+              type="button"
+              className={desk ? "lv-listen lv-listen-open" : "lv-listen"}
+              disabled={over && !desk}
+              title={over ? "the call is over" : undefined}
+              onClick={() => setDesk(!desk)}
+              aria-expanded={desk}
+            >
+              <span className={over ? "ui-dot ui-dot-small" : "ui-dot ui-dot-small ui-dot-green"} />
+              {desk ? "Close the desk" : "Listen in"}
+            </button>
           )}
-          <Timeline entries={watched.entries} state={state} />
-        </div>
-        <aside className="live-panels">
-          <StatePanel fields={state.app_state} declared={declared} />
-          <RoomPanel room={state.room} from={state.from} />
-          <PromptPanel prompt={state.prompt} />
-          <MetricsPanel metrics={state.metrics} entries={watched.entries} />
-        </aside>
+        </Head>
+        {desk && <Desk call={call} live={!over} />}
+        <Timeline
+          entries={watched.entries}
+          state={state}
+          after={
+            recorded !== null ? (
+              <div className="lv-recording">
+                <Player call={call} />
+              </div>
+            ) : undefined
+          }
+        />
       </div>
-    </article>
+      <aside className="lv-pane" aria-label="what the call holds">
+        <StatePanel fields={state.app_state} declared={declared} />
+        <RoomPanel room={state.room} from={state.from} over={over} />
+        <PromptPanel prompt={state.prompt} cost={state.cost} />
+        <MetricsPanel metrics={state.metrics} entries={watched.entries} />
+      </aside>
+    </div>
   );
+}
+
+/** The call's head: which call, which door, how it stands, who is on it, and how far the log got. */
+function Head({
+  call,
+  agent,
+  state,
+  connection,
+  failed,
+  children,
+}: {
+  call: string;
+  agent: string | undefined;
+  state: State;
+  connection: string;
+  failed: boolean;
+  children: ReactNode;
+}): ReactNode {
+  const now = useNow(state.status !== "ended");
+  const over = state.status === "ended";
+  const from = state.caller?.name ?? prettyOrAsIs(state.direction === "outbound" ? state.to : state.from);
+  return (
+    <div className="lv-head">
+      <span className="lv-call">{call}</span>
+      {state.channel !== null && <span className="lv-tag">{state.channel}</span>}
+      {state.direction !== null && <span className="lv-tag">{state.direction}</span>}
+      <span className={over ? "lv-status lv-status-over" : "lv-status"}>
+        {over ? (state.end_reason ?? "ended").replace(/_/g, " ") : state.status === "active" ? `on a call · ${elapsed(state.started_at, now)}` : state.status}
+      </span>
+      <span className="lv-sub">
+        {from} → {state.agent || agent || "—"} · seq {state.seq}
+        {state.agent_state !== null && ` · agent ${state.agent_state}`}
+        {state.user_state !== null && ` · caller ${state.user_state}`}
+        {" · "}
+        <span className={failed ? "lv-connection-bad" : undefined}>{connection}</span>
+      </span>
+      {children}
+    </div>
+  );
+}
+
+function prettyOrAsIs(number: string | null): string {
+  if (number === null) return "—";
+  return number.startsWith("+") ? prettyNumber(number) : number;
+}
+
+// A live call's clock is the one thing here that moves without the log moving.
+function useNow(ticking: boolean): number {
+  const [now, setNow] = useState(() => Date.now() / 1000);
+  useEffect(() => {
+    if (!ticking) return;
+    const tick = window.setInterval(() => setNow(Date.now() / 1000), 1000);
+    return () => window.clearInterval(tick);
+  }, [ticking]);
+  return now;
 }
 
 // The pointer to the audio rides the summary, near the end of a finished call's log.

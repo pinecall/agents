@@ -1,35 +1,82 @@
-/* Knowledge owns its own styles: one line of what this directory holds, and the bases under it. */
+/* Knowledge: the directory's line, the base chip, the golden's figures and misses. */
 
-.kb-here .panel-head {
+.kb-base {
+  margin-left: auto;
+  display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
 }
 
-.kb-field {
-  align-items: center;
-  display: flex;
-  gap: var(--step);
+.kb-base-label {
+  font-size: 12.5px;
+  color: var(--ink-4);
 }
 
-.kb-actions {
-  align-items: center;
+.kb-base-input {
+  font-size: 12.5px;
+  font-weight: 550;
+  background: var(--ground-5);
+  padding: 3px 9px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  color: var(--ink);
+}
+
+.kb-base-input:focus {
+  border-color: var(--accent);
+  box-shadow: var(--accent-ring);
+}
+
+.kb-here {
   display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
   flex-wrap: wrap;
-  gap: calc(var(--step) * 2);
 }
 
-.kb-misses {
-  display: flex;
-  flex-direction: column;
-  gap: var(--step);
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.kb-path {
+  font-size: 13px;
+  color: var(--ink-3);
+  word-break: break-all;
 }
 
-.kb-misses li {
+.kb-count {
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.kb-figures {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--step);
-  justify-content: space-between;
+  gap: 22px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line-3);
+}
+
+.kb-figure-label {
+  font-size: 11.5px;
+  color: var(--ink-4);
+  margin-bottom: 4px;
+}
+
+.kb-figure {
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.6px;
+}
+
+.kb-miss {
+  padding: 11px 16px;
+  border-top: 1px solid var(--line-3);
+}
+
+.kb-miss-asks {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.kb-miss-why {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--ink-4);
 }

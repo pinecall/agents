@@ -45,7 +45,7 @@ export function Consents({ rows }: { rows: Consent[] }): ReactNode {
     return null;
   }
   return (
-    <div>
+    <div className="session-consents">
       {rows.map((row) => (
         <Proof key={row.callId} consent={row} />
       ))}
@@ -56,17 +56,17 @@ export function Consents({ rows }: { rows: Consent[] }): ReactNode {
 function Proof({ consent }: { consent: Consent }): ReactNode {
   const problem = problemOf(consent);
   return (
-    <article className="consent">
-      <p className="consent-join fixed">
-        {joinOf(consent)} · {consent.tool} · {consent.callId}
-      </p>
-      {consent.requested !== null && (
-        <p className="consent-said">{text(consent.requested, "phrase")}</p>
-      )}
-      {consent.granted !== null && <p className="consent-said">“{text(consent.granted, "said")}”</p>}
-      <p className="note">audience {audienceOf(consent)}</p>
-      {problem !== null && <p className="consent-problem">{problem}</p>}
-    </article>
+    <div className="session-consent">
+      <div className="session-consent-join">
+        <span className="session-consent-tool">{consent.tool}</span>
+        <span className="session-consent-seqs">{joinOf(consent)}</span>
+        <span className="session-consent-id ui-fixed">{consent.callId}</span>
+      </div>
+      {consent.requested !== null && <div className="session-consent-said">{text(consent.requested, "phrase")}</div>}
+      {consent.granted !== null && <div className="session-consent-said">“{text(consent.granted, "said")}”</div>}
+      <div className="session-consent-audience">audience {audienceOf(consent)}</div>
+      {problem !== null && <div className="ui-refused">{problem}</div>}
+    </div>
   );
 }
 

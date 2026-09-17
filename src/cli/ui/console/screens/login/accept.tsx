@@ -5,6 +5,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { GatewayError } from "../../../shared/api";
 import { discovered } from "../../../shared/the-floor";
 import { acceptInvitation, type Signed } from "../../lib/login";
+import { WayIn } from "./way-in";
 
 /**
  * The card a person sees when they open the link an admin sent them.
@@ -43,7 +44,7 @@ export function Accept({
   const submit = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
     if (password !== again) {
-      setRefused("the two passwords differ");
+      setRefused("The two passwords differ.");
       return;
     }
     setBusy(true);
@@ -58,53 +59,48 @@ export function Accept({
   };
 
   return (
-    <div className="way">
-      <form className="way-card" onSubmit={(event) => void submit(event)}>
-        <div className="way-mark">
-          <b>pinecall</b> <span>/</span> console
-        </div>
-        <h1 className="way-title">Choose your password</h1>
-        <p className="way-lede">
-          You were invited. This link opens once and dies in a week; the password you pick here is
-          the one you will sign in with from now on.
-        </p>
+    <WayIn>
+      <form onSubmit={(event) => void submit(event)}>
+        <h1 className="login-title">Choose your password</h1>
+        <p className="login-lede">You were invited. This link opens once and dies in a week; the password you pick here is the one you sign in with from now on.</p>
 
-        <div className="way-fields">
-          <label className="way-field">
-            <span className="way-label">
-              password
-              {floor !== null && floor > 0 && <span>{floor} characters at least</span>}
-            </span>
-            <input
-              className="way-input"
-              type="password"
-              value={password}
-              minLength={floor ?? undefined}
-              onChange={(event) => setPassword(event.target.value)}
-              autoComplete="new-password"
-              autoFocus
-              required
-            />
+        <div className="login-label-row">
+          <label className="login-label" htmlFor="accept-password">
+            Password
           </label>
-          <label className="way-field">
-            <span className="way-label">again</span>
-            <input
-              className="way-input"
-              type="password"
-              value={again}
-              onChange={(event) => setAgain(event.target.value)}
-              autoComplete="new-password"
-              required
-            />
-          </label>
+          {floor !== null && floor > 0 && <span className="login-hint">{floor} characters at least</span>}
         </div>
+        <input
+          id="accept-password"
+          className="login-input login-input-secret"
+          type="password"
+          value={password}
+          minLength={floor ?? undefined}
+          onChange={(event) => setPassword(event.target.value)}
+          autoComplete="new-password"
+          autoFocus
+          required
+        />
 
-        <button className="way-go" type="submit" disabled={busy}>
-          {busy ? "joining…" : "join"}
+        <label className="login-label" htmlFor="accept-again">
+          Again
+        </label>
+        <input
+          id="accept-again"
+          className="login-input login-input-secret"
+          type="password"
+          value={again}
+          onChange={(event) => setAgain(event.target.value)}
+          autoComplete="new-password"
+          required
+        />
+
+        <button className="login-go" type="submit" disabled={busy} style={{ marginTop: 8 }}>
+          {busy ? "Joining…" : "Join"}
         </button>
 
-        {refused !== null && <p className="way-refused">{refused}</p>}
+        {refused !== null && <p className="login-refused">{refused}</p>}
       </form>
-    </div>
+    </WayIn>
   );
 }

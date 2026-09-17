@@ -20,12 +20,8 @@ export function ToolRow({ run, seq }: { run: ToolRun; seq: number }): ReactNode 
       seq={seq}
       kind="tool"
       tone="tool"
-      said={
-        <span className="fixed">
-          {run.name}({argumentsOf(run)})
-        </span>
-      }
-      meta={[<span className={run.status === "failed" ? "log-failed" : ""}>{outcomeOf(run)}</span>]}
+      said={`${run.name}(${argumentsOf(run)})`}
+      note={[<span className={run.status === "failed" ? "lv-failed" : ""}>{outcomeOf(run)}</span>]}
     >
       <Readings rows={rows} />
     </LogRow>
@@ -39,8 +35,8 @@ function there<T>(value: T): value is NonNullable<T> {
   return value !== undefined && value !== null;
 }
 
-// The summary line has room for the shape of the call, not for a nested object: the whole of both
-// is in the expander, and this is what tells one call of a tool from the next.
+// The line has room for the shape of the call, not for a nested object: the whole of both is in
+// the expander, and this is what tells one call of a tool from the next.
 function argumentsOf(run: ToolRun): string {
   return Object.entries(run.arguments)
     .map(([name, value]) => `${name}=${short(value)}`)

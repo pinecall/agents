@@ -1,220 +1,209 @@
-/* Talk: two columns side by side — the door and the words on the left, the whole call on the
-   right. It was one centred column with the log stacked underneath, which spent the width on
-   nothing: the call a person is having and the log of that same call were never on screen at the
-   same time without scrolling. Side by side, speaking and reading are one glance apart. */
+/* Talk: the door, the two facts under it, and the call as the room says it. The Inspector is its own. */
 
-.talk {
-  display: flex;
+.talk-grid {
   flex: 1;
-  flex-direction: row;
   min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(210px, 300px);
+  grid-template-rows: minmax(0, 1fr);
 }
 
-/* The talking side. Wide enough for a sentence to breathe, narrow enough to leave the log the
-   rest: a transcript reads badly past about sixty characters and the log always wants more. */
-.talk-column {
+.talk-grid > .ui-page {
+  min-width: 0;
+}
+
+.talk-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 28px 20px;
   display: flex;
-  flex: 0 0 clamp(360px, 36%, 620px);
   flex-direction: column;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 44px 28px 34px;
-}
-
-.talk-title {
-  font-size: 22px;
-  font-weight: 500;
-  letter-spacing: -0.015em;
-  margin: 0 0 7px;
-}
-
-.talk-lede {
-  color: var(--ink-soft);
-  font-size: 14.5px;
-  margin: 0 0 34px;
-  text-wrap: pretty;
-}
-
-/* ── the one door ─────────────────────────────────────────────────────────── */
-
-.talk-door-row {
   align-items: center;
-  display: flex;
-  gap: 18px;
-  padding: 0 0 30px;
+  gap: 14px;
 }
 
-.door {
-  background: transparent;
-  border: 1px solid var(--accent-line);
+.talk-door {
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
-  color: var(--accent);
-  cursor: pointer;
-  flex: none;
-  font-size: 13px;
-  font-weight: 500;
-  height: 68px;
-  letter-spacing: -0.005em;
-  width: 68px;
-}
-
-.door:hover:not(:disabled) {
-  border-color: var(--accent);
-}
-
-/* Open door: filled, because the line is live now. */
-.door-on {
+  border: 0;
   background: var(--accent);
-  border-color: var(--accent);
   color: var(--on-accent);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-talk);
 }
 
-.door:disabled {
+.talk-door:hover {
+  background: var(--accent-hover);
+}
+
+.talk-door:disabled {
   cursor: default;
-  opacity: 0.5;
+  opacity: 0.7;
+}
+
+.talk-door-on,
+.talk-door-on:hover {
+  background: var(--red);
+  box-shadow: none;
 }
 
 .talk-standing {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  min-width: 0;
+  text-align: center;
 }
 
 .talk-phase {
-  color: var(--ink);
-  font-size: 15px;
+  font-size: 13.5px;
+  font-weight: 550;
 }
 
-.talk-signal {
-  align-items: center;
-  display: flex;
-  gap: 9px;
+.talk-hint {
+  font-size: 12.5px;
+  color: var(--ink-4);
+  margin-top: 3px;
 }
 
-/* Three bars breathing while the line is open; still and faint while it is not. */
 .talk-bars {
-  align-items: flex-end;
   display: flex;
-  gap: 2px;
-  height: 13px;
+  align-items: flex-end;
+  gap: 3px;
+  height: 20px;
 }
 
 .talk-bars span {
-  background: var(--ink-faint);
-  display: block;
-  width: 2px;
+  width: 3px;
+  background: var(--line-muted);
+  border-radius: 2px;
 }
 
 .talk-bars span:nth-child(1) {
-  height: 5px;
+  height: 6px;
 }
 
 .talk-bars span:nth-child(2) {
-  height: 11px;
+  height: 12px;
 }
 
 .talk-bars span:nth-child(3) {
-  height: 7px;
+  height: 8px;
+}
+
+.talk-bars span:nth-child(4) {
+  height: 16px;
+}
+
+.talk-bars span:nth-child(5) {
+  height: 9px;
 }
 
 .talk-bars-on span {
-  animation: pulse 1.1s ease-in-out infinite;
   background: var(--accent);
+  animation: talk-level 0.9s ease-in-out infinite alternate;
+  transform-origin: bottom;
 }
 
 .talk-bars-on span:nth-child(2) {
-  animation-delay: 0.12s;
+  animation-delay: 0.15s;
 }
 
 .talk-bars-on span:nth-child(3) {
-  animation-delay: 0.24s;
+  animation-delay: 0.3s;
+}
+
+.talk-bars-on span:nth-child(4) {
+  animation-delay: 0.45s;
+}
+
+.talk-bars-on span:nth-child(5) {
+  animation-delay: 0.6s;
+}
+
+@keyframes talk-level {
+  from {
+    transform: scaleY(0.35);
+  }
+  to {
+    transform: scaleY(1);
+  }
 }
 
 .talk-call {
-  color: var(--ink-soft);
   font-size: 11.5px;
+  color: var(--ink-6);
+  word-break: break-all;
+  text-align: center;
 }
 
-.talk-error {
-  color: var(--accent);
-  font-size: 11.5px;
-  margin: 10px 0 0;
-}
-
-/* The whole call, as every other screen reads it, in the column beside the talking. */
-.talk-whole {
-  border-left: 1px solid var(--edge);
+.talk-facts {
   display: flex;
-  flex: 1;
-  min-height: 0;
-  min-width: 0;
-}
-
-/* ── the transcript ───────────────────────────────────────────────────────── */
-
-.stream {
-  border-top: 1px solid var(--edge);
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 18px;
-  min-height: 160px;
-  overflow-y: auto;
-  padding: 22px 0 8px;
-}
-
-.stream-empty {
-  align-items: center;
-  justify-content: center;
-}
-
-.stream-hint {
-  color: var(--ink-faint);
-  font-size: 11.5px;
-  margin: 0;
-  text-wrap: pretty;
-}
-
-.said {
-  display: grid;
   gap: 12px;
-  grid-template-columns: 58px minmax(0, 1fr);
+  flex-wrap: wrap;
 }
 
-.said-who {
-  color: var(--ink-faint);
-  font-size: 10.5px;
-  letter-spacing: 0.07em;
-  padding-top: 5px;
-  text-transform: uppercase;
+.talk-fact {
+  flex: 1;
+  min-width: 200px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 13px 15px;
 }
 
-.said-user .said-who {
-  color: var(--accent);
+.talk-fact-label {
+  font-size: 11.5px;
+  color: var(--ink-4);
+  margin-bottom: 5px;
 }
 
-.said-text {
-  color: var(--ink);
-  font-size: 15.5px;
-  line-height: 1.5;
+.talk-fact-value {
+  font-size: 13.5px;
+  font-weight: 550;
+}
+
+.talk-lines {
+  max-height: 420px;
+  overflow: auto;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.talk-said {
+  display: flex;
+  gap: 10px;
+}
+
+.talk-who {
+  flex: none;
+  width: 52px;
+  padding-top: 2px;
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--ink-4);
+}
+
+.talk-who-agent {
+  color: var(--accent-hover);
+}
+
+.talk-said-text {
   margin: 0;
-  overflow-wrap: anywhere;
-  text-wrap: pretty;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ink);
 }
 
-/* Grey belongs to the caller's line and only there: an STT interim is a hypothesis the next
-   packet may overwrite. The agent's deltas are never revised — a word that arrived was spoken —
-   so its line stays solid while it fills, and the caret says it is still arriving. */
-.said-user.said-interim .said-text {
-  color: var(--ink-soft);
+.talk-said-interim .talk-said-text {
+  color: var(--ink-6);
 }
 
-.said-word {
-  animation: word-in 220ms ease-out both;
+.talk-word {
+  animation: talk-arrive 0.18s ease-out;
 }
 
-@keyframes word-in {
+@keyframes talk-arrive {
   from {
     opacity: 0;
   }
@@ -223,54 +212,44 @@
   }
 }
 
-.said-cursor {
-  animation: blink 1s step-end infinite;
-  background: var(--ink-soft);
+.talk-cursor {
   display: inline-block;
-  height: 14px;
-  margin-left: 3px;
-  vertical-align: middle;
-  width: 1px;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: var(--accent);
+  animation: talk-blink 1s steps(2, start) infinite;
 }
 
-/* A mark sits in the words' column, in the log's face, quieter than a sentence. It carries the
-   transcript's own prefix: the console is one bundle, and a bare `.mark` is a name another
-   screen's table already had — which squeezed this paragraph to one character a line. */
-.said-mark {
-  color: var(--ink-faint);
-  font-size: 11.5px;
-  margin: 0 0 0 calc(58px + 12px);
-  overflow-wrap: anywhere;
+@keyframes talk-blink {
+  to {
+    visibility: hidden;
+  }
 }
 
-.said-mark-error,
-.said-mark-supervisor {
-  color: var(--accent);
+.talk-mark {
+  margin: 0 0 0 62px;
+  font-size: 12px;
+  color: var(--ink-4);
 }
 
-/* Under about a laptop's width two columns stop being two columns and start being two slivers.
-   Stacked is the old shape, and it is the right one when there is no width to share. */
-@media (max-width: 1000px) {
-  .talk {
-    flex-direction: column;
-  }
+.talk-mark-tool {
+  color: var(--amber);
+}
 
-  .talk-column {
-    flex: none;
-    margin: 0 auto;
-    max-width: 600px;
-    overflow-y: visible;
-    width: 100%;
-  }
+.talk-mark-error {
+  color: var(--red);
+}
 
-  .talk-whole {
-    border-left: none;
-    border-top: 1px solid var(--edge);
-    min-height: 320px;
-  }
+.talk-mark-supervisor {
+  color: var(--accent-hover);
+}
 
-  .stream {
-    flex: none;
-    max-height: 44vh;
+@media (max-width: 900px) {
+  .talk-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    overflow: auto;
   }
 }

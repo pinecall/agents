@@ -1,76 +1,58 @@
-/** The agent's finished calls as the judges sealed them: one dense line each, and the evidence under the open one. */
+/** The agent's finished calls as the judges sealed them: one line each, and the evidence under the open one. */
 
 import type { CallScore, Judgment } from "@pinecall/protocol";
 import { useState, type ReactNode } from "react";
 import { Link } from "react-router";
 
-import { started } from "../../lib/clock";
+import { dayAndTime, euros } from "../../lib/format";
 import type { Scored } from "../../lib/use-scored-calls";
+import { Pill, SectionLabel, TableHead } from "../../ui";
 import { WhatToDoWithIt } from "./what-to-do";
+
+const COLUMNS = "minmax(0,1.2fr) 120px 104px minmax(0,1.7fr) 70px 84px";
 
 // `passed` is OPTIONAL on `call.score`, and its absence is a THIRD thing: nobody answered, which is
 // neither a green call nor a red one (the runtime's docs/decisions/scoring.md). So the word is
 // read off the field being there at all, and `not_judged` says why when it is not.
 export function CallsTable({ agent, rows }: { agent: string; rows: Scored[] }): ReactNode {
   const [open, setOpen] = useState<string | null>(null);
-  const opened = rows.find((row) => row.line.call === open) ?? null;
   return (
     <>
-      <div className="table-wrap">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>call</th>
-              <th>started</th>
-              <th>verdict</th>
-              <th>judges</th>
-              <th className="num">judge calls</th>
-              <th className="num">cost</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.line.call} className={row.line.call === open ? "ev-row is-open" : "ev-row"} onClick={() => setOpen(row.line.call)}>
-                <td className="id">
-                  <button type="button" className="link">
-                    {row.line.call}
-                  </button>
-                </td>
-                <td className="mono dim">{started(row.line.started_at)}</td>
-                <td>
-                  <Word row={row} />
-                </td>
-                <td>
-                  <span className="chips">
-                    {row.score?.judges.map((judge) => (
-                      <span key={judge.name} className="chip">
-                        <span className="chip-key">{judge.name}</span>
-                        <span className={judge.verdict === "held" ? "chip-val accent" : "chip-val ev-bad"}>{judge.verdict}</span>
-                      </span>
-                    ))}
-                  </span>
-                </td>
-                <td className="num faint">{row.score?.judge_calls ?? "—"}</td>
-                <td className="num dim">{row.score?.judge_cost_eur == null ? "—" : `${row.score.judge_cost_eur.toFixed(4)} €`}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <p className="note">
-        {rows.length} call{rows.length === 1 ? "" : "s"} · the verdict is the <code className="mono">call.score</code> entry the log
-        seals on
-      </p>
-      {opened !== null && <Evidence agent={agent} row={opened} />}
+      <TableHead columns={COLUMNS} labels={["Call", "Started", "Verdict", "Judges", "Calls>", "Cost>"]} />
+      {rows.map((row) => (
+        <div key={row.line.call}>
+          <div
+            className={row.line.call === open ? "ui-table-row ui-table-row-link ev-row-open" : "ui-table-row ui-table-row-link"}
+            style={{ gridTemplateColumns: COLUMNS }}
+            onClick={() => setOpen(row.line.call === open ? null : row.line.call)}
+          >
+            <span className="ui-cell-link ui-clip">{row.line.call}</span>
+            <span className="ui-cell-faint">{dayAndTime(row.line.started_at)}</span>
+            <span>
+              <Word row={row} />
+            </span>
+            <span className="ui-tags">
+              {row.score?.judges.map((judge) => (
+                <span key={judge.name} className={judge.verdict === "held" ? "ev-judge" : "ev-judge ev-judge-bad"}>
+                  {judge.name}
+                </span>
+              ))}
+            </span>
+            <span className="ev-num ev-num-faint">{row.score?.judge_calls ?? "—"}</span>
+            <span className="ev-num ev-num-faint">{euros(row.score?.judge_cost_eur)}</span>
+          </div>
+          {row.line.call === open && <Evidence agent={agent} row={row} />}
+        </div>
+      ))}
     </>
   );
 }
 
 function Word({ row }: { row: Scored }): ReactNode {
-  if (!row.read) return <span className="faint mono">reading…</span>;
-  if (row.refused !== null) return <span className="ev-bad mono">{row.refused}</span>;
-  if (row.score?.passed == null) return <span className="faint mono">nobody judged this call</span>;
-  return <span className={row.score.passed ? "accent mono" : "ev-bad mono"}>{row.score.passed ? "passed" : "did not pass"}</span>;
+  if (!row.read) return <Pill tone="muted">reading…</Pill>;
+  if (row.refused !== null) return <span title={row.refused}><Pill tone="red">unreadable</Pill></span>;
+  if (row.score?.passed == null) return <Pill tone="muted">not judged</Pill>;
+  return row.score.passed ? <Pill tone="green">passed</Pill> : <Pill tone="red">did not pass</Pill>;
 }
 
 // The evidence: every judge that did not hold, its own sentence, and the seqs it cites as the way
@@ -79,21 +61,21 @@ function Word({ row }: { row: Scored }): ReactNode {
 function Evidence({ agent, row }: { agent: string; row: Scored }): ReactNode {
   const score = row.score;
   return (
-    <div className="ev-detail">
-      <h3 className="section-title">
-        <Link className="link" to={`/a/${agent}/sessions/${row.line.call}`}>
-          {row.line.call}
+    <div className="ev-evidence">
+      <div className="ev-evidence-head">
+        <Link className="ui-cell-link" to={`/a/${agent}/sessions/${row.line.call}`}>
+          Open the session
         </Link>
-      </h3>
+      </div>
       <WhatToDoWithIt call={row.line.call} />
-      {score === null && <p className="note">this call's log carries no verdict</p>}
-      {score?.not_judged != null && <p className="note note-warn">{score.not_judged}</p>}
+      {score === null && <div className="ui-note">This call's log carries no verdict.</div>}
+      {score?.not_judged != null && <div className="ev-warn">{score.not_judged}</div>}
       {score !== null && <Silent score={score} />}
       {score?.judges
         .filter((judge) => judge.verdict !== "held")
         .map((judge) => <Said key={judge.name} agent={agent} call={row.line.call} judgment={judge} />)}
-      {score !== null && score.judges.every((judge) => judge.verdict === "held") && (
-        <p className="note">every judge on the panel held: {score.judges.map((judge) => judge.name).join(", ")}</p>
+      {score !== null && score.judges.length > 0 && score.judges.every((judge) => judge.verdict === "held") && (
+        <div className="ui-note">Every judge on the panel held: {score.judges.map((judge) => judge.name).join(", ")}.</div>
       )}
     </div>
   );
@@ -106,34 +88,31 @@ function Silent({ score }: { score: CallScore }): ReactNode {
   const silent = (score.panel ?? []).filter((name) => !answered.has(name));
   if (silent.length === 0) return null;
   return (
-    <p className="note note-warn">
-      {silent.join(", ")} was run over this call and answered nothing; the panel was {score.panel?.join(", ")}
-    </p>
+    <div className="ev-warn">
+      {silent.join(", ")} was run over this call and answered nothing; the panel was {score.panel?.join(", ")}.
+    </div>
   );
 }
 
 function Said({ agent, call, judgment }: { agent: string; call: string; judgment: Judgment }): ReactNode {
   const seqs = judgment.evidence.seqs;
   return (
-    <div className="panel ev-said">
-      <div className="panel-head">
-        <span className="panel-title ev-bad">
-          {judgment.name} · {judgment.verdict}
-        </span>
-        <span className="badge">{judgment.criteria}</span>
-      </div>
-      <div className="panel-body">
-        <p className="ev-reason">{judgment.reason}</p>
-        {judgment.evidence.said != null && <p className="ev-quote">“{judgment.evidence.said}”</p>}
+    <div className="ev-said">
+      <SectionLabel>
+        {judgment.name} · {judgment.verdict}
+      </SectionLabel>
+      <div className="ev-said-body">
+        <div className="ev-reason">{judgment.reason}</div>
+        <div className="ui-cell-faint">{judgment.criteria}</div>
+        {judgment.evidence.said != null && <div className="ev-quote">“{judgment.evidence.said}”</div>}
         {seqs.length > 0 && (
-          <span className="chips">
+          <div className="ui-tags">
             {seqs.map((seq) => (
-              <Link key={seq} className="chip" to={`/a/${agent}/sessions/${call}#seq-${seq}`}>
-                <span className="chip-key">seq</span>
-                <span className="chip-val">{seq}</span>
+              <Link key={seq} className="ui-tag" to={`/a/${agent}/sessions/${call}#seq-${seq}`}>
+                seq {seq}
               </Link>
             ))}
-          </span>
+          </div>
         )}
       </div>
     </div>

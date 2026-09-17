@@ -1,46 +1,46 @@
-/** One row of a call's timeline: the seq, the kind of thing it is, what it says — and more, one click under. */
+/** One row of a call's log: the seq, what kind of thing it is, what it says, a note under — and more, one click under. */
 
 import type { ReactNode } from "react";
 
-/** The kinds a row can be; the tone is the colour the kind column and the row's ground take. */
-export type Tone = "turn" | "tool" | "state" | "confirm" | "event" | "supervisor" | "quiet";
+/** The kinds a row can be; the tone colours the kind column and the row's ground. */
+export type Tone = "turn" | "tool" | "state" | "confirm" | "event" | "supervisor" | "quiet" | "lookup";
 
 /**
- * The grid every row shares — `34px 92px 1fr` — so the seqs line up down the whole call and a
- * reader's eye finds the kind column before the words. A row with children is a `<details>`: the
- * line is its summary and the children open under it, indented to the words' column.
+ * The row every entry shares: a 26px seq, the kind, and the words taking the rest, wrapping under
+ * the kind when the column is narrow. A row with children is a `<details>`: the line is its
+ * summary and the children open under it, indented to the words' column.
  */
 export function LogRow({
   seq,
   kind,
   tone,
+  who,
   said,
-  meta = [],
-  chips = [],
+  note = [],
   children,
 }: {
   seq: number | undefined;
   kind: string;
   tone: Tone;
+  who?: "caller" | "agent" | undefined;
   said: ReactNode;
-  meta?: ReactNode[];
-  chips?: string[];
+  note?: ReactNode[];
   children?: ReactNode;
 }): ReactNode {
+  const shown = note.filter((one) => one !== null && one !== undefined && one !== "");
   const line = (
     <>
-      <span className="log-seq fixed">{seq}</span>
-      <span className="log-kind fixed">{kind}</span>
-      <span className="log-text">
-        <span className="log-said">{said}</span>
-        {(meta.length > 0 || chips.length > 0) && (
-          <span className="log-meta fixed">
-            {meta.map((one, index) => (
-              <span key={index}>{one}</span>
-            ))}
-            {chips.map((chip) => (
-              <span className="log-chip" key={chip}>
-                {chip}
+      <span className="lv-seq">{seq}</span>
+      <span className={`lv-kind lv-kind-${tone}`}>{kind}</span>
+      <span className={tone === "turn" ? "lv-text lv-text-turn" : tone === "quiet" ? "lv-text lv-text-quiet" : "lv-text"}>
+        {who !== undefined && <span className={who === "agent" ? "lv-who lv-who-agent" : "lv-who"}>{who}</span>}
+        {said}
+        {shown.length > 0 && (
+          <span className="lv-note">
+            {shown.map((one, index) => (
+              <span key={index}>
+                {index > 0 && " · "}
+                {one}
               </span>
             ))}
           </span>
@@ -48,13 +48,18 @@ export function LogRow({
       </span>
     </>
   );
+  const ground = `lv-row lv-${tone}`;
   if (children === undefined || children === null || children === false) {
-    return <div className={`log-row log-row-${tone}`}>{line}</div>;
+    return (
+      <div className={ground}>
+        <div className="lv-line">{line}</div>
+      </div>
+    );
   }
   return (
-    <details className={`log-row log-row-${tone}`}>
-      <summary className="log-line">{line}</summary>
-      <div className="log-more">{children}</div>
+    <details className={ground}>
+      <summary className="lv-line">{line}</summary>
+      <div className="lv-more">{children}</div>
     </details>
   );
 }

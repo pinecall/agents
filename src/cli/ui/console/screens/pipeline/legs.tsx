@@ -1,84 +1,86 @@
-/** The three providers of a voice turn, each as a panel: what hears, what decides, what speaks. */
+/** The three providers of a voice turn, each as a card: what hears, what decides, what speaks. */
 
 import type { ReactNode } from "react";
 
+import { Pill } from "../../ui";
 import type { Stage } from "./door";
 
 // Every value comes from the gateway's report, which reads the runtime's own provider files with
-// the agent's overrides already applied. The prose beside a row explains what the row decides; the
+// the agent's overrides already applied. The sentence under a value explains what it decides; the
 // value is the server's.
 
-export function HearsLeg({ stage, unavailable }: { stage: Stage; unavailable: string | null }): ReactNode {
-  return (
-    <Leg role="hears" vendor={stage.vendor} model={stage.model} unavailable={unavailable}>
-      <Row k="language" v={stage.language} note="what the ear is told to expect; the runtime adds the names the state carries" />
-      <Row k="switchable to" v="any stt provider file" note="the ear is the agent's declaration, changed from Control below and effective on the NEXT session" />
-    </Leg>
-  );
-}
-
-export function DecidesLeg({ stage, unavailable }: { stage: Stage; unavailable: string | null }): ReactNode {
-  return (
-    <Leg role="decides" vendor={stage.vendor} model={stage.model} unavailable={unavailable}>
-      <Row k="prompt" v="identity · knowledge · tools · history · view" note="named blocks in two regions, never reordered: the static ones before the history are cached, the dynamic ones after it are rewritten every turn; an agent adds blocks of its own on either side" />
-      <Row k="tools" v="the class's @tool methods" note="visible by stage; the only thing that changes the state" />
-    </Leg>
-  );
-}
-
-export function SpeaksLeg({ stage, unavailable }: { stage: Stage; unavailable: string | null }): ReactNode {
-  return (
-    <Leg role="speaks" vendor={stage.vendor} model={stage.model} unavailable={unavailable}>
-      <Row k="voice" v={stage.voice_id} note="one of the voices this build curates, by name; the id is the vendor's" />
-      <Row k="aligned transcript" v="on" note="timed words, so the log and the karaoke know when each word was spoken" />
-    </Leg>
-  );
-}
-
-function Leg({
-  role,
-  vendor,
-  model,
-  unavailable,
-  children,
-}: {
-  role: string;
-  vendor: string;
-  model: string | null;
+interface LegProps {
+  stage: Stage;
   unavailable: string | null;
-  children: ReactNode;
-}): ReactNode {
+  /** An operator has moved this stage from what the class declared. */
+  turned: boolean;
+}
+
+export function HearsLeg({ stage, unavailable, turned }: LegProps): ReactNode {
   return (
-    <article className="panel leg">
-      <div className="panel-head">
-        <span className="panel-title">{vendor}</span>
-        <span className="badge">{role}</span>
+    <Leg job="hears" stage={stage} unavailable={unavailable} turned={turned}>
+      <Field label="Language" value={stage.language ?? "the vendor's default"} note="What the ear is told to expect; the runtime adds the names the state carries." />
+      {stage.model !== null && stage.model !== "" && <Field label="Model" value={stage.model} />}
+      <Field label="Switchable to" value="Any STT provider on file" note="Effective on the next session." />
+    </Leg>
+  );
+}
+
+export function DecidesLeg({ stage, unavailable, turned }: LegProps): ReactNode {
+  return (
+    <Leg job="decides" stage={stage} unavailable={unavailable} turned={turned}>
+      <Field label="Model" value={stage.model ?? "the vendor's default"} />
+      <Field
+        label="Prompt"
+        value="identity · knowledge · tools · history · view"
+        note="Named blocks in two regions, never reordered: the static ones are cached, the dynamic ones rewritten every turn."
+      />
+      <Field label="Tools" value="The class's @tool methods" />
+    </Leg>
+  );
+}
+
+export function SpeaksLeg({ stage, unavailable, turned }: LegProps): ReactNode {
+  return (
+    <Leg job="speaks" stage={stage} unavailable={unavailable} turned={turned}>
+      <Field label="Voice" value={stage.voice_id ?? "the vendor's default"} note="One of the voices this build curates, by name; the id is the vendor's." />
+      {stage.model !== null && stage.model !== "" && <Field label="Model" value={stage.model} />}
+      <Field label="Aligned transcript" value="On" note="Timed words, so the log knows when each word was spoken." />
+    </Leg>
+  );
+}
+
+function Leg({ job, stage, unavailable, turned, children }: LegProps & { job: string; children: ReactNode }): ReactNode {
+  return (
+    <div className="ui-card">
+      <div className="pipe-leg-head">
+        <span className="pipe-leg-vendor">{stage.vendor}</span>
+        {turned && (
+          <Pill tone="violet" small>
+            turned
+          </Pill>
+        )}
+        <span className="pipe-leg-job">{job}</span>
       </div>
-      <div className="panel-body">
-        <div className="leg-model mono">{model ?? "the provider's default"}</div>
-        <dl className="leg-rows">{children}</dl>
+      <div className="pipe-leg-body">
+        {children}
         {unavailable !== null && (
-          <div className="leg-refused">
-            <span className="leg-refused-title">not right now</span>
-            <p className="leg-refused-row">{unavailable}</p>
+          <div className="pipe-field">
+            <div className="pipe-label">Not right now</div>
+            <div className="pipe-refused">{unavailable}</div>
           </div>
         )}
       </div>
-    </article>
+    </div>
   );
 }
 
-// A field the agent left undeclared has no row: the vendor file's own default answers for it, and
-// a blank line beside a name reads as a value that is empty.
-function Row({ k, v, note }: { k: string; v: string | null; note?: string }): ReactNode {
-  if (v === null) {
-    return null;
-  }
+function Field({ label, value, note }: { label: string; value: string; note?: string }): ReactNode {
   return (
-    <div className="leg-row">
-      <dt className="leg-k">{k}</dt>
-      <dd className="leg-v mono">{v}</dd>
-      {note && <p className="leg-note">{note}</p>}
+    <div className="pipe-field">
+      <div className="pipe-label">{label}</div>
+      <div className="pipe-value">{value}</div>
+      {note !== undefined && <div className="pipe-note">{note}</div>}
     </div>
   );
 }

@@ -20,7 +20,7 @@ export function WidgetPreview(): ReactNode {
       () => {
         if (gone || stage.current === null) return;
         const attributes: Record<string, string> = {};
-        for (const key of ["name", "company", "tagline", "phone"]) {
+        for (const key of ["name", "company", "tagline", "phone", "greeting"]) {
           const value = asked.get(key);
           if (value) attributes[key] = value;
         }
@@ -40,10 +40,8 @@ export function WidgetPreview(): ReactNode {
   return (
     <div className="widget-blank">
       <div ref={stage} />
-      <span className="widget-blank-mark fixed">
-        pinecall · {agent} · preview
-      </span>
-      {refused !== null && <p className="widget-refused">{refused}</p>}
+      <span className="widget-blank-mark">pinecall · {agent} · preview</span>
+      {refused !== null && <p className="widget-blank-refused">{refused}</p>}
     </div>
   );
 }

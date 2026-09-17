@@ -1,10 +1,11 @@
 /** Run a suite: tick the goldens, choose the line, and run them through the class from the page. */
 
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 
 import { GatewayError } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
-import { readGoldens, startSuite, type Listed, type Roster } from "./testing";
+import { Button, Card, CardHead, Check, Input, Label, Refused } from "../../ui";
+import { startSuite, type Listed, type Roster } from "./testing";
 
 // The television behind the caller at the level the hearing calls measured, and no packets lost:
 // the defaults `pinecall test --voice` has, so the two doors spoil a line the same way.
@@ -12,15 +13,14 @@ const NOISE_DB = 15;
 const LOSS_PERCENT = 0;
 
 /**
- * The form. It asks the console's own server, never the gateway: a run mounts the class of the
- * directory `pinecall run` runs in, so only that process can start one — and it is the same suite
- * `pinecall test` runs, reported in that terminal, with every broken golden written out where the
- * verb writes it. The run's row appears in the table below as the gateway opens it.
+ * The form. A run mounts the class of the directory `pinecall run` runs in, so only that process
+ * can start one — and it is the same suite `pinecall test` runs, reported in that terminal, with
+ * every broken golden written out where the verb writes it. The run's row appears in the table
+ * below as the gateway opens it.
  */
-export function SuiteForm({ agent, onOpened }: { agent: string; onOpened: (run: string) => void }): ReactNode {
+export function SuiteForm({ agent, roster, onOpened }: { agent: string; roster: Roster; onOpened: (run: string) => void }): ReactNode {
   const credentials = useCredentials();
-  const [roster, setRoster] = useState<Roster | null>(null);
-  const [ticked, setTicked] = useState<Set<string>>(new Set());
+  const [ticked, setTicked] = useState<Set<string>>(() => new Set(roster.goldens.map((one) => one.name)));
   const [models, setModels] = useState("");
   const [voice, setVoice] = useState(false);
   const [spoiled, setSpoiled] = useState(false);
@@ -28,39 +28,6 @@ export function SuiteForm({ agent, onOpened }: { agent: string; onOpened: (run: 
   const [loss, setLoss] = useState(LOSS_PERCENT);
   const [starting, setStarting] = useState(false);
   const [refused, setRefused] = useState<string | null>(null);
-
-  useEffect(() => {
-    let gone = false;
-    readGoldens(credentials, agent).then(
-      (read) => {
-        if (gone) return;
-        setRoster(read);
-        setTicked(new Set(read.goldens.map((one) => one.name)));
-      },
-      (failed: unknown) => {
-        if (!gone) setRefused(failed instanceof Error ? failed.message : String(failed));
-      },
-    );
-    return () => {
-      gone = true;
-    };
-  }, [credentials]);
-
-  if (roster === null) {
-    return refused === null ? null : <p className="note note-warn">{refused}</p>;
-  }
-  if (roster.agent !== agent) {
-    return (
-      <p className="suite-aside">
-        {roster.agent === null
-          ? "No agent class in the directory the agent's `pinecall run` runs in, so no goldens to run."
-          : `The process holding the agent runs in ${roster.agent}'s directory; its goldens are that agent's.`}
-      </p>
-    );
-  }
-  if (roster.goldens.length === 0) {
-    return <p className="suite-aside">No goldens for this agent yet: write one in its goldens folder — test/goldens, or test/goldens/&lt;name&gt; in a project of several — and it appears here.</p>;
-  }
 
   const tick = (name: string, on: boolean): void => {
     const next = new Set(ticked);
@@ -75,7 +42,10 @@ export function SuiteForm({ agent, onOpened }: { agent: string; onOpened: (run: 
     setStarting(true);
     setRefused(null);
     try {
-      const asked = models.split(",").map((one) => one.trim()).filter((one) => one !== "");
+      const asked = models
+        .split(",")
+        .map((one) => one.trim())
+        .filter((one) => one !== "");
       const opened = await startSuite(credentials, {
         agent,
         goldens: roster.goldens.map((one) => one.name).filter((name) => ticked.has(name)),
@@ -92,67 +62,58 @@ export function SuiteForm({ agent, onOpened }: { agent: string; onOpened: (run: 
   };
 
   return (
-    <form className="suite" onSubmit={(event) => void run(event)}>
-      <div className="suite-head">
-        <label className="suite-check">
-          <input
-            type="checkbox"
-            checked={all}
-            onChange={(event) => setTicked(new Set(event.target.checked ? roster.goldens.map((one) => one.name) : []))}
-          />
-          <span>
+    <Card>
+      <CardHead
+        title="Run a suite"
+        meta="through the class in the directory pinecall run runs in, scored by this gateway"
+      />
+      <form onSubmit={(event) => void run(event)}>
+        <div className="ev-suite-controls">
+          <div className="ev-suite-models">
+            <Label>Models</Label>
+            <Input size="sm" value={models} placeholder="the one the class declared · vendor/model, comma separated" onChange={(event) => setModels(event.target.value)} />
+          </div>
+          <Check checked={voice} onChange={setVoice}>
+            Voice — ring 2, a real line
+          </Check>
+          {voice && (
+            <Check checked={spoiled} onChange={setSpoiled}>
+              Noisy line
+            </Check>
+          )}
+          {voice && spoiled && (
+            <>
+              <div className="ev-suite-number">
+                <Label>Noise, dB under</Label>
+                <Input size="sm" type="number" min={0} max={60} value={noise} onChange={(event) => setNoise(Number(event.target.value))} />
+              </div>
+              <div className="ev-suite-number">
+                <Label>Packets lost, %</Label>
+                <Input size="sm" type="number" min={0} max={100} value={loss} onChange={(event) => setLoss(Number(event.target.value))} />
+              </div>
+            </>
+          )}
+          <Button kind="primary" size="md" type="submit" className="ev-suite-go" disabled={starting || ticked.size === 0}>
+            {starting ? "Opening…" : `Run ${all ? "the suite" : `${ticked.size} golden${ticked.size === 1 ? "" : "s"}`}`}
+          </Button>
+        </div>
+        <div className="ev-suite-all">
+          <Check checked={all} onChange={(on) => setTicked(new Set(on ? roster.goldens.map((one) => one.name) : []))}>
             {ticked.size} of {roster.goldens.length}
-          </span>
-        </label>
-        <label className="suite-field">
-          <span>models</span>
-          <input
-            className="input suite-models mono"
-            value={models}
-            placeholder="the one the class declared"
-            onChange={(event) => setModels(event.target.value)}
-          />
-        </label>
-        <label className="suite-check">
-          <input type="checkbox" checked={voice} onChange={(event) => setVoice(event.target.checked)} />
-          <span>voice — ring 2, a real line</span>
-        </label>
-        {voice && (
-          <label className="suite-check">
-            <input type="checkbox" checked={spoiled} onChange={(event) => setSpoiled(event.target.checked)} />
-            <span>noisy line — a TV behind the caller, packets lost</span>
-          </label>
-        )}
-        {voice && spoiled && (
-          <>
-            <label className="suite-field">
-              <span>noise, dB under</span>
-              <input className="input suite-input mono" type="number" min={0} max={60} value={noise} onChange={(event) => setNoise(Number(event.target.value))} />
-            </label>
-            <label className="suite-field">
-              <span>packets lost, %</span>
-              <input className="input suite-input mono" type="number" min={0} max={100} value={loss} onChange={(event) => setLoss(Number(event.target.value))} />
-            </label>
-          </>
-        )}
-        <button type="submit" className="button" disabled={starting || ticked.size === 0}>
-          {starting ? "opening…" : `run ${ticked.size === roster.goldens.length ? "the suite" : `${ticked.size} golden${ticked.size === 1 ? "" : "s"}`}`}
-        </button>
-      </div>
-      <ul className="suite-list">
+          </Check>
+        </div>
         {roster.goldens.map((golden) => (
-          <li key={golden.name} className="suite-golden">
-            <label className="suite-check">
-              <input type="checkbox" checked={ticked.has(golden.name)} onChange={(event) => tick(golden.name, event.target.checked)} />
-              <span className="mono">{golden.name}</span>
-            </label>
-            <span className="suite-says">{golden.input[0] ?? ""}</span>
-            <span className="suite-expects mono">{expectsLine(golden)}</span>
-          </li>
+          <div key={golden.name} className="ev-suite-golden">
+            <Check checked={ticked.has(golden.name)} onChange={(on) => tick(golden.name, on)}>
+              <span className="ev-suite-name">{golden.name}</span>
+            </Check>
+            <span className="ev-suite-says ui-clip">{golden.input[0] ?? ""}</span>
+            <span className="ev-suite-expects ui-clip">{expectsLine(golden)}</span>
+          </div>
         ))}
-      </ul>
-      {refused !== null && <p className="note note-warn">{refused}</p>}
-    </form>
+      </form>
+      <Refused>{refused}</Refused>
+    </Card>
   );
 }
 

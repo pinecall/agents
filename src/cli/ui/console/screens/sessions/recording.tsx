@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { doorUrl, headersFor } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
+import { Card, CardHead } from "../../ui";
 
 // call.summary carries the pointer and nothing else does (the runtime's worker/recordings.py
 // composes it). The file is on the box that took the call; the gateway's
@@ -21,14 +22,16 @@ export function Recording({ call, path }: { call: string; path: string | null })
     return null;
   }
   return (
-    <section className="section">
-      <h2 className="section-title">Listen to this call</h2>
-      <Player call={call} />
-      <p className="note">
-        {path} on the box that took the call — the same bytes <span className="fixed">pinecall-runtime sessions recording {call}</span>{" "}
-        points at. Nothing of a call leaves the box except through this door.
-      </p>
-    </section>
+    <Card>
+      <CardHead title="Listen to this call" />
+      <div className="ui-card-body">
+        <Player call={call} />
+        <p className="session-sentence">
+          {path} on the box that took the call — the same bytes <span className="ui-fixed">pinecall-runtime sessions recording {call}</span> points at. Nothing
+          of a call leaves the box except through this door.
+        </p>
+      </div>
+    </Card>
   );
 }
 
@@ -65,9 +68,9 @@ export function Player({ call }: { call: string }): ReactNode {
     };
   }, [call, credentials]);
 
-  if (refused !== null) return <p className="note">{refused}</p>;
-  if (src === null) return <p className="note">reading the recording…</p>;
-  return <audio className="player" controls preload="none" src={src} />;
+  if (refused !== null) return <p className="session-sentence">{refused}</p>;
+  if (src === null) return <p className="session-sentence">Reading the recording…</p>;
+  return <audio className="session-player" controls preload="none" src={src} />;
 }
 
 // The gateway's own sentence, which is the whole answer: "the recording of <call> is at <path> on

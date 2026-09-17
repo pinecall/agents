@@ -6,9 +6,6 @@ import { rowsOf } from "../live/timeline-rows";
 import { useWatchedCall } from "../live/use-watched-call";
 import { repliesOf, useRevealed } from "./streaming";
 
-// The column says who: the person typing is YOU; the agent is the agent; a tool is the tool's name.
-const WHO = { user: "you", agent: "agent" } as const;
-
 // How close to the foot counts as "at the foot": a reader who scrolled up to read something is
 // left there; one who is following the conversation is kept at its last line.
 const FOLLOWING_PX = 80;
@@ -26,8 +23,9 @@ export interface Pending {
  */
 export function Bubbles({ call, pending, onConfirmed }: { call: string; pending: Pending[]; onConfirmed: (text: string) => void }): ReactNode {
   const watched = useWatchedCall(call);
-  const rows = rowsOf(watched.entries, watched.state);
-  const { streaming, settled } = repliesOf(watched.entries);
+  const entries = onceEach(watched.entries);
+  const rows = rowsOf(entries, watched.state);
+  const { streaming, settled } = repliesOf(entries);
   const box = useRef<HTMLDivElement>(null);
   const following = useRef(true);
   // A call opened from the list is read, not watched: what it said long ago appears whole.
@@ -70,20 +68,15 @@ export function Bubbles({ call, pending, onConfirmed }: { call: string; pending:
             <AgentBubble key={`turn-${String(row.seq)}`} speech={speech} text={row.turn.text} instant={!live} done />
           ) : (
             <div className="chat-line chat-line-user" key={`turn-${String(row.seq)}`}>
-              <span className="chat-who fixed">{WHO.user}</span>
-              <span className="chat-bubble">{row.turn.text}</span>
+              <span className="chat-bubble chat-bubble-you">{row.turn.text}</span>
             </div>
           );
         }
         if (row.kind === "tool") {
           return (
             <div className="chat-line chat-line-tool" key={`tool-${String(row.seq)}`}>
-              <span className="chat-tool fixed">
-                <span className={`chat-tool-dot chat-tool-${row.run.status}`} />
-                {row.run.name}
-                <span className="chat-tool-result">
-                  {row.run.error ?? row.run.summary ?? (row.run.status === "running" ? "running…" : "done")}
-                </span>
+              <span className={`chat-tool chat-tool-${row.run.status}`}>
+                {row.run.name} · {row.run.error ?? row.run.summary ?? (row.run.status === "running" ? "running…" : "done")}
               </span>
             </div>
           );
@@ -95,13 +88,11 @@ export function Bubbles({ call, pending, onConfirmed }: { call: string; pending:
       ))}
       {pending.map((line) => (
         <div className="chat-line chat-line-user chat-line-pending" key={`pending-${String(line.id)}`}>
-          <span className="chat-who fixed">{WHO.user}</span>
-          <span className="chat-bubble">{line.text}</span>
+          <span className="chat-bubble chat-bubble-you">{line.text}</span>
         </div>
       ))}
       {thinking && (
         <div className="chat-line chat-line-agent">
-          <span className="chat-who fixed">{WHO.agent}</span>
           <span className="chat-bubble chat-typing" aria-label="the agent is writing">
             <i />
             <i />
@@ -109,7 +100,7 @@ export function Bubbles({ call, pending, onConfirmed }: { call: string; pending:
           </span>
         </div>
       )}
-      {watched.error !== null && <p className="note note-warn">{watched.error}</p>}
+      {watched.error !== null && <p className="chat-error">{watched.error}</p>}
     </div>
   );
 }
@@ -120,11 +111,17 @@ function AgentBubble({ speech, text, instant, done }: { speech: string; text: st
   const caught = shown.length >= text.length;
   return (
     <div className="chat-line chat-line-agent">
-      <span className="chat-who fixed">{WHO.agent}</span>
       <span className="chat-bubble">
         {shown}
         {!(done && caught) && <span className="chat-caret" aria-hidden />}
       </span>
     </div>
   );
+}
+
+// A log re-read from its start — a remount, a development build running every effect twice — hands
+// the same entries again. A seq is written once, so it is kept once.
+function onceEach<T extends { seq: number }>(entries: T[]): T[] {
+  const seen = new Set<number>();
+  return entries.filter((entry) => (seen.has(entry.seq) ? false : (seen.add(entry.seq), true)));
 }

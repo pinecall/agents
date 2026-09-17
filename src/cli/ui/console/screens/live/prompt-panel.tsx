@@ -1,19 +1,25 @@
-/** PROMPT: which blocks the app has written on this call, and how each stands, beside the state. */
+/** PROMPT: which blocks the app has written on this call, how each stands, and what the call has cost so far. */
 
-import type { PromptState } from "@pinecall/protocol";
+import type { Cost, PromptState } from "@pinecall/protocol";
 import type { ReactNode } from "react";
 
-import { PromptBlocks } from "./prompt-blocks";
+import { euros } from "../../lib/format";
+import { KV, SectionLabel } from "../../ui";
 
-export function PromptPanel({ prompt }: { prompt: PromptState }): ReactNode {
+export function PromptPanel({ prompt, cost }: { prompt: PromptState; cost: Cost | null }): ReactNode {
+  const blocks = Object.entries(prompt);
   return (
-    <section className="live-panel">
-      <h3 className="live-panel-name">PROMPT</h3>
-      {Object.keys(prompt).length === 0 ? (
-        <p className="live-panel-empty">The app has written no block yet.</p>
-      ) : (
-        <PromptBlocks prompt={prompt} />
-      )}
-    </section>
+    <>
+      <SectionLabel ruled>Prompt</SectionLabel>
+      <div className="lv-pane-body lv-pane-body-tight">
+        {blocks.length === 0 && <div className="lv-sub">The app has written no block yet.</div>}
+        {blocks.map(([name, block]) => (
+          <KV key={name} label={name}>
+            <span title={block.hash}>{block.hash.slice(0, 16)}</span> · {block.chars.toLocaleString("en").replace(/,/g, " ")} chars
+          </KV>
+        ))}
+        {cost !== null && <KV label="cost so far">{euros(cost.eur)}</KV>}
+      </div>
+    </>
   );
 }

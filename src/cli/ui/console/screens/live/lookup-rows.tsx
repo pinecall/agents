@@ -16,13 +16,11 @@ export function SourcesRow({ sources, seq }: { sources: DocsSources; seq: number
   return <LookupRow kind="sources" said={sourcesLine(sources)} lines={sourceLines(sources)} seq={seq} />;
 }
 
-// One shape for both: the sentence on the line, and what was found one click under it. The tone
-// is the quiet row's, so the two read as what they are — a fold in the log — and not as a new
-// kind of thing on screen.
+// One shape for both: the sentence on the line, and what was found one click under it.
 function LookupRow({ kind, said, lines, seq }: { kind: string; said: string; lines: string[]; seq: number }): ReactNode {
   return (
-    <LogRow seq={seq} kind={kind} tone="quiet" said={<span className="fixed">{said}</span>}>
-      <ul className="log-list fixed">
+    <LogRow seq={seq} kind={kind} tone="lookup" said={said}>
+      <ul className="lv-list">
         {lines.map((line) => (
           <li key={line}>{line}</li>
         ))}

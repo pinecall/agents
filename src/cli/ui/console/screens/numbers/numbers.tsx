@@ -4,8 +4,10 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 
 import { GatewayError } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
-import { useHeldAgents } from "../../lib/use-held-agents";
+import { prettyNumber } from "../../lib/format";
+import { useOrg } from "../../lib/org";
 import { useWorld } from "../../lib/world";
+import { Button, Card, CardHead, Empty, Page, PageHead, Pill, Refused } from "../../ui";
 import { Adding } from "./adding";
 import { CarrierPanel } from "./carrier";
 import {
@@ -31,7 +33,7 @@ import "./numbers.css";
  */
 export function Numbers(): ReactNode {
   const credentials = useCredentials();
-  const { agents } = useHeldAgents();
+  const { agents } = useOrg();
   const [carrier, setCarrier] = useState<Carrier | null | undefined>(undefined);
   const [doors, setDoors] = useState<Answering[] | null>(null);
   const [available, setAvailable] = useState<Available | null>(null);
@@ -76,42 +78,45 @@ export function Numbers(): ReactNode {
   const onTheWeb = (doors ?? []).filter((door) => door.route.number === null);
 
   return (
-    <div className="numbers">
-      <h1 className="numbers-title">Phone numbers</h1>
-      <p className="numbers-lede">
-        The numbers people call, and which agent picks up. You are looking at{" "}
-        <span className={`numbers-world numbers-world-${world}`}>{world}</span>.
-      </p>
+    <Page width={900}>
+      <PageHead title="Phone numbers" lede="The numbers people call, and which agent picks up." />
 
-      {refused !== null && <p className="numbers-note numbers-refused fixed">{refused}</p>}
+      <Refused>{refused}</Refused>
 
       {doors !== null && (
-        <section className="numbers-doors">
-          <h2 className="numbers-heading">Numbers in {world}</h2>
-          {numbered.length === 0 ? (
-            <p className="numbers-empty">No phone number rings in {world} yet.</p>
-          ) : (
-            <div className="numbers-cards">
-              {numbered.map((door) => (
-                <NumberCard
-                  key={door.route.number}
-                  door={door}
-                  onRemove={
-                    door.source === "operator"
-                      ? () => void moved(() => releaseNumber(credentials, door.route.number ?? "")).catch(() => undefined)
-                      : null
-                  }
-                  busy={busy}
-                />
-              ))}
+        <Card>
+          <CardHead title={`Numbers in ${world}`} />
+          {numbered.length === 0 && <Empty>No phone number rings in {world} yet. Add one below.</Empty>}
+          {numbered.map((door) => (
+            <div key={door.route.number} className="num-row">
+              <span className="num-number">{prettyNumber(door.route.number)}</span>
+              <span className="num-arrow" aria-hidden>
+                →
+              </span>
+              <span className="num-agent">{door.route.agent}</span>
+              {door.route.managed && (
+                <span title="bought by the box for this org">
+                  <Pill tone="violet">bought</Pill>
+                </span>
+              )}
+              {door.source === "operator" && (
+                <Button
+                  kind="danger"
+                  size="xs"
+                  className="num-remove"
+                  disabled={busy}
+                  title="The number stops ringing this agent. It stays in your carrier account."
+                  onClick={() => void moved(() => releaseNumber(credentials, door.route.number ?? "")).catch(() => undefined)}
+                >
+                  Remove
+                </Button>
+              )}
             </div>
-          )}
+          ))}
           {onTheWeb.length > 0 && (
-            <p className="numbers-hint">
-              Also on the web, with no number needed: {onTheWeb.map((door) => door.route.agent).join(", ")}.
-            </p>
+            <div className="num-foot">Also on the web, with no number needed: {[...new Set(onTheWeb.map((door) => door.route.agent))].join(", ")}.</div>
           )}
-        </section>
+        </Card>
       )}
 
       {carrier !== undefined && (
@@ -120,7 +125,6 @@ export function Numbers(): ReactNode {
           agents={agents}
           available={available}
           busy={busy}
-          world={world}
           onImport={(wanted, dryRun) => moved(() => importNumber(credentials, { ...wanted, channel: "phone" }, dryRun))}
           onBuy={(wanted, dryRun) => moved(() => buyNumber(credentials, { ...wanted, channel: "phone" }, dryRun))}
         />
@@ -130,42 +134,16 @@ export function Numbers(): ReactNode {
         <CarrierPanel
           carrier={carrier}
           busy={busy}
-          onBring={async (wanted) => { await moved(() => bringCarrier(credentials, wanted)).catch(() => undefined); }}
-          onDrop={async () => { await moved(() => dropCarrier(credentials)).catch(() => undefined); }}
+          onBring={async (wanted) => {
+            await moved(() => bringCarrier(credentials, wanted)).catch(() => undefined);
+          }}
+          onDrop={async () => {
+            await moved(() => dropCarrier(credentials)).catch(() => undefined);
+          }}
         />
       )}
-    </div>
+    </Page>
   );
-}
-
-/** One number: what people dial, who answers, in which world, and the way to take it off. */
-function NumberCard({ door, onRemove, busy }: { door: Answering; onRemove: (() => void) | null; busy: boolean }): ReactNode {
-  return (
-    <div className="numbers-card">
-      <span className="numbers-card-number fixed">{pretty(door.route.number ?? "")}</span>
-      <span className="numbers-card-arrow" aria-hidden>→</span>
-      <span className="numbers-card-agent fixed">{door.route.agent}</span>
-      <span className={`numbers-world numbers-world-${door.route.env}`}>{door.route.env}</span>
-      {door.route.managed && <span className="numbers-managed fixed" title="bought by the box for this org">bought</span>}
-      {onRemove !== null && (
-        <button
-          type="button"
-          className="link numbers-card-remove"
-          disabled={busy}
-          title="The number stops ringing this agent. It stays in your carrier account."
-          onClick={onRemove}
-        >
-          remove
-        </button>
-      )}
-    </div>
-  );
-}
-
-/** +14176743169 as a person reads it; anything that is not a US number is left as it is. */
-export function pretty(number: string): string {
-  const us = /^\+1(\d{3})(\d{3})(\d{4})$/.exec(number);
-  return us === null ? number : `+1 (${us[1]}) ${us[2]}-${us[3]}`;
 }
 
 function saidBy(failed: unknown): string {

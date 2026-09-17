@@ -1,26 +1,25 @@
-/** One session, read as its log: the envelope, the latency, the consent, the score, then every fact in seq. */
+/** One session, read as its log: what it was, what was said, how fast, how it was judged, what it cost — then the proof. */
 
-import { CallScoreSchema, reduce, TERMINAL_EVENT, type CallScore, type Entry, type State } from "@pinecall/protocol";
+import { CallScoreSchema, reduce, TERMINAL_EVENT, type CallScore, type Cost, type Entry, type State } from "@pinecall/protocol";
 import { useMemo, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 
-import { started } from "../../lib/clock";
+import { dayAndTime, duration, euros, prettyNumber } from "../../lib/format";
 import { medians } from "../../lib/metrics";
-import { WhatToDoWithIt } from "../evals";
-import { PromptBlocks } from "../live/prompt-blocks";
+import { Card, CardHead, Empty, KV, Page, Refused, Stat, Stats } from "../../ui";
+import { Actions } from "./actions";
 import { Consents, consents } from "./consent";
-import { duration, euros } from "./finished-calls";
 import { Recording, recordingIn } from "./recording";
-import { ScoreBreakdown } from "./score";
-import { LatencyStrip } from "./strip";
+import { ScoreCard } from "./score";
+import { LatencyCard } from "./strip";
 import { Timeline } from "./timeline";
 import { transcript } from "./transcript";
 import { useFinishedCall } from "./use-finished-call";
 import "./sessions.css";
 
-// The order is an auditor's: what this call was, how fast it was, what it was allowed to do, what
-// the judges made of it, and only then the rows that prove all of it. Everything above the table
-// is derived from the table — nothing on this screen comes from anywhere the CLI could not reach.
+// The order is an auditor's: what this call was, what was said, how fast, what the judges made of
+// it, what it cost, and only then the rows that prove all of it. Everything on this page is derived
+// from the log — nothing comes from anywhere the CLI could not reach.
 
 // call.summary and NOT the terminal entry: the log seals on call.score, which is a verdict and
 // carries no pointer to anything (the runtime's docs/decisions/scoring.md).
@@ -40,159 +39,167 @@ export function Session(): ReactNode {
     }),
     [entries],
   );
+  // Under an agent the way back is its list; on the org's floor, the org's.
+  const back = agent === "" ? "/sessions" : `/a/${agent}/sessions`;
+  const slug = agent !== "" ? agent : read.state.agent;
 
   return (
-    <div className="page page-wide">
-      <header className="page-head">
-        <div className="page-eyebrow">
-          <Link to={`/a/${agent}/sessions`}>{agent} / sessions</Link>
-        </div>
-        <h1 className="page-title page-title-fixed">{call}</h1>
-        <WhatToDoWithIt call={call} />
-      </header>
+    <Page tight>
+      <div>
+        <Link to={back} className="ui-back">
+          ← Sessions
+        </Link>
+        <h1 className="session-title">{call}</h1>
+        <Actions agent={slug} call={call} />
+      </div>
 
       {error !== null && (
-        <section className="section">
-          <div className="empty">
-            <p className="empty-title">That session did not load</p>
-            <div className="empty-body">
-              <p>
-                <code className="mono">{error}</code>
-              </p>
-            </div>
-          </div>
-        </section>
+        <Card>
+          <Empty>
+            That session did not load. <Refused>{error}</Refused>
+          </Empty>
+        </Card>
       )}
 
       {error === null && entries.length === 0 && (
-        <section className="section">
-          <p className="note">{reading ? `reading ${call}…` : `no call ${call} in the log`}</p>
-        </section>
+        <Card>
+          <Empty>{reading ? `Reading ${call}…` : `No call ${call} in the log.`}</Empty>
+        </Card>
       )}
 
       {entries.length > 0 && (
         <>
-          <section className="section">
-            <Facts agent={agent} state={read.state} score={read.score} events={entries.length} />
-          </section>
+          <Facts state={read.state} events={entries.length} />
+
+          <Card pad>
+            <div className="session-outcome-label">Outcome</div>
+            <div className="session-outcome">{read.state.outcome ?? (read.state.end_reason === null ? "The call is still going." : "The call left no outcome sentence.")}</div>
+          </Card>
+
+          <div className="session-split">
+            <Transcript state={read.state} />
+            <div className="session-side">
+              <LatencyCard rows={read.latencies} />
+              <ScoreCard call={call} back={back} score={read.score} turns={read.state.turns.length} />
+            </div>
+          </div>
+
+          {read.state.cost !== null && read.state.cost.rows.length > 0 && <CostCard cost={read.state.cost} />}
 
           <Recording call={call} path={read.recording} />
 
-          <section className="section">
-            <h2 className="section-title">Latency across this call</h2>
-            <LatencyStrip rows={read.latencies} />
-            <p className="note">
-              Median and max over the turns that carried each measure — the same seconds{" "}
-              <code className="mono">pinecall-runtime sessions show {call}</code> prints per turn.
-            </p>
-          </section>
-
           {read.consented.length > 0 && (
-            <section className="section">
-              <h2 className="section-title">Consent proof</h2>
+            <Card>
+              <CardHead title="Consent proof" meta="each grant joined to the tool call it authorised" />
               <Consents rows={read.consented} />
-            </section>
-          )}
-
-          <section className="section">
-            <h2 className="section-title">Score</h2>
-            <ScoreBreakdown agent={agent} call={call} score={read.score} turns={read.state.turns.length} />
-            <p className="note">
-              Written into the log itself as <code className="mono">call.score</code>, the entry the log seals on —
-              the last row of the table below.
-            </p>
-          </section>
-
-          {read.state.cost !== null && read.state.cost.rows.length > 0 && (
-            <section className="section">
-              <h2 className="section-title">Cost by model</h2>
-              <div className="panel">
-                <div className="panel-body">
-                  <table className="kv">
-                    <tbody>
-                      {read.state.cost.rows.map((row) => (
-                        <tr key={`${row.provider}/${row.model}/${row.unit}`}>
-                          <td className="kv-key">
-                            {row.provider} · {row.model} · {row.unit}
-                          </td>
-                          <td className="kv-val">
-                            {row.quantity} · {euros(row.eur)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <p className="note">
-                    EUR at {read.state.cost.rate.usd_to_eur} USD, as of {read.state.cost.rate.as_of}
-                    {read.state.cost.unpriced.length > 0 &&
-                      ` · unpriced: ${read.state.cost.unpriced.map((row) => `${row.provider}/${row.model}`).join(", ")}`}
-                  </p>
-                </div>
-              </div>
-            </section>
+            </Card>
           )}
 
           {Object.keys(read.state.prompt).length > 0 && (
-            <section className="section">
-              <h2 className="section-title">The prompt, block by block</h2>
-              <div className="panel">
-                <div className="panel-body">
-                  <PromptBlocks prompt={read.state.prompt} />
-                  <p className="note">
-                    What the app wrote, by name, with the hash and length of each block. The text never enters the
-                    log; <code className="mono">pinecall prompt --state</code> prints it offline.
-                  </p>
-                </div>
+            <Card>
+              <CardHead title="The prompt, block by block" meta="by name, hash and length — the text never enters the log" />
+              <div className="session-prompt">
+                {Object.entries(read.state.prompt).map(([name, block]) => (
+                  <KV key={name} label={name}>
+                    <span className="ui-fixed session-hash">{block.hash}</span> · {block.chars} chars · seq {block.seq}
+                  </KV>
+                ))}
               </div>
-            </section>
+              <div className="session-note">
+                <span className="ui-fixed">pinecall prompt --state</span> prints the text offline.
+              </div>
+            </Card>
           )}
 
-          <section className="section">
-            <h2 className="section-title">The log</h2>
-            <Timeline lines={read.lines} turns={read.state.turns} />
-            <p className="note">
-              {entries.length} entries, append-only, numbered by seq. Live ≡ stored: the tail streams over SSE while
-              the call is up and reads identically afterwards.
-            </p>
-          </section>
+          <Timeline lines={read.lines} turns={read.state.turns} />
         </>
       )}
-    </div>
+    </Page>
   );
 }
 
-/** The envelope: one row of labelled facts, every one of them read off the log. */
-function Facts({ agent, state, score, events }: { agent: string; state: State; score: CallScore | null; events: number }): ReactNode {
+/** What the call was, one small card each, every one read off the log. */
+function Facts({ state, events }: { state: State; events: number }): ReactNode {
   return (
-    <div className="facts">
-      <Fact label="agent" value={agent} />
-      <Fact label="channel" value={state.channel ?? "—"} accent={state.channel === "phone"} />
-      <Fact label="from" value={state.from ?? "—"} />
-      <Fact label="started" value={started(state.started_at)} />
-      <Fact label="duration" value={duration(state)} />
-      <Fact label="ended" value={state.end_reason ?? "running"} />
-      <Fact label="outcome" value={state.outcome ?? "—"} />
-      <Fact label="cost" value={euros(state.cost?.eur)} />
-      <Fact label="score" value={verdictOf(score)} accent={score?.passed === true} />
-      <Fact label="turns" value={String(state.turns.length)} />
-      <Fact label="events" value={String(events)} />
+    <div className="session-facts">
+      <Stats min={150}>
+      <Stat size="fact" label="Agent" value={state.agent} />
+      <Stat size="fact" label="Channel" value={state.direction === "outbound" ? `${state.channel ?? "—"} · outbound` : (state.channel ?? "—")} />
+      <Stat size="fact" label="Started" value={dayAndTime(state.started_at)} />
+      <Stat size="fact" label="Duration" value={state.ended_at === null ? "still going" : duration(state)} />
+      <Stat size="fact" label="Ended" value={state.end_reason === null ? "not yet" : state.end_reason.replace(/_/g, " ")} />
+      <Stat size="fact" label="Cost" value={euros(state.cost?.eur)} />
+      <Stat size="fact" label="Turns · events" value={`${state.turns.length} · ${events}`} />
+      </Stats>
     </div>
   );
 }
 
-function Fact({ label, value, accent }: { label: string; value: string; accent?: boolean }): ReactNode {
+/** What was said, turn by turn, and by whom. */
+function Transcript({ state }: { state: State }): ReactNode {
+  const caller = callerOf(state);
   return (
-    <div className={accent ? "fact fact-accent" : "fact"}>
-      <div className="fact-key">{label}</div>
-      <div className="fact-val">{value}</div>
-    </div>
+    <Card>
+      <CardHead title={`Transcript · ${state.turns.length} ${state.turns.length === 1 ? "turn" : "turns"}`} meta={caller === null ? undefined : `with ${caller}`} />
+      {state.turns.length === 0 ? (
+        <Empty>Nobody said anything a turn was written for.</Empty>
+      ) : (
+        <div className="session-turns">
+          {state.turns.map((turn, index) => (
+            <div key={`${index}:${turn.role}:${turn.speech_id}`} className="session-turn">
+              <span className={turn.role === "agent" ? "session-who session-who-agent" : "session-who"}>{turn.role === "agent" ? "agent" : "caller"}</span>
+              <span className={turn.role === "agent" ? "session-said session-said-agent" : "session-said"}>
+                {turn.text}
+                {turn.role === "agent" && turn.interrupted && <span className="session-interrupted"> · interrupted</span>}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
   );
 }
 
-function verdictOf(score: CallScore | null): string {
-  if (score === null) return "—";
-  if (score.passed == null) return "not judged";
-  return score.passed ? "passed" : "did not pass";
+/** What each model billed, and the total. */
+function CostCard({ cost }: { cost: Cost }): ReactNode {
+  return (
+    <Card>
+      <CardHead title="Cost by model">
+        <span className="session-total">{euros(cost.eur)}</span>
+      </CardHead>
+      <div>
+      {cost.rows.map((row) => (
+        <div key={`${row.provider}/${row.model}/${row.unit}`} className="session-cost">
+          <span className="session-cost-model">
+            {row.model} <span className="session-cost-kind">· {row.unit.replace(/_/g, " ")}</span>
+          </span>
+          <span className="session-cost-units">{grouped(row.quantity)}</span>
+          <span className="session-cost-eur">{euros(row.eur)}</span>
+        </div>
+      ))}
+      </div>
+      <div className="session-note">
+        EUR at {cost.rate.usd_to_eur} per USD, as of {cost.rate.as_of}
+        {cost.unpriced.length > 0 && ` · unpriced: ${cost.unpriced.map((row) => `${row.provider}/${row.model}`).join(", ")}`}
+      </div>
+    </Card>
+  );
+}
+
+/** `12 457`: thousands apart, the way the design writes a count. */
+function grouped(quantity: number): string {
+  const [whole, fraction] = String(Math.round(quantity * 100) / 100).split(".");
+  const spaced = (whole ?? "").replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  return fraction === undefined ? spaced : `${spaced}.${fraction}`;
+}
+
+/** Who was on the other end: the contact's name, else the number or the web visitor's id. */
+function callerOf(state: State): string | null {
+  const name = state.caller?.name;
+  if (name !== null && name !== undefined && name !== "") return name;
+  const other = state.direction === "outbound" ? state.to : state.from;
+  if (other === null) return null;
+  return other.startsWith("+") ? prettyNumber(other) : other;
 }
 
 function summaryOf(entries: Entry[]): Entry | undefined {

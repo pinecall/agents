@@ -1,71 +1,45 @@
-/* The card that signs a terminal in: one panel, one sentence, at most one button. It borrows the
-   way-in's vocabulary rather than its stylesheet — this screen is INSIDE the shell, with a signed-in
-   person around it, and the way-in is what a stranger meets. */
+/* /cli: the one card that signs a terminal in. */
 
 .terminal {
-  display: flex;
-  justify-content: center;
-  padding: 48px 20px;
+  flex: 1;
+  overflow: auto;
+  padding: 12vh 22px 48px;
 }
 
 .terminal-card {
-  background: var(--panel);
-  border: 1px solid var(--edge);
-  border-radius: var(--radius-panel);
-  max-width: 27rem;
-  padding: 26px 26px 24px;
-  width: 100%;
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 26px 24px 24px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--ground);
+  box-shadow: var(--shadow-card);
+}
+
+.terminal-mark {
+  display: block;
+  height: 22px;
+  width: auto;
+  margin-bottom: 18px;
 }
 
 .terminal-title {
-  color: var(--ink);
-  font-size: 19px;
-  font-weight: 500;
-  letter-spacing: -0.015em;
-  margin: 0 0 8px;
+  margin: 0 0 7px;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.5px;
 }
 
 .terminal-lede {
-  color: var(--ink-soft);
-  font-size: 13.5px;
-  line-height: 1.55;
-  margin: 0;
-  text-wrap: pretty;
-}
-
-.terminal-go {
-  align-items: center;
-  background: var(--ink);
-  border: 1px solid var(--ink);
-  border-radius: var(--radius-control);
-  color: var(--ground);
-  cursor: pointer;
-  display: inline-flex;
-  font-family: var(--face);
+  margin: 0 0 20px;
+  color: var(--ink-3);
   font-size: 14px;
-  font-weight: 500;
-  height: 38px;
-  justify-content: center;
-  margin-top: 20px;
-  width: 100%;
+  line-height: 1.55;
 }
 
-.terminal-go:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
-.terminal-go:disabled {
-  cursor: not-allowed;
-  opacity: 0.4;
-}
-
-/* The gateway's own sentence, verbatim: a refusal here is the whole answer. */
 .terminal-refused {
-  border-left: 2px solid var(--accent);
-  color: var(--ink-2);
+  margin: 14px 0 0;
   font-size: 13px;
+  color: var(--red);
   line-height: 1.5;
-  margin: 16px 0 0;
-  padding-left: 10px;
-  text-wrap: pretty;
 }

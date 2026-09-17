@@ -23,6 +23,10 @@ export function useWatchedCall(call: string): WatchedCall {
   const seen = useRef<Entry[]>([]);
   const log = useCall(call, {
     onEntry(entry) {
+      // A remount (StrictMode, a reconnect) reads the log again from its start: an entry already
+      // kept is not a second row.
+      const last = seen.current.at(-1);
+      if (last !== undefined && entry.seq <= last.seq) return;
       seen.current.push(entry);
     },
   });
