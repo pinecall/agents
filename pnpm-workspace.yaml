@@ -8,5 +8,6 @@ packages:
 allowBuilds:
   esbuild: true
 
+# Our own wire, published by us: the release-age wait guards against somebody else's package.
 minimumReleaseAgeExclude:
-  - '@pinecall/protocol@0.1.0'
+  - '@pinecall/protocol'

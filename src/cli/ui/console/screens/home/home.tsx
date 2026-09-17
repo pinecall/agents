@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 import { useInsights, type Insights } from "../../lib/insights";
 import { useOrg } from "../../lib/org";
-import type { Line } from "../../lib/sessions-wire";
+import type { SessionLine } from "@pinecall/protocol";
 import { change, duration, elapsed, percent, spend, startedOn, today, whoOn, ago } from "../../lib/format";
 import { useScores, type Scored } from "../../lib/use-scores";
 import { useWhoami } from "../../lib/whoami";
@@ -42,7 +42,7 @@ function needingALook(rows: Scored[]): Look[] {
   const found: Look[] = [];
   for (const row of rows) {
     const { score } = row;
-    const line = row.line as Line;
+    const line = row.line as SessionLine;
     // A gateway that flags its rows says it; an older one is read the long way, below.
     if (line.flags !== undefined && line.flags !== null) {
       const first = line.flags.map((one) => FLAG_WORDS[one]).find((one) => one !== undefined);
@@ -60,7 +60,7 @@ function needingALook(rows: Scored[]): Look[] {
 }
 
 /** The share of finished calls no human had to touch. */
-function resolvedShare(lines: Line[]): number | null {
+function resolvedShare(lines: SessionLine[]): number | null {
   const finished = lines.filter((line) => !line.live);
   if (finished.length === 0) return null;
   return finished.filter((line) => line.end_reason === null || !ESCALATED.has(line.end_reason)).length / finished.length;
@@ -193,7 +193,7 @@ function Median({ insights, before }: { insights: Insights; before: Insights | n
 }
 
 /** How the calls split by door: the gateway's count of the day when it keeps one, else the page's. */
-function Channels({ lines, counted }: { lines: Line[]; counted: Insights["channels"] | null }): ReactNode {
+function Channels({ lines, counted }: { lines: SessionLine[]; counted: Insights["channels"] | null }): ReactNode {
   const total = counted === null ? lines.length : counted.phone + counted.web + counted.whatsapp;
   const of = (channel: string): number =>
     counted === null ? lines.filter((line) => line.channel === channel).length : (counted[channel as keyof Insights["channels"]] ?? 0);

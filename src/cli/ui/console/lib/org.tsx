@@ -7,7 +7,7 @@ import { useCredentials } from "../../shared/credentials";
 import { bySlug, meIn } from "./corners";
 import { useInsights, type Insights } from "./insights";
 import { orgsOf, type OrgOf } from "./login";
-import type { Line } from "./sessions-wire";
+import type { SessionLine } from "@pinecall/protocol";
 import type { Connection } from "./stream";
 import { useFloor } from "./use-floor";
 import { useHeldAgents } from "./use-held-agents";
@@ -19,8 +19,8 @@ const ROWS = 200;
 
 export interface Org {
   /** Every call the door lists, newest first, and the live ones among them. */
-  lines: Line[];
-  live: Line[];
+  lines: SessionLine[];
+  live: SessionLine[];
   connection: Connection;
   floorError: string | null;
   /** Every copy the gateway holds, and one row per slug with the reader's own winning. */

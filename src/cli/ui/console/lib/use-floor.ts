@@ -1,6 +1,6 @@
 /** The org's floor: every agent's calls in one list, and the stream that says when it changed. */
 
-import { LinesSchema, type Line } from "./sessions-wire";
+import { SessionListSchema, type SessionLine } from "@pinecall/protocol";
 import { useEffect, useState } from "react";
 
 import { doorUrl, read } from "../../shared/api";
@@ -14,7 +14,7 @@ const EVERY_MS = 3000;
 
 /** The org's calls newest first, how the stream is doing, and what the door refused with. */
 export interface Floor {
-  lines: Line[];
+  lines: SessionLine[];
   connection: Connection;
   /** Grows by one on every agent registered or detached: what the agent list re-reads on. */
   agentsChanged: number;
@@ -24,7 +24,7 @@ export interface Floor {
 /** Follow the org's floor: the sessions door for the rows, `/v1/events` for when to ask again. */
 export function useFloor(limit = 50): Floor {
   const credentials = useCredentials();
-  const [lines, setLines] = useState<Line[]>([]);
+  const [lines, setLines] = useState<SessionLine[]>([]);
   const [connection, setConnection] = useState<Connection>("connecting");
   const [agentsChanged, setAgentsChanged] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +34,7 @@ export function useFloor(limit = 50): Floor {
 
     const ask = async (): Promise<void> => {
       try {
-        const listed = LinesSchema.parse(await read(credentials, "/v1/sessions", { limit }));
+        const listed = SessionListSchema.parse(await read(credentials, "/v1/sessions", { limit }));
         if (!stopped) {
           setLines(listed.calls);
           setError(null);
