@@ -26,10 +26,6 @@ export function Recording({ call, path }: { call: string; path: string | null })
       <CardHead title="Listen to this call" />
       <div className="ui-card-body">
         <Player call={call} />
-        <p className="session-sentence">
-          {path} on the box that took the call — the same bytes <span className="ui-fixed">pinecall-runtime sessions recording {call}</span> points at. Nothing
-          of a call leaves the box except through this door.
-        </p>
       </div>
     </Card>
   );

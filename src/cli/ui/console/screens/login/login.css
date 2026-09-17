@@ -333,3 +333,69 @@ select.login-workspace-input {
   appearance: none;
   cursor: pointer;
 }
+
+.login-or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.login-or-line {
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.login-or-word {
+  color: var(--ink-5);
+  font-size: 12px;
+}
+
+.login-sso {
+  width: 100%;
+  height: 42px;
+  border: 1px solid var(--line-field);
+  border-radius: 9px;
+  background: var(--ground);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+}
+
+.login-sso:hover {
+  border-color: var(--line-hover-2);
+  background: var(--ground-side);
+}
+
+.login-sso:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.login-sso-glyph {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  background: var(--ink);
+}
+
+.login-sso-pick {
+  margin-top: 14px;
+}
+
+.login-sso-pick .login-workspace {
+  margin-bottom: 0;
+}
+
+.login-sso-note {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  color: var(--ink-3);
+  line-height: 1.5;
+}

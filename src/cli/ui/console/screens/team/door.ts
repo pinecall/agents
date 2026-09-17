@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 
-import { answered, headersFor, post, read, type Credentials } from "../../../shared/api";
+import { answered, drop, GatewayError, headersFor, post, put, read, type Credentials } from "../../../shared/api";
 
 export const ROLES = ["qa", "supervisor", "manager", "admin", "developer"] as const;
 export const STATUSES = ["invited", "active", "disabled"] as const;
@@ -57,4 +57,47 @@ export async function change(
     body: JSON.stringify(said),
   });
   return MemberSchema.parse(await answered(answer));
+}
+
+// GET /v1/org/sso (the runtime's docs/protocol/people.md): one shape, and an org that wired no
+// provider answers each field's empty value. Never the secret — not here, not anywhere.
+const SsoSchema = z.object({
+  configured: z.boolean(),
+  issuer: z.string().nullish(),
+  client_id: z.string().nullish(),
+  domains: z.array(z.string()),
+  role: z.string().nullish(),
+  required: z.boolean(),
+  redirect_uri: z.string(),
+});
+export type Sso = z.infer<typeof SsoSchema>;
+
+/** What PUT /v1/org/sso takes: the whole configuration, the secret sent once. */
+export interface WantedSso {
+  issuer: string;
+  client_id: string;
+  client_secret: string;
+  domains: string[];
+  role: Member["role"] | null;
+  required: boolean;
+}
+
+/** The org's identity provider, or null from a gateway that signs nobody in with one (its 404). */
+export async function readSso(credentials: Credentials): Promise<Sso | null> {
+  try {
+    return SsoSchema.parse(await read(credentials, "/v1/org/sso"));
+  } catch (refused) {
+    if (refused instanceof GatewayError && (refused.status === 404 || refused.status === 405)) return null;
+    throw refused;
+  }
+}
+
+/** Replace the org's provider. The gateway asks the issuer for its discovery document before it keeps anything. */
+export async function saveSso(credentials: Credentials, wanted: WantedSso): Promise<Sso> {
+  return SsoSchema.parse(await put(credentials, "/v1/org/sso", wanted));
+}
+
+/** Forget the provider: passwords are how this org signs in again. */
+export async function removeSso(credentials: Credentials): Promise<void> {
+  await drop(credentials, "/v1/org/sso");
 }

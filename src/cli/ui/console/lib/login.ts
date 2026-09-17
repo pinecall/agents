@@ -97,6 +97,38 @@ export async function orgsForPassword(base: string, email: string, password: str
   return OpensSchema.parse(await answered(answer)).orgs;
 }
 
+// What POST /v1/login/sso/discover answers: the orgs that sign this address's domain in with a provider.
+const SsoOrgsSchema = z.object({ orgs: z.array(z.object({ org: z.string(), slug: z.string().nullish(), name: z.string().nullish() })) });
+export type SsoOrg = z.infer<typeof SsoOrgsSchema>["orgs"][number];
+
+async function discover(base: string, email: string): Promise<Response> {
+  return fetch(new URL(`${base.replace(/\/$/, "")}/v1/login/sso/discover`, window.location.origin), {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+}
+
+/** Whether this gateway signs anybody in with a provider at all: its discover door exists. Asked with no address, so it names nobody. */
+export async function gatewayHasSso(base: string): Promise<boolean> {
+  try {
+    const answer = await discover(base, "");
+    return answer.status !== 404 && answer.status !== 405;
+  } catch {
+    return false;
+  }
+}
+
+/** The orgs whose identity provider signs this address in. It says nothing about whether the person exists. */
+export async function ssoOrgsFor(base: string, email: string): Promise<SsoOrg[]> {
+  return SsoOrgsSchema.parse(await answered(await discover(base, email))).orgs;
+}
+
+/** Where a browser goes to sign in to that org with its provider; it comes back with a one-use `?login=` code. */
+export function ssoUrl(base: string, org: string): string {
+  return new URL(`${base.replace(/\/$/, "")}/v1/login/sso?org=${encodeURIComponent(org)}`, window.location.origin).toString();
+}
+
 // The one door a browser knocks at with no key at all: it is how this tab gets its own.
 async function login(base: string, body: unknown): Promise<Signed> {
   return knocked(base, "/v1/login", body);

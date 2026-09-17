@@ -1,14 +1,11 @@
-/** The conversation itself: interim grey, final solid, the agent filling word by word, the marks between. */
+/** The conversation itself, as bubbles: yours on the right, the agent's filling word by word on the left, the marks between — and the box you write into it with. */
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import { words, type Line, type Mark, type Said } from "./transcript";
 
-// The column says who: the person at this machine is YOU; the agent is the agent.
-const WHO: Record<Said["speaker"], string> = { user: "you", agent: "agent" };
-
 /** Every line so far, in a card, scrolled to the last one. Nothing here animates on a timer. */
-export function Transcript({ lines }: { lines: Line[] }): ReactNode {
+export function Transcript({ lines, children }: { lines: Line[]; children?: ReactNode }): ReactNode {
   const stream = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -20,11 +17,13 @@ export function Transcript({ lines }: { lines: Line[] }): ReactNode {
     <div className="ui-card">
       <div className="ui-card-head">
         <span className="ui-card-title">This call</span>
-        <span className="ui-card-meta">as the room says it</span>
+        <span className="ui-card-meta">spoken or written, as the room says it</span>
       </div>
       <div className="talk-lines" ref={stream}>
+        {lines.length === 0 && <p className="talk-quiet">Nothing said yet. What you say and what you write both land here.</p>}
         {lines.map((line) => (line.kind === "said" ? <SaidLine key={line.id} line={line} /> : <MarkLine key={line.id} mark={line} />))}
       </div>
+      {children}
     </div>
   );
 }
@@ -33,9 +32,8 @@ export function Transcript({ lines }: { lines: Line[] }): ReactNode {
 // purpose: a word already on screen keeps its key and does not re-animate.
 function SaidLine({ line }: { line: Said }): ReactNode {
   return (
-    <div className={line.final ? "talk-said" : "talk-said talk-said-interim"}>
-      <span className={line.speaker === "agent" ? "talk-who talk-who-agent" : "talk-who"}>{WHO[line.speaker]}</span>
-      <p className="talk-said-text">
+    <div className={line.speaker === "user" ? "talk-said talk-said-you" : "talk-said"}>
+      <p className={`talk-bubble${line.speaker === "user" ? " talk-bubble-you" : ""}${!line.final || line.pending === true ? " talk-bubble-unsettled" : ""}`}>
         {words(line.text).map((word, at) => (
           <span className="talk-word" key={at}>
             {word}
@@ -49,4 +47,35 @@ function SaidLine({ line }: { line: Said }): ReactNode {
 
 function MarkLine({ mark }: { mark: Mark }): ReactNode {
   return <p className={`talk-mark talk-mark-${mark.tone}`}>{mark.text}</p>;
+}
+
+/**
+ * The box under the conversation: what is typed here goes into the SAME call the microphone is on,
+ * so a person speaks or writes as it suits them — a number, an address, a name nobody can spell out loud.
+ */
+export function Composer({ open, onWrite }: { open: boolean; onWrite: (text: string) => Promise<void> }): ReactNode {
+  const [text, setText] = useState("");
+
+  const send = (event: FormEvent): void => {
+    event.preventDefault();
+    const said = text.trim();
+    if (said === "" || !open) return;
+    setText("");
+    void onWrite(said);
+  };
+
+  return (
+    <form className="talk-composer" onSubmit={send}>
+      <input
+        className="talk-write"
+        value={text}
+        disabled={!open}
+        placeholder={open ? "Write to the agent — or just speak" : "Press Talk first — then speak or write"}
+        onChange={(event) => setText(event.target.value)}
+      />
+      <button type="submit" className="talk-send" disabled={!open || text.trim() === ""}>
+        Send
+      </button>
+    </form>
+  );
 }

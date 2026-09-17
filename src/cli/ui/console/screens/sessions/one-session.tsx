@@ -1,8 +1,8 @@
-/** One session, read as its log: what it was, what was said, how fast, how it was judged, what it cost — then the proof. */
+/** One session, read as its log: what it was, what was said, how fast, how it was judged, what it cost — and the proof, folded under it. */
 
 import { CallScoreSchema, reduce, TERMINAL_EVENT, type CallScore, type Cost, type Entry, type State } from "@pinecall/protocol";
-import { useMemo, type ReactNode } from "react";
-import { Link, useParams } from "react-router";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Link, useLocation, useParams } from "react-router";
 
 import { dayAndTime, duration, euros, prettyNumber } from "../../lib/format";
 import { medians } from "../../lib/metrics";
@@ -76,6 +76,8 @@ export function Session(): ReactNode {
             <div className="session-outcome">{read.state.outcome ?? (read.state.end_reason === null ? "The call is still going." : "The call left no outcome sentence.")}</div>
           </Card>
 
+          <Recording call={call} path={read.recording} />
+
           <div className="session-split">
             <Transcript state={read.state} />
             <div className="session-side">
@@ -86,35 +88,62 @@ export function Session(): ReactNode {
 
           {read.state.cost !== null && read.state.cost.rows.length > 0 && <CostCard cost={read.state.cost} />}
 
-          <Recording call={call} path={read.recording} />
+          <Details>
+            {read.consented.length > 0 && (
+              <Card>
+                <CardHead title="Consent proof" meta="each grant joined to the tool call it authorised" />
+                <Consents rows={read.consented} />
+              </Card>
+            )}
 
-          {read.consented.length > 0 && (
-            <Card>
-              <CardHead title="Consent proof" meta="each grant joined to the tool call it authorised" />
-              <Consents rows={read.consented} />
-            </Card>
-          )}
+            {Object.keys(read.state.prompt).length > 0 && (
+              <Card>
+                <CardHead title="The prompt, block by block" meta="by name, hash and length — the text never enters the log" />
+                <div className="session-prompt">
+                  {Object.entries(read.state.prompt).map(([name, block]) => (
+                    <KV key={name} label={name}>
+                      <span className="ui-fixed session-hash">{block.hash}</span> · {block.chars} chars · seq {block.seq}
+                    </KV>
+                  ))}
+                </div>
+                <div className="session-note">
+                  <span className="ui-fixed">pinecall prompt --state</span> prints the text offline.
+                </div>
+              </Card>
+            )}
 
-          {Object.keys(read.state.prompt).length > 0 && (
-            <Card>
-              <CardHead title="The prompt, block by block" meta="by name, hash and length — the text never enters the log" />
-              <div className="session-prompt">
-                {Object.entries(read.state.prompt).map(([name, block]) => (
-                  <KV key={name} label={name}>
-                    <span className="ui-fixed session-hash">{block.hash}</span> · {block.chars} chars · seq {block.seq}
-                  </KV>
-                ))}
-              </div>
-              <div className="session-note">
-                <span className="ui-fixed">pinecall prompt --state</span> prints the text offline.
-              </div>
-            </Card>
-          )}
-
-          <Timeline lines={read.lines} turns={read.state.turns} />
+            <Timeline lines={read.lines} turns={read.state.turns} />
+          </Details>
         </>
       )}
     </Page>
+  );
+}
+
+// A link to `#seq-N` — a judge citing its evidence, a URL somebody pasted — points INTO the log,
+// so it opens the details; the log scrolls to the row itself once it is drawn (timeline.tsx).
+const A_SEQ = /^#seq-\d+$/;
+
+/** The proof under the page, closed until asked for: consent, the prompt's blocks, the whole log. */
+function Details({ children }: { children: ReactNode }): ReactNode {
+  const { hash } = useLocation();
+  const [open, setOpen] = useState(() => A_SEQ.test(hash));
+
+  useEffect(() => {
+    if (A_SEQ.test(hash)) setOpen(true);
+  }, [hash]);
+
+  return (
+    <>
+      <Card>
+        <button type="button" className="session-details" aria-expanded={open} onClick={() => setOpen(!open)}>
+          <span className="ui-card-title">Details</span>
+          <span className="ui-card-meta">consent, prompt blocks, the full log</span>
+          <span className="session-details-caret">{open ? "Hide ▴" : "Show ▾"}</span>
+        </button>
+      </Card>
+      {open && children}
+    </>
   );
 }
 

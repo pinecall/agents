@@ -14,6 +14,8 @@ export interface Said {
   speaker: Speaker;
   text: string;
   final: boolean;
+  /** Written rather than spoken, and not on the log yet: drawn dimmed until its turn.user lands. */
+  pending?: boolean;
 }
 
 /** One thing the log said between two sentences: a tool, an error, or a supervisor stepping in. */
@@ -32,6 +34,11 @@ export type Line = Said | Mark;
 export const TRANSCRIPTION_TOPIC = "lk.transcription";
 export const SEGMENT_ID = "lk.segment_id";
 export const TRANSCRIPTION_FINAL = "lk.transcription_final";
+
+// What a person TYPES reaches the same session on this topic: livekit-agents' text input, read
+// from the participant the session is pinned to — the caller, which is this tab. The agent answers
+// it out loud, in the same call, as it answers a spoken turn.
+export const CHAT_TOPIC = "lk.chat";
 
 // A tool the model calls is logged the instant it asks for it; the sentence that announces it
 // reaches the page only as the voice says it, a beat later. A mark that arrives before the agent

@@ -9,6 +9,7 @@ import { post } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
 import {
   A_BEAT_MS,
+  CHAT_TOPIC,
   markOf,
   SEGMENT_ID,
   TRANSCRIPTION_FINAL,
@@ -30,6 +31,8 @@ export interface Talking {
   error: string | null;
   open: () => Promise<void>;
   close: () => Promise<void>;
+  /** Write a line into the call instead of saying it. The agent answers it as it answers a spoken turn. */
+  write: (text: string) => Promise<void>;
   /** One entry of the call's log, for the marks the room itself does not carry. */
   heard: (entry: Entry) => void;
 }
@@ -78,8 +81,42 @@ export function useRoom(agent: string): Talking {
     [place],
   );
 
+  const typed = useRef(0);
+
+  // A written line is on screen at once, dimmed, and settles when the log's turn.user carries it.
+  // A refusal takes it back and says why.
+  const write = useCallback(
+    async (text: string): Promise<void> => {
+      const joined = room.current;
+      if (joined === null) return;
+      typed.current += 1;
+      const id = `typed-${typed.current}`;
+      place();
+      setLines((known) => [...known, { kind: "said", id, speaker: "user", text, final: true, pending: true }]);
+      lastSpoken.current = "user";
+      try {
+        await joined.localParticipant.sendText(text, { topic: CHAT_TOPIC });
+      } catch (failed) {
+        setLines((known) => known.filter((line) => line.id !== id));
+        setError(failed instanceof Error ? failed.message : String(failed));
+      }
+    },
+    [place],
+  );
+
   const heard = useCallback(
     (entry: Entry): void => {
+      if (entry.type === "turn.user") {
+        const said = String((entry.data as Record<string, unknown>)["text"] ?? "").trim();
+        setLines((known) => {
+          const at = known.findIndex((line) => line.kind === "said" && line.pending === true && line.text.trim() === said);
+          if (at === -1) return known;
+          const next = known.slice();
+          next[at] = { ...(known[at] as Said), pending: false };
+          return next;
+        });
+        return;
+      }
       const mark = markOf(entry);
       if (mark === null) return;
       if (lastSpoken.current === "agent") {
@@ -132,7 +169,7 @@ export function useRoom(agent: string): Talking {
     };
   }, []);
 
-  return { phase, call, lines, error, open, close, heard };
+  return { phase, call, lines, error, open, close, write, heard };
 }
 
 // One segment from its first delta to the trailer that settles it. A segment's line is the text

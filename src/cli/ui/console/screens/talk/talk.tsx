@@ -9,7 +9,7 @@ import { useWhoami } from "../../lib/whoami";
 import { useWorld } from "../../lib/world";
 import { Page, PageHead, Refused } from "../../ui";
 import { Inspector } from "./inspector";
-import { Transcript } from "./lines";
+import { Composer, Transcript } from "./lines";
 import { useRoom, type Phase, type Talking } from "./use-room";
 import "./talk.css";
 
@@ -25,7 +25,7 @@ export function Talk(): ReactNode {
   return (
     <div className="talk-grid">
       <Page width={760}>
-        <PageHead title={`Talk to ${agent}`} lede="This machine's microphone reaches the agent. The call is the same log everything else reads." />
+        <PageHead title={`Talk to ${agent}`} lede="Speak or write: this machine's microphone reaches the agent, and so does what you type. The call is the same log everything else reads." />
 
         <div className="talk-card">
           <Door live={live} />
@@ -55,7 +55,9 @@ export function Talk(): ReactNode {
         </div>
 
         <Refused>{live.error}</Refused>
-        {live.lines.length > 0 && <Transcript lines={live.lines} />}
+        <Transcript lines={live.lines}>
+          <Composer open={live.phase === "live"} onWrite={live.write} />
+        </Transcript>
         {live.call !== null && <Marks call={live.call} heard={live.heard} />}
       </Page>
 
@@ -97,7 +99,7 @@ function standing(phase: Phase): string {
     case "connecting":
       return "Joining the room…";
     case "live":
-      return "On the call — speak";
+      return "On the call — speak or write";
     case "ended":
       return "Hung up";
     case "failed":

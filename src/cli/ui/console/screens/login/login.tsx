@@ -1,9 +1,9 @@
 /** Login: a person's email, password and — when they belong to several — the workspace, for a key of their own in this tab. */
 
-import { useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import { GatewayError } from "../../../shared/api";
-import { loginWithPassword, orgsForPassword, type Opens, type Signed } from "../../lib/login";
+import { gatewayHasSso, loginWithPassword, orgsForPassword, ssoOrgsFor, ssoUrl, type Opens, type Signed, type SsoOrg } from "../../lib/login";
 import { WayIn } from "./way-in";
 
 /**
@@ -30,6 +30,42 @@ export function Login({ base, onSigned }: { base: string; onSigned: (signed: Sig
   const [opens, setOpens] = useState<Opens[] | null>(null);
   const [known, setKnown] = useState(true);
   const asked = useRef("");
+  // Signing in with a provider: drawn only on a gateway that has the door, and asked by address.
+  const [hasSso, setHasSso] = useState(false);
+  const [ssoOrgs, setSsoOrgs] = useState<SsoOrg[] | null>(null);
+  const [ssoNote, setSsoNote] = useState<string | null>(null);
+  const [ssoBusy, setSsoBusy] = useState(false);
+
+  useEffect(() => {
+    let gone = false;
+    void gatewayHasSso(base).then((has) => {
+      if (!gone) setHasSso(has);
+    });
+    return () => {
+      gone = true;
+    };
+  }, [base]);
+
+  const withSso = async (): Promise<void> => {
+    setSsoNote(null);
+    setSsoOrgs(null);
+    if (email.trim() === "") {
+      setSsoNote("Type your work email first: it says which workspace signs you in.");
+      return;
+    }
+    setSsoBusy(true);
+    try {
+      const found = await ssoOrgsFor(base, email.trim());
+      const only = found[0];
+      if (found.length === 1 && only !== undefined) window.location.assign(ssoUrl(base, only.slug ?? only.org));
+      else if (found.length === 0) setSsoNote("No workspace signs in with a provider for that address.");
+      else setSsoOrgs(found);
+    } catch (failed) {
+      setSsoNote(failed instanceof GatewayError ? failed.message : String(failed));
+    } finally {
+      setSsoBusy(false);
+    }
+  };
 
   const askOrgs = async (): Promise<void> => {
     const pair = `${email.trim()}\n${password}`;
@@ -152,6 +188,46 @@ export function Login({ base, onSigned }: { base: string; onSigned: (signed: Sig
         </button>
 
         {refused !== null && <p className="login-refused">{refused}</p>}
+
+        {hasSso && (
+          <>
+            <div className="login-or">
+              <span className="login-or-line" />
+              <span className="login-or-word">or</span>
+              <span className="login-or-line" />
+            </div>
+            <button type="button" className="login-sso" disabled={ssoBusy} onClick={() => void withSso()}>
+              <span className="login-sso-glyph" />
+              {ssoBusy ? "Looking for your workspace…" : "Continue with SSO"}
+            </button>
+            {ssoOrgs !== null && (
+              <div className="login-sso-pick">
+                <label className="login-label" htmlFor="login-sso-org">
+                  Which workspace
+                </label>
+                <div className="login-workspace">
+                  <span className="login-workspace-tile">·</span>
+                  <select
+                    id="login-sso-org"
+                    className="login-workspace-input"
+                    defaultValue=""
+                    onChange={(event) => event.target.value !== "" && window.location.assign(ssoUrl(base, event.target.value))}
+                  >
+                    <option value="" disabled>
+                      Choose one…
+                    </option>
+                    {ssoOrgs.map((one) => (
+                      <option key={one.org} value={one.slug ?? one.org}>
+                        {one.name ?? one.slug ?? one.org}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+            {ssoNote !== null && <p className="login-sso-note">{ssoNote}</p>}
+          </>
+        )}
 
         <p className="login-note">Invited and no password yet? Open the link in your invitation — that is where you choose one.</p>
       </form>

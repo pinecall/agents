@@ -7,6 +7,8 @@ import { useCredentials } from "../../../shared/credentials";
 import { Button, Card, CardHead, Empty, Field, Input, Page, PageHead, Refused, Select, TableHead } from "../../ui";
 import { change, invite, readMembers, resetLink, ROLES, type Invited, type Member } from "./door";
 import { COLUMNS, MemberRow } from "./member-row";
+import { Roles } from "./roles";
+import { SingleSignOn } from "./sso";
 import "./team.css";
 
 /**
@@ -99,6 +101,9 @@ export function Team(): ReactNode {
           )}
         </Card>
       )}
+
+      <Roles />
+      <SingleSignOn />
     </Page>
   );
 }
@@ -185,9 +190,7 @@ function InviteForm({ onInvite }: { onInvite: (who: Parameters<typeof invite>[1]
           {busy ? "Inviting…" : "Invite"}
         </Button>
       </form>
-      <div className="team-roles">
-        A role is a preset of what their keys open · qa reads · supervisor sits beside a live call · manager runs the org · admin everything · developer writes the agent
-      </div>
+      <div className="team-roles">A role is a preset of what their keys open — the Roles table below says what each one does.</div>
     </Card>
   );
 }
