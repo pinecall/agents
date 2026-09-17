@@ -527,6 +527,44 @@ textarea:focus {
   text-overflow: ellipsis;
 }
 
+/* ── the tabs ─────────────────────────────────────────────────────────────── */
+
+.ui-tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--line);
+  margin-top: -4px;
+}
+
+.ui-tab {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  font-size: 13px;
+  margin-bottom: -1px;
+  white-space: nowrap;
+  color: var(--ink-3);
+  font-weight: 450;
+  cursor: pointer;
+}
+
+.ui-tab:hover {
+  color: var(--ink);
+}
+
+.ui-tab-on,
+.ui-tab-on:hover {
+  color: var(--ink);
+  font-weight: 600;
+  border-bottom-color: var(--accent);
+}
+
 /* ── controls ─────────────────────────────────────────────────────────────── */
 
 .ui-button {

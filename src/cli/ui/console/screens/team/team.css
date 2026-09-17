@@ -1,10 +1,24 @@
-/* Team: the roles line under the invite, a cell that turns into a control, the link's moves. */
+/* Team: the invite inside the people card, a cell that turns into a control, the link's moves. */
+
+.team-invite {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line-2);
+  background: var(--ground-side);
+}
 
 .team-roles {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  flex-wrap: wrap;
   margin-top: 10px;
   font-size: 12.5px;
   color: var(--ink-4);
   line-height: 1.6;
+}
+
+.team-invite-close {
+  margin-left: auto;
 }
 
 .team-editable {

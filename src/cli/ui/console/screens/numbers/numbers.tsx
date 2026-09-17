@@ -8,7 +8,7 @@ import { useCredentials } from "../../../shared/credentials";
 import { prettyNumber } from "../../lib/format";
 import { useOrg } from "../../lib/org";
 import { useWorld } from "../../lib/world";
-import { Button, Card, CardHead, Dot, Empty, Page, PageHead, Pill, Refused } from "../../ui";
+import { Button, Card, CardHead, Dot, Empty, Page, PageHead, Pill, Refused, Tabs } from "../../ui";
 import { Adding } from "./adding";
 import { CarrierPanel } from "./carrier";
 import { OutboundPanel } from "./outbound";
@@ -101,19 +101,14 @@ export function Numbers(): ReactNode {
     <Page width={900}>
       <PageHead title="Phone numbers" lede="The numbers people call, which agent picks up, and the calls your agents place." />
 
-      <nav className="num-tabs" aria-label="Phone numbers">
-        {TABS.map((one) => (
-          <button
-            key={one.tab}
-            type="button"
-            className={tab === one.tab ? "num-tab num-tab-on" : "num-tab"}
-            onClick={() => setParams(one.tab === "numbers" ? {} : { tab: one.tab })}
-          >
-            {one.name}
-            {one.tab === "outbound" && carrier !== undefined && <Dot tone={outbound?.ready ? "green" : "amber"} small />}
-          </button>
-        ))}
-      </nav>
+      <Tabs
+        label="Phone numbers"
+        tabs={TABS.map((one) =>
+          one.tab === "outbound" && carrier !== undefined ? { ...one, mark: <Dot tone={outbound?.ready ? "green" : "amber"} small /> } : one,
+        )}
+        on={tab}
+        onPick={(picked) => setParams(picked === "numbers" ? {} : { tab: picked })}
+      />
 
       <Refused>{refused}</Refused>
 
