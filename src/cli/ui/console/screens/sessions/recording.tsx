@@ -1,6 +1,6 @@
 /** The call's audio, when the summary points at any: fetched with the key, played from a blob. */
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 
 import { doorUrl, headersFor } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
@@ -18,21 +18,25 @@ export function recordingIn(summary: Record<string, unknown> | undefined): strin
 }
 
 export function Recording({ call, path }: { call: string; path: string | null }): ReactNode {
-  if (path === null) {
+  const [nothing, setNothing] = useState(false);
+  const noAudio = useCallback(() => setNothing(true), []);
+  // A written call made before 2026-09-18 points at an audio.ogg nobody wrote: the gateway says
+  // there is no such file, and a card that says so over a chat is a card about nothing.
+  if (path === null || nothing) {
     return null;
   }
   return (
     <Card>
       <CardHead title="Listen to this call" />
       <div className="ui-card-body">
-        <Player call={call} />
+        <Player call={call} onNothing={noAudio} />
       </div>
     </Card>
   );
 }
 
 /** The player alone, for a screen that already said what it is. */
-export function Player({ call }: { call: string }): ReactNode {
+export function Player({ call, onNothing }: { call: string; onNothing?: () => void }): ReactNode {
   const credentials = useCredentials();
   const [src, setSrc] = useState<string | null>(null);
   const [refused, setRefused] = useState<string | null>(null);
@@ -50,6 +54,12 @@ export function Player({ call }: { call: string }): ReactNode {
         const answer = await fetch(doorUrl(credentials, `/v1/calls/${call}/recording`), {
           headers: headersFor(credentials),
         });
+        // 404 is every way of there being no audio to play. The screen that drew a card for it
+        // takes the card away; the sentence is for a screen that has nowhere else to say it.
+        if (answer.status === 404 && onNothing !== undefined) {
+          if (!gone) onNothing();
+          return;
+        }
         if (!answer.ok) throw new Error(await whyNot(answer));
         url = URL.createObjectURL(await answer.blob());
         if (gone) URL.revokeObjectURL(url);
@@ -62,7 +72,7 @@ export function Player({ call }: { call: string }): ReactNode {
       gone = true;
       if (url !== null) URL.revokeObjectURL(url);
     };
-  }, [call, credentials]);
+  }, [call, credentials, onNothing]);
 
   if (refused !== null) return <p className="session-sentence">{refused}</p>;
   if (src === null) return <p className="session-sentence">Reading the recording…</p>;

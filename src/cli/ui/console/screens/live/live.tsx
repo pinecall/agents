@@ -1,7 +1,7 @@
 /** One call being watched: its head, the desk, the log's rows, and the STATE · ROOM · PROMPT · METRICS pane beside them. */
 
 import type { Entry, State } from "@pinecall/protocol";
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 
 import { useDeclaredState } from "../../lib/declared-state";
@@ -64,9 +64,7 @@ export function Live({ call, agent }: { call: string; agent?: string | undefined
           state={state}
           after={
             recorded !== null ? (
-              <div className="lv-recording">
-                <Player call={call} />
-              </div>
+              <Recorded call={call} />
             ) : undefined
           }
         />
@@ -139,4 +137,16 @@ function useNow(ticking: boolean): number {
 // The pointer to the audio rides the summary, near the end of a finished call's log.
 function summaryOf(entries: Entry[]): Record<string, unknown> | undefined {
   return [...entries].reverse().find((entry) => entry.type === "call.summary")?.data;
+}
+
+// The call's audio at the foot of its log — and nothing at all when the gateway has none to play.
+function Recorded({ call }: { call: string }): ReactNode {
+  const [nothing, setNothing] = useState(false);
+  const noAudio = useCallback(() => setNothing(true), []);
+  if (nothing) return null;
+  return (
+    <div className="lv-recording">
+      <Player call={call} onNothing={noAudio} />
+    </div>
+  );
 }
