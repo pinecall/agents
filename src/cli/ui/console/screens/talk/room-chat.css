@@ -1,10 +1,11 @@
 /* Chat: one bar, the conversation as the page, the composer at its foot. The Inspector is its own. */
 
 .rchat-grid {
+  position: relative;
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 330px);
+  grid-template-columns: minmax(0, 1fr) var(--pane, 330px);
   grid-template-rows: minmax(0, 1fr);
 }
 

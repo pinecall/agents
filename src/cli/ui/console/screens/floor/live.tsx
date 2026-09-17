@@ -7,7 +7,7 @@ import { Link, useParams, useSearchParams } from "react-router";
 import { EVERY_MS, isLive } from "../../lib/use-agent-sessions";
 import { ago, duration, elapsed, whoOn } from "../../lib/format";
 import { useOrg } from "../../lib/org";
-import { Dot, Input, Pill } from "../../ui";
+import { Dot, Input, Pill, usePane } from "../../ui";
 import { SimulateForm } from "../calls/simulate-form";
 import { Live } from "../live";
 import { matches } from "../sessions/search";
@@ -28,6 +28,7 @@ export function FloorLive(): ReactNode {
   const only = search.get("agent");
   const [simulating, setSimulating] = useState(false);
   const [query, setQuery] = useState("");
+  const pane = usePane({ name: "live.calls", initial: 300, min: 220, max: 520, side: "left" });
   const now = useNow();
 
   const shown = lines.filter((line) => (only === null || line.agent === only) && matches(line, query));
@@ -38,7 +39,8 @@ export function FloorLive(): ReactNode {
   const suffix = only === null ? "" : `?agent=${encodeURIComponent(only)}`;
 
   return (
-    <div className="fl">
+    <div className="fl" style={pane.style}>
+      {pane.handle}
       <nav className="fl-side" aria-label="the floor's calls">
         <div className="fl-side-head">
           <div className="fl-standing">

@@ -7,7 +7,7 @@ import { GatewayError } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
 import { clockOf, dayOf, today, utcDay } from "../../lib/format";
 import { useAgentSessions } from "../../lib/use-agent-sessions";
-import { Avatar, Segmented } from "../../ui";
+import { Avatar, Segmented, usePane } from "../../ui";
 import type { Outbound } from "../numbers/door";
 import { CallBack, DialForm, useOutbound } from "./dial";
 import { markRead, readDoorThreads, sayInto, writeTo, type DoorThread } from "./inbox-door";
@@ -31,6 +31,7 @@ export function Calls(): ReactNode {
   const listed = useAgentSessions(agent);
   const threads = useMemo(() => threadsOf(listed.lines), [listed.lines]);
   const [query, setQuery] = useState("");
+  const pane = usePane({ name: "agent.conversations", initial: 292, min: 200, max: 520, side: "left" });
   const [simulating, setSimulating] = useState(false);
   const [adding, setAdding] = useState<"simulate" | "dial">("simulate");
   const outbound = useOutbound();
@@ -46,7 +47,8 @@ export function Calls(): ReactNode {
   }, [open?.contact, door, credentials, agent]);
 
   return (
-    <div className="ib">
+    <div className="ib" style={pane.style}>
+      {pane.handle}
       <div className="ib-list">
         <div className="ib-list-head">
           <input className="ib-search" placeholder="Search a caller or number" value={query} onChange={(event) => setQuery(event.target.value)} />

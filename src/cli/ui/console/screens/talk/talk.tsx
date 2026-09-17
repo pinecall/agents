@@ -8,7 +8,7 @@ import { elapsed } from "../../lib/format";
 import { useCall } from "../../lib/use-call";
 import { useWhoami } from "../../lib/whoami";
 import { useWorld } from "../../lib/world";
-import { Button, ButtonLink, Page, PageHead, Refused } from "../../ui";
+import { Button, ButtonLink, Page, PageHead, Refused, usePane } from "../../ui";
 import { Inspector } from "./inspector";
 import { Composer, Transcript } from "./lines";
 import { useRoom, type Talking } from "./use-room";
@@ -25,10 +25,12 @@ export function Talk(): ReactNode {
   const whose = useWhoami();
   const { world } = useWorld();
   const on = live.phase === "live" || live.phase === "connecting";
+  const pane = usePane({ name: "agent.inspector", initial: 330, min: 260, max: 620, side: "right" });
   const person = whose?.name ?? whose?.label ?? "this key";
 
   return (
-    <div className="talk-grid">
+    <div className="talk-grid" style={pane.style}>
+      {pane.handle}
       <Page width={760}>
         <PageHead title={`Talk to ${agent}`} lede="This machine's microphone reaches the agent, and it answers out loud. You can write into the same call too — a number, an address, a name nobody spells out loud." />
 

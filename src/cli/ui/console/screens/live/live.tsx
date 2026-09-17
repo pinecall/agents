@@ -13,6 +13,7 @@ import { MetricsPanel } from "./metrics-panel";
 import { PromptPanel } from "./prompt-panel";
 import { RoomPanel } from "./room-panel";
 import { StatePanel } from "./state-panel";
+import { usePane } from "../../ui";
 import { Timeline } from "./timeline";
 import { useWatchedCall } from "./use-watched-call";
 import "./live.css";
@@ -31,10 +32,13 @@ export function Live({ call, agent }: { call: string; agent?: string | undefined
   // A key that does not open `supervise` is refused every move: the desk is not drawn for it.
   const supervises = scopes === null || scopes.includes("supervise");
 
+  const pane = usePane({ name: "live.call", initial: 360, min: 280, max: 640, side: "right" });
+
   useEffect(() => setDesk(false), [call]);
 
   return (
-    <div className="lv">
+    <div className="lv" style={pane.style}>
+      {pane.handle}
       <div className="lv-middle">
         <Head call={call} agent={agent} state={state} connection={watched.error ?? watched.connection} failed={watched.error !== null}>
           <Link to={`/sessions/${call}`} className="lv-session">

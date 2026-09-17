@@ -7,7 +7,7 @@ import { useParams } from "react-router";
 import { elapsed } from "../../lib/format";
 import { useCall } from "../../lib/use-call";
 import { useWorld } from "../../lib/world";
-import { Button, ButtonLink, Refused } from "../../ui";
+import { Button, ButtonLink, Refused, usePane } from "../../ui";
 import { Inspector } from "./inspector";
 import { Composer, Transcript } from "./lines";
 import { useRoom, type Talking } from "./use-room";
@@ -24,6 +24,7 @@ export function RoomChat(): ReactNode {
   const live = useRoom(agent);
   const { world } = useWorld();
   const on = live.phase === "live" || live.phase === "connecting";
+  const pane = usePane({ name: "agent.inspector", initial: 330, min: 260, max: 620, side: "right" });
 
   // Opening the tab IS starting the chat: a screen whose first act is always the same button is a
   // button nobody wanted. It runs once per agent — a chat that ended is started again by hand.
@@ -35,7 +36,8 @@ export function RoomChat(): ReactNode {
   }, [agent, live]);
 
   return (
-    <div className="rchat-grid">
+    <div className="rchat-grid" style={pane.style}>
+      {pane.handle}
       <div className="rchat-stage">
         <section className="rchat" aria-label={`Chat with ${agent}`}>
           <Bar agent={agent} live={live} world={world} />

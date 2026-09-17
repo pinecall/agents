@@ -1,10 +1,11 @@
 /* Calls: the inbox — the threads down the left, the open conversation beside them, and the composer. */
 
 .ib {
+  position: relative;
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(180px, 292px) minmax(0, 1fr);
+  grid-template-columns: var(--pane, 292px) minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
 }
 

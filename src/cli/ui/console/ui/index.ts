@@ -12,5 +12,7 @@ export type { AvatarSize, Tint, Tone } from "./marks";
 export { Page, PageHead } from "./page";
 export { Stat, Stats } from "./stat";
 export { TableHead, TableRow } from "./table";
+export { usePane } from "./resize";
+export type { Pane } from "./resize";
 export { Tabs } from "./tabs";
 export type { TabItem } from "./tabs";
