@@ -77,6 +77,26 @@ export async function acceptInvitation(base: string, token: string, password: st
   return knocked(base, `/v1/invitations/${encodeURIComponent(token)}`, { password, device: THIS_DEVICE });
 }
 
+// What POST /v1/login/orgs answers: the orgs an email and password open, before any key is minted.
+const OpensSchema = z.object({
+  orgs: z.array(z.object({ org: z.string(), slug: z.string().nullish(), name: z.string().nullish(), role: z.string() })),
+});
+export type Opens = z.infer<typeof OpensSchema>["orgs"][number];
+
+/**
+ * Which orgs this email and password open, so the sign-in card can offer them by name. It mints no
+ * key and shares the login's throttle and its one refusal. Null from a gateway without the door.
+ */
+export async function orgsForPassword(base: string, email: string, password: string): Promise<Opens[] | null> {
+  const answer = await fetch(new URL(`${base.replace(/\/$/, "")}/v1/login/orgs`, window.location.origin), {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  if (answer.status === 404 || answer.status === 405) return null;
+  return OpensSchema.parse(await answered(answer)).orgs;
+}
+
 // The one door a browser knocks at with no key at all: it is how this tab gets its own.
 async function login(base: string, body: unknown): Promise<Signed> {
   return knocked(base, "/v1/login", body);

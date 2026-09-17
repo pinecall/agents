@@ -25,16 +25,6 @@ export function loadWidget(): Promise<void> {
   return loading;
 }
 
-/**
- * Whether the widget this gateway serves understands an attribute. A newer widget says so on its
- * class (`observedAttributes`, or a static `attributes` list); an older one says nothing, and is
- * taken to know only the attributes every version reads.
- */
-export function supports(attribute: string): boolean {
-  const element = customElements.get("pinecall-widget") as (CustomElementConstructor & { observedAttributes?: readonly string[]; attributes?: readonly string[] }) | undefined;
-  if (element === undefined) return false;
-  return (element.observedAttributes ?? []).includes(attribute) || (element.attributes ?? []).includes(attribute);
-}
 
 /** What the widget's element takes beyond its attributes: the function this page mints with. */
 export interface WidgetElement extends HTMLElement {

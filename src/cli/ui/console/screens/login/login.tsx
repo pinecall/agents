@@ -1,9 +1,9 @@
 /** Login: a person's email, password and — when they belong to several — the workspace, for a key of their own in this tab. */
 
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import { GatewayError } from "../../../shared/api";
-import { loginWithPassword, type Signed } from "../../lib/login";
+import { loginWithPassword, orgsForPassword, type Opens, type Signed } from "../../lib/login";
 import { WayIn } from "./way-in";
 
 /**
@@ -24,6 +24,31 @@ export function Login({ base, onSigned }: { base: string; onSigned: (signed: Sig
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [refused, setRefused] = useState<string | null>(null);
+  const [forgot, setForgot] = useState(false);
+  // The orgs these credentials open, asked once per email and password — the door shares the
+  // login's throttle, so it is asked when the password is left, not on every key pressed.
+  const [opens, setOpens] = useState<Opens[] | null>(null);
+  const [known, setKnown] = useState(true);
+  const asked = useRef("");
+
+  const askOrgs = async (): Promise<void> => {
+    const pair = `${email.trim()}\n${password}`;
+    if (email.trim() === "" || password === "" || pair === asked.current) return;
+    asked.current = pair;
+    try {
+      const listed = await orgsForPassword(base, email.trim(), password);
+      if (listed === null) {
+        setKnown(false);
+        return;
+      }
+      setOpens(listed);
+      const first = listed[0];
+      if (listed.length > 0 && !listed.some((one) => (one.slug ?? one.org) === org) && first !== undefined) setOrg(first.slug ?? first.org);
+    } catch {
+      // A wrong password: the sign-in says so, in the gateway's own sentence, when it is pressed.
+      setOpens(null);
+    }
+  };
 
   const submit = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
@@ -58,36 +83,69 @@ export function Login({ base, onSigned }: { base: string; onSigned: (signed: Sig
           required
         />
 
-        <label className="login-label" htmlFor="login-password">
-          Password
-        </label>
+        <div className="login-label-row">
+          <label className="login-label" htmlFor="login-password">
+            Password
+          </label>
+          <button type="button" className="login-link" onClick={() => setForgot(!forgot)}>
+            Forgot password
+          </button>
+        </div>
         <input
           id="login-password"
           className="login-input login-input-secret"
           type="password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
+          onBlur={() => void askOrgs()}
           autoComplete="current-password"
           required
         />
+        {forgot && (
+          <p className="login-forgot">
+            Ask an admin of your workspace: from Team they hand you a one-use link where you choose a new password.
+          </p>
+        )}
 
-        <div className="login-label-row">
-          <label className="login-label" htmlFor="login-org">
-            Workspace
-          </label>
-          <span className="login-hint">only if you belong to several</span>
-        </div>
-        <div className="login-workspace">
-          <span className="login-workspace-tile">{(org.trim()[0] ?? "·").toUpperCase()}</span>
-          <input
-            id="login-org"
-            className="login-workspace-input"
-            value={org}
-            onChange={(event) => setOrg(event.target.value)}
-            autoComplete="organization"
-            placeholder="the oldest of yours"
-          />
-        </div>
+        {opens !== null && opens.length > 0 ? (
+          <>
+            <label className="login-label" htmlFor="login-org">
+              Workspace
+            </label>
+            <div className="login-workspace">
+              <span className="login-workspace-tile">{(org[0] ?? "·").toUpperCase()}</span>
+              <select id="login-org" className="login-workspace-input" value={org} onChange={(event) => setOrg(event.target.value)} disabled={opens.length === 1}>
+                {opens.map((one) => (
+                  <option key={one.org} value={one.slug ?? one.org}>
+                    {one.name ?? one.slug ?? one.org}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </>
+        ) : (
+          !known && (
+            <>
+              <div className="login-label-row">
+                <label className="login-label" htmlFor="login-org">
+                  Workspace
+                </label>
+                <span className="login-hint">only if you belong to several</span>
+              </div>
+              <div className="login-workspace">
+                <span className="login-workspace-tile">{(org.trim()[0] ?? "·").toUpperCase()}</span>
+                <input
+                  id="login-org"
+                  className="login-workspace-input"
+                  value={org}
+                  onChange={(event) => setOrg(event.target.value)}
+                  autoComplete="organization"
+                  placeholder="the oldest of yours"
+                />
+              </div>
+            </>
+          )
+        )}
 
         <button className="login-go" type="submit" disabled={busy}>
           {busy ? "Signing in…" : "Sign in"}

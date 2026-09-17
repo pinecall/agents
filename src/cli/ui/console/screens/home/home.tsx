@@ -1,9 +1,10 @@
 /** Home: how today is going — the numbers, what needs a look, who is on the floor, where calls arrive. */
 
-import type { SessionLine } from "@pinecall/protocol";
 import type { ReactNode } from "react";
 
+import { useInsights, type Insights } from "../../lib/insights";
 import { useOrg } from "../../lib/org";
+import type { Line } from "../../lib/sessions-wire";
 import { change, duration, elapsed, percent, spend, startedOn, today, whoOn, ago } from "../../lib/format";
 import { useScores, type Scored } from "../../lib/use-scores";
 import { useWhoami } from "../../lib/whoami";
@@ -14,7 +15,7 @@ import "./home.css";
 // A human stepped in: the call went to a person, or a supervisor ended it.
 const ESCALATED = new Set(["transferred", "supervisor_ended"]);
 
-type Flag = "escalated" | "low score";
+type Flag = "escalated" | "low score" | "promise made";
 
 interface Look {
   row: Scored;
@@ -25,7 +26,11 @@ interface Look {
 const FLAG_TONE: Record<Flag, { pill: Tone; tint: Tint }> = {
   escalated: { pill: "red", tint: "red" },
   "low score": { pill: "amber", tint: "amber" },
+  "promise made": { pill: "indigo", tint: "indigo" },
 };
+
+// The gateway's flag names, in the words a row says them.
+const FLAG_WORDS: Record<string, Flag> = { escalated: "escalated", low_score: "low score", promise: "promise made" };
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -36,7 +41,14 @@ function greeting(): string {
 function needingALook(rows: Scored[]): Look[] {
   const found: Look[] = [];
   for (const row of rows) {
-    const { line, score } = row;
+    const { score } = row;
+    const line = row.line as Line;
+    // A gateway that flags its rows says it; an older one is read the long way, below.
+    if (line.flags !== undefined && line.flags !== null) {
+      const first = line.flags.map((one) => FLAG_WORDS[one]).find((one) => one !== undefined);
+      if (first !== undefined) found.push({ row, flag: first, reason: line.score?.reason ?? line.outcome ?? "" });
+      continue;
+    }
     if (line.end_reason !== null && ESCALATED.has(line.end_reason)) {
       found.push({ row, flag: "escalated", reason: line.outcome ?? (line.end_reason === "transferred" ? "Handed to a person" : "A supervisor ended it") });
     } else if (score !== null && score.passed === false) {
@@ -48,7 +60,7 @@ function needingALook(rows: Scored[]): Look[] {
 }
 
 /** The share of finished calls no human had to touch. */
-function resolvedShare(lines: SessionLine[]): number | null {
+function resolvedShare(lines: Line[]): number | null {
   const finished = lines.filter((line) => !line.live);
   if (finished.length === 0) return null;
   return finished.filter((line) => line.end_reason === null || !ESCALATED.has(line.end_reason)).length / finished.length;
@@ -56,7 +68,7 @@ function resolvedShare(lines: SessionLine[]): number | null {
 
 export function Home(): ReactNode {
   const whose = useWhoami();
-  const { lines, live } = useOrg();
+  const { lines, live, insights } = useOrg();
   const days = today();
   const ofToday = startedOn(lines, days.today);
   const ofYesterday = startedOn(lines, days.yesterday);
@@ -64,11 +76,16 @@ export function Home(): ReactNode {
   const looks = needingALook(scored);
   const first = (whose?.name ?? "").split(" ")[0] ?? "";
 
-  const conversations = change(ofToday.length, ofYesterday.length);
-  const resolved = resolvedShare(ofToday);
-  const resolvedBefore = resolvedShare(ofYesterday);
+  // The gateway's count when it keeps one — every call of the day, not the page the floor read —
+  // and the fold of that page otherwise.
+  const before = useInsights(days.yesterday);
+  const count = insights?.conversations.today ?? ofToday.length;
+  const conversations = change(count, insights?.conversations.yesterday ?? ofYesterday.length);
+  const resolved = insights === null ? resolvedShare(ofToday) : insights.resolved_rate;
+  const resolvedBefore = insights === null ? resolvedShare(ofYesterday) : (before?.resolved_rate ?? null);
   const resolvedDelta = resolved === null || resolvedBefore === null ? null : Math.round((resolved - resolvedBefore) * 100);
-  const spent = ofToday.reduce((sum, line) => sum + (line.cost?.eur ?? 0), 0);
+  const spent = insights?.spend_eur ?? ofToday.reduce((sum, line) => sum + (line.cost?.eur ?? 0), 0);
+  const limit = insights?.budget.limit_eur ?? null;
 
   const floor = live.length === 0 ? "Nobody on a call right now" : live.length === 1 ? "One call on the floor" : `${live.length} calls on the floor`;
   const looking = looks.length === 0 ? "nothing needs a look" : looks.length === 1 ? "one conversation needs a look" : `${looks.length} conversations need a look`;
@@ -86,12 +103,13 @@ export function Home(): ReactNode {
           delta={resolvedDelta === null ? undefined : resolvedDelta === 0 ? "steady" : `${resolvedDelta > 0 ? "+" : "−"}${Math.abs(resolvedDelta)} pts`}
           tone={resolvedDelta === null || resolvedDelta === 0 ? "flat" : resolvedDelta > 0 ? "up" : "down"}
         />
-        <Stat size="big" label="Spend today" value={spend(spent)} delta="today" tone="flat" />
+        {insights !== null && <Median insights={insights} before={before} />}
+        <Stat size="big" label="Spend today" value={spend(spent)} delta={limit === null ? "today" : `of €${limit}`} tone="flat" />
       </Stats>
 
       <div className="home-split">
         <Card>
-          <CardHead title="Needs a look" meta={`${looks.length} of ${ofToday.length} today`} action={<CardAction to="/sessions">All sessions</CardAction>} />
+          <CardHead title="Needs a look" meta={`${looks.length} of ${count} today`} action={<CardAction to="/sessions">All sessions</CardAction>} />
           {looks.length === 0 && <Empty>Nothing today needs a look: no call went to a person, and no judge said no.</Empty>}
           {looks.map((look) => (
             <Row
@@ -116,7 +134,7 @@ export function Home(): ReactNode {
             />
           ))}
           <CardFoot>
-            <span>{Math.max(0, ofToday.length - looks.length)} more handled cleanly</span>
+            <span>{Math.max(0, count - looks.length)} more handled cleanly</span>
             <CardAction to="/sessions">See all sessions</CardAction>
           </CardFoot>
         </Card>
@@ -143,7 +161,7 @@ export function Home(): ReactNode {
             </div>
           </Card>
 
-          <Channels lines={ofToday.length > 0 ? ofToday : lines} />
+          <Channels lines={ofToday.length > 0 ? ofToday : lines} counted={insights !== null && count > 0 ? insights.channels : null} />
           <Setup />
         </div>
       </div>
@@ -157,9 +175,28 @@ const CHANNELS: readonly { channel: string; name: string; color: string }[] = [
   { channel: "whatsapp", name: "WhatsApp", color: "var(--accent-3)" },
 ];
 
-/** How the calls split by door. */
-function Channels({ lines }: { lines: SessionLine[] }): ReactNode {
-  const total = lines.length;
+/** How long a caller waited for the agent, the median of the day's turns, against the day before. */
+function Median({ insights, before }: { insights: Insights; before: Insights | null }): ReactNode {
+  const now = insights.median_e2e_s;
+  const then = before?.median_e2e_s ?? null;
+  let delta = "today";
+  let tone: "up" | "down" | "flat" = "flat";
+  if (now !== null && then !== null) {
+    const moved = Math.round((now - then) * 10) / 10;
+    if (Math.abs(moved) < 0.1) delta = "steady";
+    else {
+      delta = `${moved > 0 ? "+" : "−"}${Math.abs(moved).toFixed(1)}s`;
+      tone = moved > 0 ? "down" : "up";
+    }
+  }
+  return <Stat size="big" label="Median answer" value={now === null ? "—" : `${now.toFixed(1)}s`} delta={delta} tone={tone} />;
+}
+
+/** How the calls split by door: the gateway's count of the day when it keeps one, else the page's. */
+function Channels({ lines, counted }: { lines: Line[]; counted: Insights["channels"] | null }): ReactNode {
+  const total = counted === null ? lines.length : counted.phone + counted.web + counted.whatsapp;
+  const of = (channel: string): number =>
+    counted === null ? lines.filter((line) => line.channel === channel).length : (counted[channel as keyof Insights["channels"]] ?? 0);
   return (
     <Card>
       <div className="ui-card-head">
@@ -167,7 +204,7 @@ function Channels({ lines }: { lines: SessionLine[] }): ReactNode {
       </div>
       <div className="home-channels">
         {CHANNELS.map(({ channel, name, color }) => {
-          const share = total === 0 ? 0 : lines.filter((line) => line.channel === channel).length / total;
+          const share = total === 0 ? 0 : of(channel) / total;
           return (
             <div key={channel}>
               <div className="home-channel-line">

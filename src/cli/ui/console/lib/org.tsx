@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 
 import { useCredentials } from "../../shared/credentials";
 import { bySlug, meIn } from "./corners";
+import { useInsights, type Insights } from "./insights";
 import { orgsOf, type OrgOf } from "./login";
 import type { Line } from "./sessions-wire";
 import type { Connection } from "./stream";
@@ -31,6 +32,8 @@ export interface Org {
   orgs: OrgOf[] | null;
   /** The org this key opens, as the person's list names it. */
   here: OrgOf | null;
+  /** Today at a glance, counted by the gateway; null from a gateway that does not count. */
+  insights: Insights | null;
 }
 
 const Held = createContext<Org | null>(null);
@@ -39,6 +42,7 @@ export function OrgProvider({ children }: { children: ReactNode }): ReactNode {
   const credentials = useCredentials();
   const whose = useWhoami();
   const floor = useFloor(ROWS);
+  const insights = useInsights();
   const held = useHeldAgents(floor.agentsChanged);
   const [orgs, setOrgs] = useState<OrgOf[] | null>(null);
 
@@ -70,8 +74,9 @@ export function OrgProvider({ children }: { children: ReactNode }): ReactNode {
       agentsError: held.error,
       orgs,
       here: orgs?.find((one) => one.here) ?? null,
+      insights,
     }),
-    [floor.lines, floor.connection, floor.error, held.agents, held.loaded, held.error, orgs, me],
+    [floor.lines, floor.connection, floor.error, held.agents, held.loaded, held.error, orgs, me, insights],
   );
   return <Held value={value}>{children}</Held>;
 }

@@ -86,7 +86,7 @@ function useAccounts(): Accounts {
 }
 
 export function Agents(): ReactNode {
-  const { held, agents, live, lines, connection, agentsError, agentsLoaded } = useOrg();
+  const { held, agents, live, lines, connection, agentsError, agentsLoaded, insights } = useOrg();
   const me = meIn(useWhoami());
   const scopes = useScopes();
   const accounts = useAccounts();
@@ -196,8 +196,8 @@ export function Agents(): ReactNode {
                 ))}
               </div>
               <span className="agents-numbers ui-clip">{numbers.length === 0 ? "—" : numbers.join(", ")}</span>
-              <span className="agents-figure">{ofToday.filter((line) => line.agent === one.slug).length}</span>
-              <span className="agents-figure agents-score">—</span>
+              <span className="agents-figure">{insights?.agents.find((row) => row.slug === one.slug)?.today ?? ofToday.filter((line) => line.agent === one.slug).length}</span>
+              <Score share={insights?.agents.find((row) => row.slug === one.slug)?.score ?? null} />
             </TableRow>
           );
         })}
@@ -267,6 +267,13 @@ function ProvidersInUse({ catalogue, brought }: { catalogue: Catalogue; brought:
       </div>
     </Card>
   );
+}
+
+/** The share of judges that held over the agent's judged calls today, as a percent coloured by how it went. */
+function Score({ share }: { share: number | null }): ReactNode {
+  if (share === null) return <span className="agents-figure agents-score">—</span>;
+  const tone = share >= 0.9 ? "agents-score-good" : share >= 0.7 ? "agents-score-fair" : "agents-score-poor";
+  return <span className={`agents-figure ${tone}`}>{Math.round(share * 100)}%</span>;
 }
 
 const JOB: Record<string, string> = { llm: "decides", stt: "hears", tts: "speaks" };

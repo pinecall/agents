@@ -80,7 +80,7 @@ export function Session(): ReactNode {
             <Transcript state={read.state} />
             <div className="session-side">
               <LatencyCard rows={read.latencies} />
-              <ScoreCard call={call} back={back} score={read.score} turns={read.state.turns.length} />
+              <ScoreCard call={call} back={back} score={read.score} turns={read.state.turns.length} ended={read.state.status === "ended"} />
             </div>
           </div>
 

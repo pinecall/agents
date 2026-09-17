@@ -69,3 +69,15 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.agents-score-good {
+  color: var(--green);
+}
+
+.agents-score-fair {
+  color: var(--amber);
+}
+
+.agents-score-poor {
+  color: var(--red);
+}

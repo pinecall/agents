@@ -555,3 +555,11 @@
     grid-column: 2;
   }
 }
+
+.session-attach {
+  margin-top: 12px;
+}
+
+.session-refused-line {
+  color: var(--red);
+}

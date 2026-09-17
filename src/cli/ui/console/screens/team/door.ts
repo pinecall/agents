@@ -36,6 +36,15 @@ export async function invite(
   return InvitedSchema.parse(await post(credentials, "/v1/members", who));
 }
 
+/**
+ * A one-use link for a member who forgot their password (POST /v1/members/{id}/reset). This box sends
+ * no email, so the admin hands the link on; it opens the same card an invitation does, and every
+ * newer link spends the ones before it.
+ */
+export async function resetLink(credentials: Credentials, id: string): Promise<Invited> {
+  return InvitedSchema.parse(await post(credentials, `/v1/members/${encodeURIComponent(id)}/reset`, {}));
+}
+
 /** Replace the role, the agents or the standing. A field left out keeps what the member had. */
 export async function change(
   credentials: Credentials,

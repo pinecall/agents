@@ -1,18 +1,24 @@
 /** The post-call score, judge by judge, with the evidence each cites and what the opinion cost. */
 
-import type { CallScore, Judgment } from "@pinecall/protocol";
-import type { ReactNode } from "react";
+import { CallScoreSchema, type CallScore, type Judgment } from "@pinecall/protocol";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router";
 
+import { GatewayError, post } from "../../../shared/api";
+import { useCredentials } from "../../../shared/credentials";
 import { euros } from "../../lib/format";
-import { Card, CardHead, Pill, type Tone } from "../../ui";
+import { useScopes } from "../../lib/whoami";
+import { Button, Card, CardHead, Pill, type Tone } from "../../ui";
 
 const VERDICT_TONE: Record<string, Tone> = { held: "green", broken: "red", deferred: "amber", skipped: "muted" };
 
 // The card is ordered the way the scorer runs: the standing, every judge that answered, the judges
 // of the panel that answered nothing (drawn dim, never green: a card that pretended otherwise would
 // be the console lying about coverage), then the bill.
-export function ScoreCard({ call, back, score, turns }: { call: string; back: string; score: CallScore | null; turns: number }): ReactNode {
+export function ScoreCard({ call, back, score: sealed, turns, ended }: { call: string; back: string; score: CallScore | null; turns: number; ended: boolean }): ReactNode {
+  // A verdict asked for here replaces the one the log was sealed with, on this screen, at once.
+  const [asked, setAsked] = useState<CallScore | null>(null);
+  const score = asked ?? sealed;
   return (
     <Card>
       <CardHead title="Score" meta={score !== null && score.passed != null ? `${held(score)} of ${score.judges.length} held` : undefined} />
@@ -24,12 +30,14 @@ export function ScoreCard({ call, back, score, turns }: { call: string; back: st
               The call is still running, or its log was sealed before the judges existed. Ask for one with{" "}
               <span className="ui-fixed">pinecall eval {call}</span>.
             </p>
+            {ended && <AttachAJudge call={call} onJudged={setAsked} />}
           </>
         ) : score.passed == null ? (
           <>
             <div className="session-standing session-standing-amber">No judge was given to this session</div>
             {saysMore(score.not_judged) && <p className="session-sentence">{score.not_judged}</p>}
             <p className="session-sentence">{billOf(score, turns)}</p>
+            {ended && <AttachAJudge call={call} onJudged={setAsked} />}
           </>
         ) : (
           <>
@@ -94,4 +102,38 @@ function billOf(score: CallScore, turns: number): string {
   const replayed = `${turns === 1 ? "One turn" : `${turns} turns`} replayed from the log`;
   if (score.judge_calls === 0) return `${replayed}; the hard policies alone, and they cost nothing.`;
   return `${replayed}; ${score.judge_calls} judge call${score.judge_calls === 1 ? "" : "s"} for ${euros(score.judge_cost_eur)}.`;
+}
+
+/**
+ * The hang-up's judges, run now over a call nobody judged (POST /v1/evals/judge/{call}, the
+ * runtime's console-api.md §6). It costs what judging it at hang-up would have, under the same
+ * ceiling, and writes the verdict onto the call's own log.
+ */
+function AttachAJudge({ call, onJudged }: { call: string; onJudged: (score: CallScore) => void }): ReactNode {
+  const credentials = useCredentials();
+  const scopes = useScopes();
+  const [busy, setBusy] = useState(false);
+  const [refused, setRefused] = useState<string | null>(null);
+  if (scopes !== null && !scopes.includes("evals")) return null;
+
+  const judge = async (): Promise<void> => {
+    setBusy(true);
+    setRefused(null);
+    try {
+      onJudged(CallScoreSchema.parse(await post(credentials, `/v1/evals/judge/${encodeURIComponent(call)}`, {})));
+    } catch (failed) {
+      setRefused(failed instanceof GatewayError ? failed.message : String(failed));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="session-attach">
+      <Button size="md" disabled={busy} onClick={() => void judge()}>
+        {busy ? "Judging…" : "Attach a judge"}
+      </Button>
+      {refused !== null && <p className="session-sentence session-refused-line">{refused}</p>}
+    </div>
+  );
 }

@@ -20,7 +20,7 @@ export function Sidebar({ agent, onSearch }: { agent: string; onSearch: () => vo
   const [folded, setFolded] = useState(false);
   const scopes = useScopes();
   const whose = useWhoami();
-  const { agents, live, lines, here } = useOrg();
+  const { agents, live, lines, here, insights } = useOrg();
   const open = (screen: Screen): boolean => scopes === null || opens(scopes, screen.key);
   const person = whose?.name ?? whose?.label ?? "";
   const role = here?.role ?? (whose === null ? "" : whose.subject === null || whose.subject === undefined ? "a machine's key" : "");
@@ -28,6 +28,7 @@ export function Sidebar({ agent, onSearch }: { agent: string; onSearch: () => vo
   const badge = (screen: Screen): { text: string; live: boolean } | null => {
     if (screen.key === "agents" && agents.length > 0) return { text: String(agents.length), live: false };
     if (screen.key === "live" && live.length > 0) return { text: `${live.length} live`, live: true };
+    if (screen.key === "sessions" && insights !== null) return { text: String(insights.sessions_total), live: false };
     if (screen.key === "sessions" && lines.length > 0) return { text: lines.length >= 200 ? "200+" : String(lines.length), live: false };
     return null;
   };

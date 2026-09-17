@@ -5,7 +5,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { GatewayError } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
 import { Button, Card, CardHead, Empty, Field, Input, Page, PageHead, Refused, Select, TableHead } from "../../ui";
-import { change, invite, readMembers, ROLES, type Invited, type Member } from "./door";
+import { change, invite, readMembers, resetLink, ROLES, type Invited, type Member } from "./door";
 import { COLUMNS, MemberRow } from "./member-row";
 import "./team.css";
 
@@ -18,7 +18,7 @@ import "./team.css";
 export function Team(): ReactNode {
   const credentials = useCredentials();
   const [members, setMembers] = useState<Member[] | null>(null);
-  const [invited, setInvited] = useState<Invited | null>(null);
+  const [invited, setInvited] = useState<{ link: Invited; kind: "invitation" | "reset" } | null>(null);
   const [refused, setRefused] = useState<string | null>(null);
 
   const reread = async (): Promise<void> => setMembers(await readMembers(credentials));
@@ -53,8 +53,17 @@ export function Team(): ReactNode {
   const inviteOne = async (who: Parameters<typeof invite>[1]): Promise<void> => {
     setRefused(null);
     try {
-      setInvited(await invite(credentials, who));
+      setInvited({ link: await invite(credentials, who), kind: "invitation" });
       await reread();
+    } catch (failed) {
+      setRefused(saidBy(failed));
+    }
+  };
+
+  const reset = async (id: string): Promise<void> => {
+    setRefused(null);
+    try {
+      setInvited({ link: await resetLink(credentials, id), kind: "reset" });
     } catch (failed) {
       setRefused(saidBy(failed));
     }
@@ -66,7 +75,7 @@ export function Team(): ReactNode {
 
       <InviteForm onInvite={inviteOne} />
 
-      {invited !== null && <InvitationLink invited={invited} onClose={() => setInvited(null)} />}
+      {invited !== null && <InvitationLink invited={invited.link} kind={invited.kind} onClose={() => setInvited(null)} />}
 
       <Refused>{refused}</Refused>
 
@@ -83,6 +92,7 @@ export function Team(): ReactNode {
                   member={member}
                   onChange={(said) => changed(member.id, said)}
                   onResend={() => inviteOne({ email: member.email, name: member.name, role: member.role, agents: member.agents })}
+                  onReset={() => reset(member.id)}
                 />
               ))}
             </>
@@ -94,12 +104,12 @@ export function Team(): ReactNode {
 }
 
 /** The link an invitation is, shown the one time it exists in the clear. */
-function InvitationLink({ invited, onClose }: { invited: Invited; onClose: () => void }): ReactNode {
+function InvitationLink({ invited, kind, onClose }: { invited: Invited; kind: "invitation" | "reset"; onClose: () => void }): ReactNode {
   const link = invitationLink(invited.token);
   const [copied, setCopied] = useState(false);
   return (
     <Card>
-      <CardHead title={`${invited.member.name} is invited`} meta="copy it now: the table keeps the fingerprint, and it is never shown again">
+      <CardHead title={kind === "reset" ? `A new password for ${invited.member.name}` : `${invited.member.name} is invited`} meta="copy it now: the table keeps the fingerprint, and it is never shown again">
         <span className="team-link-moves">
           <Button
             size="xs"
@@ -115,7 +125,11 @@ function InvitationLink({ invited, onClose }: { invited: Invited; onClose: () =>
         </span>
       </CardHead>
       <pre className="ui-code">{link}</pre>
-      <div className="ui-card-foot">One use · dies {invited.expires_at} · it opens a card where they choose their password and take their first key.</div>
+      <div className="ui-card-foot">
+        {kind === "reset"
+          ? `One use · dies ${invited.expires_at} · hand it to them: it opens the card where they choose a new password. Any older link of theirs no longer opens.`
+          : `One use · dies ${invited.expires_at} · it opens a card where they choose their password and take their first key.`}
+      </div>
     </Card>
   );
 }

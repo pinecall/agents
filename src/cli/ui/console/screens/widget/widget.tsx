@@ -3,9 +3,12 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 
+import { GatewayError } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
+import { useScopes } from "../../lib/whoami";
 import { Button, Field, Input, Page, PageHead, Refused, Switch } from "../../ui";
-import { loadWidget, mountWidget, supports, widgetUrl } from "./mount";
+import { readSettings, saveSettings, type WidgetSettings } from "./door";
+import { loadWidget, mountWidget, widgetUrl } from "./mount";
 import "./widget.css";
 
 // The accents a site may start from. They are data — the value the tag's --pc-accent receives — so
@@ -29,22 +32,76 @@ export function Widget(): ReactNode {
   const [accent, setAccent] = useState(ACCENTS[0]!);
   const [refused, setRefused] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  // Which of the newer attributes the widget this gateway serves understands. Until it has loaded,
-  // none: a field for an attribute the script ignores would be a control that does nothing.
-  const [knows, setKnows] = useState<{ greeting: boolean; autostart: boolean }>({ greeting: false, autostart: false });
+  // What the gateway keeps for this agent. A gateway that keeps widget settings serves the widget
+  // that reads greeting and autostart (they ship together), so the door answering is what turns
+  // those two fields on; before it has, a control for an attribute nobody reads would do nothing.
+  const [kept, setKept] = useState<WidgetSettings | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const knows = { greeting: kept !== null, autostart: kept !== null };
+  const scopes = useScopes();
+  const canSave = kept !== null && (scopes === null || scopes.includes("pipeline"));
   const stage = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let gone = false;
+    readSettings(credentials, agent).then(
+      (settings) => {
+        if (gone || settings === null) return;
+        setKept(settings);
+        if (settings.title !== null) setName(settings.title);
+        if (settings.tagline !== null) setTagline(settings.tagline);
+        if (settings.greeting !== null) setGreeting(settings.greeting);
+        if (settings.accent !== null) setAccent(settings.accent);
+        setAutostart(settings.autostart);
+      },
+      () => undefined,
+    );
+    return () => {
+      gone = true;
+    };
+  }, [credentials, agent]);
+
+  const current: WidgetSettings = {
+    title: name.trim() === "" ? null : name.trim(),
+    tagline: tagline.trim() === "" ? null : tagline.trim(),
+    greeting: greeting.trim() === "" ? null : greeting.trim(),
+    accent,
+    autostart,
+  };
+  // Changed against what is kept, each null read as the default this screen starts from.
+  const dirty =
+    kept !== null &&
+    ((kept.title ?? "Assistant") !== name.trim() ||
+      (kept.tagline ?? "") !== tagline.trim() ||
+      (kept.greeting ?? "") !== greeting.trim() ||
+      (kept.accent ?? ACCENTS[0]) !== accent ||
+      kept.autostart !== autostart);
+
+  const save = async (): Promise<void> => {
+    setSaving(true);
+    setRefused(null);
+    try {
+      setKept(await saveSettings(credentials, agent, current));
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 1500);
+    } catch (failed) {
+      setRefused(failed instanceof GatewayError ? failed.message : String(failed));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   useEffect(() => {
     let gone = false;
     loadWidget().then(
       () => {
         if (gone || stage.current === null) return;
-        setKnows({ greeting: supports("greeting"), autostart: supports("autostart") });
         const attributes: Record<string, string> = { name, position: "inline" };
         if (company) attributes["company"] = company;
         if (tagline) attributes["tagline"] = tagline;
         if (phone) attributes["phone"] = phone;
-        if (greeting && supports("greeting")) attributes["greeting"] = greeting;
+        if (greeting) attributes["greeting"] = greeting;
         const element = mountWidget(stage.current, credentials, agent, attributes);
         element.style.setProperty("--pc-accent", accent);
         setRefused(null);
@@ -111,6 +168,11 @@ export function Widget(): ReactNode {
         <div className="ui-card">
           <div className="ui-card-head">
             <span className="ui-card-title">Appearance</span>
+            {canSave && (
+              <Button kind={dirty ? "primary" : "secondary"} size="xs" className="widget-copy" disabled={saving || !dirty} onClick={() => void save()}>
+                {saving ? "Saving…" : saved ? "Saved" : "Save"}
+              </Button>
+            )}
           </div>
           <div className="widget-fields">
             <Field label="Name">
@@ -135,12 +197,12 @@ export function Widget(): ReactNode {
             <div>
               <div className="widget-accent-label">Accent</div>
               <div className="widget-accents" role="group" aria-label="accent">
-                {ACCENTS.map((one) => (
+                {(ACCENTS.includes(accent) ? ACCENTS : [...ACCENTS, accent]).map((one) => (
                   <button
                     key={one}
                     type="button"
                     className="widget-accent"
-                    style={{ background: one, boxShadow: one === accent ? `0 0 0 2px #fff,0 0 0 4px ${one}` : undefined }}
+                    style={{ background: one, boxShadow: one === accent ? `0 0 0 2px var(--on-accent),0 0 0 4px ${one}` : undefined }}
                     onClick={() => setAccent(one)}
                     aria-label={one}
                     aria-pressed={one === accent}

@@ -8,7 +8,7 @@ import { ROLES, type Member } from "./door";
 type Change = { role?: Member["role"]; agents?: string[]; status?: Member["status"] };
 
 /** The table's columns: the design's five, and the move at the end of the row. */
-export const COLUMNS = "minmax(0,1fr) minmax(0,1.3fr) 120px 120px 96px 104px";
+export const COLUMNS = "minmax(0,1fr) minmax(0,1.3fr) 110px 110px 90px 170px";
 
 const TONE = { active: "green", invited: "amber", disabled: "gray" } as const;
 
@@ -22,10 +22,12 @@ export function MemberRow({
   member,
   onChange,
   onResend,
+  onReset,
 }: {
   member: Member;
   onChange: (said: Change) => Promise<void>;
   onResend: () => Promise<void>;
+  onReset: () => Promise<void>;
 }): ReactNode {
   const [editing, setEditing] = useState<"role" | "agents" | null>(null);
   const [agents, setAgents] = useState(member.agents.join(" "));
@@ -100,9 +102,14 @@ export function MemberRow({
       </span>
       <span className="ui-cell-end">
         {member.status === "active" && (
-          <TextAction danger disabled={busy} onClick={() => void act(() => onChange({ status: "disabled" }))}>
-            Disable
-          </TextAction>
+          <>
+            <TextAction disabled={busy} onClick={() => void act(onReset)} title="A one-use link to choose a new password">
+              Reset password
+            </TextAction>
+            <TextAction danger disabled={busy} onClick={() => void act(() => onChange({ status: "disabled" }))}>
+              Disable
+            </TextAction>
+          </>
         )}
         {member.status === "disabled" && (
           <TextAction disabled={busy} onClick={() => void act(() => onChange({ status: "active" }))}>

@@ -136,3 +136,11 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.home-step-button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+}
