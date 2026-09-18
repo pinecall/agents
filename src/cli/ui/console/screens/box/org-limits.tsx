@@ -26,7 +26,7 @@ const digits = (typed: string): string => typed.replace(/[^0-9]/g, "");
 
 /**
  * Both panels replace their set WHOLE. An empty quota is no limit, and `0` is a real limit that
- * refuses; an empty country list is the codes of the org's own numbers, which is a fence, not a gap.
+ * refuses. Which countries an org dials is its carrier account's setting, so nothing here names one.
  */
 export function OrgLimits({ org, onSaved }: { org: OneOrg; onSaved: () => Promise<void> }): ReactNode {
   const credentials = useCredentials();
@@ -40,7 +40,6 @@ export function OrgLimits({ org, onSaved }: { org: OneOrg; onSaved: () => Promis
   const [anywhere, setAnywhere] = useState(guards?.dial_anywhere ?? false);
   const [perMinute, setPerMinute] = useState(String(guards?.per_minute ?? ""));
   const [perDay, setPerDay] = useState(String(guards?.per_day ?? ""));
-  const [countries, setCountries] = useState((guards?.countries ?? []).join(" "));
   const [longest, setLongest] = useState(String(guards?.max_duration_s ?? ""));
 
   const saveLimits = async (): Promise<void> => {
@@ -59,7 +58,6 @@ export function OrgLimits({ org, onSaved }: { org: OneOrg; onSaved: () => Promis
         dial_anywhere: anywhere,
         per_minute: Number(perMinute),
         per_day: Number(perDay),
-        countries: countries.split(/[\s,+]+/).filter((one) => one !== ""),
         max_duration_s: Number(longest),
       });
       await onSaved();
@@ -110,10 +108,6 @@ export function OrgLimits({ org, onSaved }: { org: OneOrg; onSaved: () => Promis
             </Field>
             <Field label="Longest call, seconds">
               <Input inputMode="numeric" value={longest} onChange={(event) => setLongest(digits(event.target.value))} />
-            </Field>
-            <Field label="Country codes">
-              <Input value={countries} placeholder="1 34" onChange={(event) => setCountries(event.target.value)} />
-              <div className="box-limit-about">empty: the codes of its own numbers</div>
             </Field>
           </div>
           <div className="box-save">

@@ -245,8 +245,10 @@ that declared where it takes calls. Then *Call back* in an agent's Calls inbox, 
 /v1/agents/{slug}/dial {to}` with a key that opens `talk`, rings the person from one of the org's
 own numbers, and the call is a log like any other, `outbound`. It is fenced, and only whoever runs
 the gateway moves the fence: by default a number that has already called or written to the org,
-in the countries of the org's own numbers, six dials a minute and two hundred a day, ten minutes a
-call. The door and its guards: the runtime's `docs/protocol/console-api.md` §4.
+six dials a minute and two hundred a day, ten minutes a
+call. Which countries it may reach is the carrier account's own setting (Twilio's geo
+permissions), never a fence of ours. The door and its guards: the runtime's
+`docs/protocol/console-api.md` §4.
 
 ## Traps
 

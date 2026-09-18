@@ -360,7 +360,7 @@ This agent's conversations as an inbox: one thread per person, what was said, an
   or not ready, neither is drawn and nothing is said). It confirms first — *Call <number> as
   <agent>?*, **From** when there are several numbers, **Call** · Cancel — then `POST
   /v1/agents/{slug}/dial {to, from?}` and the call it became opens on Live. A refusal (a number
-  that never called, a rate, a country) is the gateway's sentence. A contact the app filed under an
+  that never called, a rate) is the gateway's sentence. A contact the app filed under an
   id of its own, not a number, has no Call back.
 
 ## 5. Sessions — `/sessions`, `/a/:agent/sessions`
@@ -562,7 +562,7 @@ placed from* the org's numbers, the gateway's sentence for each step still missi
 outbound** (**Repair** once ready) — plan first like a number: `POST …?dry_run=true`, the steps
 verbatim, **Confirm**, then the state re-read. Under it the **Guards**, read-only: who may be called
 (*only numbers that have already called or written to you*, or *any number*), per minute, per day,
-countries (*the countries of your own numbers* when none is named), the longest call — *Set by
+the longest call — *Set by
 whoever runs this gateway: `pinecall-runtime orgs dialling`.*
 
 **Phone testing** — `/phone` (local): *Call the number your customers call, from your own mobile,

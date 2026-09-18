@@ -20,19 +20,6 @@ export interface OutboundPanelProps {
 }
 
 // Calling codes as a person says them. A code nobody listed is shown as the code.
-const COUNTRIES: Record<string, string> = {
-  "1": "United States/Canada",
-  "34": "Spain",
-  "598": "Uruguay",
-  "44": "United Kingdom",
-  "52": "Mexico",
-  "54": "Argentina",
-  "55": "Brazil",
-  "49": "Germany",
-  "33": "France",
-  "39": "Italy",
-};
-
 const E164 = /^\+[1-9]\d{6,14}$/;
 
 /** What is missing, in a person's words and with where to fix it. The gateway's sentence otherwise, minus any door it names. */
@@ -58,16 +45,11 @@ function missing(step: string): ReactNode {
 
 /** The limits as one sentence. They are shown and never set here: an org that could lift its own fence would have none. */
 function limits(guards: Outbound["guards"]): string {
-  const where =
-    guards.countries.length === 0
-      ? "the countries of your own numbers"
-      : guards.countries.map((code) => COUNTRIES[code.replace(/^\+/, "")] ?? `+${code.replace(/^\+/, "")}`).join(", ");
   return [
     guards.dial_anywhere ? "Agents can call any number" : "Agents can only call numbers that already contacted you",
     `${guards.per_minute} a minute`,
     `${guards.per_day} a day`,
     `${Math.round(guards.max_duration_s / 60)} min per call`,
-    where,
   ].join(" · ");
 }
 

@@ -128,7 +128,6 @@ const OutboundSchema = z.looseObject({
     dial_anywhere: z.boolean(),
     per_minute: z.number(),
     per_day: z.number(),
-    countries: z.array(z.string()),
     max_duration_s: z.number(),
   }),
 });
