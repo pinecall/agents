@@ -164,15 +164,29 @@ export interface Choice {
 /**
  * The profile `--profile` named; else the one of the org this project names, and none at all when
  * this machine holds no profile of it — never the active one, which is another org's; else the
- * active one. Among several profiles of that org (one per gateway), the one named after it: the
- * login names the first by its bare slug.
+ * active one. Among several profiles of that org, the one that opens the world asked for — the
+ * sandbox when none was — because a machine logged in before one login kept both worlds has a
+ * profile per world; then the one named after the org, which the login names by its bare slug.
  */
-export function choose(named: string | undefined, config: Config, from: string = process.cwd()): Choice {
+export function choose(
+  named: string | undefined,
+  config: Config,
+  from: string = process.cwd(),
+  world: World = "sandbox",
+): Choice {
   if (named !== undefined) return { name: named };
   const project = projectOrg(from);
   if (project === undefined) return { name: config.active };
-  const theirs = Object.keys(config.profiles).filter((name) => config.profiles[name]!.org === project.org || name === project.org);
-  const name = theirs.includes(project.org) ? project.org : theirs.sort()[0];
+  const theirs = Object.keys(config.profiles)
+    .filter((name) => config.profiles[name]!.org === project.org || name === project.org)
+    .sort();
+  const opens = (name: string): boolean => {
+    const profile = config.profiles[name]!;
+    return profile.keys?.[world] !== undefined || profile.env === world;
+  };
+  const inWorld = theirs.filter(opens);
+  const pool = inWorld.length > 0 ? inWorld : theirs;
+  const name = pool.includes(project.org) ? project.org : pool[0];
   return { name, project };
 }
 

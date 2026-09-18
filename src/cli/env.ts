@@ -58,7 +58,7 @@ export function doorFrom(
   world: World | undefined = theChosenWorld(),
 ): Found {
   const config = readConfig(home);
-  const choice = choose(profile, config, from);
+  const choice = choose(profile, config, from, world);
   const held = choice.name === undefined ? undefined : config.profiles[choice.name];
   // `--prod` takes the production key the login kept beside the sandbox one, for this command
   // only: the profile's key in hand is not touched, so the next command is in the sandbox again.
