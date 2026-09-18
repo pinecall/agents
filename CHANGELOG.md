@@ -6,6 +6,8 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## 0.4.0 — The project names its org, `--prod` looks at production, and no signup
+
 ### Added
 - **A project names its org, and every verb inside it takes that org's profile.** `"pinecall": {
   "org": "<slug>" }` in a package.json; the nearest one that names an org wins, `--profile` still
@@ -29,6 +31,15 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   reducer.** `agent.transcript` is a delta — one word with its timings on a voice call, one model
   token on a written one — and the reducer joins them into `state.live.agent`, cleared by
   `turn.agent`; the console keeps no joining of its own. The dependency is `^0.3.0`.
+- **The console's Live screen.** The words being said are the call's last row, word by word, and
+  the list follows them down; the pane is 320 to 400px and every pane is dragged wider or narrower
+  and found as it was left; a measurement is a ruled row that never breaks a number.
+- **A session with no audio to play draws no player** — a written call keeps no recording.
+- **Team draws no Disable and no Remove on your own row.** The gateway refuses both for the person
+  asking; the screen no longer offers them.
+- **No country codes in the console.** The dial guards are four; which countries a dial may reach is
+  the carrier account's own setting.
+- **The console carries the new logo and mark.**
 
 ## 0.3.1 — One login for every org and both worlds, and the console redesigned
 
