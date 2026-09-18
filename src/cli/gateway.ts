@@ -15,7 +15,7 @@ export const group: Group = {
   types \`pinecall login\` and nothing else — no URL to remember, no URL to mistype.
 
   Somebody running their own box says so ONCE, here, and every verb that runs before this machine
-  holds a key goes there: the login, the signup, and the refusal a verb prints when it has no key.
+  holds a key goes there: the login and the refusal a verb prints when it has no key.
   It is remembered as \`gateway\` in ~/.pinecall/config.json, beside the profiles; \`pinecall gateway\`
   with nothing after it prints which, and \`pinecall config rm\` leaves it alone. An address with
   no scheme is read as https, and only the origin is kept. A URL typed on \`pinecall login <url>\`
