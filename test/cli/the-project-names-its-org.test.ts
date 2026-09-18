@@ -134,3 +134,20 @@ describe("--prod", () => {
     expect(noProductionKey("solo")).toContain("holds none");
   });
 });
+
+describe("a machine with a profile per world", () => {
+  // Before one login kept both worlds, a person had `bidfire` (production) and `bidfire-sandbox`.
+  beforeEach(() => {
+    writeProfile("bidfire", { url: BOX, key: "pk_prod", org: "cloudacio", env: "production" }, home);
+    writeProfile("bidfire-sandbox", { url: BOX, key: "pk_sand", org: "cloudacio", env: "sandbox" }, home);
+  });
+
+  it("takes the sandbox one, and the production one only on --prod", () => {
+    const cloudacio = project("c", { pinecall: { org: "cloudacio" } });
+    // `cloudacio` itself, from the top of the file, is in the sandbox too; drop it to test these two.
+    writeProfile("cloudacio", { url: BOX, key: "pk_prod2", org: "other" }, home);
+
+    expect(doorFrom({ PINECALL_HOME: home }, home, undefined, cloudacio).apiKey).toBe("pk_sand");
+    expect(doorFrom({ PINECALL_HOME: home }, home, undefined, cloudacio, "production").apiKey).toBe("pk_prod");
+  });
+});
