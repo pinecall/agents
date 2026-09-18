@@ -7,6 +7,7 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **Team ▸ Roles says `supervisor` and `manager` open memory**, as the runtime's presets now do.
 - **Memory in the sidebar, beside Evals.** What every agent of the org carries between calls, on
   one page: each fact with the agent whose call taught it (a link to that agent's Memory tab), a
   search the gateway runs across every page, **Drop**, and **Load more**. `GET /v1/memory`.
