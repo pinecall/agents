@@ -1,7 +1,7 @@
 /** ~/.pinecall/config.json: the gateways this machine knows, by name, and which one is in hand. */
 
-import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 import { normalised, pinecallHome, readCredentials } from "./credentials.js";
 
@@ -110,10 +110,67 @@ export function theChosenProfile(): string | undefined {
   return chosen;
 }
 
-/** The profile a verb runs on: the one named, or the active one, or nothing at all. */
-export function profileFor(named: string | undefined, home: string = pinecallHome()): Profile | undefined {
+/** The org a project says it belongs to, and the package.json that says it. */
+export interface ProjectOrg {
+  org: string;
+  file: string;
+}
+
+/**
+ * The org the nearest package.json names under `"pinecall": { "org": "<slug>" }`, walking up from
+ * `from`. A package.json that names none is passed over, so a package inside a project still
+ * belongs to the project's org.
+ *
+ * Four checkouts of four orgs used to share ONE active profile: a person moved between them with
+ * `pinecall use`, and the day they forgot, a verb ran in the org of the last project they were in.
+ * The project saying its org is what makes the directory the answer.
+ */
+export function projectOrg(from: string = process.cwd()): ProjectOrg | undefined {
+  for (let dir = from; ; dir = dirname(dir)) {
+    const file = join(dir, "package.json");
+    if (existsSync(file)) {
+      const org = orgIn(file);
+      if (org !== undefined) return { org, file };
+    }
+    if (dirname(dir) === dir) return undefined;
+  }
+}
+
+function orgIn(file: string): string | undefined {
+  try {
+    const said = JSON.parse(readFileSync(file, "utf8")) as { pinecall?: { org?: unknown } };
+    const org = said.pinecall?.org;
+    return typeof org === "string" && org !== "" ? org : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Which profile a verb runs on, and the project that decided it when one did. */
+export interface Choice {
+  name: string | undefined;
+  project?: ProjectOrg;
+}
+
+/**
+ * The profile `--profile` named; else the one of the org this project names, and none at all when
+ * this machine holds no profile of it — never the active one, which is another org's; else the
+ * active one. Among several profiles of that org (one per gateway), the one named after it: the
+ * login names the first by its bare slug.
+ */
+export function choose(named: string | undefined, config: Config, from: string = process.cwd()): Choice {
+  if (named !== undefined) return { name: named };
+  const project = projectOrg(from);
+  if (project === undefined) return { name: config.active };
+  const theirs = Object.keys(config.profiles).filter((name) => config.profiles[name]!.org === project.org || name === project.org);
+  const name = theirs.includes(project.org) ? project.org : theirs.sort()[0];
+  return { name, project };
+}
+
+/** The profile a verb runs on: the one named, the project's org's, or the active one, or nothing at all. */
+export function profileFor(named: string | undefined, home: string = pinecallHome(), from: string = process.cwd()): Profile | undefined {
   const config = readConfig(home);
-  const name = named ?? config.active;
+  const { name } = choose(named, config, from);
   return name === undefined ? undefined : config.profiles[name];
 }
 
@@ -199,7 +256,7 @@ export function callingFrom(home: string = pinecallHome()): string | undefined {
 /** Say which phone is yours here, or take it back. False when there is no profile to write it on. */
 export function callsFrom(number: string | undefined, home: string = pinecallHome()): boolean {
   const config = readConfig(home);
-  const name = theChosenProfile() ?? config.active;
+  const { name } = choose(theChosenProfile(), config);
   if (name === undefined || config.profiles[name] === undefined) return false;
   const { calling: _was, ...rest } = config.profiles[name];
   return amend(name, number === undefined ? rest : { ...rest, calling: number }, home, true);
