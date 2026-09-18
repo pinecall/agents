@@ -1,6 +1,7 @@
 /** Which world a verb works in. The KEY decides it; `--env` is how a person says they know which. */
 
 import type { Open } from "./env.js";
+import { theChosenWorld } from "./profiles.js";
 import { refusal, whoIs, type Who } from "./whoami.js";
 
 /** The world a laptop is in: what is being written, held per person, nobody's customers calling. */
@@ -37,7 +38,7 @@ export function notThisWorld(verb: string, who: Who, said: string | undefined): 
   if (said !== undefined && !WORLDS.includes(said)) {
     return `--env takes ${WORLDS.join(" or ")}, not ${JSON.stringify(said)}`;
   }
-  const wanted = said ?? SANDBOX;
+  const wanted = said ?? theChosenWorld() ?? SANDBOX;
   if (who.env === wanted) return undefined;
   if (said !== undefined) {
     return (
