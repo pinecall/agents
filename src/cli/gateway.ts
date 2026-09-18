@@ -14,12 +14,16 @@ export const group: Group = {
   Every verb goes to ${CLOUD_URL} until this says otherwise, so a person who is on the cloud
   types \`pinecall login\` and nothing else — no URL to remember, no URL to mistype.
 
-  Somebody running their own box says so ONCE, here, and every verb after it goes there: the
-  login, the signup, and any verb that runs before this machine holds a key. It is remembered in
-  ~/.pinecall/config.json beside the profiles, and \`pinecall config\` prints which one is in hand.
+  Somebody running their own box says so ONCE, here, and every verb that runs before this machine
+  holds a key goes there: the login, the signup, and the refusal a verb prints when it has no key.
+  It is remembered as \`gateway\` in ~/.pinecall/config.json, beside the profiles; \`pinecall gateway\`
+  with nothing after it prints which, and \`pinecall config rm\` leaves it alone. An address with
+  no scheme is read as https, and only the origin is kept. A URL typed on \`pinecall login <url>\`
+  still wins, for that one command.
 
-  An org you are already signed in to is a profile: \`pinecall use <org>\` moves between them
-  and this verb is not what you want. This one is for the gateway you have not signed in to yet.`,
+  Once a login has kept a profile, every verb goes where the ACTIVE profile points — an org you
+  are signed in to is a profile, \`pinecall use <org>\` moves between them, and this verb is not
+  what you want. This one is for the gateway you have not signed in to yet.`,
   run,
 };
 

@@ -98,8 +98,9 @@ sentences; small methods; 150 lines is the norm. Tests read as sentences.
 - **A view says what to do in THIS turn.** Two facts the examples paid for: a rule that lives only
   in the static prefix is read once and generically, and the rule for "the caller just named a
   slot" is the opposite of the one for "the caller just said yes".
-- `pinecall test --voice` is ring 2 and is **not built**: it says so instead of running ring 1 and
-  calling it voice.
+- `pinecall test --voice` is ring 2: the CLI sends the same goldens to `POST /v1/evals/run` with
+  `voice: true` (and `--background-noise` · `--packet-loss` as `interferer_db` · `packet_loss`);
+  whether a spoken line answers is the gateway's, and nothing on this side checks it.
 - Versions and tags are the human's: never pick a number, never tag.
 
 ## Commits

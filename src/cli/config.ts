@@ -13,16 +13,24 @@ export const group: Group = {
   usage: `${USAGE}
 
   One file — ~/.pinecall/config.json — holds them, and \`pinecall login\` writes one per ORG you
-  belong to, with your key in both of its worlds. Nothing is exported, and there is no order of precedence to remember: the
-  profile with the ▸ is the one every verb uses until \`pinecall use\` moves it.
+  belong to, named after the org, with your key in both of its worlds (\`--as <name>\` and a
+  machine's key keep ONE profile, holding the key in hand). Nothing is exported, and there is no
+  order of precedence to remember: the profile with the ▸ is the one every verb uses until
+  \`pinecall use\` moves it, and \`--profile <name>\` on any one verb sends that command elsewhere.
 
   It prints no key. What a listing may say about one is that it is there, and its fingerprint is
   the Keys screen's business — not a prefix, not a hint. The org and the world beside each name
-  are what \`whoami\` last said, kept as a label so this list reads without a network.
+  are what the login wrote down from \`whoami\`, kept as a label so this list reads without a
+  network; "sandbox (and production)" is a profile holding both worlds' keys.
 
-  \`config rm\` takes a row out — a gateway that has moved, a key that was revoked. It forgets the
-  row here and nothing else: the key itself is stopped from the Keys screen, and a row left behind
-  is a key somebody will trust tomorrow and a refusal they will read as the gateway's fault.`,
+  \`use <org> <world>\` is a line in this file and never a trip to the gateway; a profile with no
+  key for that world is refused, and \`pinecall login\` again keeps both.
+
+  \`config rm\` takes a row out — a gateway that has moved, a key that was revoked — and the ▸ with
+  it when it was the active one. It keeps the gateway this machine is pointed at (\`pinecall
+  gateway\`), and forgets nothing else: the key itself is stopped from the Keys screen, and a row
+  left behind is a key somebody will trust tomorrow and a refusal they will read as the gateway's
+  fault.`,
   run,
 };
 

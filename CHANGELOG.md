@@ -6,6 +6,23 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Changed
+- **`pinecall signup` resolves the gateway like `login` and keeps a profile.** With no URL it goes
+  where this machine is pointed (`pinecall gateway`, the cloud until then) and says which above the
+  result; what it keeps is a profile named after the org in `~/.pinecall/config.json`, with both
+  worlds' keys and the sandbox one in hand — what `login` leaves — instead of only the
+  `~/.pinecall/credentials` row, which is still written for v1's CLI on the same machine. `run`,
+  `whoami` and `use` work straight after the sign-up.
+- **`pinecall config rm` keeps the gateway this machine is pointed at.** It forgets the profile
+  named, and the active mark when that was the one, and no longer drops what `pinecall gateway
+  <url>` wrote.
+- **The console's Live and Chat read the reply in flight from `@pinecall/protocol` 0.3.0's
+  reducer.** `agent.transcript` is a delta — one word with its timings on a voice call, one model
+  token on a written one — and the reducer joins them into `state.live.agent`, cleared by
+  `turn.agent`; the console keeps no joining of its own. The dependency is `^0.3.0`.
+
+## 0.3.1 — One login for every org and both worlds, and the console redesigned
+
 ### Added
 - **`pinecall gateway [url]`** — where this machine is pointed, and one word to point it somewhere
   else. Every verb goes to `https://box.pinecall.io` until it says otherwise, so a person on the
