@@ -7,8 +7,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { doorFrom, doorLine, notThisOrg, theDoor } from "../../src/cli/env.js";
-import { projectOrg, writeProfile } from "../../src/cli/profiles.js";
+import { doorFrom, doorLine, noProductionKey, notThisOrg, theDoor } from "../../src/cli/env.js";
+import { projectOrg, theChosenWorld, withoutTheProfileFlag, writeProfile } from "../../src/cli/profiles.js";
 import { written } from "./said.js";
 
 const BOX = "https://box.pinecall.io";
@@ -91,5 +91,46 @@ describe("outside any project", () => {
 
     expect(theDoor({ PINECALL_HOME: empty }, said.stream)).toBeUndefined();
     expect(said.text()).toContain("not signed in to");
+  });
+});
+
+describe("--prod", () => {
+  const PROD = "pk_cloudacio_production";
+
+  beforeEach(() => {
+    writeProfile(
+      "cloudacio",
+      { url: BOX, key: CLOUDACIO, keys: { sandbox: CLOUDACIO, production: PROD }, org: "cloudacio", env: "sandbox" },
+      home,
+    );
+  });
+
+  it("takes the production key for one command, and leaves the sandbox one in hand", () => {
+    const bidfire = project("bidfire", { pinecall: { org: "cloudacio" } });
+
+    expect(doorFrom({ PINECALL_HOME: home }, home, undefined, bidfire, "production").apiKey).toBe(PROD);
+    expect(doorFrom({ PINECALL_HOME: home }, home, undefined, bidfire).apiKey).toBe(CLOUDACIO);
+  });
+
+  it("is taken out of argv before any group sees it, wherever it is typed", () => {
+    expect(withoutTheProfileFlag(["sessions", "--prod", "--agent", "ava"])).toEqual(["sessions", "--agent", "ava"]);
+    expect(theChosenWorld()).toBe("production");
+    withoutTheProfileFlag(["sessions"]);
+    expect(theChosenWorld()).toBeUndefined();
+  });
+
+  it("says production on the first line", () => {
+    const bidfire = project("bidfire", { pinecall: { org: "cloudacio" } });
+    const found = doorFrom({ PINECALL_HOME: home }, home, undefined, bidfire, "production");
+
+    expect(doorLine({ ...found, apiKey: found.apiKey! })).toContain("· production (--prod)");
+  });
+
+  it("is refused in a sentence when the profile kept no production key", () => {
+    writeProfile("solo", { url: BOX, key: TIENDA, keys: { sandbox: TIENDA }, org: "solo", env: "sandbox" }, home);
+    const solo = project("solo", { pinecall: { org: "solo" } });
+
+    expect(doorFrom({ PINECALL_HOME: home }, home, undefined, solo, "production").apiKey).toBe("");
+    expect(noProductionKey("solo")).toContain("holds none");
   });
 });

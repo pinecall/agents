@@ -11,6 +11,10 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   "org": "<slug>" }` in a package.json; the nearest one that names an org wins, `--profile` still
   wins over it, and a machine holding no profile of that org is refused rather than handed the
   active one. Outside a project nothing changes. Four checkouts of four orgs need no `pinecall use`.
+- **`--prod` looks at production for one command.** Any verb, anywhere on the line: it takes the
+  profile's production key for that command and keeps nothing, so the next one is in the sandbox
+  again — no `pinecall use <org> production` and back. `--env` keeps its meaning where a verb
+  takes it.
 
 ### Removed
 - **`pinecall signup`.** A terminal no longer makes an org: whoever runs the gateway makes it and

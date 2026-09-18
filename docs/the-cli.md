@@ -86,6 +86,22 @@ org's. `--profile <name>` still wins over the project, and outside any project i
 profile, as before. The first line says which: `gateway <url> · key from profile cloudacio · org
 cloudacio from <path>/package.json`.
 
+**`--prod` looks at production for one command.** A login keeps each org's key in both worlds,
+and the one in hand is the sandbox's; `--prod`, anywhere on the line of any verb, takes the
+production one for that command and keeps nothing, so the next command is in the sandbox again.
+
+```console
+~/bidfire $ pinecall sessions            # your sandbox calls
+~/bidfire $ pinecall sessions --prod     # production's
+~/bidfire $ pinecall numbers list --prod
+```
+
+The first line ends `· production (--prod)`. A profile that kept no production key is refused in a
+sentence (`pinecall login` again keeps both). A person still only looks there: `pinecall run
+--prod` is refused by the gateway, as `use <org> production` then `run` always was. `--env` keeps
+its own meaning on the verbs that take it — the world a number moves to (`numbers move`), the world
+a key is issued in (`keys issue`), the world `run` and `chat` believe they are in.
+
 **Before there is a profile**, a verb goes to the gateway this machine is pointed at:
 `https://box.pinecall.io` until [`pinecall gateway <url>`](#gateway) says otherwise. That is where
 `login` knocks, and what the refusal `not signed in to <gateway>` names.

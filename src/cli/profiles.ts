@@ -82,18 +82,22 @@ function migrated(home: string): Config {
 // places for it to be missing from. Set once at startup and never again: a parsed argument that
 // happens to live in a module, not state anything changes while a verb runs.
 let chosen: string | undefined;
+let production = false;
 
 /**
- * Take `--profile <name>` out of an invocation's argv, and remember it.
+ * Take `--profile <name>` and `--prod` out of an invocation's argv, and remember them.
  *
  * Returns what is left, so the group sees only its own flags. `--profile=<name>` too, because
  * both spellings are what a person types and only one of them working is a footgun.
  */
 export function withoutTheProfileFlag(argv: readonly string[]): string[] {
   const rest: string[] = [];
+  production = false;
   for (let at = 0; at < argv.length; at += 1) {
     const word = argv[at]!;
-    if (word === "--profile") {
+    if (word === "--prod") {
+      production = true;
+    } else if (word === "--profile") {
       chosen = argv[at + 1];
       at += 1;
     } else if (word.startsWith("--profile=")) {
@@ -103,6 +107,11 @@ export function withoutTheProfileFlag(argv: readonly string[]): string[] {
     }
   }
   return rest;
+}
+
+/** Production when this invocation said `--prod`: one command looks there, and nothing is kept. */
+export function theChosenWorld(): World | undefined {
+  return production ? "production" : undefined;
 }
 
 /** The profile this invocation named, when it named one. */
