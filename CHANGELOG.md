@@ -6,13 +6,12 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Removed
+- **`pinecall signup`.** A terminal no longer makes an org: whoever runs the gateway makes it and
+  invites people, who arrive with `pinecall login`. The gateway's `POST /v1/signup` door is not
+  changed.
+
 ### Changed
-- **`pinecall signup` resolves the gateway like `login` and keeps a profile.** With no URL it goes
-  where this machine is pointed (`pinecall gateway`, the cloud until then) and says which above the
-  result; what it keeps is a profile named after the org in `~/.pinecall/config.json`, with both
-  worlds' keys and the sandbox one in hand — what `login` leaves — instead of only the
-  `~/.pinecall/credentials` row, which is still written for v1's CLI on the same machine. `run`,
-  `whoami` and `use` work straight after the sign-up.
 - **`pinecall config rm` keeps the gateway this machine is pointed at.** It forgets the profile
   named, and the active mark when that was the one, and no longer drops what `pinecall gateway
   <url>` wrote.

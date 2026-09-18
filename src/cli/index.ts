@@ -10,7 +10,7 @@ import { withoutTheProfileFlag } from "./profiles.js";
 // The order this table is written is the order the help prints: run and chat first, because
 // they are what a person types on the first day, and the planned groups after, in the design's
 // order. run is rails server and chat is rails console — see docs/decisions/tenant-cli.md.
-const BUILT = ["run", "serve", "chat", "prompt", "test", "simulate", "eval", "sessions", "runs", "pipeline", "line", "numbers", "personas", "knowledge", "memory", "remember", "supervise", "keys", "providers", "callbacks", "signup", "login", "whoami", "gateway", "config", "use"] as const;
+const BUILT = ["run", "serve", "chat", "prompt", "test", "simulate", "eval", "sessions", "runs", "pipeline", "line", "numbers", "personas", "knowledge", "memory", "remember", "supervise", "keys", "providers", "callbacks", "login", "whoami", "gateway", "config", "use"] as const;
 
 /** Everything `pinecall` answers to, built and planned alike, in the order help prints them. */
 export function groupNames(): string[] {
@@ -84,7 +84,6 @@ export async function groupFor(name: string, out: NodeJS.WritableStream = proces
   if (name === "numbers") return (await import("./numbers.js")).group;
   if (name === "providers") return (await import("./providers.js")).group;
   if (name === "callbacks") return (await import("./callbacks.js")).group;
-  if (name === "signup") return (await import("./signup.js")).group;
   if (name === "login") return (await import("./login.js")).group;
   if (name === "gateway") return (await import("./gateway.js")).group;
   if (name === "whoami") return (await import("./whoami.js")).group;
@@ -124,7 +123,6 @@ export function usage(): string {
     "  keys      issue | list | revoke the API keys this org's machines run on",
     "  providers add | rm | list the provider keys this org brought of its own",
     "  callbacks the numbers people left when every seat was taken: who to call back",
-    "  signup    make an org on Pinecall's cloud and keep its first key",
     "  login     sign in once; the key is kept as a profile in ~/.pinecall",
     "  gateway   which gateway this machine talks to: box.pinecall.io until you point it elsewhere",
     "  config    the gateways this machine knows, and which one the next verb goes to",

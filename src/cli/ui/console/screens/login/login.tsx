@@ -12,8 +12,8 @@ import { WayIn } from "./way-in";
  *
  * Making an org is not this page's business. The console is a control plane for an org that
  * already exists, it ships inside the runtime every self-hoster serves, and a registration form
- * in it would be one flag away from open registration on somebody else's box. So the way in is
- * `pinecall signup` or `POST /v1/signup`, and what arrives here is a person who has a key, a
+ * in it would be one flag away from open registration on somebody else's box. So an org is made by
+ * whoever runs the gateway, and what arrives here is a person who has a key, a
  * password, or an invitation. It signs in to PRODUCTION: this is the gateway's console, and the
  * sandbox is watched on a developer's own machine (`pinecall serve`), where nothing signs in. A
  * production `pinecall run` prints a URL with a one-use code that skips even this card (lib/login.ts). The refusal is the gateway's sentence, verbatim: one for every wrong
