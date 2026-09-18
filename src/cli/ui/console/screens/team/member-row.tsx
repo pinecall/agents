@@ -31,7 +31,7 @@ export function MemberRow({
   onResend: () => Promise<void>;
   onReset: () => Promise<void>;
   onRemove: () => Promise<void>;
-  /** The row of the person looking: nobody disables themselves, and the gateway refuses it too. */
+  /** The row of the person looking: nobody disables or removes themselves, and the gateway refuses both too. */
   yourself?: boolean;
 }): ReactNode {
   const [removing, setRemoving] = useState(false);
@@ -141,9 +141,11 @@ export function MemberRow({
                 Resend invite
               </TextAction>
             )}
-            <TextAction danger disabled={busy} onClick={() => setRemoving(true)} title="Out of the org for good: every key revoked, the seat freed">
-              Remove
-            </TextAction>
+            {!yourself && (
+              <TextAction danger disabled={busy} onClick={() => setRemoving(true)} title="Out of the org for good: every key revoked, the seat freed">
+                Remove
+              </TextAction>
+            )}
           </>
         )}
       </span>
