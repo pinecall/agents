@@ -276,7 +276,7 @@ without the console going away. A port held by anything else is stepped past (41
 Which screens this console has and which the gateway's has is one table in the console's source
 (`src/cli/ui/console/lib/mode.ts`): running the org — numbers, keys, providers, the team, usage —
 and the box's own screens are the gateway's; **Dev chat**, running a suite and **Phone testing**
-are this one's; Home, Overview, Live, Sessions, Evals and every other tab of an agent are both's.
+are this one's; Home, Overview, Live, Sessions, Evals, Memory and every tab of an agent are both's.
 An admin opens a colleague's copy from here, never from the gateway's page
 ([worlds-and-teams.md](worlds-and-teams.md)).
 
