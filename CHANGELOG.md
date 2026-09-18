@@ -6,6 +6,12 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Added
+- **Pipeline ▸ Hold melody.** What the caller hears while a tool runs, on the phone and on the
+  web: the runtime's own melody, a file of yours (**Upload a file…**, converted by the gateway),
+  or off, with **Listen** before a caller does. It has its own doors (`…/pipeline/hold-audio`) and
+  is saved when chosen, never by the knobs' Save, which replaces their whole set.
+
 ### Changed
 - **`pinecall config --help` says the whole order**: `--profile`, then the org the project's
   package.json names, then the active profile — and what `--prod` does. It said the ▸ alone.
