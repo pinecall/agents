@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { gatewayFor } from "../../src/cli/credentials.js";
 import { CLOUD_URL } from "../../src/cli/env.js";
+import { chooseGateway, readConfig } from "../../src/cli/profiles.js";
 import { signup } from "../../src/cli/signup.js";
 import { written } from "./said.js";
 
@@ -140,6 +141,35 @@ describe("signing up", () => {
     expect(code).toBe(2);
     expect(err.text()).toContain("--org --email --person");
     expect(CLOUD_URL).toBe("https://box.pinecall.io");
+  });
+
+  // `signup <url>` took the URL or the cloud, and never the gateway `pinecall gateway <url>` had
+  // pointed this machine at — the one verb that ignored it. It resolves as `login` does now.
+  it("goes to the gateway this machine is pointed at when no URL is named, and says so", async () => {
+    chooseGateway(cloud.url, home);
+    const out = written();
+
+    const code = await signup(WHO, { out: out.stream, env: { PINECALL_HOME: home }, password: async () => A_PASSWORD });
+
+    expect(code).toBe(0);
+    expect(cloud.heard[0]?.body).toMatchObject({ org: "tienda-sur" });
+    expect(out.text()).toContain(`gateway  ${cloud.url}`);
+  });
+
+  // The key went to `credentials` alone, the file v1's CLI reads, and `config.json` — the one every
+  // verb reads now — never heard of the org: `pinecall whoami` after a sign-up knew no profile.
+  it("keeps the org as a profile in hand, with the keys of both worlds, as login does", async () => {
+    await signup([cloud.url, ...WHO], { out: written().stream, env: { PINECALL_HOME: home }, password: async () => A_PASSWORD });
+
+    const config = readConfig(home);
+    expect(config.active).toBe("tienda-sur");
+    expect(config.profiles["tienda-sur"]).toEqual({
+      url: cloud.url,
+      key: A_LAPTOPS_KEY,
+      keys: { production: A_KEY, sandbox: A_LAPTOPS_KEY },
+      org: "tienda-sur",
+      env: "sandbox",
+    });
   });
 
   it("says a gateway takes no sign-ups BEFORE asking for a password, and keeps nothing", async () => {
