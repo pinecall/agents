@@ -71,6 +71,21 @@ $ pinecall config
   tienda-sur  https://box.pinecall.io  tienda-sur · sandbox (and production)
 ```
 
+**A project names its org.** A package.json that says
+
+```json
+"pinecall": { "org": "cloudacio" }
+```
+
+makes every verb run in that directory, or any directory under it, take that org's profile —
+whichever one `pinecall use` last marked. Four checkouts of four orgs need no `use` between them.
+The nearest package.json that names an org wins; one that names none is passed over. When this
+machine holds no profile of that org the verb is refused (`this project is org cloudacio (…), and
+this machine holds no profile of it`) and is never handed the active profile, which is another
+org's. `--profile <name>` still wins over the project, and outside any project it is the active
+profile, as before. The first line says which: `gateway <url> · key from profile cloudacio · org
+cloudacio from <path>/package.json`.
+
 **Before there is a profile**, a verb goes to the gateway this machine is pointed at:
 `https://box.pinecall.io` until [`pinecall gateway <url>`](#gateway) says otherwise. That is where
 `login` knocks, and what the refusal `not signed in to <gateway>` names.

@@ -1,7 +1,7 @@
 /** Where the CLI is pointed and what opens the door: the one place that decides both, for every verb. */
 
 import { pinecallHome } from "./credentials.js";
-import { chosenGateway, profileFor, theChosenProfile } from "./profiles.js";
+import { choose, chosenGateway, readConfig, theChosenProfile, type ProjectOrg } from "./profiles.js";
 
 /** Pinecall's own cloud: where every verb goes until `pinecall gateway <url>` says otherwise. */
 export const CLOUD_URL = "https://box.pinecall.io";
@@ -17,6 +17,10 @@ export interface Found {
   url: string;
   apiKey: string | undefined;
   source: Source;
+  /** The package.json that chose the profile, when one did: printed, so nobody wonders why. */
+  project?: ProjectOrg;
+  /** The profile's name, when a project chose it. */
+  profile?: string;
 }
 
 /** A gateway with the key in hand: what a verb holds after `theDoor` answered. */
@@ -24,6 +28,8 @@ export interface Open {
   url: string;
   apiKey: string;
   source: Source;
+  project?: ProjectOrg;
+  profile?: string;
 }
 
 /**
@@ -34,7 +40,9 @@ export interface Open {
  * kept a key, an export from another project beat it, and a verb registered into another org in
  * another world with every line reading exactly the same.
  *
- * Now: the profile `--profile` names, or the active one. `pinecall config` prints which. A
+ * Now: the profile `--profile` names; else, inside a project whose package.json says
+ * `"pinecall": { "org": "<slug>" }`, that org's profile; else the active one. `pinecall config`
+ * prints which. A
  * machine with no browser writes one off stdin — `pinecall login --key-stdin` — so a key is never
  * in an environment every child process and every `ps` can read. `PINECALL_HOME` says where the
  * file is, and that is the only variable this file knows about.
@@ -43,12 +51,23 @@ export function doorFrom(
   env: NodeJS.ProcessEnv = process.env,
   home: string = pinecallHome(env),
   profile: string | undefined = theChosenProfile(),
+  from: string = process.cwd(),
 ): Found {
-  const chosen = profileFor(profile, home);
+  const config = readConfig(home);
+  const choice = choose(profile, config, from);
+  const chosen = choice.name === undefined ? undefined : config.profiles[choice.name];
+  // A project that names an org this machine holds no profile of is refused, never handed the
+  // active profile: that one is another org's, and running there is the accident this prevents.
+  if (chosen === undefined && choice.project !== undefined) {
+    return { url: chosenGateway(home) ?? CLOUD_URL, apiKey: undefined, source: "none", project: choice.project };
+  }
   // No profile yet: the gateway is whichever this machine was pointed at, and the cloud until
   // somebody points it elsewhere. A localhost default sent every first verb at a box that is not
   // running, and the refusal read as the CLI being broken.
   if (chosen === undefined) return { url: chosenGateway(home) ?? CLOUD_URL, apiKey: undefined, source: "none" };
+  if (choice.project !== undefined) {
+    return { url: chosen.url, apiKey: chosen.key, source: "profile", project: choice.project, profile: choice.name! };
+  }
   return { url: chosen.url, apiKey: chosen.key, source: "profile" };
 }
 
@@ -59,10 +78,11 @@ export function theDoor(
 ): Open | undefined {
   const found = doorFrom(env);
   if (found.apiKey === undefined) {
-    err.write(`${noKey(found.url)}\n`);
+    err.write(`${found.project === undefined ? noKey(found.url) : notThisOrg(found.project)}\n`);
     return undefined;
   }
-  return { url: found.url, apiKey: found.apiKey, source: found.source };
+  const { apiKey, ...rest } = found;
+  return { ...rest, apiKey };
 }
 
 /** What to say when this machine holds no key: the verb that fixes it, and where it would go. */
@@ -73,7 +93,19 @@ export function noKey(url: string): string {
   );
 }
 
+/** What to say when the project names an org this machine holds no profile of. */
+export function notThisOrg(project: ProjectOrg): string {
+  return (
+    `this project is org ${project.org} (${project.file}), and this machine holds no profile of it:`
+    + ` \`pinecall login\` as a member of ${project.org}, or \`--profile <name>\` for one already kept`
+    + " (`pinecall config` lists them)"
+  );
+}
+
 /** The first line a verb that connects prints: which gateway, and where its key was found. */
 export function doorLine(door: Open): string {
+  if (door.project !== undefined) {
+    return `gateway ${door.url} · key from profile ${door.profile ?? door.project.org} · org ${door.project.org} from ${door.project.file}`;
+  }
   return `gateway ${door.url} · key from ${door.source}`;
 }

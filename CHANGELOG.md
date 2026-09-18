@@ -6,6 +6,12 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Added
+- **A project names its org, and every verb inside it takes that org's profile.** `"pinecall": {
+  "org": "<slug>" }` in a package.json; the nearest one that names an org wins, `--profile` still
+  wins over it, and a machine holding no profile of that org is refused rather than handed the
+  active one. Outside a project nothing changes. Four checkouts of four orgs need no `pinecall use`.
+
 ### Removed
 - **`pinecall signup`.** A terminal no longer makes an org: whoever runs the gateway makes it and
   invites people, who arrive with `pinecall login`. The gateway's `POST /v1/signup` door is not
