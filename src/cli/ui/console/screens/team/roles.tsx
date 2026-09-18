@@ -9,8 +9,8 @@ import type { Member } from "./door";
 // opens. Said once, here; the doors themselves read the key's scopes, never the role's name.
 export const ROLE_OPENS: Record<Member["role"], { who: string; opens: string }> = {
   qa: { who: "Reads finished calls and the suites", opens: "calls · evals" },
-  supervisor: { who: "Sits beside a live call: listens, whispers, takes it over", opens: "calls · evals · supervise · talk" },
-  manager: { who: "Runs the floor and the org's accounts, never the agent's declaration", opens: "calls · evals · supervise · talk · numbers · keys · providers · usage · team" },
+  supervisor: { who: "Sits beside a live call: listens, whispers, takes it over", opens: "calls · evals · supervise · talk · memory" },
+  manager: { who: "Runs the floor and the org's accounts, never the agent's declaration", opens: "calls · evals · supervise · talk · memory · numbers · keys · providers · usage · team" },
   developer: { who: "Writes and runs the agent", opens: "app (in the sandbox only) · calls · talk · supervise · pipeline · knowledge · memory · evals" },
   admin: { who: "The org's owner", opens: "every door" },
 };
