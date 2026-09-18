@@ -381,7 +381,6 @@ prompt` must not pay for a websocket client.
 | `personas` | `list · show · try` the synthetic callers in `test/personas` | for `try` |
 | `knowledge` | `push [dir] --base <name>` · `list` · `drop <base>`: the folder of `*.md` sent whole to `PUT /v1/knowledge/{base}` | yes |
 | `memory` | `<contact>` · `forget <contact>`: one contact's facts, current first, and the right to be forgotten · `eval [golden.json] [--k n]`: every question of `memory/golden.json` asked of `recall`, each bringing its own facts, and the two figures a golden answers | yes |
-| `signup` | an org made on Pinecall's cloud (`POST /v1/signup`, `https://box.pinecall.io` by default), its first key kept where `login` keeps one | **no**: it is the verb that mints the first |
 | `login` | a link printed and opened; the page signs this terminal in and mints it a key of its own, proved at the gateway and kept in `~/.pinecall/credentials` (0600) | yes |
 | `whoami` | which gateway, which org, and **where this terminal's key came from** | yes |
 
@@ -451,8 +450,8 @@ What follows is the hosted page, where a key IS held. Everything about it is a c
   What the approval mints is the terminal's own key, and it never travels through this page. **It signs a person IN and never makes an org**: this page ships
   inside the runtime every self-hoster serves, so a registration form in it would be one flag away
   from open registration on somebody else's box, and making an org is not what a control plane for
-  an existing org is for. `POST /v1/signup` is knocked at by `pinecall signup` and by an API
-  caller, never by this page —
+  an existing org is for. `POST /v1/signup` is knocked at by an API caller alone — the CLI has no
+  `signup` verb since 0.4.0 — and never by this page —
   `test/cli/ui/console/the-console-never-makes-an-org.test.ts` pins that by reading the sources
   with the comments stripped. It is also why the runtime sends no CORS header: the one door this
   page opens with no key is `/v1/login`, on its own origin. `test/cli/ui/pages/the-key-is-never-in-the-page.test.ts` pins it:

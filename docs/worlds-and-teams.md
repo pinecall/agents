@@ -1,6 +1,6 @@
 # Two worlds, one team
 
-From the sign-up to the deploy, and what changes when there are five of you. The verbs are
+From the invitation to the deploy, and what changes when there are five of you. The verbs are
 [the-cli.md](the-cli.md); the doors are the runtime's `docs/protocol/gateway-api.md`; the model
 from the operator's side is the runtime's `docs/multi-tenancy.md`. This page is the same model as
 you walk it from a laptop.
