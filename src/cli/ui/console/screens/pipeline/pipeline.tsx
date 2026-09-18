@@ -6,6 +6,7 @@ import { useParams } from "react-router";
 import { Card, Empty, Page, PageHead } from "../../ui";
 import { Controls } from "./controls";
 import { greetingLine } from "./door";
+import { HoldMelody } from "./hold";
 import { DecidesLeg, HearsLeg, SpeaksLeg } from "./legs";
 import { Overrides } from "./overrides";
 import { usePipeline } from "./use-pipeline";
@@ -59,6 +60,7 @@ export function Pipeline(): ReactNode {
             error={error}
             onTurn={turn}
           />
+          <HoldMelody key={`hold-${agent}`} agent={agent} />
           <Overrides turned={report.overrides} />
         </>
       )}

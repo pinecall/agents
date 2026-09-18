@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 
-import { put, read, type Credentials } from "../../../shared/api";
+import { answered, doorUrl, headersFor, put, read, type Credentials } from "../../../shared/api";
 import { ProviderSchema } from "../../lib/catalogue";
 import { MEASURES } from "../../lib/metrics";
 
@@ -96,4 +96,46 @@ export function greetingLine(greeting: Greeting | null): string {
   if (greeting === null) return "";
   if (greeting.say !== null && greeting.say !== undefined) return greeting.say;
   return `the class improvises: ${greeting.reply ?? ""}`;
+}
+
+// The hold melody has doors of its own and is not a seventh knob: the overrides PUT replaces the
+// whole set, so a console that did not know about it would have silenced it by saving a voice.
+/** What an agent plays while a tool runs: the runtime's own melody, none, or a file of yours. */
+export const HoldAudioSchema = z.object({
+  played: z.enum(["default", "off", "custom"]),
+  name: z.string().nullable(),
+  seconds: z.number().nullable(),
+  sha256: z.string().nullable(),
+});
+export type HoldAudio = z.infer<typeof HoldAudioSchema>;
+
+/** Which melody this agent plays while a tool runs. */
+export async function readHoldAudio(credentials: Credentials, agent: string): Promise<HoldAudio> {
+  return HoldAudioSchema.parse(await read(credentials, `${door(agent)}/hold-audio`));
+}
+
+// The body IS the file: the gateway decodes whatever PyAV reads and converts it once, so the page
+// sends the bytes as they are and the name beside them — no form, no multipart.
+/** A file of yours as the melody. The answer is what the gateway kept. */
+export async function uploadHoldAudio(credentials: Credentials, agent: string, file: File): Promise<HoldAudio> {
+  const answer = await fetch(doorUrl(credentials, `${door(agent)}/hold-audio`, { name: file.name }), {
+    method: "PUT",
+    headers: { ...headersFor(credentials), "content-type": file.type || "application/octet-stream" },
+    body: file,
+  });
+  return HoldAudioSchema.parse(await answered(answer));
+}
+
+/** The runtime's melody back, or none at all. */
+export async function chooseHoldAudio(credentials: Credentials, agent: string, played: "default" | "off"): Promise<HoldAudio> {
+  return HoldAudioSchema.parse(await put(credentials, `${door(agent)}/hold-audio/played`, { played }));
+}
+
+// An <audio src> sends no header and a key never rides a URL, so the bytes are fetched with the
+// key and handed to the player as a blob — the way the session screen plays a recording.
+/** The file that plays, as a URL the page's player can open. The caller revokes it. */
+export async function holdAudioBlob(credentials: Credentials, agent: string): Promise<string> {
+  const answer = await fetch(doorUrl(credentials, `${door(agent)}/hold-audio/audio`), { headers: headersFor(credentials) });
+  if (!answer.ok) await answered(answer);
+  return URL.createObjectURL(await answer.blob());
 }

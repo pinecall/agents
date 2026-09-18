@@ -163,6 +163,7 @@ to the `pinecall run` holding the agent (the runtime's `docs/protocol/dev-verbs.
 | `POST /v1/evals/replay/{call}` · `POST /v1/evals/judge/{call}` | one session: re-check by code, attach a judge |
 | `GET /v1/evals/runs?agent=&limit=200` | Evals |
 | `GET /v1/agents/{slug}/pipeline` · `PUT …/pipeline/overrides` | Pipeline |
+| `GET`·`PUT …/pipeline/hold-audio` · `…/hold-audio/audio` · `PUT …/hold-audio/played` | Pipeline ▸ Hold melody |
 | `GET /v1/knowledge` · `DELETE /v1/knowledge/{base}` | Knowledge (push and golden go through `pinecall run`) |
 | `GET /v1/agents/{slug}/memory` · `DELETE /v1/memory/facts/{id}` · `GET/DELETE /v1/contacts/{contact}/memory` | Memory |
 | `GET/PUT /v1/agents/{slug}/widget` · `GET /widget/pinecall-widget.js` | Widget |
@@ -542,6 +543,11 @@ cannot show a pipeline the next call will not run.
   curates, else that vendor's own id), the tts model, and the greeting — *spoken verbatim as the
   call opens — said, never generated*. *An empty field gives the knob back to what the app
   declared.* Saving answers with the whole report, so the cards above are the gateway's answer.
+- **Hold melody** — *what the caller hears while a tool runs — phone and web alike, from the next
+  call*: what plays now (*A New Life*, the runtime's own; the name of a file of yours; or *Off*),
+  its length, **Listen**, **Upload a file…** (a wav, an mp3, an ogg or an m4a, up to 20 MB and five
+  minutes; *Converting…* while the gateway makes it Opus), **Use the default**, **Turn off**. Its
+  own doors (`…/pipeline/hold-audio`), saved the moment it is chosen and never by the form's Save.
 - **Turned**: what is overridden right now, apart from the form.
 
 ## 7b. Knowledge — `/a/:agent/knowledge`
