@@ -79,7 +79,7 @@ export function OrgMemory(): ReactNode {
   };
 
   return (
-    <Page width={1000} tight>
+    <Page width={1060} tight>
       <PageHead
         title="Memory"
         ledeWidth={640}

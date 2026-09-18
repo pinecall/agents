@@ -26,7 +26,7 @@ export const WORLD_OF: Record<Mode, World> = { hosted: "production", local: "san
 export type Group = "gateway" | "settings" | "box";
 
 /** The sidebar's icons, by name (ui/icon.tsx). */
-export type ScreenIcon = "home" | "grid" | "activity" | "list" | "chart" | "phone" | "key" | "plug" | "users" | "building" | "server" | "route" | "sliders" | "check";
+export type ScreenIcon = "home" | "grid" | "activity" | "list" | "chart" | "phone" | "key" | "plug" | "users" | "building" | "server" | "route" | "sliders" | "check" | "memory";
 
 /** One screen: where it is, what the sidebar calls it, which group it sits in, and which console has it. */
 export interface Screen {
