@@ -17,6 +17,7 @@ export const SCOPE_OF: Record<string, string> = {
   agents: "calls",
   live: "calls",
   "org-evals": "evals",
+  "org-memory": "memory",
   numbers: "numbers",
   keys: "keys",
   providers: "providers",

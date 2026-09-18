@@ -58,6 +58,7 @@ export const ORG_SCREENS: readonly Screen[] = [
   { key: "live", path: "live", name: "Live", in: BOTH, group: "gateway", icon: "activity" },
   { key: "sessions", path: "sessions", name: "Sessions", in: BOTH, group: "gateway", icon: "list" },
   { key: "org-evals", path: "evals", name: "Evals", in: BOTH, group: "gateway", icon: "check" },
+  { key: "org-memory", path: "memory", name: "Memory", in: BOTH, group: "gateway", icon: "memory" },
   { key: "usage", path: "usage", name: "Usage", in: HOSTED, group: "gateway", icon: "chart" },
   { key: "numbers", path: "numbers", name: "Numbers", in: HOSTED, group: "settings", icon: "phone" },
   { key: "phone", path: "phone", name: "Phone testing", in: LOCAL, group: "settings", icon: "phone" },

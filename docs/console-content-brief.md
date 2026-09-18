@@ -14,7 +14,7 @@ The same page is served in two places, and it is a different product in each:
 | looks at | production, and only production | the sandbox: the reader's own corner |
 | who uses it | whoever runs the org: the owner, a supervisor, qa | whoever writes the agent |
 | signing in | email and password — and *Continue with Google* when the box's operator wired it, *Continue with SSO* when the org did; a key kept by the browser | none: the sidecar signs what the page asks, the page holds no key, and there is no sign out |
-| sidebar ▸ Gateway (local: *Sandbox*) | Home `/`, Overview `/overview`, Live, Sessions, Evals, Usage | Home, Overview, Live, Sessions, Evals |
+| sidebar ▸ Gateway (local: *Sandbox*) | Home `/`, Overview `/overview`, Live, Sessions, Evals, Memory, Usage | Home, Overview, Live, Sessions, Evals, Memory |
 | sidebar ▸ Settings | Numbers, Keys, Providers, Team | Phone testing |
 | sidebar ▸ Box — a person the box made an **operator**, and nobody else | Organizations, Fleet, Routes, Box usage, Box settings | — |
 | outside the sidebar | `/cli`, `/invitations/<token>` | — |
@@ -310,6 +310,18 @@ scored at hang-up with nobody watching.
 - **Calls that did not hold** — forty at most: Caller · Agent · Score (`held/judged`, red) · Why
   (the judge's own `score.reason`, else `—`) · When; a row opens the session. Empty: *No call has
   been judged yet. Judging is turned on from Home.*, or *Every judged call held.*
+
+## 2d. Memory — `/memory`
+
+The whole org's, in both consoles: *What every agent carries between calls with the same caller —
+newest first, each fact with the agent whose call taught it, droppable one row at a time.* One card,
+**Remembered** (`GET /v1/memory`, `memory` scope), `N facts` (`N+` while there are more): a search
+box that asks the gateway (`q` matches the text, the caller and the category, across every page),
+then Caller · Agent (opens that agent's Memory tab) · Remembered (the fact, and its category after
+a dot) · Written · **Drop** (asks first; the rest of what memory keeps about that caller stays),
+and **Load more** while the gateway has another page. Empty: *No agent remembers anything about
+any caller yet. An agent that declares `memory` writes what it learns when a call hangs up.*, or
+*Nothing remembered matches.* A gateway with no database says it keeps no memory.
 
 ## 3. Live — `/live[/:call]`
 

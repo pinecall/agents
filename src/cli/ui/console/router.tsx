@@ -12,6 +12,7 @@ import { BoxFleet, BoxOrg, BoxOrgs, BoxRoutes, BoxSettings, BoxUsage, OperatorOn
 import { Calls } from "./screens/calls";
 import { Chat } from "./screens/chat";
 import { OrgEvals } from "./screens/org-evals";
+import { OrgMemory } from "./screens/org-memory";
 import { RoomChat } from "./screens/talk";
 import { Evals } from "./screens/evals";
 import { FloorLive, FloorSessions } from "./screens/floor";
@@ -39,6 +40,7 @@ const ORG: Record<string, ReactNode> = {
   live: <FloorLive />,
   sessions: <FloorSessions />,
   "org-evals": <OrgEvals />,
+  "org-memory": <OrgMemory />,
   numbers: <Numbers />,
   phone: <PhoneTesting />,
   keys: <Keys />,
