@@ -4,6 +4,8 @@ import { parseArgs } from "node:util";
 
 import { pinecallHome, writeGateway } from "./credentials.js";
 import { CLOUD_URL } from "./env.js";
+import { theGateway } from "./login.js";
+import { nameForOrg, readConfig, writeProfile, type Keys } from "./profiles.js";
 import type { Group } from "./groups.js";
 import { aLineOfStdin, typedInSilence } from "./secret.js";
 import { asked, discovered } from "./testing/gateway.js";
@@ -54,12 +56,14 @@ export const group: Group = {
 
   Makes the org with you as its admin. What it may do is whatever the people who run that
   gateway decided for a new one: on a box of your own, everything; on a hosted one, its trial.
-  The gateway is ${CLOUD_URL} unless another is named. The password is asked for without
-  echoing it, or read from one line of stdin with --password-stdin.
+  With no URL it is the gateway this machine is pointed at — ${CLOUD_URL} until \`pinecall gateway
+  <url>\` says otherwise — and the line above the result says which was assumed. The password is
+  asked for without echoing it, or read from one line of stdin with --password-stdin.
 
-  What this terminal keeps is the SANDBOX key, in ~/.pinecall/credentials (0600) under that
-  gateway, so \`pinecall run\` and \`pinecall chat\` work straight after and nothing has to be
-  exported: a laptop is where things are written. The console link it prints signs the browser
+  What this terminal keeps is a profile named after the org, in ~/.pinecall/config.json, with the
+  keys of both worlds and the SANDBOX one in hand, exactly as \`pinecall login\` leaves it: so
+  \`pinecall run\`, \`pinecall whoami\` and \`pinecall use\` work straight after and nothing has to
+  be exported. A laptop is where things are written. The console link it prints signs the browser
   in to production, which is where the org's numbers, people and usage are. What answers a
   production number is a key issued for a machine — \`pinecall keys issue\` — and never a laptop.
 
@@ -92,13 +96,16 @@ export async function signup(argv: string[], how: Making = {}): Promise<number> 
       "password-stdin": { type: "boolean", default: false },
     },
   });
-  const url = positionals[0] ?? CLOUD_URL;
+  const environment = how.env ?? process.env;
+  const home = pinecallHome(environment);
+  const { url, assumed } = theGateway(positionals[0], home);
   const missing = (["org", "email", "person"] as const).filter((one) => values[one] === undefined);
   if (missing.length > 0) {
     err.write(`${USAGE}\n`);
     err.write(`missing: ${missing.map((one) => `--${one}`).join(" ")}\n`);
     return 2;
   }
+  if (assumed !== undefined) out.write(`${assumed}\n`);
   const says = await discovered(url);
   if (!says.signup) {
     err.write(`${SHUT(url)}\n`);
@@ -121,10 +128,15 @@ export async function signup(argv: string[], how: Making = {}): Promise<number> 
     err.write(`${refusal(refused)}\n`);
     return 1;
   }
-  const environment = how.env ?? process.env;
   const laptop = await theSandboxKey(url, made.key);
   if (laptop === undefined) err.write(`${ONE_WORLD_ONLY(url)}\n`);
-  writeGateway(url, { api_key: laptop ?? made.key, org: made.org }, pinecallHome(environment));
+  // A profile named after the org, holding both worlds' keys, in hand: what `pinecall login`
+  // leaves, so `pinecall run`, `whoami` and `use` work straight after. And the row v1's CLI on
+  // this machine still reads, kept for one release as login keeps it.
+  const keys: Keys = laptop === undefined ? { production: made.key } : { production: made.key, sandbox: laptop };
+  const name = nameForOrg(made.slug, url, readConfig(home));
+  writeProfile(name, { url, key: laptop ?? made.key, keys, org: made.slug, env: laptop === undefined ? "production" : "sandbox" }, home);
+  writeGateway(url, { api_key: laptop ?? made.key, org: made.org }, home);
   out.write(`${madeLine(made, url)}\n`);
   out.write(`console  ${url.replace(/\/$/, "")}/?login=${encodeURIComponent(made.code)}   (opens within five minutes, once)\n`);
   return 0;

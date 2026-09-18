@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@pinecall/protocol':
-        specifier: ^0.2.0
-        version: 0.2.0
+        specifier: ^0.3.0
+        version: 0.3.0
       oxc-parser:
         specifier: ^0.148.0
         version: 0.148.0
@@ -452,8 +452,8 @@ packages:
   '@oxc-project/types@0.148.0':
     resolution: {integrity: sha512-Nm4s/jB+4FpFsPhWGEC4h7rzksesmtnMXomo6rCMcg/b8zLQuOziRgkCS1fxDCXOlJB/6Q8oABOZ/OP6RIPj9A==}
 
-  '@pinecall/protocol@0.2.0':
-    resolution: {integrity: sha512-cBEz4Hj3U57+yoo6vdBqHz27BT6ragMOd+wn8tdgeGPMHcnXI7GmqWxiDB6lzFEGg+2y26eoGZbvASI/NUuKQw==}
+  '@pinecall/protocol@0.3.0':
+    resolution: {integrity: sha512-oA1NfdhG6ACm5IQ7rdKuDJBAUj87bLnn3NG4uZtdfcXHXFiUHFmq14UL20QbJjYoG9rSWw4oIShcQDRBBgD0qQ==}
 
   '@pinojs/redact@0.4.0':
     resolution: {integrity: sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg==}
@@ -1378,7 +1378,7 @@ snapshots:
 
   '@oxc-project/types@0.148.0': {}
 
-  '@pinecall/protocol@0.2.0':
+  '@pinecall/protocol@0.3.0':
     dependencies:
       zod: 4.5.4
 

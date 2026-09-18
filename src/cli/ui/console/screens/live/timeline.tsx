@@ -4,7 +4,6 @@ import type { Entry, State } from "@pinecall/protocol";
 import { useEffect, useRef, type ReactNode } from "react";
 
 import { LogRow } from "./log-row";
-import { agentSaying } from "./saying";
 import { MemoryRow, SourcesRow } from "./lookup-rows";
 import { ConfirmRow, EventRow, QuietRow, StateRow, SupervisorRow } from "./marks";
 import { rowsOf, type Row } from "./timeline-rows";
@@ -16,8 +15,9 @@ const NEAR_THE_END_PX = 80;
 
 /** Every row of one call; `after` is what closes the list (a recording). The words being said are its last rows. */
 export function Timeline({ entries, state, after }: { entries: Entry[]; state: State; after?: ReactNode }): ReactNode {
-  // The reducer's `live.agent` is the last DELTA — one word — so the reply in flight is folded here.
-  const saying = agentSaying(entries);
+  // `agent.transcript` is a delta — one word, one token — and the reducer joins them: `live.agent`
+  // is the reply in flight so far (@pinecall/protocol 0.3.0).
+  const saying = state.live.agent;
   const list = useRef<HTMLDivElement>(null);
   const following = useRef(true);
 

@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { run, use } from "../../src/cli/config.js";
 import { writeGateway } from "../../src/cli/credentials.js";
 import { doorFrom } from "../../src/cli/env.js";
-import { activate, nameFor, profileFor, readConfig, writeProfile } from "../../src/cli/profiles.js";
+import { activate, chooseGateway, nameFor, profileFor, readConfig, writeProfile } from "../../src/cli/profiles.js";
 import { written } from "./said.js";
 
 const BOX = "https://box.pinecall.io";
@@ -138,6 +138,17 @@ describe("`pinecall config` and `pinecall use`", () => {
 
     expect(await run(["rm", "stg"], { out: written().stream, home })).toBe(0);
     expect(readConfig(home).active).toBe("box");
+  });
+
+  // `rm` rewrote the file from the two fields it knew, and the gateway this machine was pointed at
+  // went with the row: forgetting a stale profile sent every later verb back to the cloud.
+  it("leaves the gateway this machine is pointed at where it was", async () => {
+    chooseGateway(OTHER, home);
+    writeProfile("box", { url: BOX, key: A_KEY }, home);
+    writeProfile("stg", { url: OTHER, key: ANOTHER }, home);
+
+    expect(await run(["rm", "stg"], { out: written().stream, home })).toBe(0);
+    expect(readConfig(home).gateway).toBe(OTHER);
   });
 
   it("names the ones there are when asked to forget a word that is not one", async () => {

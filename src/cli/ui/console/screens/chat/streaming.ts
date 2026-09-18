@@ -7,10 +7,10 @@ import { useEffect, useRef, useState } from "react";
  * What the agent has said so far in each reply, by speech id, off the log's entries in order.
  *
  * A written call logs every model delta as its own `agent.transcript` — a piece of a word, not the
- * text so far — and the protocol's reducer keeps only the latest one in `state.live.agent`, which
- * is right for a caption and wrong for a bubble: the chat drew one fragment at a time and then
- * jumped to the whole turn (2026-09-16). So the chat adds them up itself. A reply that reached
- * `turn.agent` is settled; the turn's own text wins from then on.
+ * text so far. The protocol's reducer joins them into `state.live.agent`, but only for the reply
+ * in flight: a bubble needs every reply of the call, settled or not, by speech id, so the chat
+ * adds them up itself. A reply that reached `turn.agent` is settled; the turn's own text wins
+ * from then on.
  */
 export function repliesOf(entries: Entry[]): { streaming: Map<string, string>; settled: Set<string> } {
   const streaming = new Map<string, string>();

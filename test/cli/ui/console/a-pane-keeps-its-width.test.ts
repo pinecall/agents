@@ -1,3 +1,6 @@
+// A pane dragged wider or narrower is found as it was left: its width kept in localStorage under
+// `pinecall.pane.*`, per pane, and forgotten on request.
+
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { forgetWidth, keepWidth, keptWidth } from "../../../../src/cli/ui/console/lib/pane-widths";

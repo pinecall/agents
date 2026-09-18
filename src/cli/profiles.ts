@@ -186,7 +186,8 @@ export function forget(name: string, home: string = pinecallHome()): boolean {
   if (config.profiles[name] === undefined) return false;
   const { [name]: _gone, ...left } = config.profiles;
   const active = config.active === name ? undefined : config.active;
-  writeConfig({ ...(active === undefined ? {} : { active }), profiles: left }, home);
+  // The gateway this machine is pointed at is not a profile's: it stays.
+  writeConfig({ ...(active === undefined ? {} : { active }), ...(config.gateway === undefined ? {} : { gateway: config.gateway }), profiles: left }, home);
   return true;
 }
 
