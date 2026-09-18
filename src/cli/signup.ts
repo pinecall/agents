@@ -163,5 +163,5 @@ async function theSandboxKey(url: string, key: string): Promise<string | undefin
 /** The one line that says what now exists and that this terminal is holding its key. */
 export function madeLine(made: SignedUp, url: string): string {
   const who = made.name === null ? "its admin" : made.name;
-  return `created org ${made.slug} on ${url} — signed in as ${who}, sandbox key kept in ~/.pinecall/credentials`;
+  return `created org ${made.slug} on ${url} — signed in as ${who}, profile ${made.slug} kept in ~/.pinecall/config.json, sandbox in hand`;
 }

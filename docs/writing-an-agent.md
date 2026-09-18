@@ -117,6 +117,7 @@ diffed, never rendered, never in a snapshot:
 | `knowledge` | one file, its path relative to the class's own file, sent whole: cached ahead of everything |
 | `docs` | the knowledge base retrieved per turn, **by the name it was pushed under** |
 | `memory` | what to remember about a caller across calls, and what never to |
+| `hangup` | `{ when: "…" }` — the model may end the call itself, and when, in your words (`{}` leaves the wording to livekit's own `end_call`). A class that declares nothing cannot hang up: only the caller and a supervisor end the call |
 
 **Everything else you put on the instance is state**, and so is every getter — `get identified()
 { return !!this.patient }` is exactly what a tool's `when` asks about. Two consequences worth

@@ -55,16 +55,19 @@ production because of whichever key was active is the accident this exists to pr
 
 ```console
 $ pinecall signup --org tienda-sur --name "Tienda Sur" --email nico@tiendasur.uy --person "Nico"
+gateway  https://box.pinecall.io   (the default — `pinecall gateway <url>` for your own box)
 Password (12 characters at least):
-created org tienda-sur on https://box.pinecall.io — signed in as Nico, sandbox key kept in ~/.pinecall/credentials
+created org tienda-sur on https://box.pinecall.io — signed in as Nico, profile tienda-sur kept in ~/.pinecall/config.json, sandbox in hand
 console  https://box.pinecall.io/?login=lc_…   (opens within five minutes, once)
 ```
 
-1. **The alta.** `signup` makes the org with you as its admin and keeps this laptop's
-   **sandbox** key, so the next verb works: `pinecall run` holds the agent in your corner,
-   `pinecall chat` reaches it. The console link signs the browser in to **production**, where the
-   org's numbers, people and usage are — Stripe's split, if you know it: the dashboard on live, the
-   CLI on test.
+1. **The alta.** `signup` goes to the gateway this machine is pointed at — the cloud, until
+   `pinecall gateway <url>` says otherwise — makes the org with you as its admin, and keeps a
+   **profile named after the org** with both worlds' keys and the **sandbox** one in hand, exactly
+   as `login` would, so the next verb works: `pinecall run` holds the agent in your corner,
+   `pinecall chat` reaches it, `pinecall config` lists it. The console link signs the browser in to
+   **production**, where the org's numbers, people and usage are — Stripe's split, if you know it:
+   the dashboard on live, the CLI on test.
 2. **Write and run.** Everything in [tutorial.md](tutorial.md) happens here, in the sandbox. Your
    memory, your base, your calls — and `pinecall run --serve` puts them on `http://localhost:4100`.
 3. **The key the box runs on.** `pinecall keys issue --label "prod server"` mints a key for a

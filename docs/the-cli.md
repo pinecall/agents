@@ -45,12 +45,15 @@ path end to end, with every output under it.
 | [`supervise`](#supervise) | listen in on a live call and move on it | yes |
 | [`keys`](#keys) | the API keys this org's machines run on: issue, list, revoke | yes |
 | [`providers`](#providers) | every vendor this build runs, and the keys this org brought | yes |
-| [`signup`](#signup) | an org on Pinecall's cloud, and its first key kept here | no, it makes one |
+| [`callbacks`](#callbacks) | the numbers people left when every seat was taken | yes |
+| [`signup`](#signup) | an org on Pinecall's cloud, and its first key kept here as a profile | no, it makes one |
 | [`gateway`](#gateway) | which gateway this machine talks to; the cloud until you point it elsewhere | no |
-| [`login`](#login) · [`whoami`](#whoami) | the key, once, and which one is being used | yes |
+| [`login`](#login) | sign in through a browser: a profile per org, both worlds' keys | yes |
+| [`config`](#config--use) · [`use`](#config--use) | the profiles this machine holds, and which org and world the next verb goes to | no |
+| [`whoami`](#whoami) | which gateway, which org, which world, and where the key came from | yes |
 
 Declared and not written: `new`, `g`, `observe`, `costs`, `call`, `tokens`, `agents`,
-`deploy`. Typing one prints what it *will* be and exits 0 — a person who types a verb deserves
+`deploy`. Typing one prints `<verb> is not built yet: <what it is for>` and exits 0 — a person who types a verb deserves
 better than "unknown command". `src/cli/groups.ts` is the one place that says which half of the
 CLI is still a design, and a verb leaves that table in the commit that writes it.
 
@@ -59,14 +62,19 @@ CLI is still a design, and a verb leaves that table in the commit that writes it
 ## Where the gateway and the key come from
 
 **One profile.** `~/.pinecall/config.json` holds the gateways this machine knows, by name, and
-which one is in hand; `pinecall login` writes one, `pinecall use` moves the mark, `--profile <name>`
-points one command somewhere else. Both questions — which gateway, which key — are that one answer.
+which one is in hand; `pinecall login` writes one per org the person belongs to, `pinecall use`
+moves the mark, `--profile <name>` points one command somewhere else. Both questions — which
+gateway, which key — are that one answer.
 
 ```console
 $ pinecall config
-▸ box      https://box.pinecall.io  pinecall · sandbox
-  local    http://127.0.0.1:8080
+▸ clinica     https://box.pinecall.io  clinica · sandbox (and production)
+  tienda-sur  https://box.pinecall.io  tienda-sur · sandbox (and production)
 ```
+
+**Before there is a profile**, a verb goes to the gateway this machine is pointed at:
+`https://box.pinecall.io` until [`pinecall gateway <url>`](#gateway) says otherwise. That is where
+`login` and `signup` knock, and what the refusal `not signed in to <gateway>` names.
 
 There is nothing to export and no order to remember. A machine with no browser — CI, a container —
 writes a profile off stdin instead: `pinecall login --key-stdin <url> < key`, with `PINECALL_HOME`
@@ -86,8 +94,8 @@ PINECALL` is the first thing to run when a door refuses you and will not say why
 
 | file | what it holds |
 |---|---|
-| `config.json` | `{ "active": …, "profiles": { "<name>": { url, key, org, env, calling } } }` — every verb reads this one. `calling` is the phone `pinecall line from` kept for that gateway |
-| `credentials` | `{ "api_key": …, "gateways": { "<url>": { api_key, org, logged_in_at } } }`, written beside the profile for v1's CLI on the same machine and read once, to seed `config.json`. The top-level `api_key` is v1's and is never touched |
+| `config.json` | `{ "active": …, "gateway": …, "profiles": { "<name>": { url, key, keys: { sandbox, production }, org, env, calling } } }` — every verb reads this one. `gateway` is what `pinecall gateway <url>` wrote, and is absent on a machine on the cloud; `key` is the one in hand, `keys` both worlds' as the login minted them, `env` the world `key` opens; `calling` is the phone `pinecall line from` kept for that profile |
+| `credentials` | `{ "api_key": …, "gateways": { "<url>": { api_key, org, logged_in_at } } }`, written beside the profile by `login` and `signup` for v1's CLI on the same machine, and read once, to seed `config.json`. The top-level `api_key` is v1's and is never touched |
 
 The directory is `0700` and every file `0600`. A key is never printed, never logged, and never put
 in a URL.
@@ -237,11 +245,15 @@ without the console going away. A port held by anything else is stepped past (41
 
 Which screens this console has and which the gateway's has is one table in the console's source
 (`src/cli/ui/console/lib/mode.ts`): running the org — numbers, keys, providers, the team, usage —
-is the gateway's; **Chat**, running a suite and **Phone testing** are this one's. An admin opens a
-colleague's copy from here, never from the gateway's page ([worlds-and-teams.md](worlds-and-teams.md)).
+and the box's own screens are the gateway's; **Dev chat**, running a suite and **Phone testing**
+are this one's; Home, Overview, Live, Sessions, Evals and every other tab of an agent are both's.
+An admin opens a colleague's copy from here, never from the gateway's page
+([worlds-and-teams.md](worlds-and-teams.md)).
 
-A production key is refused, in a sentence that says where production is watched; a machine with
-no browser prints the URL and `--no-open` says not to try.
+A production key is refused, in a sentence that says where production is watched and names
+`pinecall use <profile>` for a sandbox one; a machine with no browser prints the URL and
+`--no-open` says not to try. In a checkout the console has to be bundled first (`scripts/build`):
+until it is, the verb says so and exits 2.
 
 ## `line`
 
@@ -606,7 +618,7 @@ fingerprint that is not this org's is refused as one that is nobody's.
 ## `providers`
 
 ```
-pinecall providers                  # every vendor this build runs
+pinecall providers [--does llm|stt|tts]   # every vendor this build runs
 pinecall providers add <vendor>     # the key on stdin, never on the command line
 pinecall providers rm <vendor>
 pinecall providers list             # only the ones this org brought
@@ -672,26 +684,38 @@ The one verb that needs no key, because it is the one that gets you the first. I
 with you as its admin — what the org may do is whatever the people who run that gateway decided for
 a new one: on a box of your own, everything; on a hosted one, its trial. The gateway answers a
 **production** key; a terminal is a laptop, so the verb asks for the same person's **sandbox**
-key and keeps that one where `login` keeps one — `run` and `chat` work straight after, in a world
-of your own ([worlds-and-teams.md](worlds-and-teams.md)). The console link it prints signs the
-browser in to production, where the org's numbers, people and usage are. The
-gateway is `https://box.pinecall.io` unless another is named. The password is asked for without
-echoing it, or read from one line of stdin with `--password-stdin`; it is never a flag, because a
-flag is shell history.
+key too (`POST /v1/login/env`) and keeps **a profile named after the org** in
+`~/.pinecall/config.json`, holding both worlds' keys with the sandbox one in hand — exactly what
+`login` leaves, so `run`, `chat`, `whoami` and `use` work straight after, in a world of your own
+([worlds-and-teams.md](worlds-and-teams.md)). When the gateway does not mint the sandbox key, the
+production one is kept alone and a line on stderr says that `run` needs the other. The console
+link it prints signs the browser in to production, where the org's numbers, people and usage are.
+**With no URL it is the gateway this machine is pointed at** — `https://box.pinecall.io` until
+[`pinecall gateway <url>`](#gateway) says otherwise — and the line above the result says which was
+assumed, as `login` does. The password is asked for without echoing it, in the gateway's own rule
+(the minimum it publishes at `/.well-known/pinecall`), or read from one line of stdin with
+`--password-stdin`; it is never a flag, because a flag is shell history. `--org`, `--email` and
+`--person` are required, and a missing one is named before anything is asked.
 
 ```console
 $ pinecall signup --org tienda-sur --name "Tienda Sur" --email ana@tiendasur.uy --person "Ana"
+gateway  https://box.pinecall.io   (the default — `pinecall gateway <url>` for your own box)
 Password (12 characters at least):
-created org tienda-sur on https://box.pinecall.io — signed in as Ana, sandbox key kept in ~/.pinecall/credentials
+created org tienda-sur on https://box.pinecall.io — signed in as Ana, profile tienda-sur kept in ~/.pinecall/config.json, sandbox in hand
 console  https://box.pinecall.io/?login=lc_…   (opens within five minutes, once)
+
+$ pinecall config
+▸ tienda-sur  https://box.pinecall.io  tienda-sur · sandbox (and production)
 
 $ pinecall whoami
 gateway https://box.pinecall.io · key from profile
-org org_4ad95a171a72 · key k_8dcc… · sandbox · cli
+org tienda-sur · key k_8dcc… · sandbox · cli
 ```
 
-Nothing this shell exports can point a verb anywhere else: the profile is the whole answer, and
-`pinecall config` says which one is in hand.
+The `credentials` row the last line names is written too, for v1's CLI on the same machine
+([`~/.pinecall/`](#pinecall)); what every verb of this CLI reads is the profile. Nothing this shell
+exports can point a verb anywhere else: the profile is the whole answer, and `pinecall config` says
+which one is in hand.
 
 The verb asks `GET /.well-known/pinecall` before anything else, so a gateway that opens no sign-up
 is named **before** you type a password rather than after: its operator opens them with
@@ -728,15 +752,10 @@ signed in to is a profile, and `pinecall use <org>` is how you move between thos
 the gateway you have not signed in to yet. A URL typed on `pinecall login <url>` still wins, for
 that one command.
 
-## `login` · `config` · `use` · `whoami`
+## `login`
 
 ```
 pinecall login [gateway-url] [--as <profile>] [--key-stdin]
-pinecall gateway [url]
-pinecall config
-pinecall config rm <name>
-pinecall use <org> [sandbox|production]
-pinecall whoami
 ```
 
 `login` **prints a link and opens it**. You sign in there — in a browser, where a password belongs,
@@ -769,7 +788,27 @@ the org, each with the key of **both worlds** — the gateway mints the rest fro
 (`POST /v1/login/org`, `POST /v1/login/env`), so there is no second login for a second org and none
 to look at production. Every key is proved at `/v1/whoami` before it is written; the org signed in
 to is the active one, in the sandbox. `--as <name>` keeps ONE profile under a name of yours, which
-is what a machine's key wants (`--key-stdin`).
+is what a machine's key wants (`--key-stdin`). A second gateway whose org has a slug this file
+already holds is kept as `<slug>@<host>`.
+
+**The key in hand after a login is the sandbox one.** `pinecall run` and `pinecall chat` answer in
+a world of your own and never in the one your customers call — and it is watched from this
+machine too, on [`pinecall serve`](#serve) ([worlds-and-teams.md](worlds-and-teams.md)).
+
+`--key-stdin` reads a **key** from one line of stdin instead, for a machine: a server, a CI job, a
+container. That is what `pinecall keys issue` mints, and it writes the same profile — so a machine
+and a person hold their key the same way, in a 0600 file read once, and not in an environment
+every child process and every `ps` can read. `PINECALL_HOME` says where that file goes. A machine's
+key names nobody, so the profile holds the one world it opens.
+
+## `config` · `use`
+
+```
+pinecall config
+pinecall config rm <name>
+pinecall use <org>
+pinecall use <org> <sandbox|production>
+```
 
 ```console
 $ pinecall config
@@ -787,25 +826,34 @@ $ pinecall config rm tienda-sur
 forgot tienda-sur
 ```
 
-Moving is a line in a file and never a trip to the gateway. **In production a person LOOKS** —
-`sessions`, `numbers`, `keys`, `providers`, `supervise` — **and in the sandbox they RUN**: a
-person's key never opens `app` in production, so no laptop answers the org's numbers by accident.
-What runs there is a machine's key ([`keys issue`](#keys)) on the box.
+Moving is a line in a file and never a trip to the gateway: `use <org>` makes that profile the
+active one, `use <org> <world>` puts that world's key in hand as well, and a profile with no key
+for that world is refused — `pinecall login` again keeps both. A world is `sandbox` or `production`
+and nothing else. `pinecall use` with nothing after it prints the usage. **In production a person
+LOOKS** — `sessions`, `numbers`, `keys`, `providers`, `supervise` — **and in the sandbox they
+RUN**: a person's key never opens `app` in production, so no laptop answers the org's numbers by
+accident. What runs there is a machine's key ([`keys issue`](#keys)) on the box.
 
-`config` prints no key. What a listing may say about one is that it is there. `config rm` takes a
-row out — a gateway that has moved, a key that was revoked — and takes the active mark with it
-rather than leaving it pointing at a row that is gone. It forgets the row here and nothing else:
-the key itself is stopped from the Keys screen, and a row left behind is a key somebody will trust
-tomorrow and a refusal they will read as the gateway's fault.
+`config` prints no key. What a listing may say about one is that it is there; the org and the
+world beside each name are what the login wrote down, and *(and production)* is a profile holding
+both worlds' keys. With no profile at all it prints ``no gateway yet: `pinecall login` ``. `config rm`
+takes a row out — a gateway that has moved, a key that was revoked — and takes the active mark with
+it rather than leaving it pointing at a row that is gone. **It keeps the gateway this machine is
+pointed at** ([`pinecall gateway`](#gateway)), and forgets nothing else: the key itself is stopped
+from the Keys screen, and a row left behind is a key somebody will trust tomorrow and a refusal
+they will read as the gateway's fault. A name this file does not hold is refused, and the refusal
+lists the ones it does.
 
-**The key in hand after a login is the sandbox one.** `pinecall run` and `pinecall chat` answer in
-a world of your own and never in the one your customers call — and it is watched from this
-machine too, on [`pinecall serve`](#serve) ([worlds-and-teams.md](worlds-and-teams.md)).
+## `whoami`
 
-`--key-stdin` reads a **key** from one line of stdin instead, for a machine: a server, a CI job, a
-container. That is what `pinecall keys issue` mints, and it writes the same profile — so a machine
-and a person hold their key the same way, in a 0600 file read once, and not in an environment
-every child process and every `ps` can read. `PINECALL_HOME` says where that file goes.
+```
+pinecall whoami
+```
+
+The gateway every connecting verb would talk to and where its key came from, then what that
+gateway says the key is: the org (its slug, or its id when the gateway carries none), the key's id,
+the world it opens and the label it was issued under. The key itself is neither printed nor sent
+anywhere else.
 
 ```console
 $ pinecall whoami
@@ -923,6 +971,8 @@ code can call — over HTTP, in any language, with the same key.
 | `callbacks` | `GET /v1/callbacks[?agent=&after=]` |
 | `line` | `GET`·`POST`·`DELETE /v1/agents/{slug}/line`, `PUT`·`DELETE /v1/line/from` |
 | `serve` | every door the console asks, forwarded as the page sent it with the profile's key: `GET /v1/whoami`, `/v1/agents`, the logs, `…/dev/*`, `GET /v1/line/numbers` |
-| `login` | `POST /v1/login/pairings`, `GET …/{code}/key` — then `GET /v1/whoami` to prove what it got |
+| `login` | `POST /v1/login/pairings`, `GET …/{code}/key` — then `GET /v1/whoami` to prove what it got, `GET /v1/login/orgs` for the person's orgs, `POST /v1/login/org` for the key in each, `POST /v1/login/env` for the other world's |
+| `signup` | `GET /.well-known/pinecall` (is the door open, and the password's rule), `POST /v1/signup`, then `POST /v1/login/env` for the sandbox key |
 | `whoami` | `GET /v1/whoami` |
+| `gateway` · `config` · `use` | none. They read and write `~/.pinecall/config.json` and nothing else |
 | `prompt` | none. It is the one verb that needs no gateway and no key |
