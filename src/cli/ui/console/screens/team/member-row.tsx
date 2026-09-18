@@ -24,12 +24,15 @@ export function MemberRow({
   onResend,
   onReset,
   onRemove,
+  yourself = false,
 }: {
   member: Member;
   onChange: (said: Change) => Promise<void>;
   onResend: () => Promise<void>;
   onReset: () => Promise<void>;
   onRemove: () => Promise<void>;
+  /** The row of the person looking: nobody disables themselves, and the gateway refuses it too. */
+  yourself?: boolean;
 }): ReactNode {
   const [removing, setRemoving] = useState(false);
   const [editing, setEditing] = useState<"role" | "agents" | null>(null);
@@ -121,9 +124,11 @@ export function MemberRow({
                 <TextAction disabled={busy} onClick={() => void act(onReset)} title="A one-use link to choose a new password">
                   Reset password
                 </TextAction>
-                <TextAction disabled={busy} onClick={() => void act(() => onChange({ status: "disabled" }))}>
-                  Disable
-                </TextAction>
+                {!yourself && (
+                  <TextAction disabled={busy} onClick={() => void act(() => onChange({ status: "disabled" }))}>
+                    Disable
+                  </TextAction>
+                )}
               </>
             )}
             {member.status === "disabled" && (

@@ -5,6 +5,8 @@ import { useSearchParams } from "react-router";
 
 import { GatewayError } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
+import { meIn } from "../../lib/corners";
+import { useWhoami } from "../../lib/whoami";
 import { Button, Card, CardHead, Empty, Field, Input, Page, PageHead, Refused, Select, TableHead, Tabs, TextAction } from "../../ui";
 import { change, invite, readMembers, removeMember, resetLink, ROLES, type Invited, type Member } from "./door";
 import { COLUMNS, MemberRow } from "./member-row";
@@ -28,6 +30,7 @@ const TABS: readonly { tab: Tab; name: string }[] = [
  */
 export function Team(): ReactNode {
   const credentials = useCredentials();
+  const me = meIn(useWhoami());
   const [params, setParams] = useSearchParams();
   const tab: Tab = TABS.some((one) => one.tab === params.get("tab")) ? (params.get("tab") as Tab) : "people";
   const [members, setMembers] = useState<Member[] | null>(null);
@@ -149,6 +152,7 @@ export function Team(): ReactNode {
                       }}
                       onReset={() => reset(member.id)}
                       onRemove={() => remove(member.id)}
+                      yourself={member.id === me}
                     />
                   ))}
                 </>
