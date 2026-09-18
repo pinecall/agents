@@ -6,6 +6,10 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Changed
+- **`pinecall config --help` says the whole order**: `--profile`, then the org the project's
+  package.json names, then the active profile — and what `--prod` does. It said the ▸ alone.
+
 ## 0.4.0 — The project names its org, `--prod` looks at production, and no signup
 
 ### Added

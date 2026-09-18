@@ -14,9 +14,12 @@ export const group: Group = {
 
   One file — ~/.pinecall/config.json — holds them, and \`pinecall login\` writes one per ORG you
   belong to, named after the org, with your key in both of its worlds (\`--as <name>\` and a
-  machine's key keep ONE profile, holding the key in hand). Nothing is exported, and there is no
-  order of precedence to remember: the profile with the ▸ is the one every verb uses until
-  \`pinecall use\` moves it, and \`--profile <name>\` on any one verb sends that command elsewhere.
+  machine's key keep ONE profile, holding the key in hand). Nothing is exported, and the order is
+  short: \`--profile <name>\` on any one verb sends that command there;
+  else, inside a project whose package.json says \`"pinecall": { "org": "<slug>" }\`, every verb
+  takes that org's profile, and is refused when this machine holds none of it; else the profile
+  with the ▸, until \`pinecall use\` moves it. \`--prod\` on any one verb takes that profile's
+  production key for that command and keeps nothing: the next one is in the sandbox again.
 
   It prints no key. What a listing may say about one is that it is there, and its fingerprint is
   the Keys screen's business — not a prefix, not a hint. The org and the world beside each name
