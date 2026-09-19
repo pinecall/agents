@@ -8,7 +8,6 @@ import { EVERY_MS, isLive } from "../../lib/use-agent-sessions";
 import { ago, duration, elapsed, whoOn } from "../../lib/format";
 import { useOrg } from "../../lib/org";
 import { Dot, Input, Pill, usePane } from "../../ui";
-import { SimulateForm } from "../calls/simulate-form";
 import { Live } from "../live";
 import { matches } from "../sessions/search";
 import "./live.css";
@@ -22,11 +21,10 @@ const ROWS = 80;
  * in it, the newest live call is, and failing that the newest call.
  */
 export function FloorLive(): ReactNode {
-  const { lines, agents, floorError } = useOrg();
+  const { lines, floorError } = useOrg();
   const chosen = useParams()["call"];
   const [search, setSearch] = useSearchParams();
   const only = search.get("agent");
-  const [simulating, setSimulating] = useState(false);
   const [query, setQuery] = useState("");
   const pane = usePane({ name: "live.calls", initial: 300, min: 220, max: 520, side: "left" });
   const now = useNow();
@@ -71,17 +69,6 @@ export function FloorLive(): ReactNode {
               >
                 every agent
               </button>
-            </div>
-          )}
-          <button type="button" className="fl-simulate" onClick={() => setSimulating(!simulating)} aria-expanded={simulating}>
-            Simulate a caller
-          </button>
-          {simulating && (
-            <div className="fl-sim">
-              <SimulateForm
-                agents={only !== null ? [only] : agents.map((one) => one.slug)}
-                onClose={() => setSimulating(false)}
-              />
             </div>
           )}
         </div>

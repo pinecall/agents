@@ -26,6 +26,7 @@ import { Memory } from "./screens/memory";
 import { Numbers, PhoneTesting } from "./screens/numbers";
 import { Pipeline } from "./screens/pipeline";
 import { Session, Sessions } from "./screens/sessions";
+import { Simulations } from "./screens/simulations";
 import { Settings } from "./screens/settings";
 import { Talk } from "./screens/talk";
 import { Terminal } from "./screens/terminal";
@@ -42,6 +43,7 @@ const ORG: Record<string, ReactNode> = {
   agents: <Agents />,
   live: <FloorLive />,
   sessions: <FloorSessions />,
+  simulations: <Simulations />,
   "org-evals": <OrgEvals />,
   "org-memory": <OrgMemory />,
   "org-docs": <OrgDocs />,
@@ -83,7 +85,7 @@ const AGENT: Record<string, ReactNode> = {
 // screen one level deeper.
 const DEEPER: Record<string, ReactNode> = { devchat: <Chat />, calls: <Calls />, sessions: <Session /> };
 // The org's: a call watched on the floor, a session read whichever agent handled it.
-const ORG_DEEPER: Record<string, ReactNode> = { live: <FloorLive />, sessions: <Session /> };
+const ORG_DEEPER: Record<string, ReactNode> = { live: <FloorLive />, sessions: <Session />, simulations: <Simulations /> };
 
 function routesOf(table: readonly Screen[], elements: Record<string, ReactNode>): RouteObject[] {
   return screensOf(table, MODE, true).flatMap((screen): RouteObject[] => {

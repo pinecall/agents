@@ -1,0 +1,81 @@
+/* Simulations: the form down the left pane, the simulated call beside it with its ear on top. */
+
+.sims {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: var(--pane, 340px) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.sims-side {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 14px;
+  border-right: 1px solid var(--line);
+  background: var(--ground-side);
+}
+
+.sims-side .sim {
+  box-shadow: none;
+}
+
+.sims-note {
+  margin: 0;
+  padding: 0 2px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-3);
+}
+
+.sims-nothing {
+  display: grid;
+  place-items: center;
+  padding: 40px;
+  font-size: 13.5px;
+  color: var(--ink-3);
+  text-align: center;
+}
+
+.sims-watch {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sims-watch > .lv {
+  flex: 1;
+  min-height: 0;
+}
+
+.sims-ear {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--ground-4);
+  font-size: 13px;
+}
+
+.sims-ear-said {
+  color: var(--ink-2);
+}
+
+.sims-ear-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ink-4);
+}
+
+.sims-ear-dot-on {
+  background: var(--green-dot);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--green-dot) 20%, transparent);
+}

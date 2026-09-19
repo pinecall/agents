@@ -348,7 +348,7 @@ any caller yet. An agent that declares `memory` writes what it learns when a cal
 The floor. Three columns: the calls, the one watched, and what that call holds.
 
 **Left** (a pane a person drags, `live.calls`). `N calls up` · `N listed` (*re-asked every 3 s*); a
-search box, *Search a number, agent or outcome*; **Simulate a caller**; then the org's calls under
+search box, *Search a number, agent or outcome*; then the org's calls under
 *On a call now* and *Recent* — the live ones, and eighty ended ones at most — who is on (name, else
 the number as people dial it, else the visitor id), and `m:ss` counting up, the status word while
 it is not active yet, or `ended`. `?agent=` keeps one agent's and says so, with *every agent* to
@@ -506,6 +506,17 @@ path written, and its notes). Then, in an auditor's order:
 
 While it reads: *Reading <call>…*; nothing there: *No call <call> in the log.*; a refusal in the
 gateway's words.
+
+## 5b. Simulations — `/simulations[/:call]`
+
+Under Sessions in the sidebar, gated by `evals`. Two columns. **Left** (a pane, `simulations.form`):
+the simulate form — Agent, Persona (its goal under it), **Max turns** (1–30, the most the caller
+takes before it stops), Voice (on by default here), Judge at hang-up, Noisy line — and *Call the
+agent*. **Right**: the call started, as Live draws it, with an ear on top. The URL names the call,
+`?agent=` and, for a spoken one, `spoken=1`, so a reload lands on it. A spoken call is joined as
+soon as its room opens (the seat is asked again every second until it is) and heard at once, the
+caller and the agent: *Listening live · the caller and the agent* with Mute/Unmute. Empty: *Pick an
+agent and a persona, then call. The simulation opens here, and you hear it live.*
 
 ## 6. Talk — `/a/:agent/talk`, and Chat — `/a/:agent/chat`
 

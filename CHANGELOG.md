@@ -6,6 +6,11 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Changed
+- **Simulations is a screen of its own, under Sessions.** The Simulate button left the Live floor:
+  the screen starts a simulation and stays on it, and a spoken one is heard live, the caller and
+  the agent, the moment its room opens. Voice starts on there, and the turns field is *Max turns*.
+
 ### Fixed
 - **A settings write no longer erases the corner it lands in.** The gateway writes the org's own
   corner for a key that holds none — a production token, a person acting in production, a CI key —

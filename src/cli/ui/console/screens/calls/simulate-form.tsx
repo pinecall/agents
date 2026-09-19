@@ -27,19 +27,26 @@ export function SimulateForm({
   agent: fixed,
   agents,
   onClose,
+  onStarted,
+  spoken,
 }: {
   /** The agent to call, when the screen is one agent's. */
   agent?: string | undefined;
   /** The agents to choose from, when the screen is the org's floor. */
   agents?: readonly string[] | undefined;
-  onClose: () => void;
+  /** Where the form closes to; a form that is the screen's own has nowhere to close to. */
+  onClose?: (() => void) | undefined;
+  /** Told the call's id when it starts, instead of going to it on the floor. */
+  onStarted?: ((call: string, agent: string, spoken: boolean) => void) | undefined;
+  /** Start on a spoken line: the screen that is for listening opens with the voice on. */
+  spoken?: boolean | undefined;
 }): ReactNode {
   const credentials = useCredentials();
   const navigate = useNavigate();
   const [agent, setAgent] = useState(fixed ?? agents?.[0] ?? "");
   const [roster, setRoster] = useState<Roster | null>(null);
   const [persona, setPersona] = useState("");
-  const [voice, setVoice] = useState(false);
+  const [voice, setVoice] = useState(spoken === true);
   const [judge, setJudge] = useState(false);
   const [turns, setTurns] = useState(TURNS);
   const [noise, setNoise] = useState(NOISE_DB);
@@ -47,6 +54,12 @@ export function SimulateForm({
   const [spoiled, setSpoiled] = useState(false);
   const [starting, setStarting] = useState(false);
   const [refused, setRefused] = useState<string | null>(null);
+
+  // The org's agents arrive after the page does: the first one is picked once there is one.
+  const first = agents?.[0] ?? "";
+  useEffect(() => {
+    if (agent === "" && first !== "") setAgent(first);
+  }, [agent, first]);
 
   useEffect(() => {
     if (agent === "") return;
@@ -84,8 +97,12 @@ export function SimulateForm({
         turns,
         ...(voice && spoiled ? { background_noise: noise, packet_loss: loss } : {}),
       });
-      onClose();
-      void navigate(`/live/${call}`);
+      if (onStarted !== undefined) {
+        onStarted(call, agent, voice);
+      } else {
+        onClose?.();
+        void navigate(`/live/${call}`);
+      }
     } catch (failed) {
       setRefused(failed instanceof GatewayError ? failed.message : String(failed));
     } finally {
@@ -97,9 +114,11 @@ export function SimulateForm({
     <form className="sim" onSubmit={(event) => void start(event)}>
       <div className="sim-head">
         <span className="sim-title">Simulate a caller</span>
-        <button type="button" className="sim-close" onClick={onClose} aria-label="close">
-          ×
-        </button>
+        {onClose !== undefined && (
+          <button type="button" className="sim-close" onClick={onClose} aria-label="close">
+            ×
+          </button>
+        )}
       </div>
       {agents !== undefined && (
         <Field label="Agent">
@@ -127,7 +146,7 @@ export function SimulateForm({
           </Field>
           {chosen !== undefined && <p className="sim-note">Goal: {chosen.goal}</p>}
           <div className="sim-pair">
-            <Field label="Turns">
+            <Field label="Max turns">
               <Input size="sm" type="number" min={1} max={30} value={turns} onChange={(event) => setTurns(Number(event.target.value))} />
             </Field>
             {voice && spoiled && (
