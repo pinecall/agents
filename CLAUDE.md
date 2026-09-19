@@ -104,7 +104,7 @@ sentences; small methods; 150 lines is the norm. Tests read as sentences.
 - `pinecall test --voice` is ring 2: the CLI sends the same goldens to `POST /v1/evals/run` with
   `voice: true` (and `--background-noise` · `--packet-loss` as `interferer_db` · `packet_loss`);
   whether a spoken line answers is the gateway's, and nothing on this side checks it.
-- A release is a `v*` tag: `release.yml` publishes it. The number follows semver, the CHANGELOG
+- A release is a `v*` tag: `release.yml` publishes it. The last number goes up (0.8.0 → 0.8.1), the CHANGELOG
   section moves from Unreleased to it in the same commit.
 
 ## Commits
