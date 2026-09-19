@@ -6,7 +6,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router";
 import { useListen } from "../../lib/use-listen";
 import { useOrg } from "../../lib/org";
 import { Button, usePane } from "../../ui";
-import { SimulateForm } from "../calls/simulate-form";
+import { SimulateForm } from "./simulate-form";
 import { Live } from "../live";
 import "./simulations.css";
 
@@ -36,7 +36,7 @@ export function Simulations(): ReactNode {
         {agents.length === 0 ? (
           <p className="sims-note">No agent is held here yet: run `pinecall start` in the agent's directory, and it shows up to simulate against.</p>
         ) : (
-          <SimulateForm agents={agents.map((one) => one.slug)} spoken onStarted={started} />
+          <SimulateForm agents={agents.map((one) => one.slug)} onStarted={started} />
         )}
         <p className="sims-note">
           A model plays the persona against the agent. With Voice on, the call is a real line and you hear both of them here as it happens.

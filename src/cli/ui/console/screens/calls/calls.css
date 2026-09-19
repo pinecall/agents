@@ -61,7 +61,7 @@
   background: var(--accent-hover);
 }
 
-.ib-sim {
+.ib-dial {
   position: absolute;
   top: calc(100% + 4px);
   left: 8px;
@@ -378,14 +378,4 @@
     border-bottom: 1px solid var(--line);
     max-height: 34vh;
   }
-}
-
-.ib-sim-ways {
-  display: flex;
-  margin-bottom: 6px;
-  padding: 5px;
-  border: 1px solid var(--line-control);
-  border-radius: 12px;
-  background: var(--ground);
-  box-shadow: var(--shadow-pop);
 }

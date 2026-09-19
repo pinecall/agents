@@ -7,11 +7,10 @@ import { GatewayError } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
 import { clockOf, dayOf, today, utcDay } from "../../lib/format";
 import { useAgentSessions } from "../../lib/use-agent-sessions";
-import { Avatar, Segmented, usePane } from "../../ui";
+import { Avatar, usePane } from "../../ui";
 import type { Outbound } from "../numbers/door";
 import { CallBack, DialForm, useOutbound } from "./dial";
 import { markRead, readDoorThreads, sayInto, writeTo, type DoorThread } from "./inbox-door";
-import { SimulateForm } from "./simulate-form";
 import { lastOf, lettersOf, threadsOf, titleOf, type Message, type Thread } from "./threads";
 import { useThread } from "./use-thread";
 import "./calls.css";
@@ -32,8 +31,7 @@ export function Calls(): ReactNode {
   const threads = useMemo(() => threadsOf(listed.lines), [listed.lines]);
   const [query, setQuery] = useState("");
   const pane = usePane({ name: "agent.conversations", initial: 292, min: 200, max: 520, side: "left" });
-  const [simulating, setSimulating] = useState(false);
-  const [adding, setAdding] = useState<"simulate" | "dial">("simulate");
+  const [dialling, setDialling] = useState(false);
   const outbound = useOutbound();
   const door = useDoorThreads(agent, listed.lines.length);
 
@@ -52,40 +50,23 @@ export function Calls(): ReactNode {
       <div className="ib-list">
         <div className="ib-list-head">
           <input className="ib-search" placeholder="Search a caller or number" value={query} onChange={(event) => setQuery(event.target.value)} />
-          <button
-            type="button"
-            className="ib-new"
-            title={outbound === null ? "Simulate a caller" : "Simulate a caller, or call a number"}
-            aria-expanded={simulating}
-            onClick={() => setSimulating(!simulating)}
-          >
-            +
-          </button>
-          {simulating && outbound === null && (
-            <div className="ib-sim">
-              <SimulateForm agent={agent} onClose={() => setSimulating(false)} />
-            </div>
+          {/* Simulating a caller is the Simulations screen's; here the + calls a real number. */}
+          {outbound !== null && (
+            <button type="button" className="ib-new" title="Call a number" aria-expanded={dialling} onClick={() => setDialling(!dialling)}>
+              +
+            </button>
           )}
-          {simulating && outbound !== null && (
-            <div className="ib-sim">
-              {adding === "simulate" ? (
-                <>
-                  <div className="ib-sim-ways">
-                    <Segmented options={WAYS} value={adding} onChange={setAdding} />
-                  </div>
-                  <SimulateForm agent={agent} onClose={() => setSimulating(false)} />
-                </>
-              ) : (
-                <div className="dial-panel">
-                  <div className="dial-panel-head">
-                    <Segmented options={WAYS} value={adding} onChange={setAdding} />
-                    <button type="button" className="dial-panel-close" onClick={() => setSimulating(false)} aria-label="close">
-                      ×
-                    </button>
-                  </div>
-                  <DialForm agent={agent} outbound={outbound} onClose={() => setSimulating(false)} />
+          {dialling && outbound !== null && (
+            <div className="ib-dial">
+              <div className="dial-panel">
+                <div className="dial-panel-head">
+                  <span className="dial-panel-title">Call a number</span>
+                  <button type="button" className="dial-panel-close" onClick={() => setDialling(false)} aria-label="close">
+                    ×
+                  </button>
                 </div>
-              )}
+                <DialForm agent={agent} outbound={outbound} onClose={() => setDialling(false)} />
+              </div>
             </div>
           )}
         </div>
@@ -117,12 +98,6 @@ export function Calls(): ReactNode {
     </div>
   );
 }
-
-// What the round + opens, once the org can dial out: a synthetic caller, or a real number.
-const WAYS: readonly { value: "simulate" | "dial"; label: string }[] = [
-  { value: "simulate", label: "Simulate a caller" },
-  { value: "dial", label: "Call a number" },
-];
 
 function nameOf(thread: Thread, door: Map<string, DoorThread> | null): string {
   return door?.get(thread.contact)?.name ?? titleOf(thread);

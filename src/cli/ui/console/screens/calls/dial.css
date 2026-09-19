@@ -46,6 +46,11 @@
   padding: 10px 12px 0;
 }
 
+.dial-panel-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .dial-panel-close {
   margin-left: auto;
   width: 24px;

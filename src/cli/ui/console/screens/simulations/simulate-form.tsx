@@ -1,7 +1,6 @@
-/** Simulate: pick a persona, choose the line, and put a synthetic caller on an agent from the page. */
+/** The simulate form: pick an agent and a persona, choose the line, and put a synthetic caller on it. */
 
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { useNavigate } from "react-router";
 
 import { GatewayError } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
@@ -20,33 +19,23 @@ const LOSS_PERCENT = 0;
 /**
  * The form. It asks the process holding the agent, through the gateway: a simulation mounts the
  * class of the directory `pinecall start` runs in, so only that process can start one. The call is
- * answered by its id and the page goes to it on the floor — the log is the transcript, and on a
- * spoken line the desk's Listen is the speakers `--listen` never had.
+ * answered by its id, handed to the screen, which watches and plays it.
  */
 export function SimulateForm({
-  agent: fixed,
   agents,
-  onClose,
   onStarted,
-  spoken,
 }: {
-  /** The agent to call, when the screen is one agent's. */
-  agent?: string | undefined;
-  /** The agents to choose from, when the screen is the org's floor. */
-  agents?: readonly string[] | undefined;
-  /** Where the form closes to; a form that is the screen's own has nowhere to close to. */
-  onClose?: (() => void) | undefined;
-  /** Told the call's id when it starts, instead of going to it on the floor. */
-  onStarted?: ((call: string, agent: string, spoken: boolean) => void) | undefined;
-  /** Start on a spoken line: the screen that is for listening opens with the voice on. */
-  spoken?: boolean | undefined;
+  /** The org's agents, to choose from. */
+  agents: readonly string[];
+  /** Told the call's id the moment it has one, and whether it is on a spoken line. */
+  onStarted: (call: string, agent: string, spoken: boolean) => void;
 }): ReactNode {
   const credentials = useCredentials();
-  const navigate = useNavigate();
-  const [agent, setAgent] = useState(fixed ?? agents?.[0] ?? "");
+  const [agent, setAgent] = useState(agents[0] ?? "");
   const [roster, setRoster] = useState<Roster | null>(null);
   const [persona, setPersona] = useState("");
-  const [voice, setVoice] = useState(spoken === true);
+  // The screen is for listening: a spoken line unless somebody wants a written one.
+  const [voice, setVoice] = useState(true);
   const [judge, setJudge] = useState(false);
   const [turns, setTurns] = useState(TURNS);
   const [noise, setNoise] = useState(NOISE_DB);
@@ -56,7 +45,7 @@ export function SimulateForm({
   const [refused, setRefused] = useState<string | null>(null);
 
   // The org's agents arrive after the page does: the first one is picked once there is one.
-  const first = agents?.[0] ?? "";
+  const first = agents[0] ?? "";
   useEffect(() => {
     if (agent === "" && first !== "") setAgent(first);
   }, [agent, first]);
@@ -97,12 +86,7 @@ export function SimulateForm({
         turns,
         ...(voice && spoiled ? { background_noise: noise, packet_loss: loss } : {}),
       });
-      if (onStarted !== undefined) {
-        onStarted(call, agent, voice);
-      } else {
-        onClose?.();
-        void navigate(`/live/${call}`);
-      }
+      onStarted(call, agent, voice);
     } catch (failed) {
       setRefused(failed instanceof GatewayError ? failed.message : String(failed));
     } finally {
@@ -114,13 +98,8 @@ export function SimulateForm({
     <form className="sim" onSubmit={(event) => void start(event)}>
       <div className="sim-head">
         <span className="sim-title">Simulate a caller</span>
-        {onClose !== undefined && (
-          <button type="button" className="sim-close" onClick={onClose} aria-label="close">
-            ×
-          </button>
-        )}
       </div>
-      {agents !== undefined && (
+      {agents.length > 0 && (
         <Field label="Agent">
           <Select size="sm" value={agent} onChange={(event) => setAgent(event.target.value)}>
             {agents.map((one) => (

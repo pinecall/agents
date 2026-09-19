@@ -356,14 +356,6 @@ clear it. No call in the path watches the newest live call, else the newest. Emp
 Leave this open — a call that reaches any agent shows up here as it rings.*; a search that leaves
 nothing: *No call here matches.*
 
-**Simulate** (`calls/simulate-form.tsx`; here with an agent picker, on Calls for that agent): a
-synthetic caller — `pinecall simulate` with the same defaults. Persona (one file per caller in
-`test/personas`, its goal shown), turns (1–30, default 6), `voice` (a real line), `judge at
-hang-up`; on a spoken line, `noisy line` with noise in dB under (0–60, default 15) and packets lost
-% (0–100, default 0). The call opens on `/live/:call`. Needs the `pinecall start` holding the agent,
-in its directory: without a class there the form says so, and a process in another agent's
-directory is named.
-
 **Centre — one call** (`live/live.tsx`; Talk's inspector and Chat read the same hook).
 
 *Head:* the call id · tags for channel and direction · `on a call · m:ss` in green, the status word
@@ -431,8 +423,8 @@ This agent's conversations as an inbox: one thread per person, what was said, an
   outcome — *On a call now* in green — and the **unread** count. Names and unread come from `GET
   /v1/agents/{slug}/threads` (unread is per person: what arrived since they last opened the thread),
   and opening a thread with some posts `…/read`. A search box (*Search a caller or number*) filters by name, handle and last line;
-  **+** opens Simulate for this agent — and, once the org can dial out, *Call a number* beside it (a
-  number written whole, `+14176743169`, the number to call **From** when the org has several, **Call**). Empty: *No conversations yet. The first call to reach <agent>
+  once the org can dial out, **+** opens *Call a number* (simulating a caller is the Simulations
+  screen's): a number written whole, `+14176743169`, the number to call **From** when the org has several, **Call**. Empty: *No conversations yet. The first call to reach <agent>
   opens a thread here as it rings.*
 - **The open thread**: the avatar, the name, `handle · channel · handled by <agent>`; **Watch live**
   while its latest call is up (→ Live) and **Session** (→ that call's session). Messages are read
@@ -509,10 +501,15 @@ gateway's words.
 
 ## 5b. Simulations — `/simulations[/:call]`
 
-Under Sessions in the sidebar, gated by `evals`. Two columns. **Left** (a pane, `simulations.form`):
-the simulate form — Agent, Persona (its goal under it), **Max turns** (1–30, the most the caller
-takes before it stops), Voice (on by default here), Judge at hang-up, Noisy line — and *Call the
-agent*. **Right**: the call started, as Live draws it, with an ear on top. The URL names the call,
+Under Sessions in the sidebar, gated by `evals`; the one place a caller is simulated from. Two
+columns. **Left** (a pane, `simulations.form`): the simulate form (`simulations/simulate-form.tsx`,
+`pinecall simulate` with the same defaults) — Agent, Persona (one file per caller in
+`test/personas`, its goal under it), **Max turns** (1–30, default 6, the most the caller takes
+before it stops), Voice (on by default), Judge at hang-up, and on a spoken line Noisy line (noise
+in dB under, 0–60, default 15; packets lost %, 0–100, default 0) — and *Call the agent*. It needs
+the `pinecall start` holding the agent, in its directory: without a class there the form says so,
+and a process in another agent's directory is named. The caller speaks the agent's declared
+language. **Right**: the call started, as Live draws it, with an ear on top. The URL names the call,
 `?agent=` and, for a spoken one, `spoken=1`, so a reload lands on it. A spoken call is joined as
 soon as its room opens (the seat is asked again every second until it is) and heard at once, the
 caller and the agent: *Listening live · the caller and the agent* with Mute/Unmute. Empty: *Pick an
