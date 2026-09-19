@@ -6,6 +6,15 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Added
+- **Docs: a base opens onto its files, and a person changes them from the console.** The org's
+  Docs table opens a base (`/docs/<base>`) onto its files — File · Characters · Chunks · Arrived —
+  with **Add files…** (a picker, several `.md` at once), **Write one** (a path and an editor),
+  each file opened to read and edit and saved with **Save**, and **Take out**. Every change is
+  searchable on the next call. A base pushed before the gateway kept its files says so, and a
+  push again from the project keeps them from then on. The agent's Docs tab opens the same page
+  from its rows.
+
 ### Changed
 - **`--voice` says what the caller sounds like now.** The gateway reads a simulated caller's lines
   in an ElevenLabs voice the agent does not have, in the agent's language (runtime); `simulate

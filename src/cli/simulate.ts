@@ -237,8 +237,11 @@ async function outLoud(
   how: Simulation,
 ): Promise<string> {
   const call = aCallId();
-  how.opened?.(call);
+  // Told the id only once the call's log has an entry: the gateway accepted the call and the room
+  // is being built. Told at once, a call the gateway refused — a key without `evals`, no worker —
+  // left the console waiting on a room that was never going to open (2026-09-19, production).
   const heard = new Heard(how.out);
+  let told = false;
   // The ear is taken before the call is asked for: the seat is minted off the room, which opens a
   // moment later, and joining late is joining after the greeting — the one turn worth hearing.
   const ear = how.listen === true ? listening(door, call, how.out) : null;
@@ -249,7 +252,13 @@ async function outLoud(
     turns: how.turns,
     ...(how.degraded === undefined ? {} : { degraded: how.degraded }),
   });
-  await watching(door, call, held, (entry) => heard.absorb(entry));
+  await watching(door, call, held, (entry) => {
+    if (!told) {
+      told = true;
+      how.opened?.(call);
+    }
+    heard.absorb(entry);
+  });
   const called = await held;
   await (await ear)?.leave();
   how.out.write(`  ${call} · ${called.turns} caller turn(s) · ${heard.agentTurns} agent turn(s) · ${called.line}\n`);
