@@ -458,7 +458,7 @@ this CLI opens a port:
 | `ui/console/` | the gateway's `/` — **hosted**, production | a PERSON's scoped key, minted at login | whoever runs the org |
 | `ui/console/` | `http://localhost:4100` — **local**, the sandbox | none: the sidecar signs what the page asks | whoever writes the agent |
 | `ui/admin/` | `/admin` | the BOX's ops key, typed in | the operator |
-| `ui/shared/` | — | the fetch (`api.ts`) and the credentials context — what BOTH pages import; `/.well-known/pinecall` (`the-floor.ts`), read by the console's password card; and the theme, the frame and the `styles/` vocabulary, which since the console's redesign only the admin page wears | both · the admin |
+| `ui/shared/` | — | the fetch (`api.ts`) and the credentials context — what BOTH pages import; `/.well-known/pinecall` (`the-floor.ts`), read by the console's password card; the theme (`theme.ts`: the system's light or dark, and a flip kept until the system changes), which both wear; and the frame and the `styles/` vocabulary, which since the console's redesign only the admin page wears | both · the admin |
 
 They are two programs and not two sections of one, because the ops key **belongs to no org** and
 must never reach a tab that holds a tenant's: two bundles, two storage names, and an import table
@@ -530,11 +530,14 @@ What follows is the hosted page, where a key IS held. Everything about it is a c
 | `memory/` · `widget/` | every current fact an agent's calls taught, one dropped (`GET /v1/agents/{slug}/memory`, `DELETE /v1/memory/facts/{id}`), or one contact read and forgotten; the tag, the look the gateway keeps per agent and world (`GET/PUT /v1/agents/{slug}/widget`), and the widget itself mounted as a preview |
 | `numbers/` · `tokens/` · `providers/` · `team/` · `usage/` | **numbers, whole**: the carrier — a Twilio account or a SIP peer — shown by kind and account and never a secret (`carrier.tsx`); the numbers, one let go; one added, imported or bought, **always the plan first** (`?dry_run=true`, the gateway's own steps in its words) and the same request again on confirm (`adding.tsx`); the outbound trunk set up the same way, with the operator's guards read-only (`outbound.tsx`); local's `phone.tsx` is Phone testing. Tokens (`/tokens`, open to every key): the person's own keys, and the org's server tokens — made for one world (production only by somebody with production access), shown once as `PINECALL_KEY=…`, listed with whose each is and when it was last used, revoked; the vendors and the keys the org brought; the people, invited or reset with a link shown once and changed in place, each person's Production switch (an admin's reads *always*; the invite form has one too), what each role opens (`roles.tsx`) and the org's single sign-on (`sso.tsx`); what the org consumed |
 | `login/` · `terminal/` | the way in: sign in, choose a password, *this machine is not signed in*; and `/cli`, the card that signs a terminal in |
-| the shell | `shell/shell.tsx` mounts `lib/org.tsx` — ONE read of the floor (`GET /v1/sessions`, `GET /v1/events`), the agents, the person's orgs and the day's insights, shared by every screen — around `sidebar.tsx` (the workspace and its org menu, the table's groups gated by the key's scopes off `GET /v1/whoami`, one row per slug — `lib/corners.ts`), `top.tsx` (where you are, sign out), `switcher.tsx` (the person, the org, the two environment chips that open the OTHER console, every copy and — for a `team` key in the sandbox — a colleague's opened, `lib/world.tsx`), `agent-head.tsx` (an agent's standing and its tabs) and `palette.tsx` (⌘K) |
+| the shell | `shell/shell.tsx` mounts `lib/org.tsx` — ONE read of the floor (`GET /v1/sessions`, `GET /v1/events`), the agents, the person's orgs and the day's insights, shared by every screen — around `sidebar.tsx` (the workspace and its org menu, the table's groups gated by the key's scopes off `GET /v1/whoami`, one row per slug — `lib/corners.ts`), `top.tsx` (where you are, the theme's sun or moon — `theme-button.tsx` — and sign out), `switcher.tsx` (the person, the org, the two environment chips that open the OTHER console, every copy and — for a `team` key in the sandbox — a colleague's opened, `lib/world.tsx`), `agent-head.tsx` (an agent's standing and its tabs) and `palette.tsx` (⌘K) |
 
 **What it looks like** is the redesign, taken literally: `ui/tokens.css` is the one file of the
 console allowed to hold a hex — the inks, the lines, the grounds, the accent `#5b3df5` and its steps,
-the tints a pill wears, the shadows, the two faces — and it is **light only**: no theme, no toggle.
+the tints a pill wears, the shadows, the two faces. Every colour is a `light-dark(daylight, dark)` pair,
+so the page follows the system through `color-scheme` before any script runs, and `shared/theme.ts`
+stamps `data-theme` when a person flips it from the top bar; the flip is kept in the browser until the
+system's own theme changes. The widget's blank page is a customer's site and stays daylight in both.
 `ui/ui.css` is the vocabulary (the page, the card, the stat, the grid table, the controls, the
 pill) and `ui/*.tsx` its parts — `Page`, `Card`, `Stat`, `TableHead`/`TableRow`, `Button`, `Field`,
 `Segmented`, `Chips`, `Pill`, `Avatar`, `Icon` and the rest — imported as one from `ui/`; each
@@ -545,9 +548,9 @@ how a duration, a sum of money, a moment and a phone number are written, UTC lik
 them; it goes when that protocol is published. The face is Inter, fetched from Google Fonts by
 `index.html` with a system fallback — the one request the page makes to anything but the gateway —
 and anything a machine wrote is the system's monospace. The icons are paths in `ui/icon.tsx`, so the
-page depends on no icon set. The logo is `public/pinecall-logo.png`, its mark `pinecall-mark.png`
-and the favicon cut from it. None of `ui/shared/styles/`, `frame.tsx` or `theme.ts` is the
-console's any more: they are the admin page's.
+page depends on no icon set. The logo is `public/pinecall-logo.png` (`pinecall-logo-dark.png`, its wordmark drawn light, in the
+dark theme), its mark `pinecall-mark.png` and the favicon cut from it. Neither `ui/shared/styles/`
+nor `frame.tsx` is the console's any more: they are the admin page's.
 
 Its own laws. Three are held by a test of their own: vite bundles every screen's stylesheet into
 one file, so **a class name is global** whatever directory it was written in
