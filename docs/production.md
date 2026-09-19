@@ -78,6 +78,14 @@ runs them all on one socket, or one per process with `--agent <name>`.
 A gateway that restarts is one line, `gateway … — reconnecting`, then `gateway back`: the client
 redials on its own, and the manager has nothing to restart.
 
+**What is running, and a stop.** `pinecall agent list --prod` prints every process holding the
+org's agents in production — the agents, the machine and address it connected from, the SDK,
+since when — so an old deploy still holding a slug is one line to find. `pinecall agent stop <app>`
+(or Stop on the console's Overview) closes one: `pinecall start` prints `stopped by <name>` and
+exits instead of dialling back, and an app that mounts the SDK hears it on
+`pc.onStopped(why => …)`. A manager that restarts whatever exits — systemd's `Restart=always`,
+pm2 — starts it again, so a process kept that way is stopped for good where it is managed.
+
 ## The knowledge base, in the release step
 
 The base the telephone answers from is production's, and it is replaced **whole** by a push, like
