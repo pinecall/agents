@@ -6,6 +6,15 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## 0.8.1 — Docs you edit from the console, and a simulation that says why it cannot start
+
+### Fixed
+- **A spoken simulation the gateway refused no longer leaves the console waiting.** The call's id
+  was handed to the page before the gateway had accepted the call, so a refusal — a server token
+  without `evals`, no worker — left Simulations on *Waiting for the call's room to open…* for
+  good. The id is handed over with the call's first log entry, and a refusal comes back to the
+  form in the gateway's own words.
+
 ### Added
 - **Docs: a base opens onto its files, and a person changes them from the console.** The org's
   Docs table opens a base (`/docs/<base>`) onto its files — File · Characters · Chunks · Arrived —
