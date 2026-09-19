@@ -50,7 +50,7 @@ npm i pinecall           # or as a dependency, to write an agent in your own pro
 
 You need a gateway for the CLI to talk to — `pip install pinecall` is that, and
 [from-zero](https://github.com/pinecall/runtime/blob/main/docs/from-zero.md) walks both halves up
-on a laptop in one sitting. To read this code or run the two examples, clone instead:
+on a laptop in one sitting. To read this code or run the example, clone instead:
 
 ## Five minutes
 
@@ -59,11 +59,13 @@ pnpm install                       nothing to build: the checkout runs from its 
 cd examples/clinica-norte
 pnpm exec pinecall link            sign in through a browser, pick the org: your key, in ./.env
 pnpm exec pinecall chat            the agent in this terminal, and a prompt against it
-pnpm exec pinecall prompt --state test/prompts/states.json   the exact prompt a state produces
+pnpm exec pinecall prompt --state test/clinica-norte/prompts/states.json   the exact prompt a state produces
 pnpm exec pinecall start           the app: the process you deploy
 pnpm exec pinecall start --serve   the same, and its console on http://localhost:4100
 pnpm exec pinecall serve           that console alone: your sandbox, on this machine
-pnpm exec pinecall knowledge push  ./knowledge/docs to the gateway, under the agent's name
+pnpm exec pinecall docs push       docs/clinica-norte/ to the gateway, as the base the agent searches
+pnpm exec pinecall docs attach clinica-norte --k 4   the agent reads that base, in your corner
+pnpm exec pinecall agent knowledge edit              what it knows by heart, in $EDITOR, as a setting
 pnpm exec pinecall test            ring 1: the goldens, through the app in this process
 ```
 
@@ -80,9 +82,13 @@ your own Node app — [docs/production.md](docs/production.md). `pinecall agent 
 which process holds each agent, on which machine, since when, and `pinecall agent stop <app>` stops
 one.
 
-A tenant that installed `pinecall` from npm has it on the PATH and writes `pinecall start`. A
-repository of several agents keeps each in `agents/<name>.tsx`, and one `pinecall start` at its root
-holds them all — [docs/writing-an-agent.md](docs/writing-an-agent.md#several-agents-in-one-project).
+A tenant that installed `pinecall` from npm has it on the PATH and writes `pinecall start`. One
+layout, one agent or five: the class in `agents/<name>/agent.tsx`, what it searches in
+`docs/<name>/`, its goldens, personas and memory cases under `test/<name>/`, and one `pinecall
+start` at the root holds them all — [docs/the-cli.md](docs/the-cli.md#the-project). The class is
+the contract — doors, language, state, tools, `render()` — and what it runs on is the world's:
+voice, model, opening, what it knows by heart and which base it searches are settings, per world
+and versioned, never fields of the class.
 
 Working on the framework itself:
 
@@ -116,7 +122,7 @@ Beside it:
 
 | | |
 |---|---|
-| `examples/` | `clinica-norte` and `tienda-sur`: two tenants, written as a customer writes one |
+| `examples/` | `clinica-norte`: one tenant, written as a customer writes one |
 | `test/` | mirrors `src/`, plus the three that pin the shape: the tree, the imports, the surface |
 
 ## The three doors out of this package

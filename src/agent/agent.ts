@@ -2,36 +2,22 @@
 
 // tools.ts imports this module back; the cycle is fine because both sides only reach across at
 // call time, and both exports are hoisted function declarations.
-import type { DocsMode } from "@pinecall/protocol";
-
 import { currentAuthor, UnauthoredWrite } from "./authors.js";
 import { docOf, toolsOf, visibleToolsOf, type ToolSpec } from "./tools.js";
 import type { Child } from "../views/jsx-runtime.js";
 import type { CallWorld } from "../call/call.js";
+import type { Knowledge } from "./knowledge.js";
 import type { EventDeclarations, EventMeta } from "./accepts.js";
 import { declaredStateOf, type Visibility } from "./visibility.js";
 import type { Call, MemoryOp } from "./lifecycle.js";
 import { collapse, restore, snapshot, type LastCall, type Snapshot } from "./state.js";
 
 // The names an app uses to configure the agent rather than to remember something about the
-// caller. They live on the instance like any other field, but they are never state: they do not
-// change during a call, they are not diffed, and no snapshot carries them.
-export const CONFIG_FIELDS = [
-  "phone",
-  "whatsapp",
-  "web",
-  "voice",
-  "greeting",
-  "says",
-  "hears",
-  "llm",
-  "stt",
-  "language",
-  "knowledge",
-  "docs",
-  "memory",
-  "hangup",
-] as const;
+// caller: its doors, and its language. They live on the instance like any other field, but they
+// are never state: they do not change during a call, they are not diffed, and no snapshot carries
+// them. Everything else the class used to configure — a voice, the models, an opening, what it
+// remembers, what it reads — is the world's (runtime/environment.ts), and refused at load.
+export const CONFIG_FIELDS = ["phone", "whatsapp", "web", "language"] as const;
 
 // The list is the array; the Set is how this module asks about it on every assignment. state.ts
 // derives `ConfigName` from the same array, so a name added here is a name the snapshot drops.
@@ -67,46 +53,6 @@ export interface EventHeard {
 }
 
 export type EventListener = (heard: EventHeard) => void;
-
-/**
- * What `docs` says: the knowledge base the agent answers from, by the name it was pushed under
- * (`pinecall knowledge push --base <name>`), and how its chunks reach the model. The bare string
- * form `docs = "clinica-norte"` is the base alone, with every other setting the runtime's.
- */
-export interface DocsDeclaration {
-  base: string;
-  mode?: DocsMode;
-  k?: number;
-  minScore?: number;
-}
-
-/**
- * What `greeting` says: how the agent opens a call, before the caller has said anything. Exactly
- * one of the two, because there are only two ways to open one — `say` are the words themselves,
- * read out as written, and `reply` is what the model is told before it finds its own. The bare
- * string form `greeting = "Clínica Norte, buenos días."` is the words. A class that declares
- * nothing waits for the caller.
- */
-export interface GreetingDeclaration {
-  say?: string;
-  reply?: string;
-  allowInterruptions?: boolean;
-}
-
-/**
- * What `hangup` says: that the model may end the call itself, and when, in your own words. A class
- * that declares nothing cannot hang up — only the caller and a supervisor end a call. The tool is
- * livekit's own `end_call`, and it is hidden while the agent is greeting.
- */
-export interface HangupDeclaration {
-  when?: string;
-}
-
-/** What `memory` says: what to keep about a contact across calls, in the tenant's words, and what never to. */
-export interface MemoryDeclaration {
-  remember?: string[];
-  forget?: string[];
-}
 
 /** Everything the framework knows about one live agent, kept off the instance's own fields. */
 export interface Internals {
@@ -179,6 +125,17 @@ export class Agent {
 
   /** The class docstring, when the app prefers to say it out loud instead of in a JSDoc. */
   static doc?: string;
+
+  /**
+   * The knowledge bases this agent reads, searched from inside a tool: `await
+   * this.knowledge.search("horarios", { k: 3 })`. Which bases is the world's to say — attached to
+   * the agent in its settings, `pinecall docs attach` — and a world that attaches none refuses
+   * the class at registration. The gateway runs the search and logs what it found.
+   */
+  get knowledge(): Knowledge {
+    // Async, so an instance nobody is serving refuses through the promise and not by throwing.
+    return { search: async (query, options) => await this.call.search(query, options) };
+  }
 
   /** The outside facts this class accepts, and from whom: `static events = {...}`. */
   static events?: EventDeclarations;

@@ -5,7 +5,7 @@ order, and the cut between the regions is where the cache is cut:
 
 ```
 ── identity (static) ──      the class docstring · <rules> · <protocols>
-── knowledge (static) ──     the file the class named, whole, once per call
+── knowledge (static) ──     what the world says the agent knows by heart, whole, once per call
 ── tools (static) ──         every tool the class declares, name and docstring, visible or not
 ── history ──                the runtime's turns, what a lookup answered, and the sentences a collapse() left
 ── view (dynamic) ──         what your `render()` says about NOW
@@ -42,8 +42,7 @@ export default class ClinicaNorte extends Agent {
 getters, `this.call` and `this.remembers(…)`. A class that writes no `render()` sends an empty
 view, which is a fine agent — its prompt is its docstring and its tools.
 
-Because the class carries JSX, the file is **`agent.tsx`** — or `agents/<name>.tsx` in a project of
-several. Nothing else changes: the same `tsconfig.json`, the same decorators, the same imports.
+Because the class carries JSX, the file is **`agents/<name>/agent.tsx`**. Nothing else changes: the same `tsconfig.json`, the same decorators, the same imports.
 `agent.ts` still loads, for a class that renders nothing.
 
 Print any of it with no gateway, no key and no network:
@@ -62,11 +61,10 @@ is in with the tools that stage shows.
 (`views/lang.ts` — invent nothing, one question per turn, talk like a person on the phone; to act
 call a tool, read back an irreversible action, offer a person when you cannot help).
 
-**`knowledge`** is the file the class named, once per call, in the cached prefix. The file travels
-in the declaration — the CLI reads it relative to the class's own file and sends `{ path, text }`
-— and the runtime writes its text into this block. The app sends nothing for it: the file is already on the
-wire, and the same file twice would be a worse bug than an empty block. A file that is not there is
-refused when the class is loaded, with the path that was looked at.
+**`knowledge`** is what the agent knows by heart — the page the org wrote in the console's Settings
+tab or with `pinecall agent knowledge edit` — once per call, in the cached prefix. It is the world's,
+not the class's: the gateway writes the corner's text into this block, and the app sends nothing for
+it. A world that wrote none leaves the block empty.
 
 **`tools`** is every tool the class declares, name and docstring, **visible right now or not**. The
 model reads a tool's docstring, never its JSON schema. Visibility is the wire's business
@@ -91,17 +89,18 @@ them the same authority, which is exactly what both vendors tell you not to do. 
 guidance it follows from and the tests that hold it are one page, and it is a public contract:
 `runtime/docs/security/prompt-injection.md`.
 
-What the class writes is the declaration:
+What the class writes is nothing: which bases the agent searches and what memory keeps are the
+world's, set beside the voice —
 
-```ts
-docs = { base: "clinica-norte", k: 4, minScore: 0.5 };   // or just docs = "clinica-norte"
-memory = { remember: ["alergias", "su médico habitual"], forget: ["pagos"] };
+```console
+$ pinecall docs attach clinica-norte --k 4 --min-score 0.5   # the base, how many chunks, how good
+$ pinecall memory policy --remember "alergias" "su médico habitual" --forget "pagos"
 ```
 
-`docs` names the base the agent answers from, by the name it was pushed under, with how many
-chunks and how good they must be. `mode` says who calls `search`: `retrieved` (the default) is the
-platform, before the turn; `tool` is the model, when it decides to. `memory` is what may be
-remembered about a caller and what never may be.
+`--mode` says who calls `search`: `retrieved` (the default) is the platform, before the turn;
+`tool` is the model, when it decides to — and a tool of the class may search too,
+`await this.knowledge.search(question, { k: 3 })`. The policy is what may be remembered about a
+caller and what never may be.
 
 What the class reads back is one question:
 
@@ -170,20 +169,20 @@ which is what you want; a **method** is not — `remembers` pulled out of the in
 lost its `this`, so a prompt that asks calls it on the agent:
 
 ```tsx
-const TiendaPrompt = (tienda: TiendaSur) => {
-  const { stage, cart } = tienda;
-  return <>{tienda.remembers("marca") && <p>Ofrécele primero la marca que se suele llevar.</p>}</>;
+const ClinicaPrompt = (clinica: ClinicaNorte) => {
+  const { stage, patient } = clinica;
+  return <>{clinica.remembers("médico habitual") && <p>Ofrece primero las horas de su médico habitual.</p>}</>;
 };
 ```
 
 **A class writes one spelling or the other.** Declaring `@render(...)` on a class that also has a
-`render()` method is refused when the class is defined: `TiendaSur declares both
-@render(TiendaPrompt) and a render() method; two ways to answer one question — keep one`.
+`render()` method is refused when the class is defined: `ClinicaNorte declares both
+@render(ClinicaPrompt) and a render() method; two ways to answer one question — keep one`.
 
 ## Where a rule belongs
 
-The static blocks are read once and generically; the view is read in the turn it is about. Both
-examples paid for this distinction with real calls:
+The static blocks are read once and generically; the view is read in the turn it is about. The
+example paid for this distinction with real calls:
 
 - A rule that exists only in `identity` — "before an irreversible action wait for an explicit
   yes" — does not tell the model that *booking* is one. `side_effect` and `confirm` travel in the

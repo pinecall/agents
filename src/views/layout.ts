@@ -27,11 +27,10 @@ export interface Blocks {
 // history. The layout is the framework's: a class contributes the view and nothing else.
 const BLOCKS = [
   { name: "identity", region: "static", text: identityBlock },
-  // The knowledge file travels whole in the declaration — `runtime/grounding.ts` reads it beside
-  // the class and sends `{path, text}` — and the runtime writes its text into this block, once per
-  // call, where it is the operator's own words in the cached prefix. The app sends nothing for it:
-  // this package never opens the file on a render, and the same file twice is a worse bug than an
-  // empty block.
+  // What the agent knows by heart: the page of Markdown the world keeps in the agent's settings
+  // (`pinecall agent knowledge`). The gateway writes it into this block, once per call, where it
+  // is the org's own words in the cached prefix. The app sends nothing for it — the class carries
+  // no business, and the same text twice is a worse bug than an empty block.
   { name: "knowledge", region: "static", text: () => "" },
   { name: "tools", region: "static", text: toolsBlock },
   { name: "view", region: "dynamic", text: viewBlock },

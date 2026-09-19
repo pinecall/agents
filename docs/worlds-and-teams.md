@@ -57,7 +57,8 @@ still held by the person whose key registered it.
 | where it is watched | the gateway's console, signed in to | `pinecall serve`, on your machine: `http://localhost:4100` |
 | the calls a console lists | production's | the corner's own: a developer sees only their own sandbox calls, and an admin who opens a teammate's copy sees that copy's |
 | a contact's memory | production's facts | the sandbox's facts, apart |
-| the knowledge base | the one the telephone answers from, pushed in a release | yours; `knowledge push` replaces this one |
+| what the agent knows by heart | production's Settings ▸ Knowledge, one corner | yours, and the team's with `--team` — `pinecall agent knowledge edit` |
+| the bases it searches | the ones the telephone answers from, pushed in a release | yours; `pinecall docs push` replaces this one, and `docs attach` says which the agent reads |
 | the quotas | the org's | the org's — agents, seats, facts, chunks and numbers are counted over both worlds |
 
 ## A team, from the invitation to the rollback
@@ -92,7 +93,7 @@ start --serve` holds `clinica-norte` in Ana's corner and Bruno's in Bruno's; eac
 own sandbox corner with `--team`, which every corner that set nothing reads.
 
 **4. Goldens in CI.** Before anything reaches production, CI holds the agent to its goldens —
-`pinecall test`, `pinecall knowledge eval`, `pinecall remember` — on a **sandbox** server token
+`pinecall test`, `pinecall docs eval`, `pinecall remember` — on a **sandbox** server token
 from Tokens, and a red run stops the deploy ([testing-an-agent.md](testing-an-agent.md)). There is
 no promote at the gateway: the gate is CI's.
 
@@ -103,7 +104,7 @@ made by somebody the org lets act there.
 
 **6. The deploy.** The agent runs on Clínica Norte's own server, either inside their Node app — the
 SDK's `mount` in the server's startup — or as a process of its own under the manager they already
-use: a Procfile's `agent: pinecall start --prod`, with `release: pinecall knowledge push --prod`
+use: a Procfile's `agent: pinecall start --prod`, with `release: pinecall docs push --prod`
 replacing production's base like a migration. Every deploy restarts it. [production.md](production.md)
 is both ways, end to end.
 
@@ -116,7 +117,10 @@ $ pinecall agent set --greeting "Clínica Norte, ¿en qué le ayudo?" --note "sh
 Or the same edit on the agent's **Settings** tab in the gateway's console. Carla hears *Vidal* said
 wrong all morning and fixes it herself, on the console's **Lexicon** screen or with `pinecall lexicon
 add Vidal --say "Bidal" --prod` — the words are a supervisor's to fix, without a developer and
-without a deploy.
+without a deploy. The prices went up on Monday: Carla opens the agent's **Settings** tab, rewrites
+the line under *Knowledge* — what the agent knows by heart, in Markdown, read whole on every call —
+and saves; the next call quotes the new price. Nothing in the repository changed, because the
+repository never held it: the class is the code, and what the business knows is the world's.
 
 **8. The refusals.** Bruno types `pinecall sessions --prod` and is told `403 Bruno has no
 production access: an admin gives it in Team`; the gateway's console shows him **No production
@@ -173,7 +177,7 @@ those keys open, in whichever world the request runs:
 | role | opens | who |
 |---|---|---|
 | `qa` | calls, evals | reads finished calls and the suites |
-| `supervisor` | + supervise, talk, memory, words | the live floor: listen, whisper, take a call over, what the agent remembers about the caller — and the words: the opening, the lexicon, what is remembered, fixed by whoever hears them wrong |
+| `supervisor` | + supervise, talk, memory, words | the live floor: listen, whisper, take a call over, what the agent remembers about the caller — and the words: the opening, the lexicon, what is remembered, what the agent knows by heart, fixed by whoever hears them wrong |
 | `manager` | + numbers, keys, providers, usage, team | runs the floor and the org's accounts, and the words; never which vendor or model the agent runs on |
 | `developer` | app, calls, talk, supervise, pipeline, words, knowledge, memory, evals | writes and runs the agent |
 | `admin` | every door | the org's owner |
@@ -312,8 +316,12 @@ permissions), never a fence of ours. The door and its guards: the runtime's
   `pinecall start` of yours holds that agent, from the phone `pinecall line from` named on this
   gateway, in the org that agent is yours in. `pinecall line` says what the gateway knows; a
   `pinecall start` started again says the phone again.
-- **`knowledge push` "did nothing" to production.** It replaced your sandbox base, which is the
-  right thing. Production's is `pinecall knowledge push --prod`, in the release step.
+- **`docs push` "did nothing" to production.** It replaced your sandbox base, which is the
+  right thing. Production's is `pinecall docs push --prod`, in the release step.
+- **The class is refused at load: `` `voice` is the world's now, not the class's ``.** The voice,
+  the model, the greeting, the words, the memory policy, what it knows by heart and the bases it
+  searches are settings, per world and per corner — the refusal names the verb that sets each.
+  Remove the field from the class; nothing else changes.
 
 ## The doors underneath
 

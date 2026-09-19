@@ -5,12 +5,12 @@ import { realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
 import { helpFor, PLANNED, plannedGroup, type Group } from "./groups.js";
-import { withoutTheWorldFlag } from "./world.js";
+import { inTheWorld, withoutTheWorldFlag } from "./world.js";
 
 // The order this table is written is the order the help prints: link, start and chat first,
 // because they are what a person types on the first day, and the planned groups after, in the
 // design's order. start is rails server and chat is rails console — see docs/decisions/tenant-cli.md.
-const BUILT = ["link", "start", "serve", "chat", "prompt", "test", "simulate", "eval", "sessions", "runs", "agent", "lexicon", "pipeline", "line", "numbers", "personas", "knowledge", "memory", "remember", "supervise", "providers", "callbacks", "login", "whoami"] as const;
+const BUILT = ["link", "start", "serve", "chat", "prompt", "test", "simulate", "eval", "sessions", "runs", "agent", "lexicon", "pipeline", "line", "numbers", "personas", "docs", "memory", "remember", "supervise", "providers", "callbacks", "login", "whoami"] as const;
 
 /** Everything `pinecall` answers to, built and planned alike, in the order help prints them. */
 export function groupNames(): string[] {
@@ -33,7 +33,8 @@ export async function main(
 ): Promise<number> {
   // `--prod` belongs to no group: it says which world this one command runs in, and every group
   // would otherwise have to parse it. Out of argv here, before anybody sees it.
-  const [name, ...rest] = withoutTheWorldFlag(argv);
+  const { argv: named, world } = withoutTheWorldFlag(argv);
+  const [name, ...rest] = named;
   if (name === undefined || name === "--help" || name === "-h" || name === "help") {
     out.write(usage());
     return name === undefined ? 2 : 0;
@@ -54,7 +55,7 @@ export async function main(
   // message is read here rather than through the sdk's `asError`, so that importing this file
   // still costs no websocket client: `pinecall prompt` must pay for nothing it does not use.
   try {
-    return await group.run(rest);
+    return await inTheWorld(world, async () => await group.run(rest));
   } catch (failed) {
     err.write(`pinecall: ${failed instanceof Error ? failed.message : String(failed)}\n`);
     return 1;
@@ -78,7 +79,7 @@ export async function groupFor(name: string, out: NodeJS.WritableStream = proces
   if (name === "pipeline") return (await import("./pipeline.js")).group;
   if (name === "line") return (await import("./line.js")).group;
   if (name === "personas") return (await import("./personas.js")).group;
-  if (name === "knowledge") return (await import("./knowledge.js")).group;
+  if (name === "docs") return (await import("./docs.js")).group;
   if (name === "memory") return (await import("./memory.js")).group;
   if (name === "remember") return (await import("./remember.js")).group;
   if (name === "supervise") return (await import("./supervise.js")).group;
@@ -107,13 +108,13 @@ export function usage(): string {
     "  eval      ring 3: one real call, re-evaluated by the runtime's code checks",
     "  sessions  list | show a call's log, with what it cost and how it was judged",
     "  runs      list | show | diff the suites, promote a call, and watch the drift",
-    "  agent     what the org set over the class — yours, the team's, production's — set, history, rollback",
+    "  agent     the agent's settings — yours, the team's, production's — set, knowledge, history, rollback",
     "  lexicon   the org's words: how the voice says them and what the ears must know",
     "  pipeline  what the agent hears, decides and speaks with, and the knobs over it",
     "  line      which phone is yours, and whose terminal anybody else's call rings in",
     "  numbers   list | import | move | drop the numbers the org answers at",
     "  personas  list | show | try the synthetic callers in test/personas",
-    "  knowledge push | list | drop the knowledge base the agent answers from",
+    "  docs      the documents the agent searches: push | list | drop | eval | attach",
     "  memory    what memory kept about a contact, forget it, and hold recall to a golden",
     "  remember  the goldens memory.remember is held to: what a call teaches, and what it never keeps",
     "  supervise listen in on a live call: whisper, say, take the line, give it back, end",

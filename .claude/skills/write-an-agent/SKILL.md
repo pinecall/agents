@@ -6,7 +6,7 @@ description: Write or change a tenant's agent — the class, its tools, its rend
 # Writing a tenant's agent
 
 The class is the app. Everything below is what the framework refuses, what it will not tell you,
-and what the two examples already paid for. The long form is `docs/writing-an-agent.md` and
+and what the example already paid for. The long form is `docs/writing-an-agent.md` and
 `docs/the-prompt.md`.
 
 ## NEVER
@@ -21,6 +21,14 @@ and what the two examples already paid for. The long form is `docs/writing-an-ag
 - **Never ask the model for a record.** `book(chosen: string)` and resolve it against what is on
   the table. Asked for a whole `Slot`, a model invents one and the agenda gets a slot nobody
   offered — a golden caught exactly this.
+- **Never declare the world on the class.** `voice`, `llm`, `stt`, `greeting`, `hangup`, `says`,
+  `hears`, `memory`, `knowledge`, `docs` are refused at load with the verb that sets each: they
+  are settings, per world and corner, versioned (`pinecall agent`, `pinecall lexicon`, `pinecall
+  memory policy`, `pinecall docs attach`). The class declares the contract — the doors, `language`,
+  the state, the tools, `render()` — and nothing else.
+- **Never write the business into the repository.** What the agent knows by heart is a setting,
+  `pinecall agent knowledge edit` or Settings ▸ Knowledge, read whole on every call. `docs/<name>/`
+  holds only what a turn searches, and a tool reaches it with `await this.knowledge.search(q, { k })`.
 - Never restart your reasoning from the prompt when a tool did not run. Read the log first.
 
 ## The loop
@@ -28,7 +36,7 @@ and what the two examples already paid for. The long form is `docs/writing-an-ag
 ```bash
 cd examples/clinica-norte
 pnpm exec pinecall link                                      # once: your key for the org, in ./.env
-pnpm exec pinecall prompt --state test/prompts/states.json   # offline: no key, no gateway
+pnpm exec pinecall prompt --state test/clinica-norte/prompts/states.json   # offline: no key, no gateway
 pnpm test                                                    # ring 0: the class as software
 pnpm exec pinecall chat                                      # the app in this terminal
 pnpm exec pinecall test --grep <name> --watch                # ring 1, while writing one golden
@@ -59,7 +67,7 @@ Throw a sentence the model can act on.
 
 ## When the model does the wrong thing
 
-Read in this order. Each line is a real diagnosis from these two examples:
+Read in this order. Each line is a real diagnosis from the example:
 
 | symptom | usually |
 |---|---|
@@ -99,7 +107,7 @@ Read in this order. Each line is a real diagnosis from these two examples:
 - Three spellings, one declaration: `@state`, `@state({ pii: true })`, `@state({ visibility })`.
   `pii: true` beside a different `visibility` is refused by name.
 - **Decorating one field decides them all.** No `@state` anywhere: every own field is state, as
-  both examples have it. `@state` on any field: *these and nothing else*, and an undecorated field
+  the example has it. `@state` on any field: *these and nothing else*, and an undecorated field
   is scratch — out of the snapshot, the prompt, `state.changed` and the console, and writable with
   no tool running. It is the only way to keep a helper field out of the log; reach for it on
   purpose, never by forgetting a decorator on a field that IS state.
@@ -107,7 +115,7 @@ Read in this order. Each line is a real diagnosis from these two examples:
 ## Before you call it done
 
 - `pnpm lint && pnpm test` in the app, and `pinecall prompt` printed for each state you changed.
-- A golden for the behaviour, in `test/goldens/`, named after what it is about
+- A golden for the behaviour, in `test/<name>/goldens/`, named after what it is about
   (`no-reserva-antes-del-si.json`). See the `write-a-golden` skill.
 - With `exactOptionalPropertyTypes`, a field a tool can empty again is `field?: T | undefined`.
 - If the change is in `examples/`, the nightly drives it on two models: a rule that only holds on

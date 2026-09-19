@@ -6,8 +6,10 @@ import type { TuningAnswer, TuningBody } from "@pinecall/protocol";
 
 import { FIELDS, linesOf, readSettings, settingsPath, WIRE, type Field } from "./agent-lines.js";
 import { filesRun } from "./agent-files.js";
+import { knowledgeRun } from "./agent-knowledge.js";
 import { listed, stopped } from "./agent-processes.js";
 import { versionsRun } from "./agent-versions.js";
+import type { Editor } from "./agent-knowledge.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { agentOfThisDirectory, notASlug } from "./load.js";
@@ -20,7 +22,8 @@ const USAGE = [
   "       pinecall agent set [--voice x] [--tts x] [--tts-model x] [--stt x] [--llm x] [--greeting '…' | --reply '…']",
   "                          [--hangup '…'] [--endpointing-ms n] [--min-interruption-words n]",
   "                          [--remember '…' …] [--forget '…' …] [--team] [--note '…']",
-  "       pinecall agent clear [voice|tts|tts-model|stt|llm|greeting|hangup|turn|memory|knowledge …] [--team]",
+  "       pinecall agent knowledge [--team] · knowledge edit [--team] [--note '…']",
+  "       pinecall agent clear [voice|tts|tts-model|stt|llm|greeting|hangup|turn|memory|knowledge|bases …] [--team]",
   "       pinecall agent history [--team] · diff [--against team|production] · rollback <version> [--team]",
   "       pinecall agent pull [--team] · push <file> [--team]",
 ].join("\n");
@@ -42,8 +45,13 @@ export const group: Group = {
   the call opens; --reply what the model reads before it finds its own. --remember and --forget
   replace those lists whole. A field nobody names is left as it stands.
 
-  clear takes fields out of the corner's own row, so what the class declared — or the runtime's
-  default — stands for them again; with no name, every field. There is no blank value.
+  knowledge is what the agent knows by heart — the business as the org describes it, in Markdown,
+  read whole on every call. Alone it prints the corner's text; \`edit\` opens it in $EDITOR and
+  saves what you wrote as the next version (an empty file takes it out). It is not the RAG: the
+  documents a turn searches are \`pinecall docs\`, attached as \`bases\`.
+
+  clear takes fields out of the corner's own row, so the runtime's default stands for them again;
+  with no name, every field. There is no blank value.
 
   history, diff and rollback are the versions: every one kept, who set it and why; this corner
   against the team's or production's; one version back as the next one — with --prod, production's.
@@ -62,6 +70,8 @@ export interface Setting {
   out?: NodeJS.WritableStream;
   err?: NodeJS.WritableStream;
   env?: NodeJS.ProcessEnv;
+  /** What `knowledge edit` opens the text in: $EDITOR, or what a test answers instead. */
+  editor?: Editor;
 }
 
 /** Every flag the sub-verbs take, declared once: parseArgs is strict, and one table is one seam. */
@@ -114,6 +124,7 @@ export async function run(argv: string[], how: Setting = {}): Promise<number> {
       return await versionsRun(door, agent, verb, rest, values, out, err);
     }
     if (verb === "pull" || verb === "push") return await filesRun(door, agent, verb, rest, values, out, err);
+    if (verb === "knowledge") return await knowledgeRun(door, agent, rest[0], values, out, err, how.editor);
   } catch (refused) {
     // The gateway's own sentence: it knows this build's vendors, the corner's version, and which
     // half of the settings a key opens — and every refusal names the one it was.

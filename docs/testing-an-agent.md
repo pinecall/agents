@@ -13,7 +13,8 @@ ring 0 says nothing about ring 1, and a green ring 1 says nothing about a real l
 
 ## Ring 0 — the class as software
 
-No network, no key, no model. Two kinds of test, both in `examples/*/test/`:
+No network, no key, no model. Two kinds of test, both in `test/<name>/agent.test.ts` — the
+example's is `examples/clinica-norte/test/clinica-norte/`:
 
 ```ts
 // the class in the hand: call a tool, read the state
@@ -49,10 +50,11 @@ notices when a render starts writing into the cached half.
 ## Ring 1 — the goldens
 
 A golden is one conversation written down: where it starts, what the caller says, and what is
-expected of it. One file per case, in `test/goldens/` — `test/goldens/<name>/` for each agent of a
-project of several — named after what it is about. An agent with no goldens yet has none, which
-is an answer and not an error: the console's roster is empty and `pinecall test` says where to
-write the first.
+expected of it. One file per case, in `test/<name>/goldens/` — the agent's name, whether the
+project holds one or five — named after what it is about. Beside them live two goldens of another
+kind, `docs.json` and `memory.json`, which the last section is about. An agent with no goldens yet
+has none, which is an answer and not an error: the console's roster is empty and `pinecall test`
+says where to write the first.
 
 ```jsonc
 {
@@ -92,9 +94,9 @@ about memory needs no contact in a database and leaves nothing behind.
 | `expect.replies` | the agent answered at all |
 
 ```bash
-pinecall test                                  # every golden in test/goldens/ (in a project: every agent's test/goldens/<name>/)
-pinecall test --agent sales                    # in a project: one agent's
-pinecall test test/goldens/reserva-*.json      # some of them
+pinecall test                                  # every agent's test/<name>/goldens/
+pinecall test --agent sales                    # one agent's
+pinecall test test/clinica-norte/goldens/reserva-*.json   # some of them
 pinecall test --grep reserva --watch           # while writing one
 pinecall test --model haiku --model openai/gpt-4.1-mini   # the matrix: models × goldens
 pinecall test --json                           # for a pipe; the human matrix otherwise
@@ -135,8 +137,8 @@ export default {
 };
 ```
 
-One file per caller in `test/personas/`, or `test/personas/<name>/` in a project, where
-`personas list` prints every agent's and `show`, `try` and `simulate` take `--agent`.
+One file per caller in `test/<name>/personas/`. `personas list` prints every agent's; `show`, `try`
+and `simulate` take `--agent` when the project holds more than one.
 
 ```bash
 pinecall personas list                      # one line each: the name, and the goal
@@ -165,8 +167,9 @@ Python to read a call.
 
 ## Memory and the index have goldens of their own
 
-The write side of memory (`pinecall remember`), the read side (`memory eval`), the index
-(`knowledge eval`) and why a call has no retrieval score are in
+The write side of memory (`pinecall remember`, the cases in `test/<name>/memory/`), the read side
+(`pinecall memory eval`, the golden `test/<name>/goldens/memory.json`), the index (`pinecall docs
+eval`, `test/<name>/goldens/docs.json`) and why a call has no retrieval score are in
 [testing-memory-and-knowledge.md](testing-memory-and-knowledge.md).
 
 ## Ring 4 — every call, judged at hang-up
@@ -202,12 +205,12 @@ What this repository's own CI runs:
 
 - **CI** (`.github/workflows/ci.yml`): `scripts/check` — build, lint, test — on every push. Ring
   0 only: no key, no model, no money. Both retrieval goldens belong here too when the gateway is
-  reachable: `pinecall knowledge eval` and `pinecall memory eval` cost one embedding per question
-  and no model at all.
+  reachable: `pinecall docs eval` and `pinecall memory eval` cost one embedding per question and
+  no model at all.
 - **The nightly** (`.github/workflows/nightly.yml`): rings 1 and 4 on real money, weekday nights.
   `pinecall remember` belongs here too — one model call per case is real money, and the extraction
   prompt is exactly the kind of thing that drifts without anybody touching the class.
-  All three repositories checked out, a throwaway Postgres with the schema migrated, a gateway, both
-  examples, **two models** — and two gates: the goldens on the baseline model, and each judge's
+  All three repositories checked out, a throwaway Postgres with the schema migrated, a gateway, the
+  example, **two models** — and two gates: the goldens on the baseline model, and each judge's
   drift. A golden the two models disagree about fails nothing and is written into the summary as a
   finding; the answer to a divergence is a fix, never a softened golden.

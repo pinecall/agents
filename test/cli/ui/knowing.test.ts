@@ -44,12 +44,12 @@ describe("pushing it", () => {
   });
 
   it("says where it looked when the directory is not there, and knocks at no door", async () => {
-    const gone: Here = { agent: "clinica-norte", directory: "/nowhere/knowledge/docs", golden: "/nowhere/golden.json" };
+    const gone: Here = { agent: "clinica-norte", directory: "/nowhere/docs/clinica-norte", golden: "/nowhere/golden.json" };
     const door = knowingFrom(DOOR, gone.agent, async () => gone);
 
     await expect(door.push({ agent: "clinica-norte" })).rejects.toMatchObject({
       status: 404,
-      message: "no knowledge directory at /nowhere/knowledge/docs",
+      message: "no documents directory at /nowhere/docs/clinica-norte",
     });
     await expect(door.measure({ agent: "clinica-norte" })).rejects.toMatchObject({ status: 404 });
   });

@@ -12,14 +12,13 @@ import { written } from "./said.js";
 const A_KEY = "pk_the_orgs_key";
 const AGENT = "clinica-norte";
 
-/** What the pipeline door answers, with one knob already turned by somebody else. */
+/** What the pipeline door answers: the legs as the next call would be built. */
 const REPORT = {
   agent: AGENT,
   hears: { vendor: "deepgram", model: "nova-3", voice_id: null, language: "es" },
   decides: { vendor: "anthropic", model: "claude-haiku-4-5", voice_id: null, language: null },
   speaks: { vendor: "elevenlabs", model: "eleven_flash_v2_5", voice_id: "Lucia", language: "es" },
   greeting: { say: "Clínica Norte, ¿en qué puedo ayudarle?", reply: null, allow_interruptions: null },
-  overrides: { voice: "Lucia", tts_model: null, stt: null, llm: null, greeting: null },
   voices: ["Lucia", "Mateo"],
   calls: 12,
   medians: [{ name: "eou_delay", seconds: 0.31, turns: 40 }],
@@ -88,7 +87,7 @@ function environment(): NodeJS.ProcessEnv {
 }
 
 describe("what the agent runs on", () => {
-  it("prints the three legs, the opening, the medians and what somebody turned", async () => {
+  it("prints the three legs, the opening, the medians and what is not available", async () => {
     const out = written();
 
     const code = await run(["--agent", AGENT], { out: out.stream, env: environment() });
@@ -96,7 +95,7 @@ describe("what the agent runs on", () => {
     expect(code).toBe(0);
     expect(out.text()).toContain("deepgram · nova-3 · es");
     expect(out.text()).toContain("anthropic · claude-haiku-4-5");
-    expect(out.text()).toContain("elevenlabs · eleven_flash_v2_5 · Lucia · es   ← set: voice");
+    expect(out.text()).toContain("elevenlabs · eleven_flash_v2_5 · Lucia · es");
     expect(out.text()).toContain("Clínica Norte");
     expect(out.text()).toContain("eou_delay 0.31s");
     expect(out.text()).toContain("cartesia is not available here: no key on this box");

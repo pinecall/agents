@@ -1,20 +1,19 @@
 /** The console's own door to memory's two goldens: what recall ranks, and what a hang-up makes of a call. */
 
 import { existsSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
 
 import type { ExtractionGolden, ExtractionRun, MemoryScore } from "@pinecall/protocol";
 
 import { Pinecall } from "../../client/index.js";
 import { mount, slugOf } from "../../runtime/connect.js";
 
-import { theQuestionsIn } from "../knowledge.js";
+import { theQuestionsIn } from "../docs.js";
 import { load, mountOptions } from "../load.js";
-import { AN_EMPTY_GOLDEN, DEFAULT_GOLDEN, NO_GOLDEN, recalledOn } from "../memory.js";
+import { AN_EMPTY_GOLDEN, NO_GOLDEN, recalledOn } from "../memory.js";
 import { CASES, extracted, NO_CASES } from "../remember.js";
 import type { Door } from "../testing/gateway.js";
 import { casesIn } from "../testing/goldens.js";
-import type { Home } from "../home.js";
+import { homeOf, MEMORY_GOLDEN, type Home } from "../home.js";
 import { anObject, aString, maybeNumber } from "./asked.js";
 import { Refusal } from "./refusal.js";
 
@@ -77,7 +76,7 @@ export function rememberingFrom(
       const given = anObject(asked, "a golden");
       mine(aString(given, "agent"), agent);
       const { golden } = await pieces.golden();
-      if (golden === null || !existsSync(golden)) throw new Refusal(404, NO_GOLDEN(golden ?? DEFAULT_GOLDEN));
+      if (golden === null || !existsSync(golden)) throw new Refusal(404, NO_GOLDEN(golden ?? MEMORY_GOLDEN));
       const questions = theQuestionsIn(golden);
       if (questions === null) throw new Refusal(422, AN_EMPTY_GOLDEN(golden));
       return await recalledOn(door, questions, maybeNumber(given, "k", 1, 100));
@@ -120,7 +119,7 @@ async function inThisProcess(door: Door, cases: ExtractionGolden[], file?: strin
 async function theGolden(): Promise<{ agent: string | null; golden: string | null }> {
   try {
     const loaded = await load();
-    return { agent: slugOf(loaded.ctor), golden: resolve(join(dirname(loaded.file), DEFAULT_GOLDEN)) };
+    return { agent: slugOf(loaded.ctor), golden: homeOf(loaded.file).memoryGolden };
   } catch {
     return { agent: null, golden: null };
   }

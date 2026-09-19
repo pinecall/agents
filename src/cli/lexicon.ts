@@ -6,7 +6,7 @@ import type { LexiconAnswer, LexiconBody, LexiconHistory, LexiconRow } from "@pi
 
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
-import { dayAndTime } from "./knowledge.js";
+import { dayAndTime } from "./docs.js";
 import { asked, type Door } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
 

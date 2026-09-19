@@ -1,69 +1,63 @@
-/** Where an agent's files are: beside its own agent.tsx, or — in a project of several — by its name under the project's folders. */
+/** Where an agent's files are: one layout, every folder by the agent's name under the project's root. */
 
 import { existsSync, statSync } from "node:fs";
-import { basename, dirname, extname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 
 import { slugOf } from "../runtime/connect.js";
-import { agentFilesOfTheProject, load, PROJECT_AGENTS } from "./load.js";
+import { agentFilesOfTheProject, load } from "./load.js";
 
 /**
- * Everything a verb reads beside the class. Two layouts, one shape:
+ * Everything a verb reads beside the class, in the one layout a project has:
  *
- * - **One agent, one folder** — the folder holds `agent.tsx`, and beside it `knowledge/docs`,
- *   `knowledge/golden.json`, `memory/golden.json`, `test/goldens`, `test/personas`, `test/memory`.
+ *     agents/<name>/agent.ts      the class, and whatever only it uses beside it
+ *     lib/                        what two or more agents share
+ *     docs/<name>/                the documents the agent SEARCHES — the RAG, and nothing else
+ *     test/<name>/agent.test.ts   ring 0
+ *     test/<name>/goldens/        ring 1 (the conversations), and beside them the retrieval
+ *                                 golden `docs.json` and the recall golden `memory.json`
+ *     test/<name>/personas/       ring 2, the synthetic callers
+ *     test/<name>/memory/         the extraction cases, one written call each
  *
- * - **A project of several agents** — `agents/<name>.tsx` at the root, and every folder shared by
- *   name: `knowledge/<name>/` (the documents pushed to the index), `knowledge/<name>.golden.json`,
- *   `memory/<name>.golden.json`, `test/goldens/<name>/`, `test/personas/<name>/`,
- *   `test/memory/<name>/`. The class names its by-heart file itself, relative to its own file:
- *   `knowledge = "../knowledge/<name>.md"`.
- *
- * A verb never computes a path of its own: it asks for the agent's home.
+ * What the agent knows by heart is not in the repository at all: it is its settings' `knowledge`
+ * (the console's Knowledge textarea, `pinecall agent knowledge edit`). One agent or five, the
+ * layout is the same, and a verb never computes a path of its own: it asks for the agent's home.
  */
 export interface Home {
   /** The class's file, absolute. */
   file: string;
-  /** The agent's name in the project: the file's name, or the folder's for one agent alone. */
+  /** The agent's name in the project: its folder under agents/. */
   name: string;
-  /** Where the verbs run from: the project's root, or the agent's folder. */
+  /** The project's root: where the verbs run from. */
   root: string;
   goldens: string;
   personas: string;
   docs: string;
-  knowledgeGolden: string;
+  docsGolden: string;
   memoryGolden: string;
   memoryCases: string;
 }
 
-/** The home of the class in this file, by which layout the file sits in. */
+/** The two names a retrieval golden and a recall golden go by, inside the goldens folder. */
+export const DOCS_GOLDEN = "docs.json";
+export const MEMORY_GOLDEN = "memory.json";
+
+/** The home of the class in this file: `agents/<name>/agent.ts` says the name and the root. */
 export function homeOf(file: string): Home {
   const path = resolve(file);
   const folder = dirname(path);
-  if (basename(folder) === PROJECT_AGENTS) {
-    const root = dirname(folder);
-    const name = basename(path, extname(path));
-    return {
-      file: path,
-      name,
-      root,
-      goldens: join(root, "test", "goldens", name),
-      personas: join(root, "test", "personas", name),
-      docs: join(root, "knowledge", name),
-      knowledgeGolden: join(root, "knowledge", `${name}.golden.json`),
-      memoryGolden: join(root, "memory", `${name}.golden.json`),
-      memoryCases: join(root, "test", "memory", name),
-    };
-  }
+  const name = basename(folder);
+  const root = dirname(dirname(folder));
+  const tests = join(root, "test", name);
   return {
     file: path,
-    name: basename(folder),
-    root: folder,
-    goldens: join(folder, "test", "goldens"),
-    personas: join(folder, "test", "personas"),
-    docs: join(folder, "knowledge", "docs"),
-    knowledgeGolden: join(folder, "knowledge", "golden.json"),
-    memoryGolden: join(folder, "memory", "golden.json"),
-    memoryCases: join(folder, "test", "memory"),
+    name,
+    root,
+    goldens: join(tests, "goldens"),
+    personas: join(tests, "personas"),
+    docs: join(root, "docs", name),
+    docsGolden: join(tests, "goldens", DOCS_GOLDEN),
+    memoryGolden: join(tests, "goldens", MEMORY_GOLDEN),
+    memoryCases: join(tests, "memory"),
   };
 }
 
@@ -75,9 +69,9 @@ export function hasDirectory(path: string): boolean {
 /**
  * The agents a verb acts on, from what was typed.
  *
- * `file` — that class. Otherwise the `agent.tsx` of this directory. Otherwise, at a project's root,
- * every `agents/*.tsx`, or the one `agent` names — by its name in the project (`sales`) or by its
- * slug (`bidfire-sales`).
+ * `file` — that class. Otherwise every `agents/<name>/agent.ts` of the project this terminal
+ * stands in, or the one `agent` names — by its name in the project (`sales`) or by its slug
+ * (`bidfire-sales`).
  */
 export async function homesFor(file?: string, agent?: string): Promise<Home[]> {
   if (file !== undefined) return [homeOf(file)];

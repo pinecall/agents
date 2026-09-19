@@ -3,6 +3,8 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import { basename, extname, join, resolve } from "node:path";
 
+import { DOCS_GOLDEN, MEMORY_GOLDEN } from "../home.js";
+
 /** A fact from the tenant's backend, injected mid-conversation the way the app would send it. */
 export interface EventStep {
   /** How many of the caller's turns have been answered when it arrives. 0 is before a word. */
@@ -95,10 +97,15 @@ async function casesOf<T extends { name?: string }>(file: string): Promise<T[]> 
 
 // A directory is read one level deep and sorted: goldens are a flat folder of files, and the order
 // a run reports in should be the order `ls` prints, not the order the filesystem happens to answer.
+// The retrieval golden and the recall golden sit in the same folder under their own two names
+// (home.ts), and they are not conversations: they are left to `docs eval` and `memory eval`.
 async function filesUnder(path: string): Promise<string[]> {
   if (!(await stat(path).catch(() => null))?.isDirectory()) return [path];
   const names = await readdir(path);
-  return names.filter((name) => extname(name) === ".json").sort().map((name) => join(path, name));
+  return names
+    .filter((name) => extname(name) === ".json" && name !== DOCS_GOLDEN && name !== MEMORY_GOLDEN)
+    .sort()
+    .map((name) => join(path, name));
 }
 
 /** The goldens of one agent's home: its folder, or none when it has none yet. */

@@ -1,24 +1,11 @@
 /** The console's own door to the knowledge base: this directory's documents pushed, and its golden asked. */
 
 import { existsSync, statSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-
 import type { KnowledgePushed, KnowledgeScore } from "@pinecall/protocol";
 
 import { slugOf } from "../../runtime/connect.js";
-import type { Home } from "../home.js";
-import {
-  AN_EMPTY_GOLDEN,
-  DEFAULT_DIR,
-  DEFAULT_GOLDEN,
-  markdownUnder,
-  NO_DIRECTORY,
-  NO_GOLDEN,
-  NO_MARKDOWN,
-  pushedTo,
-  scoredOn,
-  theQuestionsIn,
-} from "../knowledge.js";
+import { AN_EMPTY_GOLDEN, markdownUnder, NO_DIRECTORY, NO_GOLDEN, NO_MARKDOWN, pushedTo, scoredOn, theQuestionsIn } from "../docs.js";
+import { homeOf, type Home } from "../home.js";
 import { load } from "../load.js";
 import type { Door } from "../testing/gateway.js";
 import { anObject, aString, maybeNumber, someWords } from "./asked.js";
@@ -51,13 +38,13 @@ export interface Here {
 
 const NOT_THIS_DIRECTORY = (asked: string, here: string | null): string =>
   here === null
-    ? `no agent class in this directory: run \`pinecall start\` where ${asked}'s agent.tsx is`
+    ? `no agent class in this directory: run \`pinecall start\` at ${asked}'s project`
     : `this process runs in ${here}'s directory: to push ${asked}'s knowledge, run \`pinecall start\` there`;
 
 /**
  * One `Knowing` for the life of a `pinecall start`. Pushing a base is reading files off this
- * machine's disk, which only the process standing in the agent's directory can do — the same
- * `knowledge/docs` and `knowledge/golden.json` `pinecall knowledge` reads, through the same two
+ * machine's disk, which only the process standing in the project can do — the same
+ * `docs/<name>/` and `test/<name>/goldens/docs.json` `pinecall docs` reads, through the same two
  * doors of the gateway. Listing and dropping a base are the gateway's own and the page asks it
  * directly; nothing of that passes through here.
  */
@@ -117,12 +104,8 @@ function documents(directory: string): ReturnType<typeof markdownUnder> {
 async function theDirectory(): Promise<Here> {
   try {
     const loaded = await load();
-    const beside = dirname(loaded.file);
-    return {
-      agent: slugOf(loaded.ctor),
-      directory: resolve(join(beside, DEFAULT_DIR)),
-      golden: resolve(join(beside, DEFAULT_GOLDEN)),
-    };
+    const home = homeOf(loaded.file);
+    return { agent: slugOf(loaded.ctor), directory: home.docs, golden: home.docsGolden };
   } catch {
     return { agent: null, directory: null, golden: null };
   }
@@ -130,5 +113,5 @@ async function theDirectory(): Promise<Here> {
 
 /** One agent of a project, as the Knowledge screen reads it: its slug, its documents, its golden. */
 export function hereOf(home: Home, slug: string): () => Promise<Here> {
-  return async () => ({ agent: slug, directory: home.docs, golden: home.knowledgeGolden });
+  return async () => ({ agent: slug, directory: home.docs, golden: home.docsGolden });
 }

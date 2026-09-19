@@ -1,14 +1,14 @@
 /** Loading a tenant's agent file from the CLI: the TypeScript loader, the class, and its own source. */
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { basename, extname, resolve } from "node:path";
+import { basename, dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { Agent, setCall } from "../agent/agent.js";
 import { describe } from "../agent/docstrings.js";
 import { CallWorld } from "../call/call.js";
 import { type MountOptions, slugOf } from "../runtime/connect.js";
-import { groundingOf } from "../runtime/grounding.js";
+import { refuseTheEnvironment } from "../runtime/environment.js";
 
 /** What the CLI needs to mount or render an agent: the class, and the file it came from. */
 export interface Loaded {
@@ -18,11 +18,11 @@ export interface Loaded {
 }
 
 /**
- * Where an agent lives when nobody said. A class whose `render()` returns JSX is written in
+ * The class's file inside its folder. A class whose `render()` returns JSX is written in
  * `agent.tsx`, which is what every example and every generator writes; `agent.ts` still loads, for
  * a class that renders nothing. The first that is there wins, and a usage line names the first.
  */
-export const DEFAULT_AGENTS = ["agent.tsx", "agent.ts"] as const;
+export const AGENT_FILES = ["agent.tsx", "agent.ts"] as const;
 
 let registered = false;
 
@@ -54,10 +54,10 @@ export async function load(file?: string): Promise<Loaded> {
   if (typeof ctor !== "function") throw new Error(`${path} has no default-exported Agent class`);
   const source = readFileSync(path, "utf8");
   describe(ctor, source, path);
-  // What the class says it knows is checked here, where its path is in hand: a knowledge file that
-  // is not there, or `docs` still written as a glob, is refused before a prompt is printed or a
-  // gateway is knocked at — `pinecall prompt` never mounts, and it must say so too.
-  groundingOf(new (ctor as new () => Agent)(), path);
+  // A class still carrying a field of the world's — a voice, a model, an opening, a base — is
+  // refused here, before a prompt is printed or a gateway is knocked at: `pinecall prompt` never
+  // mounts, and it must say so too.
+  refuseTheEnvironment(new (ctor as new () => Agent)());
   return { ctor: ctor as new () => Agent, file: path, source };
 }
 
@@ -77,42 +77,34 @@ export function mountOptions(loaded: Loaded, pc: MountOptions["pc"]): MountOptio
   return { pc, source: loaded.source, file: loaded.file };
 }
 
-/** The folder a project of several agents keeps them in, one file each: `agents/<name>.tsx`. */
+/** The folder a project keeps its agents in, one folder each: `agents/<name>/agent.ts`. */
 export const PROJECT_AGENTS = "agents";
 
-// A file under agents/ that is not an agent: a test beside it, a type declaration.
-const NOT_AN_AGENT = /\.(test|spec|d)\.tsx?$/;
-
 /**
- * The agents of the project rooted here: every `agents/<name>.tsx` (or `.ts`), sorted — and none
- * when this directory holds an `agent.tsx` of its own, which makes it one agent's folder.
+ * The agents of the project rooted here: every `agents/<name>/` that holds an `agent.tsx` (or
+ * `.ts`), sorted by name. A folder under agents/ with no class in it is not an agent.
  */
 export function agentFilesOfTheProject(root: string = process.cwd()): string[] {
-  if (DEFAULT_AGENTS.some((name) => existsSync(resolve(root, name)))) return [];
   const folder = resolve(root, PROJECT_AGENTS);
   if (!existsSync(folder)) return [];
   return readdirSync(folder, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && /\.tsx?$/.test(entry.name) && !NOT_AN_AGENT.test(entry.name))
-    .map((entry) => resolve(folder, entry.name))
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => AGENT_FILES.map((name) => resolve(folder, entry.name, name)).find((path) => existsSync(path)))
+    .filter((path): path is string => path !== undefined)
     .sort();
 }
 
-// Nobody named a file. Looking for both names and saying so is the whole of it: a directory with
-// neither is a directory somebody typed the verb in by mistake, and the refusal has to say where
-// it looked rather than "no agent at /…/agent.tsx" for a project written in .ts. At a project's
-// root the one agent is that agent; several have to be named.
+// Nobody named a file: the one agent of the project this terminal stands in is that agent, and
+// several have to be named. A directory with none is a directory somebody typed the verb in by
+// mistake, and the refusal says where it looked.
 function theAgentHere(): string {
-  const found = DEFAULT_AGENTS.map((name) => resolve(name)).find((path) => existsSync(path));
-  if (found !== undefined) return found;
   const project = agentFilesOfTheProject();
   if (project.length === 1) return project[0]!;
   if (project.length > 1) {
-    const names = project.map((file) => `--agent ${basename(file, extname(file))}`).join(" or ");
+    const names = project.map((file) => `--agent ${basename(dirname(file))}`).join(" or ");
     throw new Error(`this project has ${project.length} agents: name one with ${names}`);
   }
-  throw new Error(
-    `no agent here: looked for ${DEFAULT_AGENTS.join(" and ")}, and ${PROJECT_AGENTS}/*.tsx, in ${process.cwd()}`,
-  );
+  throw new Error(`no agent here: looked for ${PROJECT_AGENTS}/<name>/${AGENT_FILES.join(" or ")} in ${process.cwd()}`);
 }
 
 // The slug of the agent this terminal is standing in, read the way `run` reads it, so no two verbs

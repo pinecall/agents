@@ -5,46 +5,43 @@ do, its docstrings are the prompt, and its `render()` is what it says about righ
 else — the audio, the rooms, the turn taking, the log, the memory, the judges — is the platform's,
 and this class never imports any of it.
 
-Both examples in `../examples/` are complete versions of everything below.
+`../examples/clinica-norte` is a complete version of everything below.
 
 ## The shape on disk
 
-```
-agent.tsx           the class: the state is fields, the tools are methods with a docstring,
-                    and render() is the prompt as a function of the state
-knowledge/          clinica.md, cached ahead of everything · docs/ pushed by name, retrieved per turn
-lib/                the tenant's own systems: an agenda, a CRM, a catalogue
-test/
-  goldens/          one file per case: { state, input, expect }
-  personas/         one file per synthetic caller: a goal, a way of speaking, the facts they know
-  prompts/          the states `pinecall prompt` is checked against
-  agent.test.ts     the class as software: ring 0, no network and no model
-tsconfig.json       { "extends": "pinecall/tsconfig.tenant.json" }
-```
-
-### Several agents in one project
-
-A repository that holds more than one agent keeps each as a file under `agents/`, and shares every
-other folder by the agent's name:
+One layout, whether the project holds one agent or five: the class under `agents/<name>/`, and
+every folder that belongs to that agent under its name.
 
 ```
-agents/dispatch.tsx       one class each; the slug is declared on it
-agents/sales.tsx
-lib/                      what they share
-knowledge/dispatch.md     by heart: `knowledge = "../knowledge/dispatch.md"`, relative to the class
-knowledge/sales/          the documents `pinecall knowledge push` sends to sales's base
-knowledge/sales.golden.json
-test/dispatch.test.ts     ring 0, one file per agent
-test/goldens/<name>/      test/personas/<name>/      test/memory/<name>/
-memory/<name>.golden.json
+agents/clinica-norte/
+  agent.tsx           the class: the state is fields, the tools are methods with a docstring,
+                      and render() is the prompt as a function of the state
+  agenda.ts, crm.ts   what only this agent uses: its systems, a callbacks file
+lib/                  what two or more agents share
+docs/clinica-norte/   the documents the agent SEARCHES per turn — the RAG, and nothing else
+test/clinica-norte/
+  agent.test.ts       the class as software: ring 0, no network and no model
+  goldens/            one file per conversation: { state, input, expect } — and beside them
+                      docs.json, the retrieval golden, and memory.json, the recall golden
+  personas/           one file per synthetic caller: a goal, a way of speaking, the facts they know
+  memory/             the extraction cases `pinecall remember` runs: one written call each
+  prompts/            the states `pinecall prompt` is checked against
+tsconfig.json         { "extends": "pinecall/tsconfig.tenant.json" }
 ```
 
-At that root `pinecall start` holds every agent on one socket, and every verb acts on each agent
-against its own folders, or on the one `--agent <name|slug>` names; a verb about one agent —
-`chat`, `simulate`, `prompt`, `remember`, `line`, among others — needs `--agent` when there are
-several. A
-folder nobody has written yet is empty, not an error. The CLI's page says which verb does what:
-[A project of several agents](the-cli.md#a-project-of-several-agents).
+**What the agent knows by heart is not in the repository.** Hours, prices, what needs an
+authorisation: that is the business, and the business describes itself — in the console's Settings
+tab, under Knowledge, or in `pinecall agent knowledge edit`. It is a setting of the world, versioned
+like the voice, and a deploy never changes it. The same goes for the voice, the model, the greeting,
+the lexicon and the memory policy: the class is code, the world is environment. [The class](#the-class)
+says which is which.
+
+A second agent is a second folder under `agents/`, and the same folders under its name. At the root
+`pinecall start` holds every agent on one socket, and every verb acts on each agent against its own
+folders, or on the one `--agent <name>` names; a verb about one agent — `chat`, `simulate`, `prompt`,
+`remember`, `line`, among others — needs `--agent` when there are several. A folder nobody has
+written yet is empty, not an error. The CLI's page, [the-cli.md](the-cli.md), says which verb
+does what.
 
 The file is `agent.tsx` because the class renders JSX. That is the only reason, and it changes
 nothing else: a class that writes no `render()` may stay in `agent.ts`, and the CLI finds either.
@@ -81,9 +78,8 @@ changes. **Never add a `paths` mapping for `pinecall`**: the app resolves it thr
  */
 export default class ClinicaNorte extends Agent {
   phone = "+34910000000";
+  whatsapp = "+34910000000";
   web = true;
-  voice = "carolina";
-  llm = "haiku";
   language = "es";
 
   stage: Stages<"identify" | "choose" | "book" | "done"> = "identify";
@@ -96,33 +92,41 @@ The **class docstring is the first thing the model reads** — it opens `identit
 block of the prompt. It has to be above the class, in a `/** … */`, and the CLI is what makes that possible: it hands the
 class its own source so the docstring survives compilation.
 
-The class is the **default export** of `agent.tsx`. Its name gives the slug it registers under
+The class is the **default export** of `agents/<name>/agent.tsx`. Its name gives the slug it registers under
 (`ClinicaNorte` → `clinica-norte`), unless it declares `static slug`.
 
 ### Config, and state
 
-A handful of field names configure the agent instead of remembering something. They are never
-diffed, never rendered, never in a snapshot. **Most of them are the world's now, not the class's**:
-what an agent runs on is set with `pinecall agent set` (or the console's Settings tab), per world
-and per corner, versioned — and a class that still declares one of them seeds the world's first
-version the first time it registers, after which the world wins and `pinecall start` says so beside
-every field the class still says differently. The class keeps the contract; the table says which
-is which:
+Four field names configure the agent instead of remembering something. They are never diffed,
+never rendered, never in a snapshot:
 
-| field | what it means | the class's, or the world's |
+| field | what it means |
+|---|---|
+| `phone`, `whatsapp`, `web` | the doors this agent answers. A number, or `true` for a door with none |
+| `language` | which standing rules the framework contributes (`es`, `en`). The prompt is written in it |
+
+Everything the agent **runs on** is the world's, not the class's: set per world and per corner,
+versioned, with who set it and why, and changed without a deploy — by `pinecall agent set`, the
+console's Settings tab, or the verb the table names. A class that still declares one of these
+fields is refused when it loads, before a prompt is printed or a gateway is knocked at, with the
+verb that sets it now:
+
+```
+`voice` is the world's now, not the class's: pinecall agent set --voice <name> — remove it from the class
+```
+
+| field | what it is | where it is set |
 |---|---|---|
-| `phone`, `whatsapp`, `web` | the doors this agent answers. A number, or `true` for a door with none | the class's |
-| `language` | which standing rules the framework contributes (`es`, `en`) | the class's: the prompt is written in it |
-| `voice` | a voice **by name** — the platform resolves it to a vendor and an id | the world's: `pinecall agent set --voice` |
-| `llm` | `"haiku"`, `"sonnet"`, `"opus"`, or `"provider/model"` | the world's: `--llm` |
-| `stt` | the ears: `"deepgram"` (Flux), `"soniox"`, or `"vendor/model"`. Unsaid, the runtime's own | the world's: `--stt` |
-| `greeting` | how the call opens: the words, or what the model reads before finding its own | the world's: `--greeting` · `--reply` |
-| `says` | `{ DKV: "de ka uve" }` — how a word the voice would misread is said | the org's **lexicon**: `pinecall lexicon add` |
-| `hears` | the words the ears must know: names, brands, the doctor's surname | the org's lexicon: `pinecall lexicon hear` |
-| `knowledge` | one file, its path relative to the class's own file, sent whole: cached ahead of everything | still the class's — the knowledge chapter moves it |
-| `docs` | the knowledge base retrieved per turn, **by the name it was pushed under** | the world's, as the first of its bases: `knowledge` in the settings |
-| `memory` | what to remember about a caller across calls, and what never to | the world's: `pinecall memory policy` |
-| `hangup` | `{ when: "…" }` — the model may end the call itself, and when, in your words (`{}` leaves the wording to livekit's own `end_call`). A class that declares nothing cannot hang up: only the caller and a supervisor end the call | the world's: `--hangup` |
+| `voice` | a voice **by name** — the platform resolves it to a vendor and an id | `pinecall agent set --voice` |
+| `llm` | `haiku`, `sonnet`, `opus`, or `vendor/model` | `pinecall agent set --llm` |
+| `stt` | the ears: `deepgram` (Flux), `soniox`, or `vendor/model`. Unsaid, the runtime's own | `pinecall agent set --stt` |
+| `greeting` | how the call opens: the words, or what the model reads before finding its own | `pinecall agent set --greeting '…'` · `--reply '…'` |
+| `hangup` | whether the model may end the call itself, and when, in your words | `pinecall agent set --hangup '…'` |
+| `says` | how a word the voice would misread is said: `Vidal` → `Bidal` | the org's lexicon: `pinecall lexicon add <word> --say '…'` |
+| `hears` | the words the ears must know: names, brands, the doctor's surname | the org's lexicon: `pinecall lexicon hear <word> …` |
+| `memory` | what to remember about a caller across calls, and what never to | `pinecall memory policy --remember '…' --forget '…'` |
+| `knowledge` | what the agent knows by heart: a page of Markdown, read whole on every call | `pinecall agent knowledge edit`, or Settings ▸ Knowledge |
+| `docs` | the bases the agent searches per turn, and how many chunks a turn reads | `pinecall docs push`, then `pinecall docs attach <base>` |
 
 **Everything else you put on the instance is state**, and so is every getter — `get identified()
 { return !!this.patient }` is exactly what a tool's `when` asks about. Two consequences worth
@@ -139,67 +143,71 @@ made it, and that is what the log, the console and a golden read.
 
 ### Opening the call
 
-An agent that answers a phone speaks first. `greeting` says how, and there are exactly two ways:
+An agent that answers a phone speaks first, and the world says how. There are exactly two ways:
 
-```ts
-// the words, read out as written — no model runs, so it is the same sentence every time
-greeting = "Clínica Norte, buenos días. ¿En qué puedo ayudarle?";
-
-// or: what the model is told before it finds its own words. The caller never hears this line
-greeting = { reply: "saluda, di que eres la recepción y pregunta en qué puedes ayudar" };
-
-// a notice nobody may talk over
-greeting = { say: "Esta llamada será grabada.", allowInterruptions: false };
+```console
+$ pinecall agent set --greeting "Clínica Norte, buenos días. ¿En qué puedo ayudarle?"   # the words, read out as written
+$ pinecall agent set --reply "saluda, di que eres la recepción y pregunta en qué puedes ayudar"   # what the model reads first
 ```
 
-Declaring both, or neither, is refused when the class loads: a greeting is one of the two.
-Declaring nothing at all is the third, quieter option — nobody speaks until the caller does.
+The first costs nothing and is the same sentence every time; the second costs one model turn and
+the caller never hears the line itself. Setting neither is the third, quieter option — nobody
+speaks until the caller does. Because words are words, a supervisor's key may set them, and setting
+them also stops an agent that improvises.
 
 The opening is a `turn.agent` like any other: it is on the log, the console draws it, and ring 4
-judges the call it starts. `{ say }` costs nothing; `{ reply }` costs one model turn.
+judges the call it starts. A **golden** never hears it — a golden is one turn under the state it
+declares, so the call it runs is already underway.
 
-Two places it deliberately does **not** sound. A **golden** never hears it — a golden is one turn
-under the state it declares, so the call it runs is already underway. And the **world** sets it:
-`pinecall agent set --greeting '…'`, or the Settings tab, replaces it without a deploy, and a
-supervisor's key may do that; because words are words, setting them also stops an agent that
-improvises.
-
-Mid-call the same two verbs are methods, for when something happens that the caller should hear
-now: `this.say("Se ha liberado una hora a las diez y cuarto.")` and
+Mid-call the same two verbs are methods of the class, for when something happens that the caller
+should hear now: `this.say("Se ha liberado una hora a las diez y cuarto.")` and
 `this.reply("dile que acaba de liberarse una hora a las diez y cuarto")`.
 
-### Knowledge, docs and memory
+### Knowledge: by heart, and searched
+
+Two different things, and the class holds neither.
+
+**What the agent knows by heart** — the hours, the prices, which tests need an authorisation — is
+a page of Markdown the org writes in the console, Settings ▸ Knowledge, or in its own editor:
+
+```console
+$ pinecall agent knowledge                 # print the corner's text
+$ pinecall agent knowledge edit            # $EDITOR on it; what you save is the next version
+$ pinecall agent knowledge edit --team     # the team's corner; --prod, production's
+```
+
+The gateway writes that text, whole, into the `knowledge` block of the prompt: once per call, in
+the cached prefix, so the model has it on every turn and you pay for it once. The class sends
+nothing for that block. Use it for what is small, stable and always relevant — a page is fine, a
+hundred documents are not.
+
+**What the agent searches** is the folder of Markdown under `docs/<name>/`, pushed to the gateway
+as a **base** and attached to the agent in the world that reads it:
+
+```console
+$ pinecall docs push                                   # docs/clinica-norte/ → the base clinica-norte
+$ pinecall docs attach clinica-norte --k 4             # this agent reads it, four chunks a turn
+$ pinecall docs list · pinecall docs attached · pinecall docs detach clinica-norte
+```
+
+A push replaces the base whole. `attach` is one field of the agent's settings — `bases`, a new
+version — with how a turn reads it: `--k` chunks, `--mode retrieved` (the platform searches before
+the turn, the default) or `--mode tool` (the model decides when), `--min-score`. From inside the
+class, a tool may search the attached bases itself:
 
 ```ts
-knowledge = "./knowledge/clinica.md";
-docs = "clinica-norte";                       // or { base: "clinica-norte", k: 4, minScore: 0.5 }
-memory = {
-  remember: ["cómo prefiere que le llamen", "alergias", "su médico habitual"],
-  forget: ["pagos"],
-};
+/** Busca en la documentación de la clínica lo que el paciente pregunta y devuelve los párrafos que lo responden. */
+@tool()
+async lookUp(question: string): Promise<Found[]> {
+  return await this.knowledge.search(question, { k: 3 });
+}
 ```
 
-**`knowledge`** is the one file the agent knows by heart. The path is relative to the class's own
-file — `agent.tsx`, or `agents/<name>.tsx` in a project, where it reads
-`"../knowledge/<name>.md"`; the CLI reads it there and sends `{ path, text }` in the declaration, and the runtime writes the text
-into the `knowledge` block, once per call, in the cached prefix. A file that is not there is
-refused at load: `knowledge ./knowledge/nadie.md: no such file at /…/knowledge/nadie.md`.
-
-**`docs`** names the knowledge base the agent answers from — the folder under `knowledge/docs/`
-(`knowledge/<name>/` in a project), pushed to the gateway under a name:
-
-```bash
-pinecall knowledge push                       # ./knowledge/docs beside agent.tsx, base = the slug
-pinecall knowledge push ./knowledge/docs --base clinica-norte
-pinecall knowledge list · pinecall knowledge drop clinica-norte
-```
-
-A push sends the folder whole and replaces the base; the class then says `docs = "clinica-norte"`,
-or the object form when it wants to say how the chunks come back: `mode` (who calls `search` —
-`retrieved`, the default, is the platform before the turn; `tool` is the model), `k`, `minScore`.
-The glob the field used to hold is refused with the verb that replaces it: `docs name the base they
-were pushed to: run \`pinecall knowledge push ./knowledge/docs --base <slug>\``. Both are typed —
-`DocsDeclaration`, `MemoryDeclaration` — for a class that annotates its fields.
+`Found` is `{ path, heading, text }`, one per chunk. A class that reaches `this.knowledge` is read
+as one that searches — off its source, by the parser, not by a regex — and a world that attaches it
+no base refuses it at registration, before a call where the search would find nothing:
+`clinica-norte searches its bases, and none is attached to it in sandbox: pinecall docs attach
+<base> --agent clinica-norte`.
 
 **What comes back is never spliced into your prompt.** A chunk of a document and a fact a model
 kept from an earlier caller arrived from outside the conversation, and they reach the model as
@@ -207,10 +215,18 @@ kept from an earlier caller arrived from outside the conversation, and they reac
 The rule and the vendor guidance behind it are a public contract:
 `runtime/docs/security/prompt-injection.md`.
 
-**`memory`** is the policy, in your own words: what the runtime extracts about a contact at
-hang-up (one model call, after `call.ended` and before `call.summary`) and what it must never
-write. The facts are recalled on every turn, filed under the very words you wrote here, and your
-class asks about them with one question:
+### Memory
+
+The policy — what the runtime extracts about a contact at hang-up and what it must never write —
+is the org's, in its own words:
+
+```console
+$ pinecall memory policy --remember "cómo prefiere que le llamen" "alergias" "su médico habitual" --forget "pagos"
+```
+
+The extraction is one model call, after `call.ended` and before `call.summary`. The facts are
+recalled on every turn, filed under the very words the policy uses, and your class asks about them
+with one question:
 
 ```tsx
 {this.remembers("médico habitual") && <p>Ofrece primero las horas de su médico habitual.</p>}
@@ -371,7 +387,7 @@ what a browser widget may read; `pii` is masked in the log at write time. `pii: 
 `visibility` that says something else are refused when the class is defined, by name.
 
 **Decorating one field decides them all.** A class that decorates NO field has every own field as
-state, which is what both examples do. A class that decorates ANY field means *these, and nothing
+state, which is what the example does. A class that decorates ANY field means *these, and nothing
 else*: an undecorated field on it is your own scratch space — out of the snapshot, out of the
 prompt, out of `state.changed` and out of the console, and writable from anywhere, since "tools are
 the only writers" is a rule about state. It is the one way to keep a helper field out of the log. A
@@ -393,11 +409,13 @@ field and never whether it is one.
 pinecall link                      # once per project folder: your key for its org, written to ./.env
 pinecall chat                      # the app in THIS terminal, and a written caller against it
 pinecall chat --as +34600123456    # the same call, from somebody memory can file it under
-pinecall prompt --state test/prompts/states.json    # what the model would read, offline
-pinecall knowledge push            # ./knowledge/docs to the gateway, under the agent's slug
+pinecall prompt --state test/clinica-norte/prompts/states.json    # what the model would read, offline
+pinecall docs push                 # docs/<name>/ to the gateway, as the base named after the agent
+pinecall docs attach clinica-norte --k 4      # the agent reads it, in your corner
+pinecall agent knowledge edit      # what it knows by heart, in $EDITOR
 pinecall start                     # the app registered and answering: the process you deploy
 pinecall start --serve             # the same, and your console on http://localhost:4100:
-                                   # talk, chat, calls, sessions, evals, knowledge, memory, widget
+                                   # talk, chat, calls, sessions, evals, docs, memory, widget
 ```
 
 `pinecall start` is the same process in the sandbox and in production (`--prod`, on a server's

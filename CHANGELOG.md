@@ -6,6 +6,36 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Changed
+- **The class is code, the world is environment.** A class declares the contract — its doors,
+  `language`, state, `@tool`s, events, `render()` — and nothing it runs on. `voice`, `llm`, `stt`,
+  `greeting`, `hangup`, `says`, `hears`, `memory`, `knowledge` and `docs` on a class are refused at
+  load, before a prompt is printed or a gateway is knocked at, and the refusal names the verb that
+  sets each (`pinecall agent set --voice <name>`, `pinecall lexicon add`, `pinecall memory policy`,
+  `pinecall agent knowledge edit`, `pinecall docs attach`). Nothing is seeded from the class any
+  more and `pinecall start` prints no "the world wins" lines: there is no class value to differ from.
+- **Knowledge and bases are two things.** What the agent knows by heart is `knowledge`: a page of
+  Markdown in its settings, per world and corner, versioned, read whole into the prompt's static
+  block on every call — written in the console's Settings ▸ Knowledge or with `pinecall agent
+  knowledge edit` (`$EDITOR`), and open to a supervisor's or manager's key (`words`). What a turn
+  searches is `bases`: the documents pushed with `pinecall docs push` and attached with `pinecall
+  docs attach <base> --k <n>`. A class reaches them from a tool with `await
+  this.knowledge.search(query, { k })`, and a class that searches in a world where no base is
+  attached is refused at registration naming `pinecall docs attach`.
+- **`pinecall knowledge` is `pinecall docs`** — `push`, `list`, `drop`, `eval`, and now `attach`,
+  `detach`, `attached`. `pinecall agent` prints two rows, `knowledge` as a size and `bases` by
+  name; `clear` takes either.
+- **One project layout.** `agents/<name>/agent.tsx` and beside it only what that agent uses;
+  `lib/` shared; `docs/<name>/` the documents it searches and nothing else; `test/<name>/goldens/`
+  the conversations `pinecall test` runs with `docs.json` and `memory.json` — the retrieval and
+  recall goldens — beside them; `test/<name>/personas/`; `test/<name>/memory/` the extraction
+  cases. A directory holding a bare `agent.tsx` is no longer a project: the verbs look for
+  `agents/<name>/agent.tsx` and say so. Business knowledge is not in the repository.
+- `examples/clinica-norte` is the one example, on that layout; `examples/tienda-sur` is gone.
+- `pinecall pipeline` and the console's Pipeline screen read the three legs as the next call is
+  built and mark nothing as `turned` or `← set`: with no class value to differ from, every value is
+  the world's, and Settings is where it is changed.
+
 ### Fixed
 - `pinecall agent stop ""` asks which app, as a bare `stop` does, instead of posting to
   `/v1/apps//stop` and printing the gateway's 405.

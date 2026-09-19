@@ -1,4 +1,4 @@
-/** `pinecall pipeline`: what an agent hears, decides and speaks with, and the knobs an operator turns. */
+/** `pinecall pipeline`: what an agent hears, decides and speaks with, as the next call would be built. */
 
 import { parseArgs } from "node:util";
 
@@ -18,8 +18,8 @@ export const group: Group = {
   usage: `${USAGE}
 
   The three legs of the pipeline as the NEXT call would be built — the vendor, the model and the
-  one knob worth showing — the opening, the medians livekit measured over the agent's recent
-  calls, and which of the six knobs is set, marked \`← set\` where it shows.
+  one knob worth showing — the opening, and the medians livekit measured over the agent's recent
+  calls.
 
   Setting them is \`pinecall agent set\`: the six are fields of the agent's settings now, with the
   opening, the cut of a turn, what is remembered and the bases beside them, per corner and
@@ -35,16 +35,6 @@ interface Stage {
   language: string | null;
 }
 
-/** The six knobs. A knob left out of a PUT is not overridden at all. */
-interface Overridden {
-  voice: string | null;
-  tts: string | null;
-  tts_model: string | null;
-  stt: string | null;
-  llm: string | null;
-  greeting: string | null;
-}
-
 /** One latency over the agent's recent calls, under livekit's own name for it. */
 interface Measured {
   name: string;
@@ -52,14 +42,13 @@ interface Measured {
   turns: number;
 }
 
-/** What the pipeline door answers: the legs, the opening, what is turned, and what it cost. */
+/** What the pipeline door answers: the legs, the opening, and what it cost. */
 interface Report {
   agent: string;
   hears: Stage;
   decides: Stage;
   speaks: Stage;
   greeting: { say: string | null; reply: string | null } | null;
-  overrides: Overridden;
   voices: string[];
   calls: number;
   medians: Measured[];
@@ -138,15 +127,15 @@ function said(report: Report, asJson: boolean, out: NodeJS.WritableStream): numb
   return 0;
 }
 
-/** The whole screen as a page of text: the three legs, the opening, the medians, what is turned. */
+/** The whole screen as a page of text: the three legs, the opening, the medians. */
 export function linesOf(report: Report): string[] {
   const calls = `${report.calls} call${report.calls === 1 ? "" : "s"}`;
   const lines = [`${report.agent} · ${calls}`, ""];
-  lines.push(`  hears     ${stageLine(report.hears)}${turnedAt(report, "stt")}`);
-  lines.push(`  decides   ${stageLine(report.decides)}${turnedAt(report, "llm")}`);
-  lines.push(`  speaks    ${stageLine(report.speaks)}${turnedAt(report, "tts", "voice", "tts_model")}`);
+  lines.push(`  hears     ${stageLine(report.hears)}`);
+  lines.push(`  decides   ${stageLine(report.decides)}`);
+  lines.push(`  speaks    ${stageLine(report.speaks)}`);
   const opening = openingLine(report);
-  if (opening !== "") lines.push("", `  greeting  ${opening}${turnedAt(report, "greeting")}`);
+  if (opening !== "") lines.push("", `  greeting  ${opening}`);
   if (report.medians.length > 0) {
     lines.push("", `  ${report.medians.map((one) => `${one.name} ${one.seconds.toFixed(2)}s`).join(" · ")}`);
   }
@@ -164,17 +153,10 @@ function stageLine(stage: Stage): string {
   return said.filter((word): word is string => typeof word === "string" && word !== "").join(" · ");
 }
 
-/** The opening the next call is built with: the words, or that the class improvises them. */
+/** The opening the next call is built with: the words, or that the model improvises them. */
 function openingLine(report: Report): string {
   const greeting = report.greeting;
   if (greeting === null) return "";
   if (greeting.say !== null && greeting.say !== "") return `"${greeting.say}"`;
-  return `the class improvises: ${greeting.reply ?? ""}`;
-}
-
-// A turned knob is marked where it shows, and never silently: an operator reading this page has to
-// be able to tell what the app declared from what somebody turned last night.
-function turnedAt(report: Report, ...knobs: (keyof Overridden)[]): string {
-  const turned = knobs.filter((knob) => typeof report.overrides[knob] === "string" && report.overrides[knob] !== "");
-  return turned.length === 0 ? "" : `   ← set: ${turned.join(", ")}`;
+  return `the model improvises: ${greeting.reply ?? ""}`;
 }

@@ -1,7 +1,7 @@
 /** The console's own door to the goldens: this directory's, listed, and a run of the chosen ones started from the page. */
 
 import { Pinecall } from "../../client/index.js";
-import { modelOf } from "../../runtime/connect.js";
+import { modelOf } from "../testing/models.js";
 
 import { load } from "../load.js";
 import { inFlight } from "../testing/progress.js";
@@ -16,7 +16,7 @@ import { Refusal } from "./refusal.js";
 export interface Wanted {
   agent: string;
   goldens: string[];
-  /** `vendor/model`, one per column of the matrix. Empty is the one the class declared. */
+  /** `vendor/model`, one per column of the matrix. Empty is the one the settings name. */
   models: string[];
   voice: boolean;
   /** dB under the caller. Only on a spoken line. */

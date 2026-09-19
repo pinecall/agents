@@ -21,7 +21,7 @@ import { refusal } from "./whoami.js";
  * Where the extraction goldens live. `test/goldens` is the conversation ring and its files are a
  * different shape, so these get a directory of their own rather than a key inside a crowded one.
  */
-export const CASES = "test/memory";
+export const CASES = "test/<name>/memory";
 
 export const NO_CASES = `no extraction goldens at ${CASES}: write one, or name the file or directory to run`;
 

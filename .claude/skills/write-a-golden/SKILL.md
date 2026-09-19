@@ -26,7 +26,9 @@ gateway's. The whole picture is `docs/testing-an-agent.md`.
 
 ## Writing one
 
-One file per case in `test/goldens/`, named after what it is about — the file name is what the
+One file per case in `test/<name>/goldens/` — the agent's folder under `test/`, and beside the
+conversations its `docs.json` and `memory.json`, the retrieval and recall goldens — named after
+what it is about: the file name is what the
 report prints: `no-reserva-antes-del-si.json`, `no-inventa-horas-de-un-dia-sin-agenda.json`.
 
 ```jsonc

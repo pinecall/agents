@@ -43,10 +43,10 @@ import { readFileSync } from "node:fs";
 import { mount } from "pinecall";
 import { Pinecall } from "pinecall/client";
 
-import { Recepcion } from "./agent/agent.js";
+import { Recepcion } from "./agents/recepcion/agent.js";
 
 const pc = new Pinecall({ url: "https://box.pinecall.io", apiKey: process.env.PINECALL_KEY });
-mount(Recepcion, { pc, source: readFileSync(new URL("./agent/agent.tsx", import.meta.url), "utf8") });
+mount(Recepcion, { pc, source: readFileSync(new URL("./agents/recepcion/agent.tsx", import.meta.url), "utf8") });
 await pc.connect();
 
 process.on("SIGTERM", () => pc.close());
@@ -65,7 +65,7 @@ Or run `pinecall start --prod` under whatever already keeps the app's processes 
 ```
 web: node dist/server.js
 agent: pinecall start --prod
-release: pinecall knowledge push --prod
+release: pinecall docs push --prod
 ```
 
 pm2 (`pm2 start "pinecall start --prod" --name agent`), a systemd unit whose `ExecStart` is the same
@@ -86,40 +86,44 @@ exits instead of dialling back, and an app that mounts the SDK hears it on
 `pc.onStopped(why => …)`. A manager that restarts whatever exits — systemd's `Restart=always`,
 pm2 — starts it again, so a process kept that way is stopped for good where it is managed.
 
-## The knowledge base, in the release step
+## The base, in the release step
 
-The base the telephone answers from is production's, and it is replaced **whole** by a push, like
-a migration: `pinecall knowledge push --prod` in the release step, before the new process starts,
-sends every `*.md` under `knowledge/docs` (or `knowledge/<name>/` for each agent of a project). The
-server's token opens it. A failed push fails the release, and the old process keeps answering from
-the old base.
+The base the telephone answers from is production's, and it is replaced **whole** by a push, like a
+migration: `pinecall docs push --prod` in the release step, before the new process starts, sends
+every `*.md` under `docs/<name>/` for each agent of the project. The server's token opens it. A
+failed push fails the release, and the old process keeps answering from the old base. Which base
+an agent reads is production's own setting — `pinecall docs attach <base> --k 4 --prod`, once — and
+a push never changes it.
 
 ## Before the deploy: the goldens, in CI
 
 Nothing between the sandbox and production checks the agent at the gateway: there is no promote.
-The gate is CI, on a sandbox token, before the deploy — `pinecall test` (ring 1), `pinecall
-knowledge eval`, `pinecall remember`, `pinecall memory eval` — each exits 1 when something did not
+The gate is CI, on a sandbox token, before the deploy — `pinecall test` (ring 1), `pinecall docs
+eval`, `pinecall remember`, `pinecall memory eval` — each exits 1 when something did not
 hold ([testing-an-agent.md](testing-an-agent.md),
 [testing-memory-and-knowledge.md](testing-memory-and-knowledge.md)).
 
 ## Changes without a deploy
 
-The voice, the greeting, how a call ends, the lexicon, what memory keeps: the org's **settings**,
-kept by the gateway and laid over the class, one corner in production and a version per save. They
-change without a deploy, by a person whose production switch is on:
+The class carries nothing of the environment, so a deploy changes only code. The voice, the model,
+the greeting, how a call ends, the lexicon, what memory keeps, what the agent knows by heart and
+which base it searches: the org's **settings**, kept by the gateway, one corner in production and a
+version per save. They change without a deploy, by a person whose production switch is on — `--prod`
+on the verb, and there is no other door into production's corner:
 
 ```console
 $ pinecall agent set --voice carolina --note "warmer on the phone" --prod
+$ pinecall agent knowledge edit --prod          # what it knows by heart, in $EDITOR, as the next version
+$ pinecall docs attach clinica-norte --k 4 --prod
 $ pinecall lexicon add Vidal --say "Bidal" --prod
 $ pinecall memory policy --forget "health details" --prod
 ```
 
-or the same edit on the agent's **Settings** tab and the **Lexicon** screen of the gateway's
-console. The next call hears it. `pinecall agent history --prod` lists every version with who set
-it and why, and `pinecall agent rollback <n> --prod` brings one back as the next version. A class
-field the settings also set is laid under them: `pinecall start` prints a line for each, saying what
-to delete from the class. `pinecall agent pull --prod > settings.json` writes production's as a file,
-and `pinecall agent push settings.json --prod` is how a release applies one from git.
+or the same edit on the agent's **Settings** tab — Knowledge and Bases included — and the
+**Lexicon** screen of the gateway's console. The next call hears it. `pinecall agent history --prod`
+lists every version with who set it and why, and `pinecall agent rollback <n> --prod` brings one
+back as the next version. `pinecall agent pull --prod > settings.json` writes production's as a
+file, and `pinecall agent push settings.json --prod` is how a release applies one from git.
 
 ## Watching it
 

@@ -2,7 +2,7 @@
 
 import type { TuningAnswer, TuningBody, TuningRow } from "@pinecall/protocol";
 
-import { dayAndTime } from "./knowledge.js";
+import { dayAndTime } from "./docs.js";
 import { asked, type Door } from "./testing/gateway.js";
 
 /** The settings door of one agent, spelled once for every verb that knocks at it. */
@@ -16,7 +16,7 @@ export async function readSettings(door: Door, agent: string): Promise<TuningAns
 }
 
 /** The fields on the page, in the order a person reads them, under the names a person types. */
-export const FIELDS = ["voice", "tts", "tts-model", "stt", "llm", "greeting", "hangup", "turn", "memory", "knowledge"] as const;
+export const FIELDS = ["voice", "tts", "tts-model", "stt", "llm", "greeting", "hangup", "turn", "memory", "knowledge", "bases"] as const;
 export type Field = (typeof FIELDS)[number];
 
 /** The name a person types, as the wire spells it. */
@@ -31,6 +31,7 @@ export const WIRE: Record<Field, keyof TuningBody> = {
   turn: "turn",
   memory: "memory",
   knowledge: "knowledge",
+  bases: "bases",
 };
 
 // A cell is one line, however the field is shaped: the words of an opening in quotes, a turn's
@@ -66,7 +67,11 @@ export function shown(config: TuningBody, field: Field): string | undefined {
     return `remember ${memory.remember?.length ?? 0} · forget ${memory.forget?.length ?? 0}`;
   }
   if (field === "knowledge") {
-    const bases = config.knowledge ?? undefined;
+    const text = config.knowledge ?? undefined;
+    return text === undefined ? undefined : `${text.length.toLocaleString("en-US")} chars`;
+  }
+  if (field === "bases") {
+    const bases = config.bases ?? undefined;
     if (bases === undefined || bases.length === 0) return undefined;
     return bases.map((one) => `${one.base}${one.k === undefined || one.k === null ? "" : ` (k ${one.k})`}`).join(" · ");
   }
