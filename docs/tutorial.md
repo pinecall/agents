@@ -23,18 +23,6 @@ uv run pinecall-runtime migrate up                 the schema, and a `default` o
 uv run pinecall-runtime gateway                    the control plane, on 8080
 ```
 
-In another terminal, sign this one in. The password is typed in a browser and never in a shell,
-and what the terminal keeps is a key of its own, labelled as this machine and revoked on its own:
-
-```
-pinecall gateway http://127.0.0.1:8080   # once: this machine talks to your own box
-pinecall login
-pinecall whoami                    # which org, which world, where the key came from
-```
-
-Nothing is exported. A machine with no browser — CI, a container — reads its key off stdin
-instead, and keeps the same file: `pinecall login --key-stdin <url> < key`.
-
 **On an Apple Silicon laptop TEI cannot run** — its CPU image has no arm64 build — so the embedder
 is a hosted one. Two lines, and retrieval works the same:
 
@@ -64,6 +52,18 @@ extends the preset the package ships:
   "compilerOptions": { "noEmit": true, "types": ["node"] },
   "include": ["agent.tsx", "test"] }
 ```
+
+In that directory, sign in and tie the folder to the org. The password is
+typed in a browser and never in a shell, and what the folder keeps is your key, in its own `.env`:
+
+```
+pinecall link --gateway http://127.0.0.1:8080   # signs this machine in, writes PINECALL_KEY and PINECALL_URL to .env
+pinecall whoami                    # which org, which world, where the key came from
+```
+
+Put `.env` in the project's `.gitignore` — `link` says so until it is. A machine with no browser —
+CI, a container — links nothing: it gets `PINECALL_KEY` in its environment, a server's token from
+the console's Tokens screen ([production.md](production.md)).
 
 Then `agent.tsx`. This is the whole thing:
 
@@ -112,7 +112,7 @@ Four things are worth naming, because they are the whole design:
 Before running anything, look at what the model would read. No key, no gateway, no network:
 
 ```
-pinecall run --show-prompt
+pinecall start --show-prompt
 ```
 
 ```
@@ -145,11 +145,12 @@ provider and does not change while a call runs. The view is rendered again every
 Two terminals. The first is the process you deploy:
 
 ```
-pinecall run
+pinecall start
 ```
 
 ```
-clinica-norte · connected to http://127.0.0.1:8080 · tools 1 · doors web
+gateway http://127.0.0.1:8080 · key from .env
+clinica-norte · default · sandbox · connected to http://127.0.0.1:8080 · key from .env · tools 1 · doors web
 ```
 
 The second is a caller:
@@ -159,7 +160,7 @@ pinecall chat
 ```
 
 Your tools run in the first process. A breakpoint in `findPatient` lands in the terminal you typed
-`pinecall run` in — that is the point of the app being yours.
+`pinecall start` in — that is the point of the app being yours.
 
 ---
 
@@ -333,12 +334,12 @@ discount, and it cannot open the confirmation gate anyway, because that gate is 
 Everything above wrote lines. Read them:
 
 ```
-pinecall run --serve
+pinecall start --serve
 console  http://localhost:4100/a/clinica-norte
 ```
 
 Open that URL. It is the console of your sandbox, served by that same terminal: every request the
-page makes is forwarded to the gateway with the terminal's key, so there is nothing to sign in to
+page makes is forwarded to the gateway with the project's key, so there is nothing to sign in to
 and the key never reaches the browser. (Production is watched on the gateway's own page, which you
 sign in to.) The agent's Calls screen shows a call as it happens: the turns, the tools, the state after each
 one, `recall · 1 fact · 138 ms`, `search · 3 chunks · 181 ms`, and the verdicts at hang-up.
@@ -346,7 +347,7 @@ one, `recall · 1 fact · 138 ms`, `search · 3 chunks · 181 ms`, and the verdi
 The same thing without a browser:
 
 ```
-pinecall run --events | jq 'select(.type == "docs.sources")'
+pinecall start --events | jq 'select(.type == "docs.sources")'
 ```
 
 Every call is an append-only log of typed entries, each with a sequence number written before
@@ -389,7 +390,7 @@ is for.
 
 - **A second agent in the same repository**: move the class to `agents/<name>.tsx` and each folder
   under its name — [Several agents in one project](writing-an-agent.md#several-agents-in-one-project).
-  `pinecall run` at the root then holds both.
+  `pinecall start` at the root then holds both.
 
 | you want | read |
 |---|---|
@@ -397,5 +398,6 @@ is for.
 | the three regions, and what goes in each | [the-prompt.md](the-prompt.md) |
 | the five rings, and how a golden is written | [testing-an-agent.md](testing-an-agent.md) |
 | every verb | [the-cli.md](the-cli.md) |
-| working with a team, and putting the agent on a box | [worlds-and-teams.md](worlds-and-teams.md) |
+| working with a team: one key each, the production switch | [worlds-and-teams.md](worlds-and-teams.md) |
+| putting the agent on your own server | [production.md](production.md) |
 | why retrieval is shaped this way | `runtime/docs/security/prompt-injection.md` |

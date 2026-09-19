@@ -2,17 +2,15 @@
 // link the person opens, the key the page leaves behind — proved before it is kept, and never
 // printed. The password is typed into a page and never into this process.
 
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, statSync } from "node:fs";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { gatewayFor, writeGateway } from "../../src/cli/credentials.js";
-import { writeProfile } from "../../src/cli/profiles.js";
-import { CLOUD_URL } from "../../src/cli/env.js";
-import { login, signingIn, theGateway } from "../../src/cli/login.js";
+import { login, signingIn } from "../../src/cli/login.js";
+import { readSession, signedIn } from "../../src/cli/signed-in.js";
 import { describing, refusal, run as whoami } from "../../src/cli/whoami.js";
 import { written } from "./said.js";
 
@@ -60,6 +58,8 @@ class FakeGateway {
       key_id: "k_1",
       label: "the laptop",
       env: "sandbox",
+      name: "Berna",
+      production: true,
     });
   }
 }
@@ -100,7 +100,7 @@ afterEach(async () => {
 });
 
 describe("signing a terminal in through a browser", () => {
-  it("prints a link, opens it, waits, and keeps the key the page left", async () => {
+  it("prints a link, opens it, waits, and signs this machine in as the person", async () => {
     const out = written();
     const person = opensIt();
 
@@ -108,9 +108,8 @@ describe("signing a terminal in through a browser", () => {
 
     expect(code).toBe(0);
     expect(out.text()).toContain(signingIn(gateway.url, A_WORD));
-    expect(out.text()).toContain(`· ${gateway.url} · org clinica · sandbox`);
-    expect(out.text()).not.toContain("org_98889a61509c");
-    expect(gatewayFor(gateway.url, home)).toMatchObject({ api_key: A_KEY, org: "clinica" });
+    expect(out.text()).toContain(`signed in to ${gateway.url} as Berna`);
+    expect(signedIn(undefined, home)).toEqual({ url: gateway.url, key: A_KEY });
   });
 
   it("opens the same link it printed, so a person on a server can paste it anywhere", async () => {
@@ -147,8 +146,9 @@ describe("signing a terminal in through a browser", () => {
   it("writes the key once, in a file nobody else can read", async () => {
     await login([gateway.url], { out: written().stream, env: { PINECALL_HOME: home }, ...opensIt() });
 
-    const kept = readFileSync(join(home, "credentials"), "utf8");
-    expect(kept.split(A_KEY)).toHaveLength(2);
+    const file = join(home, "session.json");
+    expect(readFileSync(file, "utf8").split(A_KEY)).toHaveLength(2);
+    expect(statSync(file).mode & 0o077).toBe(0);
   });
 
   it("gives up in the person's words when nobody ever opens the link", async () => {
@@ -165,23 +165,11 @@ describe("signing a terminal in through a browser", () => {
 
     expect(code).toBe(1);
     expect(err.text()).toContain("nobody approved this terminal");
-    expect(gatewayFor(gateway.url, home)).toBeUndefined();
+    expect(readSession(home).gateways).toEqual({});
   });
 });
 
-describe("which gateway a login without one is for", () => {
-  it("is the cloud's, and the line says so is printed before anything is kept", () => {
-    const chosen = theGateway(undefined);
-
-    expect(chosen.url).toBe(CLOUD_URL);
-    expect(chosen.assumed).toContain(CLOUD_URL);
-    expect(chosen.assumed).toContain("`pinecall gateway <url>` for your own box");
-  });
-
-  it("assumes nothing, and says nothing, when a gateway was named", () => {
-    expect(theGateway("https://voz.clinica.com")).toEqual({ url: "https://voz.clinica.com" });
-  });
-
+describe("which gateway a login is for", () => {
   it("says nothing about a default in a real login that named one", async () => {
     const out = written();
 
@@ -193,13 +181,14 @@ describe("which gateway a login without one is for", () => {
 
 describe("whoami", () => {
   it("prints the gateway, where the key came from, and what the gateway says the key is", async () => {
-    writeProfile("test", { url: gateway.url, key: A_KEY, org: "clinica" }, home);
     const out = written();
 
-    const code = await whoami([], out.stream, written().stream, { PINECALL_HOME: home });
+    const code = await whoami([], out.stream, written().stream, { PINECALL_KEY: A_KEY, PINECALL_URL: gateway.url });
 
     expect(code).toBe(0);
-    expect(out.text()).toBe(`gateway ${gateway.url} · key from profile\norg clinica · key k_1 · sandbox · the laptop\n`);
+    expect(out.text()).toBe(
+      `gateway ${gateway.url} · key from the environment\norg clinica · key k_1 · sandbox · the laptop · production: yes\n`,
+    );
     expect(out.text()).not.toContain("org_98889a61509c");
     expect(out.text()).not.toContain(A_KEY);
   });
@@ -207,22 +196,25 @@ describe("whoami", () => {
   it("leaves with a one when the key it found opens nothing, in the gateway's words", async () => {
     const err = written();
 
-    writeProfile("test", { url: gateway.url, key: "pk_a_key_this_gateway_never_issued" }, home);
-
-    const code = await whoami([], written().stream, err.stream, { PINECALL_HOME: home });
+    const code = await whoami([], written().stream, err.stream, {
+      PINECALL_KEY: "pc_a_key_this_gateway_never_issued",
+      PINECALL_URL: gateway.url,
+    });
 
     expect(code).toBe(1);
     expect(err.text()).toBe("the gateway answered 401: this door takes an API key\n");
   });
 
   it("leaves a key with no label as two words rather than a dangling separator", () => {
-    expect(describing({ org: "clinica", key_id: "k_1", label: null, env: "production" })).toBe("org clinica · key k_1 · production");
+    expect(describing({ org: "clinica", key_id: "k_1", label: null, env: "production", production: true })).toBe(
+      "org clinica · key k_1 · production · production: yes",
+    );
   });
 
   it("says the id only when there is no slug: a gateway too old to carry one", () => {
-    const old = { org: "org_98889a61509c", key_id: "k_1", label: null, env: "production" };
+    const old = { org: "org_98889a61509c", key_id: "k_1", label: null, env: "sandbox", production: false };
 
-    expect(describing(old)).toBe("org org_98889a61509c · key k_1 · production");
+    expect(describing(old)).toBe("org org_98889a61509c · key k_1 · sandbox · production: no");
   });
 
   it("prints what a refusal that is not the gateway's says, rather than swallowing it", () => {

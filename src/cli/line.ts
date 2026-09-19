@@ -2,7 +2,7 @@
 
 import type { TheLine } from "@pinecall/protocol";
 
-import { callsFrom as keptOnTheProfile } from "./profiles.js";
+import { keepCalling } from "./signed-in.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { load } from "./load.js";
@@ -15,7 +15,7 @@ const USAGE = "usage: pinecall line [from <+number> | forget | claim | release] 
 // A number exists once in a world, so it rings in one place. In production that place is the box
 // and there is nothing to decide; in the sandbox an org shares ONE number and three developers
 // may be running the same agent, so which terminal it rings in is claimed out loud. Alone nobody
-// claims anything — the first `pinecall run` takes it. See the runtime's docs/protocol/gateway-api.md.
+// claims anything — the first `pinecall start` takes it. See the runtime's docs/protocol/gateway-api.md.
 export const group: Group = {
   purpose: "which phone is yours, and whose terminal anybody else's call rings in",
   usage: `${USAGE}
@@ -27,7 +27,7 @@ export const group: Group = {
   reaches your own agent — on the number your customers call, in production, as much as on a
   sandbox one: while you are running the agent your phone reaches your copy, and everybody else
   reaches production. No claim, no coordination, three of you testing at the same time. It is
-  remembered for this gateway and re-sent by every \`pinecall run\`, each time it connects.
+  remembered for this gateway and re-sent by every \`pinecall start\`, each time it connects.
   \`forget\` undoes it.
 
   \`claim\` and \`release\` are the fallback, for a call from a number nobody said was theirs — a
@@ -55,13 +55,13 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
       return 2;
     }
     const said = await callsFrom(door, number);
-    keptOnTheProfile(number);
+    keepCalling(door.url, number);
     out.write(`${calling(said.calling)}\n`);
     return 0;
   }
   if (verb === "forget") {
     const said = await forgetCallsFrom(door);
-    keptOnTheProfile(undefined);
+    keepCalling(door.url, undefined);
     out.write(`${forgotten(said.forgot)}\n`);
     return 0;
   }
@@ -137,7 +137,7 @@ const FROM = "/v1/line/from";
  * as a null.
  */
 export function describing(said: TheLine): string {
-  if (!said.held) return `nobody is answering ${said.agent}: start \`pinecall run\``;
+  if (!said.held) return `nobody is answering ${said.agent}: run \`pinecall start\``;
   // Yours by number beats yours by line, and is said first: it is the one that needs no upkeep.
   const mine = said.calling.length > 0 ? `your calls from ${said.calling.join(", ")}` : undefined;
   if (said.yours) {

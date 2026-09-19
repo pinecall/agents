@@ -2,7 +2,7 @@
 
 import { parseArgs } from "node:util";
 
-import type { LexiconAnswer, LexiconBody, LexiconHistory, LexiconRow, Promoted } from "@pinecall/protocol";
+import type { LexiconAnswer, LexiconBody, LexiconHistory, LexiconRow } from "@pinecall/protocol";
 
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
@@ -16,7 +16,6 @@ const USAGE = [
   "       pinecall lexicon hear <word> [<word> …] [--team] [--note '…']",
   "       pinecall lexicon rm <word> [<word> …] [--team]",
   "       pinecall lexicon history [--team]",
-  "       pinecall lexicon promote [--to team|production] [--note '…']",
 ].join("\n");
 
 const LEXICON = "/v1/lexicon";
@@ -32,9 +31,8 @@ export const group: Group = {
   yours (--team: the org's own), and a save over a corner that moved is told so.
 
   A supervisor's or a manager's key opens this door: the person who hears a word said wrong forty
-  times a day fixes it, without a developer and without a deploy. promote makes the two hops — to
-  the team's sandbox, or from it to production — with no goldens between: a word said wrong is
-  what the agent already does.`,
+  times a day fixes it, without a developer and without a deploy — with --prod, in production,
+  when their org lets them act there.`,
   run,
 };
 
@@ -56,7 +54,6 @@ export async function run(argv: string[], how: Wording = {}): Promise<number> {
       team: { type: "boolean", default: false },
       say: { type: "string" },
       note: { type: "string" },
-      to: { type: "string" },
     },
   });
   const door = theDoor(how.env ?? process.env, err);
@@ -82,7 +79,6 @@ export async function run(argv: string[], how: Wording = {}): Promise<number> {
       );
     }
     if (verb === "history") return await history(door, team, out);
-    if (verb === "promote") return await promote(door, values.to, values.note, out, err);
   } catch (refused) {
     err.write(`${refusal(refused)}\n`);
     return 1;
@@ -120,17 +116,6 @@ async function history(door: Door, team: boolean, out: NodeJS.WritableStream): P
   out.write(`lexicon · ${kept.world} · ${kept.holder === "" ? "the org's own corner" : `corner ${kept.holder}`}\n`);
   if (kept.rows.length === 0) out.write("  nothing set yet\n");
   for (const row of kept.rows) out.write(`  ${rowLine(row)}   said ${row.lexicon.said.length} · heard ${row.lexicon.heard.length}\n`);
-  return 0;
-}
-
-async function promote(door: Door, to: string | undefined, note: string | undefined, out: NodeJS.WritableStream, err: NodeJS.WritableStream): Promise<number> {
-  const hop = to ?? "team";
-  if (hop !== "team" && hop !== "production") {
-    err.write("--to takes team or production\n");
-    return 2;
-  }
-  const promoted = await asked<Promoted>(door, `${LEXICON}/promote`, { method: "POST", body: { to: hop, note: note ?? null } });
-  out.write(`lexicon · ${promoted.world === "production" ? "production" : "the team's sandbox"} v${promoted.version}: every agent of the org says it from the next call\n`);
   return 0;
 }
 

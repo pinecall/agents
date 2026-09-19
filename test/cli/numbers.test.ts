@@ -37,10 +37,10 @@ describe("the verb's shape", () => {
     expect(group.usage).toContain("cost nothing");
   });
 
-  it("says this machine knows no gateway rather than knocking at a default one", async () => {
+  it("says this folder is linked to no org rather than knocking at a default one", async () => {
     const err = written();
 
-    expect(await run(["move", A_NUMBER], { err: err.stream, env: { PINECALL_HOME: "/nowhere" } })).toBe(1);
-    expect(err.text()).toContain("not signed in to");
+    expect(await run(["move", A_NUMBER], { err: err.stream, env: {} })).toBe(1);
+    expect(err.text()).toContain("`pinecall link`");
   });
 });

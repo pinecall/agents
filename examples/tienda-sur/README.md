@@ -39,7 +39,8 @@ incluido el "no" del rodillo antigoteo, que el almacén rechaza siempre.
 ## Ejecutarlo
 
 ```bash
-pinecall run                # la app: registra el agente y responde sus tools
+pinecall link               # una vez: inicia sesión y escribe PINECALL_KEY en .env
+pinecall start              # la app: registra el agente y responde sus tools
 pinecall chat               # la app en ESTA terminal, y una llamada escrita contra ella
 pinecall test               # los goldens de test/goldens/, puntuados por el runtime
 pinecall simulate --persona manitas --judge   # una persona improvisada por un modelo, y su call.score

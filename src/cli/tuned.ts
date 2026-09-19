@@ -1,4 +1,4 @@
-/** What `pinecall run` says beside a class that still declares what the world now owns: the world wins. */
+/** What `pinecall start` says beside a class that still declares what the world now owns: the world wins. */
 
 import type { LexiconAnswer, LexiconRow, TuningAnswer, TuningRow } from "@pinecall/protocol";
 

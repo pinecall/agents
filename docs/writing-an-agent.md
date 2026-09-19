@@ -39,7 +39,7 @@ test/goldens/<name>/      test/personas/<name>/      test/memory/<name>/
 memory/<name>.golden.json
 ```
 
-At that root `pinecall run` holds every agent on one socket, and every verb acts on each agent
+At that root `pinecall start` holds every agent on one socket, and every verb acts on each agent
 against its own folders, or on the one `--agent <name|slug>` names; a verb about one agent —
 `chat`, `simulate`, `prompt`, `remember`, `line`, among others — needs `--agent` when there are
 several. A
@@ -70,7 +70,7 @@ export default defineConfig({
 `experimentalDecorators` is in the preset because oxc implements only the legacy decorators today.
 The day it ships the TC39 ones, the flag leaves `pinecall/tsconfig.tenant.json` and no tenant file
 changes. **Never add a `paths` mapping for `pinecall`**: the app resolves it through
-`node_modules` like any package, and a mapping hands `pinecall run` a second copy of the framework.
+`node_modules` like any package, and a mapping hands `pinecall start` a second copy of the framework.
 
 ## The class
 
@@ -105,7 +105,7 @@ A handful of field names configure the agent instead of remembering something. T
 diffed, never rendered, never in a snapshot. **Most of them are the world's now, not the class's**:
 what an agent runs on is set with `pinecall agent set` (or the console's Settings tab), per world
 and per corner, versioned — and a class that still declares one of them seeds the world's first
-version the first time it registers, after which the world wins and `pinecall run` says so beside
+version the first time it registers, after which the world wins and `pinecall start` says so beside
 every field the class still says differently. The class keeps the contract; the table says which
 is which:
 
@@ -269,7 +269,7 @@ invents `{day, time, doctor}` and the agenda receives a slot it never offered.
 stage: Stages<"identify" | "choose" | "book" | "done"> = "identify";
 ```
 
-`pinecall run --show-prompt` and `pinecall prompt` print, under the blocks of the prompt, the stage
+`pinecall start --show-prompt` and `pinecall prompt` print, under the blocks of the prompt, the stage
 the instance is in and the tools that stage shows. That page is how a state machine is read.
 
 ## The prompt: `render()`
@@ -326,7 +326,7 @@ this.log("appointment.booked", booking);          // one named fact in the call'
 
 A `render()` reads it too — `this.call.channel` is how the same class says two of these hours out
 loud and five of them in writing. It is only there while a call is being served: `pinecall prompt`
-and `pinecall run --show-prompt` give the instance they print a line of their own, and a test that
+and `pinecall start --show-prompt` give the instance they print a line of their own, and a test that
 renders gives one with `setCall(agent, new CallWorld(line, () => {}))`.
 
 There is no LiveKit here and no escape hatch to it. A need the room cannot express is a new command
@@ -390,20 +390,21 @@ field and never whether it is one.
 ## Running it
 
 ```bash
-pinecall login <gateway>           # once per machine; nothing is exported, nothing is in a file you edit
+pinecall link                      # once per project folder: your key for its org, written to ./.env
 pinecall chat                      # the app in THIS terminal, and a written caller against it
 pinecall chat --as +34600123456    # the same call, from somebody memory can file it under
 pinecall prompt --state test/prompts/states.json    # what the model would read, offline
 pinecall knowledge push            # ./knowledge/docs to the gateway, under the agent's slug
-pinecall run                       # the app registered and answering: the process you deploy
-pinecall run --serve               # the same, and your console on http://localhost:4100:
+pinecall start                     # the app registered and answering: the process you deploy
+pinecall start --serve             # the same, and your console on http://localhost:4100:
                                    # talk, chat, calls, sessions, evals, knowledge, memory, widget
 ```
 
-`pinecall run` is the same process in the sandbox and in production: it runs the agent, binds no
-port and serves no page. What a person looks at is `--ui` in the terminal, or a console — the
-sandbox's on their own machine (`pinecall serve`, which `--serve` opens beside the agent), and
-production's on the gateway.
+`pinecall start` is the same process in the sandbox and in production (`--prod`, on a server's
+token): it runs the agent, binds no port and serves no page. What a person looks at is `--ui` in the
+terminal, or a console — the sandbox's on their own machine (`pinecall serve`, which `--serve` opens
+beside the agent), and production's on the gateway. An app that would rather hold the agent in its
+own Node server mounts the class there instead: [production.md](production.md).
 
 Next: [the-prompt.md](the-prompt.md) for the view, and [testing-an-agent.md](testing-an-agent.md)
 for the goldens.

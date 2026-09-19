@@ -5,7 +5,7 @@ import { parseArgs } from "node:util";
 import { openInABrowser } from "./browser.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
-import { forever } from "./run-screens.js";
+import { forever } from "./start-screens.js";
 import { DEFAULT_PORT } from "./serve/server.js";
 import { NoSidecar, openOrReuse } from "./serve/sidecar.js";
 import type { Who } from "./whoami.js";
@@ -17,7 +17,7 @@ export const group: Group = {
 
   The console for what YOU are running, on http://localhost:${DEFAULT_PORT}: your sandbox copies of the
   agents, their calls as they happen, chat, evals, knowledge, memory, the widget. It mounts no
-  agent — \`pinecall run\` does that, and \`pinecall run --serve\` does both in one terminal.
+  agent — \`pinecall start\` does that, and \`pinecall start --serve\` does both in one terminal.
 
   The gateway's own console shows production and only production. This one is the other half, and
   it asks the same gateway: every request the page makes is forwarded there with this machine's
@@ -39,11 +39,11 @@ export interface Serving {
   until?: () => Promise<void>;
 }
 
-/** Why a production key serves nothing here, naming where production IS watched. */
+/** Why production serves nothing here, naming where production IS watched. */
 export function notTheSandbox(gateway: string): string {
   return (
-    `this key opens ${PRODUCTION}, and production is watched at ${gateway} — \`pinecall serve\` is your sandbox.\n`
-    + "  `pinecall use <profile>` for a sandbox key — `pinecall config` lists them."
+    `this is ${PRODUCTION}, and production is watched at ${gateway} — \`pinecall serve\` is your sandbox.\n`
+    + "  Run it without --prod, on the key `pinecall link` wrote into this project's .env."
   );
 }
 

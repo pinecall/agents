@@ -2,6 +2,7 @@
 
 import type { Camel, ModelConfig, SessionLine } from "@pinecall/protocol";
 
+import { signed, type World } from "../../client/signed.js";
 import type { Golden } from "./goldens.js";
 
 /** What one judge answered about one golden: the number, the sentence, and what it asked. */
@@ -103,6 +104,8 @@ export interface Entry {
 export interface Door {
   url: string;
   apiKey: string;
+  /** The world the request names; none is the sandbox (`--prod`, `client/signed.ts`). */
+  world?: World;
 }
 
 /** Every golden through the app that is holding the agent, scored and stored, in one round trip. */
@@ -238,12 +241,9 @@ export async function asked<T>(
   path: string,
   sent: { method?: string; body?: unknown } = {},
 ): Promise<T> {
-  // A door that mints the first key takes none (`/v1/signup`), so an empty key sends no header
-  // rather than an empty Bearer: what is not held is not claimed.
-  const authorization = door.apiKey === "" ? {} : { authorization: `Bearer ${door.apiKey}` };
   const answered = await fetch(`${door.url.replace(/\/$/, "")}${path}`, {
     method: sent.method ?? "GET",
-    headers: { ...authorization, "content-type": "application/json" },
+    headers: { ...signed(door.apiKey, door.world), "content-type": "application/json" },
     ...(sent.body === undefined ? {} : { body: JSON.stringify(sent.body) }),
   });
   const text = await answered.text();

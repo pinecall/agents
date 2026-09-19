@@ -13,7 +13,7 @@ import { ABOUT, LocalConsole } from "../../../src/cli/serve/server.js";
 import { aliveAt, theOneUp } from "../../../src/cli/serve/sidecar.js";
 
 const KEY = "pk_sandbox_secret";
-const WHO = { org: "org_1", slug: "cloudacio", key_id: "k_1", label: null, env: "sandbox" };
+const WHO = { org: "org_1", slug: "cloudacio", key_id: "k_1", label: null, env: "sandbox", production: false };
 
 interface Seen {
   path: string;

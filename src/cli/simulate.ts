@@ -4,11 +4,12 @@ import { parseArgs } from "node:util";
 
 import type { CallScore } from "@pinecall/protocol";
 import type { CamelEvent } from "../client/index.js";
-import { Pinecall } from "../client/index.js";
+import { signed } from "../client/signed.js";
 import WebSocket from "ws";
 
 import { mount } from "../runtime/connect.js";
 import { chatUrl } from "./chat.js";
+import { pinecallFor } from "./client-for.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { anEarIn, type Ear } from "./listening.js";
@@ -174,11 +175,11 @@ export async function aSimulation(persona: Persona, how: Simulation): Promise<Si
   if (door === undefined) return undefined;
   const loaded = await load(how.agentFile);
   const url = door.url;
-  const pc = new Pinecall({ url, apiKey: door.apiKey });
+  const pc = pinecallFor(door);
   // A written call names this app in its own socket URL, so the terminal takes nothing it did not
   // open. A spoken one arrives through the worker, which names no app (worker/entry.py:82) — so a
   // `--voice` run has to be willing to serve the call the runtime opens for it, which is exactly
-  // the posture `pinecall run` has, and the gateway refuses the job otherwise.
+  // the posture `pinecall start` has, and the gateway refuses the job otherwise.
   const mounted = mount(loaded.ctor, {
     ...mountOptions(loaded, pc),
     takesUnclaimed: how.voice,
@@ -189,7 +190,7 @@ export async function aSimulation(persona: Persona, how: Simulation): Promise<Si
     await pc.connect();
     const call = how.voice
       ? await outLoud(door, mounted.slug, persona, how)
-      : await inWriting(chatUrl(url, mounted.slug, mounted.agent.app), door.apiKey, door, persona, how);
+      : await inWriting(chatUrl(url, mounted.slug, mounted.agent.app), door, persona, how);
     return { call, ...(await theEnding(door, call, how)) };
   } finally {
     pc.close();
@@ -200,12 +201,11 @@ export async function aSimulation(persona: Persona, how: Simulation): Promise<Si
 // happens. Closing the socket is the hangup, and the hangup is what writes the score.
 async function inWriting(
   socketUrl: string,
-  apiKey: string,
   door: Door,
   persona: Persona,
   how: Simulation,
 ): Promise<string> {
-  const socket = new WebSocket(socketUrl, { headers: { authorization: `Bearer ${apiKey}` } });
+  const socket = new WebSocket(socketUrl, { headers: signed(door.apiKey, door.world) });
   const heard = new Heard(how.out, how.opened);
   socket.on("message", (frame: Buffer) => heard.absorb(JSON.parse(frame.toString()) as Entry));
   await once(socket, "open");

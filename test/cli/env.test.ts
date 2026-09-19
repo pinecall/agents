@@ -1,73 +1,86 @@
-// Which gateway and which key: one profile, and there is nothing else. The order this file used
-// to pin — four files and three variables, with the one you had not chosen winning — is gone, and
-// what replaced it is tested where it lives, in profiles.test.ts. What is left here is the door a
-// verb is handed, and the sentence it gets instead when this machine knows no gateway at all.
+// Which gateway and which key: the project's, the way any app reads its own — PINECALL_KEY and
+// PINECALL_URL from the environment, else from the nearest `.env` up from where the verb runs.
 
-import { mkdtempSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { CLOUD_URL, doorFrom, doorLine, noKey, theDoor } from "../../src/cli/env.js";
-import { writeProfile } from "../../src/cli/profiles.js";
+import { CLOUD_URL, doorFrom, doorLine, NO_KEY, theDoor } from "../../src/cli/env.js";
+import { readDotenv, writeDotenv } from "../../src/cli/dotenv.js";
+import { withoutTheWorldFlag } from "../../src/cli/world.js";
 import { written } from "./said.js";
 
-const BOX = "https://box.pinecall.io";
-const A_KEY = "pk_the_orgs_own_key_nobody_will_deploy";
+const BOX = "http://127.0.0.1:8080";
+const A_KEY = "pc_the_persons_own_key_nobody_will_deploy";
 
-let home = "";
+let project = "";
 
 beforeEach(() => {
-  home = mkdtempSync(join(tmpdir(), "pinecall-home-"));
+  project = mkdtempSync(join(tmpdir(), "pinecall-project-"));
+  withoutTheWorldFlag([]);
 });
 
 describe("the door a verb is handed", () => {
-  it("is the active profile, and says so", () => {
-    writeProfile("box", { url: BOX, key: A_KEY }, home);
+  it("is the project's .env, read from the folder the verb runs in or any under it", () => {
+    writeFileSync(join(project, ".env"), `# the app's own\nPINECALL_KEY=${A_KEY}\nPINECALL_URL="${BOX}"\n`);
+    const deeper = join(project, "agents", "clinica");
+    mkdirSync(deeper, { recursive: true });
 
-    expect(doorFrom({ PINECALL_HOME: home })).toEqual({ url: BOX, apiKey: A_KEY, source: "profile" });
+    expect(doorFrom({}, deeper)).toEqual({ url: BOX, apiKey: A_KEY, source: join("..", "..", ".env") });
   });
 
-  // Every verb that connects opens with this line. It said the URL and nothing else until an
-  // agent registered into another org, in another world, with the line reading the same.
-  it("names the gateway and where the key was found, on one line", () => {
-    writeProfile("box", { url: BOX, key: A_KEY }, home);
-    const open = theDoor({ PINECALL_HOME: home });
+  it("is the environment's first: a server's secrets, a CI job's", () => {
+    writeFileSync(join(project, ".env"), "PINECALL_KEY=pc_the_file\n");
+
+    expect(doorFrom({ PINECALL_KEY: A_KEY }, project)).toEqual({ url: CLOUD_URL, apiKey: A_KEY, source: "the environment" });
+  });
+
+  // Every verb that connects opens with this line: which gateway, where the key was read, and the
+  // world when --prod named one.
+  it("names the gateway, where the key was read and --prod, on one line", () => {
+    writeFileSync(join(project, ".env"), `PINECALL_KEY=${A_KEY}\n`);
+    withoutTheWorldFlag(["sessions", "--prod"]);
+    const open = theDoor({}, written().stream, project);
 
     expect(open).toBeDefined();
-    expect(doorLine(open!)).toBe(`gateway ${BOX} · key from profile`);
+    expect(doorLine(open!)).toBe(`gateway ${CLOUD_URL} · key from .env · production (--prod)`);
   });
 });
 
-describe("a machine that knows no gateway", () => {
-  it("is nothing at all, rather than a default key from somewhere", () => {
-    expect(doorFrom({ PINECALL_HOME: home })).toEqual({
-      url: CLOUD_URL,
-      apiKey: undefined,
-      source: "none",
-    });
-  });
-
-  // Two environment names is what it used to say, and neither of them was the fix. Nor is a URL:
-  // the cloud is the default, so the verb that fixes it is one word.
-  it("is told the verb that fixes it, and the one that lists what is already kept", () => {
+describe("a folder nobody linked", () => {
+  it("is told the verb that links it", () => {
     const said = written();
 
-    expect(theDoor({ PINECALL_HOME: home }, said.stream)).toBeUndefined();
-    expect(said.text()).toBe(`${noKey(CLOUD_URL)}\n`);
-    expect(said.text()).toContain("`pinecall login`");
-    expect(said.text()).toContain("pinecall gateway <url>");
-    expect(said.text()).toContain("pinecall config");
+    expect(theDoor({}, said.stream, project)).toBeUndefined();
+    expect(said.text()).toBe(`${NO_KEY}\n`);
+    expect(said.text()).toContain("`pinecall link`");
   });
 
-  it("cannot be told one by an environment: a key exported here opens nothing", () => {
-    const said = written();
+  // v1 exported PINECALL_API_KEY, and a shell that still had it handed another org's key over in
+  // silence. The name this CLI reads is one v1 never used.
+  it("never reads v1's PINECALL_API_KEY", () => {
+    expect(theDoor({ PINECALL_API_KEY: A_KEY }, written().stream, project)).toBeUndefined();
+  });
+});
 
-    const open = theDoor(
-      { PINECALL_HOME: home, PINECALL_API_KEY: A_KEY, PINECALL_URL: BOX, PINECALL_DEV_KEY: "dev" },
-      said.stream,
-    );
+describe("the .env link writes", () => {
+  it("replaces its own lines where they stand and leaves the app's alone", () => {
+    const file = join(project, ".env");
+    writeFileSync(file, "DATABASE_URL=postgres://x\nPINECALL_KEY=pc_old\n");
 
-    expect(open).toBeUndefined();
+    writeDotenv(file, { PINECALL_KEY: A_KEY, PINECALL_URL: BOX });
+
+    expect(readDotenv(file)).toEqual({ DATABASE_URL: "postgres://x", PINECALL_KEY: A_KEY, PINECALL_URL: BOX });
+  });
+});
+
+describe("--prod", () => {
+  it("is taken out of the argv every group reads, and names production for this command only", () => {
+    expect(withoutTheWorldFlag(["agent", "set", "--prod", "--voice", "carolina"])).toEqual(["agent", "set", "--voice", "carolina"]);
+    writeFileSync(join(project, ".env"), `PINECALL_KEY=${A_KEY}\n`);
+    expect(doorFrom({}, project).world).toBe("production");
+    withoutTheWorldFlag(["agent"]);
+    expect(doorFrom({}, project).world).toBeUndefined();
   });
 });

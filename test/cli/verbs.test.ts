@@ -10,8 +10,8 @@ import { builtNames, groupFor, groupNames, main, usage } from "../../src/cli/ind
 import { PLANNED } from "../../src/cli/groups.js";
 import { Refused } from "../../src/cli/testing/gateway.js";
 import { connectedLine, doorsOf } from "../../src/cli/connected.js";
-import { run } from "../../src/cli/run.js";
-import { consoleUrl, whyNoConsole } from "../../src/cli/run-console.js";
+import { run } from "../../src/cli/start.js";
+import { consoleUrl, whyNoConsole } from "../../src/cli/start-console.js";
 
 const GATEWAY = "https://box.pinecall.io";
 
@@ -126,11 +126,12 @@ describe("`pinecall run` opens no port", () => {
 
 // `serve` was this verb's first name and was taken from it on 2026-09-08, because it promised a
 // port and the agent listens on nothing. The word came back on 2026-09-17 for the thing that DOES
-// bind one: the sandbox's console on this machine. `run` is still the process you deploy.
-describe("`serve` is the console, and `run` is the app", () => {
+// bind one: the sandbox's console on this machine. `start` (`run` until 2026-09-19) is the process
+// you deploy.
+describe("`serve` is the console, and `start` is the app", () => {
   it("declares both, each saying which it is", () => {
     expect(groupNames()).toContain("serve");
-    expect(usage()).toContain("run       the app and its doors: the process you deploy");
+    expect(usage()).toContain("start     the app and its doors: the process you deploy");
     expect(usage()).toContain("serve     the sandbox's console on this machine");
   });
 });

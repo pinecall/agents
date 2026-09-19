@@ -1,16 +1,14 @@
 // `pinecall agent`: the three corners on one page, a set that carries the corner's row and its
 // version, the fields cleared, the history read, and a promote that carries the goldens.
 
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { linesOf } from "../../src/cli/agent-lines.js";
 import { changes } from "../../src/cli/agent-versions.js";
 import { run } from "../../src/cli/agent.js";
+import { withoutTheWorldFlag } from "../../src/cli/world.js";
 import { pointingAt } from "./home.js";
 import { written } from "./said.js";
 
@@ -32,6 +30,8 @@ interface Heard {
   method: string;
   path: string;
   body: unknown;
+  /** The world the request named, when it named one (`--prod`). */
+  world: string | undefined;
 }
 
 /** A gateway with the settings doors: it answers the three corners and records every write. */
@@ -62,7 +62,13 @@ class FakeGateway {
     const chunks: Buffer[] = [];
     for await (const chunk of request) chunks.push(chunk as Buffer);
     const text = Buffer.concat(chunks).toString("utf8");
-    const heard: Heard = { method: request.method ?? "", path: request.url ?? "", body: text === "" ? null : JSON.parse(text) };
+    const world = request.headers["pinecall-env"];
+    const heard: Heard = {
+      method: request.method ?? "",
+      path: request.url ?? "",
+      body: text === "" ? null : JSON.parse(text),
+      world: typeof world === "string" ? world : undefined,
+    };
     this.heard.push(heard);
     const answer = (status: number, body: unknown): void => {
       response.writeHead(status, { "content-type": "application/json" });
@@ -71,7 +77,6 @@ class FakeGateway {
     if (this.refuse !== undefined && heard.method !== "GET") return answer(this.refuse.status, { detail: this.refuse.detail });
     if (heard.path.endsWith("/history?team=true")) return answer(200, { world: "sandbox", holder: "", rows: [TEAM, { ...TEAM, version: 10, note: null, config: { voice: "carolina" } }] });
     if (heard.path.includes("/diff")) return answer(200, { ours: YOURS, theirs: TEAM, changed: ["voice", "llm"] });
-    if (heard.path.endsWith("/promote")) return answer(200, { world: (heard.body as { to: string }).to === "team" ? "sandbox" : "production", holder: "", version: 12, run: (heard.body as { to: string }).to === "team" ? null : "run_abc123" });
     return answer(200, { world: "sandbox", yours: this.yours, team: TEAM, production: null });
   }
 }
@@ -206,22 +211,16 @@ describe("the versions", () => {
     expect(changes({}, {}, "  ")).toBe("");
   });
 
-  it("promotes to the team with no goldens, and to production with the ones beside the agent", async () => {
-    await run(["promote", "--agent", AGENT], { out: written().stream, env: environment() });
-    expect(gateway.written).toEqual({ to: "team", note: null });
+  // Production is set where it is, by a person their org lets act there: --prod names the world on
+  // the request, and the gateway decides. Nothing is promoted into it from the sandbox.
+  it("sets production when --prod names it, and names no world otherwise", async () => {
+    withoutTheWorldFlag(["agent", "set", "--prod"]);
+    await run(["set", "--agent", AGENT, "--voice", "amelia"], { out: written().stream, env: environment() });
+    withoutTheWorldFlag([]);
+    await run(["set", "--agent", AGENT, "--voice", "carolina"], { out: written().stream, env: environment() });
 
-    const root = mkdtempSync(join(tmpdir(), "pinecall-agent-"));
-    mkdirSync(join(root, "test", "goldens"), { recursive: true });
-    writeFileSync(join(root, "test", "goldens", "greets.json"), JSON.stringify({ input: ["hola"], expect: { says: ["Clínica"] } }));
-    writeFileSync(join(root, "agent.tsx"), "export default class X {}");
-    const out = written();
-    const code = await run(["promote", "--agent", AGENT, "--to", "production", "--file", join(root, "agent.tsx")], { out: out.stream, env: environment() });
-
-    expect(code).toBe(0);
-    const sent = gateway.written as { to: string; goldens: { name: string }[] };
-    expect(sent.to).toBe("production");
-    expect(sent.goldens.map((one) => one.name)).toEqual(["greets"]);
-    expect(out.text()).toContain("production v12 · every golden held · eval run run_abc123");
+    const writes = gateway.heard.filter((one) => one.method === "PUT");
+    expect(writes.map((one) => one.world)).toEqual(["production", undefined]);
   });
 
   it("rolls one version back as the next one", async () => {

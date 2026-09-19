@@ -39,8 +39,8 @@ modelo, incluido el "no" de la hora de las 13:00, que la agenda rechaza siempre.
 ## Ejecutarlo
 
 ```bash
-cp .env.example .env        # PINECALL_URL y PINECALL_API_KEY
-pinecall run agent.tsx      # la app: registra el agente y responde sus tools
+pinecall link               # una vez: inicia sesión y escribe PINECALL_KEY en .env
+pinecall start              # la app: registra el agente y responde sus tools
 pinecall chat               # la app en ESTA terminal, y una llamada escrita contra ella
 pinecall test               # los goldens de test/goldens/, puntuados por el runtime
 pinecall simulate --persona apurado --judge   # una persona improvisada por un modelo, y su call.score

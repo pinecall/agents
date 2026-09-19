@@ -8,14 +8,20 @@ import { Connection, type Backoff, type ConnectionOptions } from "./connection.j
 import { PinecallError, frame } from "./frames.js";
 import { Listeners, asError, type AnyListener, type CamelEvent, type Listener } from "./listeners.js";
 import { history, observe, type LogTarget, type Observation, type Page, type ReadOptions } from "./observe.js";
+import type { World } from "./signed.js";
 
 // Two levels up from dist/client/, and from src/client/ under a loader: the package's own manifest.
 const { version } = createRequire(import.meta.url)("../../package.json") as { version: string };
 
-/** Where the gateway is and who we are to it. Both default to the environment. */
+/** Where the gateway is, who we are to it, and which world we hold our agents in. */
 export interface PinecallOptions {
   url?: string;
   apiKey?: string;
+  /**
+   * The world, when the key is a person's: `production` is `pinecall start --prod`, and opens only
+   * while their org lets them act there. A server's token was made for one world and needs none.
+   */
+  env?: World;
   pingMs?: number;
   backoff?: Partial<Backoff>;
 }
@@ -38,6 +44,8 @@ export class Pinecall implements AgentGateway {
   readonly url: string;
   /** The key it talks with. It travels in a header, never in a URL. */
   readonly apiKey: string;
+  /** The world this client asks for, or undefined for the key's own answer. */
+  readonly env: World | undefined;
   readonly #agents = new Map<string, Agent>();
   readonly #listeners: Listeners<Call | null>;
   readonly #errors = new Set<(error: Error) => void>();
@@ -51,8 +59,9 @@ export class Pinecall implements AgentGateway {
     }
     this.url = url;
     this.apiKey = apiKey;
+    this.env = options.env;
     this.#listeners = new Listeners<Call | null>((error) => this.onError(error));
-    const dial: ConnectionOptions = { url, apiKey };
+    const dial: ConnectionOptions = { url, apiKey, ...(options.env === undefined ? {} : { env: options.env }) };
     if (options.pingMs !== undefined) {
       dial.pingMs = options.pingMs;
     }
@@ -189,6 +198,6 @@ export class Pinecall implements AgentGateway {
   }
 
   #reading(options: Partial<ReadOptions>): ReadOptions {
-    return { url: this.url, apiKey: this.apiKey, ...options };
+    return { url: this.url, apiKey: this.apiKey, ...(this.env === undefined ? {} : { env: this.env }), ...options };
   }
 }

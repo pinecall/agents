@@ -3,8 +3,10 @@
 import { readFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
 
+import { signed } from "../client/signed.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
+import type { Door } from "./testing/gateway.js";
 
 /** One check's answer, as `POST /v1/evals/replay/{call}` writes it: three strings, no nesting. */
 export interface Verdict {
@@ -61,7 +63,7 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
   if (door === undefined) return 2;
   let answer: Answer;
   try {
-    answer = await replayed(door.url, door.apiKey, call, await theCase(values.policy));
+    answer = await replayed(door, call, await theCase(values.policy));
   } catch (refused) {
     process.stderr.write(`${refused instanceof Error ? refused.message : String(refused)}\n`);
     return 1;
@@ -75,10 +77,10 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
  * every turn, which is why the request lives here rather than inside this verb's own argument
  * parsing: one door, one sentence when it refuses.
  */
-export async function replayed(base: string, apiKey: string, call: string, said: Case): Promise<Answer> {
-  const answered = await fetch(replayUrl(base, call), {
+export async function replayed(door: Door, call: string, said: Case): Promise<Answer> {
+  const answered = await fetch(replayUrl(door.url, call), {
     method: "POST",
-    headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
+    headers: { ...signed(door.apiKey, door.world), "content-type": "application/json" },
     body: JSON.stringify(said),
   });
   const body = await answered.text();

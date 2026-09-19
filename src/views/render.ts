@@ -21,7 +21,7 @@ export function headerFor(name: string, region?: PromptRegion): string {
 
 /**
  * The whole prompt as one page: every static block under its header, then the history, then the
- * view. What `pinecall run --show-prompt` prints: the headers make it obvious at a glance which
+ * view. What `pinecall start --show-prompt` prints: the headers make it obvious at a glance which
  * blocks are cached and which one is rewritten every turn.
  */
 export function showPrompt(agent: Agent): string {

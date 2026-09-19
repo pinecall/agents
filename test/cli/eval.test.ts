@@ -1,11 +1,8 @@
 // `pinecall eval`: the door it knocks at, the lines it prints, and what it needs before it runs.
 
-import { mkdtempSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { CLOUD_URL, noKey } from "../../src/cli/env.js";
+import { NO_KEY } from "../../src/cli/env.js";
 import { linesOf, replayUrl, run, type Answer } from "../../src/cli/eval.js";
 import { onStderr } from "./said.js";
 
@@ -40,20 +37,18 @@ describe("what a person reads", () => {
 });
 
 describe("what eval needs before it can ask", () => {
-  // A home with no profile in it is what a machine that has never logged in looks like, and the
-  // refusal names the gateway it would have knocked at and the verb that keeps a key for it.
-  it("names the gateway and `pinecall login` when this terminal holds no key at all", async () => {
-    const previous = { home: process.env["PINECALL_HOME"] };
-    process.env["PINECALL_HOME"] = mkdtempSync(join(tmpdir(), "pinecall-home-"));
+  // No PINECALL_KEY in the environment and no `.env` up from here is a folder nobody linked, and
+  // the refusal names the verb that links it.
+  it("names `pinecall link` when this folder holds no key at all", async () => {
+    vi.stubEnv("PINECALL_KEY", "");
     const said = onStderr();
 
     const code = await run(["CA_8f4a2c"]);
 
     said.restore();
-    if (previous.home === undefined) delete process.env["PINECALL_HOME"];
-    else process.env["PINECALL_HOME"] = previous.home;
+    vi.unstubAllEnvs();
     expect(code).toBe(2);
-    expect(said.text()).toBe(`${noKey(CLOUD_URL)}\n`);
+    expect(said.text()).toBe(`${NO_KEY}\n`);
   });
 
   it("asks for a call id rather than evaluating whatever was typed first", async () => {

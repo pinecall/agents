@@ -5,6 +5,7 @@ import WebSocket from "ws";
 import { appsUrl } from "./endpoints.js";
 import { PinecallError } from "./frames.js";
 import { asError } from "./listeners.js";
+import { signed, type World } from "./signed.js";
 
 /** How long the client waits before trying again, and how fast that grows. */
 export interface Backoff {
@@ -17,6 +18,8 @@ export interface Backoff {
 export interface ConnectionOptions {
   url: string;
   apiKey: string;
+  /** The world this socket holds its agents in; none is the sandbox. See `signed.ts`. */
+  env?: World;
   pingMs?: number;
   backoff?: Partial<Backoff>;
 }
@@ -102,7 +105,7 @@ export class Connection {
 
   #dial(): void {
     const socket = new WebSocket(appsUrl(this.options.url), {
-      headers: { authorization: `Bearer ${this.options.apiKey}` },
+      headers: signed(this.options.apiKey, this.options.env),
     });
     this.#socket = socket;
     socket.on("open", () => void this.#onOpen());

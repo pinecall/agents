@@ -253,7 +253,7 @@ describe("what it will not do", () => {
     const code = await run(["list"], { err: err.stream, env: pointingNowhere() });
 
     expect(code).toBe(2);
-    expect(err.text()).toContain("pinecall login");
+    expect(err.text()).toContain("`pinecall link`");
     expect(gateway.heard).toEqual([]);
   });
 });

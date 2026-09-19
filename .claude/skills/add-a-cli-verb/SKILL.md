@@ -30,10 +30,16 @@ Miss one and either the help lies or the test that pins the design's verb list g
 - **Never bind a port.** `test/cli/verbs.test.ts` greps every file under `src/cli/` for
   `createServer` and `.listen(` and allows exactly one exception: `cli/ui/server.ts`. The app
   opens one outbound socket and listens on nothing.
-- **Never read `PINECALL_URL` or `PINECALL_API_KEY` yourself.** `theDoor()` from `cli/env.ts` is
-  the one resolution order, for every verb; it prints the reason and you return 2.
+- **Never read `PINECALL_KEY` or `PINECALL_URL` yourself, and never v1's `PINECALL_API_KEY` at
+  all.** `theDoor()` from `cli/env.ts` is the one resolution — the environment, else the project's
+  nearest `.env` — for every verb; with no key it prints `NO_KEY` and you return 2.
+- **Never parse `--prod`.** `cli/world.ts:withoutTheWorldFlag` takes it off argv in `index.ts`
+  before your group sees it, and the door carries the world: build the client with
+  `cli/client-for.ts:pinecallFor(door)` and every request with `asked(door, …)`, and the
+  `pinecall-env` header goes on by itself. A verb that must know the world asks `standing(door)`,
+  which is the gateway's answer, never a guess.
 - **Never print a key**, never put one in a URL, never log one.
-- Never alias an old name. `serve` → `run` was a rename, not an alias: an alias today is a
+- Never alias an old name. `run` → `start` was a rename, not an alias: an alias today is a
   deprecation carried forever, and a test pins that the old word is gone.
 
 ## The shape
@@ -75,7 +81,7 @@ If the design declares it and you are not writing it, it belongs in `PLANNED` wi
 person gets instead: `"deploy": "put this app on a box and keep it there"` prints
 `deploy is not built yet: put this app on a box and keep it there` and exits 0. Never point a
 person at a verb that only prints that line — if an error message wants to say "go read the
-call", it names `pinecall-runtime sessions show <id>` or `pinecall ui`.
+call", it names `pinecall-runtime sessions show <id>` or `pinecall serve`.
 
 ## Verify
 

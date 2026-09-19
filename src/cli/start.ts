@@ -1,8 +1,8 @@
-/** `pinecall run [agent.tsx]`: the app registered and answering — the process you deploy. */
+/** `pinecall start [agent.tsx]`: the app registered and answering — the process you deploy. */
 
 import { parseArgs } from "node:util";
 
-import { Pinecall, type RouteInput } from "../client/index.js";
+import type { RouteInput } from "../client/index.js";
 
 import { showPrompt } from "../views/render.js";
 import { mount, slugOf, type Mounted } from "../runtime/connect.js";
@@ -12,9 +12,10 @@ import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { callsFrom, describing, theLine } from "./line.js";
 import { connectedLine, doorsOf } from "./connected.js";
-import { cannotTell, ENV_FLAG, notThisWorld, PRODUCTION, standing } from "./world.js";
+import { cannotTell, PRODUCTION, standing } from "./world.js";
 import { orgOf, type Who } from "./whoami.js";
-import { callingFrom } from "./profiles.js";
+import { callingFrom } from "./signed-in.js";
+import { pinecallFor } from "./client-for.js";
 import { agentFilesOfTheProject, instanceFor, load, mountOptions } from "./load.js";
 import { AGENT_FLAG, homesFor } from "./home.js";
 import { goldensOf } from "./testing/goldens.js";
@@ -29,13 +30,13 @@ import { rememberingFrom, rememberingPiecesFor } from "./ui/remembering.js";
 import { reproducingFrom } from "./ui/reproducing.js";
 import { simulatingFrom, simulatingPiecesFor } from "./ui/simulating.js";
 import { testingFrom, testingPiecesFor } from "./ui/testing.js";
-import { live, plain, stream, type Plain, type Watching } from "./run-screens.js";
-import { consoleLine, HOSTED, NOWHERE, whyNoConsole } from "./run-console.js";
+import { live, plain, stream, type Plain, type Watching } from "./start-screens.js";
+import { consoleLine, HOSTED, NOWHERE, whyNoConsole } from "./start-console.js";
 import { NoSidecar, openOrReuse, theOneUp, type Sidecar } from "./serve/sidecar.js";
 
 export const group: Group = {
   purpose: "the app and its doors: the process you deploy",
-  usage: `usage: pinecall run [agent.tsx] [--agent <name>] [--env production] [--serve] [--ui] [--events] [--show-prompt]
+  usage: `usage: pinecall start [agent.tsx] [--agent <name>] [--prod] [--serve] [--ui] [--events] [--show-prompt]
 
   With nothing after it: the agent registered on the gateway, one line per log entry on stdout,
   no port bound and no page served. It answers the console for this directory — in the sandbox
@@ -44,10 +45,10 @@ export const group: Group = {
   At the root of a project of several agents — agents/<name>.tsx — every agent at once, on one
   socket, each line prefixed by its slug; --agent <name> (or its slug) runs one of them.
 
-  --env <world>  say which world you believe this key opens, and be refused if it opens the
-                 other. Nothing said is the sandbox; a deployment types --env production
+  --prod         production: the agent your org's customers reach. A server's token was made
+                 for it; a person's key opens it while their org lets them act there
   --serve        also serve the sandbox's console on http://localhost:4100, or point at the one
-                 already up: \`pinecall run\` and \`pinecall serve\` in one terminal
+                 already up: \`pinecall start\` and \`pinecall serve\` in one terminal
   --show-prompt  the prompt a fresh instance would produce, then exit. No key, no gateway
   --events       one JSON line per log entry instead of the lines, for a pipe
   --ui           the full-screen terminal view; keys: p pause · c clear · e events · s prompt · q quit`,
@@ -73,7 +74,6 @@ export async function run(argv: string[]): Promise<number> {
       ui: { type: "boolean", default: false },
       serve: { type: "boolean", default: false },
       ...AGENT_FLAG,
-      ...ENV_FLAG,
     },
   });
   // One class, or — at the root of a project of several — every agents/*.tsx, or the one named.
@@ -100,20 +100,14 @@ export async function run(argv: string[]): Promise<number> {
 
   const door = theDoor();
   if (door === undefined) return 2;
-  // Before the socket and not after it. This used to be asked once the agent was already
-  // registered, which makes a line REPORTING where it landed rather than a say in it: the world a
-  // key opens is the one thing this verb must not be wrong about, and it is the same one request
-  // either way. See docs/decisions/tenant-cli.md.
+  // Before the socket and not after it: which world this lands in — the one --prod named, and
+  // only if the gateway opens it for this key — is the one thing this verb must not be wrong
+  // about, and a refusal here is the gateway's own sentence, before anything registers.
   let who: Who;
   try {
     who = await standing(door);
   } catch (failed) {
-    process.stderr.write(`${cannotTell("run", failed)}\n`);
-    return 2;
-  }
-  const elsewhere = notThisWorld("run", who, values.env);
-  if (elsewhere !== undefined) {
-    process.stderr.write(`${elsewhere}\n`);
+    process.stderr.write(`${cannotTell("start", failed)}\n`);
     return 2;
   }
   // The sandbox's console is this machine's: opened here when asked, else the one already up is
@@ -122,7 +116,7 @@ export async function run(argv: string[]): Promise<number> {
   let local: string | undefined;
   if (who.env === PRODUCTION) {
     if (values.serve === true) {
-      process.stderr.write(`--serve is the sandbox's console, and this key opens ${PRODUCTION}: production is watched at ${door.url}\n`);
+      process.stderr.write(`--serve is the sandbox's console, and this is ${PRODUCTION}: production is watched at ${door.url}\n`);
       return 2;
     }
   } else if (values.serve === true) {
@@ -140,7 +134,7 @@ export async function run(argv: string[]): Promise<number> {
   const url = door.url;
   // One socket for every agent of the project: the gateway takes several slugs on one app socket,
   // and every call is routed to the class it names.
-  const pc = new Pinecall({ url, apiKey: door.apiKey });
+  const pc = pinecallFor(door);
   // A gateway that restarts is a blip, not a crash: the client redials on its own, and what a
   // person needs is one line saying so — not a stack per attempt. --events prints only its JSON.
   let lost = false;
@@ -163,7 +157,7 @@ export async function run(argv: string[]): Promise<number> {
     if (who.env !== PRODUCTION) void sayWhoCallsFromHere(door);
   });
   // Whoever opens the app socket closes it. Left open it keeps this process alive after the
-  // signal has been read — a plain `kill` on `pinecall run` did nothing until this landed —
+  // signal has been read — a plain `kill` on `pinecall start` did nothing until this landed —
   // and the gateway holds the slug until it shuts.
   // What a console may ask of THIS process through the gateway, because the answer is a file of
   // the agent's home or the class in it: a written call, the personas and a simulation, the goldens
@@ -268,13 +262,13 @@ export function aLostSocket(failed: Error): boolean {
 
 /** Re-send the phone `pinecall line from` remembered for this gateway. Silent: it is upkeep. */
 async function sayWhoCallsFromHere(door: Door): Promise<void> {
-  const kept = callingFrom();
+  const kept = callingFrom(door.url);
   if (kept === undefined) return;
   try {
     await callsFrom(door, kept);
   } catch {
-    // A gateway too old for the door, or a key that opens no `app` here: neither is worth a line
-    // in front of a person who did not ask for one. `pinecall line` says the truth when they do.
+    // A refusal here is upkeep that did not land — the phone is said again on the next connect —
+    // and not worth a line in front of a person who did not ask. `pinecall line` says the truth.
   }
 }
 

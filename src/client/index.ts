@@ -18,3 +18,4 @@ export { Listeners, camelEvent } from "./listeners.js";
 export type { AnyListener, CamelEvent, Listener, Payload } from "./listeners.js";
 export { history, observe } from "./observe.js";
 export type { LogTarget, Observation, Page, ReadOptions } from "./observe.js";
+export type { World } from "./signed.js";
