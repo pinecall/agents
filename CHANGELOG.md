@@ -6,6 +6,8 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## 0.8.0 — Simulations you hear, Settings you pick from
+
 ### Changed
 - **Simulations is a screen of its own, under Sessions.** The Simulate button left the Live floor:
   the screen starts a simulation and stays on it, and a spoken one is heard live, the caller and
