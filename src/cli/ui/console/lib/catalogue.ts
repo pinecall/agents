@@ -39,6 +39,8 @@ export const CatalogueSchema = z.object({
   providers: z.array(ProviderSchema),
   defaults: z.record(z.string(), z.string()),
   voices: z.array(z.string()),
+  /** The models this build vouches for, by "<modality>/<vendor>", each vendor's default first. */
+  models: z.record(z.string(), z.array(z.string())),
 });
 export type Catalogue = z.infer<typeof CatalogueSchema>;
 

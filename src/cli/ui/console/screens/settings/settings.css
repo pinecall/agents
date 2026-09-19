@@ -1,27 +1,4 @@
-/* Settings: the form's grid, a kept version, and the row of corners under the table. */
-
-.set-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 14px 18px;
-  padding: 14px 16px;
-}
-
-.set-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.set-field-wide {
-  grid-column: 1 / -1;
-}
-
-.set-stage {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 8px;
-}
+/* Settings: the corners table's foot, the form's sections and its save bar, a kept version. */
 
 .set-corner-pick {
   display: flex;
@@ -36,6 +13,125 @@
   gap: 6px 22px;
   font-size: 12.5px;
   color: var(--ink-4);
+}
+
+/* The form: the section tabs across the top, one section's fields with air around them, the
+   save bar at the foot. Every control has a label above and a sentence under, so a person who
+   has never seen the gateway knows what a value does before choosing it. */
+.set-tabs {
+  padding: 4px 18px 0;
+  border-bottom: 1px solid var(--line-2);
+}
+
+.set-tabs .ui-tabs {
+  border-bottom: 0;
+  margin-top: 0;
+}
+
+.set-section {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 22px 24px 26px;
+}
+
+.set-section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 640px;
+}
+
+.set-section-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.set-section-blurb {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink-3);
+}
+
+.set-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px 24px;
+  max-width: 760px;
+}
+
+.set-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.set-wide {
+  max-width: 760px;
+}
+
+.set-field .ui-segmented {
+  align-self: flex-start;
+  margin-bottom: 4px;
+}
+
+.set-help {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-4);
+}
+
+/* The attached bases as a small table: the base picked from a list, how much of it a turn reads. */
+.set-bases {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 760px;
+}
+
+.set-bases-head,
+.set-bases-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.set-bases-head {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.set-save {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 14px 24px;
+  border-top: 1px solid var(--line-2);
+  background: var(--ground-4);
+}
+
+.set-save-note {
+  flex: 1 1 260px;
+  max-width: 420px;
+}
+
+.set-save-said {
+  flex: 1 1 260px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-4);
+}
+
+.set-save-error {
+  color: var(--red);
 }
 
 .set-version {

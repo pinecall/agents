@@ -48,6 +48,11 @@ export const ReportSchema = z.object({
   // Every vendor each stage could be turned onto, with whether this box can run it — the same rows
   // GET /v1/providers answers, so the two screens cannot disagree about what exists.
   providers: z.array(ProviderSchema),
+  // Which vendor runs each stage when nobody chose, and the models this build vouches for per
+  // "<modality>/<vendor>", the default first: the Settings screen draws these as lists a person
+  // picks from, never a box a model name is typed into.
+  defaults: z.record(z.string(), z.string()),
+  models: z.record(z.string(), z.array(z.string())),
   calls: z.int(),
   medians: z.array(MeasuredSchema),
   unavailable_reasons: z.record(z.string(), z.string()),

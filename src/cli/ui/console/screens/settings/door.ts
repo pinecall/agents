@@ -48,17 +48,17 @@ export const FIELDS = ["voice", "tts", "tts_model", "stt", "llm", "greeting", "h
 export type Field = (typeof FIELDS)[number];
 
 export const LABEL: Record<Field, string> = {
-  voice: "voice",
-  tts: "speaks with",
-  tts_model: "tts model",
-  stt: "hears with",
-  llm: "decides with",
-  greeting: "greeting",
-  hangup: "hangup",
-  turn: "turn",
-  memory: "memory",
-  knowledge: "knowledge",
-  bases: "bases",
+  voice: "Voice",
+  tts: "Voice vendor",
+  tts_model: "Voice model",
+  stt: "STT",
+  llm: "LLM",
+  greeting: "Opening",
+  hangup: "Hang up when",
+  turn: "Turn",
+  memory: "Memory",
+  knowledge: "Knowledge",
+  bases: "Bases",
 };
 
 /** One field of one config as a cell; undefined when the config does not set it. */

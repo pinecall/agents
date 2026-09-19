@@ -1,113 +1,36 @@
-/** The whole set on one form: the vendors and models, the opening, the cut of a turn, what is remembered, what is known by heart, the bases. */
+/** The whole set on one form, a section at a time: what hears, decides and speaks, the conversation, the memory, what is known by heart, the bases. */
 
 import { useState, type FormEvent, type ReactNode } from "react";
 
-import type { TuningBody } from "@pinecall/protocol";
+import type { KnowledgeBase, TuningBody } from "@pinecall/protocol";
 
-import { doing, type Modality, type Provider } from "../../lib/catalogue";
-import { Button, Input, Label, Select, TextArea } from "../../ui";
+import type { Provider } from "../../lib/catalogue";
+import { Button, Input, Tabs } from "../../ui";
+import { BasesSection } from "./bases";
+import { ConversationSection } from "./conversation";
+import { CURATED, StageSection, VoiceField } from "./stages";
+import { configOf, typedOf, type Typed } from "./typed";
+import { KnowledgeSection, MemorySection } from "./words";
 
-// The three stages in the order a turn passes through them, each a vendor from the list the
-// gateway answered with and a model beside it; a vendor this box cannot run stays on the list,
-// marked, because hiding it would leave a person wondering why the vendor they pay for is not there.
-const STAGES = [
-  { field: "stt", modality: "stt", label: "Hears with", note: "Which ear hears the caller. A model beside it when the vendor's own default is not wanted." },
-  { field: "llm", modality: "llm", label: "Decides with", note: "What reads the words and answers." },
-  { field: "tts", modality: "tts", label: "Speaks with", note: "What says it out loud. The voice is then that vendor's own id, unless the vendor is the one this build curates voices for." },
-] as const satisfies readonly { field: "stt" | "llm" | "tts"; modality: Modality; label: string; note: string }[];
+export type Section = "hears" | "decides" | "speaks" | "conversation" | "memory" | "knowledge" | "bases";
 
-const CURATED = "elevenlabs";
+const SECTIONS: readonly { tab: Section; name: string }[] = [
+  { tab: "hears", name: "STT" },
+  { tab: "decides", name: "LLM" },
+  { tab: "speaks", name: "Voice" },
+  { tab: "conversation", name: "Conversation" },
+  { tab: "memory", name: "Memory" },
+  { tab: "knowledge", name: "Knowledge" },
+  { tab: "bases", name: "Bases" },
+];
 
-/** What a person types, as the form keeps it: every field a string, lists one line each. */
-export interface Typed {
-  voice: string;
-  tts: string;
-  tts_model: string;
-  stt: string;
-  llm: string;
-  say: string;
-  reply: string;
-  hangup: string;
-  endpointing_ms: string;
-  min_interruption_words: string;
-  remember: string;
-  forget: string;
-  knowledge: string;
-  bases: string;
-  note: string;
-}
+// A key that opens words and not the pipeline sets the opening, what is remembered and what is
+// known by heart, and sees nothing else: the vendors are not its to move.
+const WORDS: readonly Section[] = ["conversation", "memory", "knowledge"];
 
-/** The form's fields off a config: what the corner set, ready to be edited. */
-export function typedOf(config: TuningBody): Typed {
-  const turn = config.turn ?? undefined;
-  const memory = config.memory ?? undefined;
-  return {
-    voice: config.voice ?? "",
-    tts: config.tts ?? "",
-    tts_model: config.tts_model ?? "",
-    stt: config.stt ?? "",
-    llm: config.llm ?? "",
-    say: config.greeting?.say ?? "",
-    reply: config.greeting?.reply ?? "",
-    hangup: config.hangup?.when ?? "",
-    endpointing_ms: typeof turn?.endpointing_ms === "number" ? String(turn.endpointing_ms) : "",
-    min_interruption_words: typeof turn?.min_interruption_words === "number" ? String(turn.min_interruption_words) : "",
-    remember: (memory?.remember ?? []).join("\n"),
-    forget: (memory?.forget ?? []).join("\n"),
-    knowledge: config.knowledge ?? "",
-    bases: (config.bases ?? []).map((one) => (typeof one.k === "number" ? `${one.base} ${one.k}` : one.base)).join("\n"),
-    note: "",
-  };
-}
-
-// The body is the whole set: a field left empty is not sent, which is what gives it back to the
-// class, or the runtime's default. An empty string is never sent — the door refuses one.
-/** The config a form sends, whole, off what is on screen. */
-export function configOf(typed: Typed, wordsOnly: boolean, standing: TuningBody): TuningBody {
-  const config: TuningBody = wordsOnly ? { ...standing } : {};
-  const word = (field: "voice" | "tts" | "tts_model" | "stt" | "llm"): void => {
-    if (wordsOnly) return;
-    const value = typed[field].trim();
-    if (value !== "") config[field] = value;
-  };
-  word("voice");
-  word("tts");
-  word("tts_model");
-  word("stt");
-  word("llm");
-  const say = typed.say.trim();
-  const reply = typed.reply.trim();
-  if (say !== "") config.greeting = { say };
-  else if (reply !== "" && !wordsOnly) config.greeting = { reply };
-  else delete config.greeting;
-  const remember = lines(typed.remember);
-  const forget = lines(typed.forget);
-  if (remember.length > 0 || forget.length > 0) config.memory = { remember, forget };
-  else delete config.memory;
-  // What the agent knows by heart is the floor's to write, as the opening is.
-  if (typed.knowledge.trim() !== "") config.knowledge = typed.knowledge;
-  else delete config.knowledge;
-  if (!wordsOnly) {
-    const hangup = typed.hangup.trim();
-    if (hangup !== "") config.hangup = { when: hangup };
-    const turn: NonNullable<TuningBody["turn"]> = {};
-    if (typed.endpointing_ms.trim() !== "") turn.endpointing_ms = Number(typed.endpointing_ms);
-    if (typed.min_interruption_words.trim() !== "") turn.min_interruption_words = Number(typed.min_interruption_words);
-    if (Object.keys(turn).length > 0) config.turn = turn;
-    const bases = lines(typed.bases).map((line) => {
-      const [base, k] = line.split(/\s+/);
-      return k === undefined ? { base: base ?? "" } : { base: base ?? "", k: Number(k) };
-    });
-    if (bases.length > 0) config.bases = bases;
-  }
-  return config;
-}
-
-function lines(text: string): string[] {
-  return text
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line !== "");
+/** The sections a key may edit, in reading order. */
+export function sectionsFor(wordsOnly: boolean): readonly { tab: Section; name: string }[] {
+  return wordsOnly ? SECTIONS.filter((one) => WORDS.includes(one.tab)) : SECTIONS;
 }
 
 export function SettingsForm({
@@ -116,6 +39,11 @@ export function SettingsForm({
   wordsOnly,
   voices,
   providers,
+  defaults,
+  models,
+  bases,
+  section,
+  onPickSection,
   saving,
   error,
   onSave,
@@ -123,22 +51,32 @@ export function SettingsForm({
   standing: TuningBody;
   /** The version this form was opened at: what the save is checked against. */
   version: number | null;
-  /** A key that opens words and not the pipeline: the opening and the memory, and nothing else on screen. */
   wordsOnly: boolean;
   voices: readonly string[];
   providers: readonly Provider[];
+  defaults: Readonly<Record<string, string>>;
+  models: Readonly<Record<string, readonly string[]>>;
+  /** Every base pushed in this world, for the Bases section to pick from; null while asked. */
+  bases: readonly KnowledgeBase[] | null;
+  section: Section;
+  onPickSection: (section: Section) => void;
   saving: boolean;
   error: string | null;
   onSave: (config: TuningBody, ifVersion: number | null, note: string | null) => Promise<void>;
 }): ReactNode {
-  const [typed, setTyped] = useState<Typed>(() => typedOf(standing));
+  const vendors = new Set(providers.map((one) => one.name));
+  const [typed, setTyped] = useState<Typed>(() => typedOf(standing, vendors));
   const [saved, setSaved] = useState(false);
   const change = (field: keyof Typed, value: string): void => {
     setSaved(false);
     setTyped({ ...typed, [field]: value });
   };
-  const ttsNames = new Set(doing(providers, "tts").map((one) => one.name));
-  const speaking = vendorOf(typed.tts, ttsNames) || CURATED;
+  const knob = (field: "stt" | "llm" | "tts") => (picked: Typed["stt"]) => {
+    setSaved(false);
+    // A voice is one vendor's: moving the speaking vendor takes the voice with it.
+    setTyped(field === "tts" && picked.vendor !== typed.tts.vendor ? { ...typed, tts: picked, voice: "" } : { ...typed, [field]: picked });
+  };
+  const speaking = typed.tts.vendor === "" ? (defaults["tts"] ?? CURATED) : typed.tts.vendor;
 
   const save = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
@@ -147,126 +85,43 @@ export function SettingsForm({
   };
 
   return (
-    <form className="ui-card" onSubmit={(event) => void save(event)}>
-      <div className="ui-card-head">
-        <span className="ui-card-title">Set</span>
-        <span className="ui-card-meta">{version === null ? "the first version of this corner" : `over v${version} — a corner that moved since is told so, never written over`}</span>
+    <form className="ui-card set-form" onSubmit={(event) => void save(event)}>
+      <div className="set-tabs">
+        <Tabs label="Settings" tabs={sectionsFor(wordsOnly)} on={section} onPick={onPickSection} />
       </div>
-      <div className="set-grid">
-        {!wordsOnly &&
-          STAGES.map((stage) => (
-            <div className="set-field" key={stage.field}>
-              <Label>{stage.label}</Label>
-              <Stage value={typed[stage.field]} offered={doing(providers, stage.modality)} onChange={(asked) => change(stage.field, asked)} />
-              <p className="pipe-note">{stage.note}</p>
-            </div>
-          ))}
-        {!wordsOnly && (
-          <div className="set-field">
-            <Label>Voice</Label>
-            {speaking === CURATED ? (
-              <Select value={typed.voice} onChange={(event) => change("voice", event.target.value)}>
-                <option value="">the runtime's default</option>
-                {(voices.includes(typed.voice) || typed.voice === "" ? voices : [typed.voice, ...voices]).map((name) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))}
-              </Select>
-            ) : (
-              <Input value={typed.voice} spellCheck={false} placeholder={`${speaking}'s own voice id`} onChange={(event) => change("voice", event.target.value)} />
-            )}
-            <Input value={typed.tts_model} spellCheck={false} placeholder="tts model, when the vendor's default is not wanted" onChange={(event) => change("tts_model", event.target.value)} />
-          </div>
-        )}
-        <div className="set-field set-field-wide">
-          <Label>Greeting</Label>
-          <TextArea value={typed.say} rows={2} placeholder="the words said as the call opens, verbatim" onChange={(event) => change("say", event.target.value)} />
-          {!wordsOnly && <TextArea value={typed.reply} rows={2} placeholder="or: what the model reads before it finds its own opening" onChange={(event) => change("reply", event.target.value)} />}
-          <p className="pipe-note">One of the two: the words themselves, or an instruction. Words also stop a class that improvises its opening.</p>
-        </div>
-        {!wordsOnly && (
-          <div className="set-field set-field-wide">
-            <Label>Hangup</Label>
-            <Input value={typed.hangup} placeholder="when the model may end the call, in your words" onChange={(event) => change("hangup", event.target.value)} />
-          </div>
-        )}
-        {!wordsOnly && (
-          <div className="set-field">
-            <Label>Turn</Label>
-            <Input value={typed.endpointing_ms} inputMode="numeric" placeholder="endpointing, ms" onChange={(event) => change("endpointing_ms", event.target.value)} />
-            <Input value={typed.min_interruption_words} inputMode="numeric" placeholder="words before an interruption counts" onChange={(event) => change("min_interruption_words", event.target.value)} />
-          </div>
-        )}
-        <div className="set-field">
-          <Label>Remember</Label>
-          <TextArea value={typed.remember} rows={3} placeholder="what to keep about a caller, one line each" onChange={(event) => change("remember", event.target.value)} />
-        </div>
-        <div className="set-field">
-          <Label>Never keep</Label>
-          <TextArea value={typed.forget} rows={3} placeholder="what is never written down, one line each" onChange={(event) => change("forget", event.target.value)} />
-        </div>
-        <div className="set-field set-field-wide">
-          <Label>Knowledge</Label>
-          <TextArea value={typed.knowledge} rows={14} spellCheck={false} placeholder={"what the agent knows by heart, in Markdown: the business as you describe it — hours, prices, what needs an authorisation. Read whole on every call."} onChange={(event) => change("knowledge", event.target.value)} />
-          <p className="pipe-note">{typed.knowledge.length.toLocaleString("en-US")} characters. This is not the documents it searches: those are the Docs tab, attached below as bases.</p>
-        </div>
-        {!wordsOnly && (
-          <div className="set-field">
-            <Label>Bases</Label>
-            <TextArea value={typed.bases} rows={2} placeholder={"bases the agent searches, one per line: name, and k after a space"} onChange={(event) => change("bases", event.target.value)} />
-          </div>
-        )}
-        <div className="set-field set-field-wide">
-          <Label>Note</Label>
-          <Input value={typed.note} placeholder="why, for the history" onChange={(event) => change("note", event.target.value)} />
-        </div>
-      </div>
-      <div className="pipe-save">
+      {section === "hears" && (
+        <StageSection modality="stt" title="Speech to text" blurb="What turns the caller's voice into words." knob={typed.stt} providers={providers} defaults={defaults} models={models} onChange={knob("stt")} />
+      )}
+      {section === "decides" && (
+        <StageSection modality="llm" title="Language model" blurb="The model that reads what the caller said and writes the answer." knob={typed.llm} providers={providers} defaults={defaults} models={models} onChange={knob("llm")} />
+      )}
+      {section === "speaks" && (
+        <StageSection modality="tts" title="Voice" blurb="What says the answer out loud, and in which voice." knob={typed.tts} providers={providers} defaults={defaults} models={models} onChange={knob("tts")}>
+          <VoiceField vendor={speaking} voice={typed.voice} voices={voices} onChange={(voice) => change("voice", voice)} />
+        </StageSection>
+      )}
+      {section === "conversation" && <ConversationSection typed={typed} wordsOnly={wordsOnly} change={change} />}
+      {section === "memory" && <MemorySection typed={typed} change={change} />}
+      {section === "knowledge" && <KnowledgeSection typed={typed} change={change} />}
+      {section === "bases" && (
+        <BasesSection
+          rows={typed.bases}
+          offered={bases}
+          onChange={(rows) => {
+            setSaved(false);
+            setTyped({ ...typed, bases: rows });
+          }}
+        />
+      )}
+      <div className="set-save">
+        <Input className="set-save-note" value={typed.note} placeholder="Why, for the history (optional)" onChange={(event) => change("note", event.target.value)} />
         <Button kind="primary" size="form" type="submit" disabled={saving}>
-          {saving ? "Saving…" : "Save as the next version"}
+          {saving ? "Saving…" : version === null ? "Save as the first version" : `Save as v${version + 1}`}
         </Button>
-        {error !== null ? <span className="pipe-save-error">{error}</span> : saved ? <span className="pipe-save-note">Kept. The corners above are the gateway's answer.</span> : <span className="pipe-save-note">An empty field gives it back to the runtime's default.</span>}
+        <span className={error !== null ? "set-save-said set-save-error" : "set-save-said"}>
+          {error !== null ? error : saved ? "Kept. The next call runs on it." : "Every section is saved together, as one version. An empty field is the runtime's default."}
+        </span>
       </div>
     </form>
-  );
-}
-
-// A knob is one string — `cartesia`, `cartesia/sonic-3`, or a bare model on the vendor in use — and
-// the control is two boxes over that one string.
-function vendorOf(value: string, names: ReadonlySet<string>): string {
-  const at = value.lastIndexOf("/");
-  if (at >= 0) return value.slice(0, at);
-  return names.has(value) ? value : "";
-}
-
-function modelOf(value: string, names: ReadonlySet<string>): string {
-  const at = value.lastIndexOf("/");
-  if (at >= 0) return value.slice(at + 1);
-  return names.has(value) ? "" : value;
-}
-
-function asOneString(vendor: string, model: string): string {
-  if (vendor === "") return model;
-  return model === "" ? vendor : `${vendor}/${model}`;
-}
-
-function Stage({ value, offered, onChange }: { value: string; offered: readonly Provider[]; onChange: (asked: string) => void }): ReactNode {
-  const names = new Set(offered.map((one) => one.name));
-  const vendor = vendorOf(value, names);
-  const model = modelOf(value, names);
-  return (
-    <div className="set-stage">
-      <Select value={vendor} onChange={(event) => onChange(asOneString(event.target.value, model))}>
-        <option value="">the runtime's default</option>
-        {offered.map((one) => (
-          <option key={one.name} value={one.name}>
-            {one.name}
-            {one.ready ? "" : ` — ${one.standing}`}
-          </option>
-        ))}
-      </Select>
-      <Input value={model} spellCheck={false} placeholder="the vendor's own default model" onChange={(event) => onChange(asOneString(vendor, event.target.value))} />
-    </div>
   );
 }
