@@ -1,11 +1,12 @@
-/** `pinecall agent`: what the org set over the class — yours, the team's, production's — and setting it. */
+/** `pinecall agent`: what the org set over the class — yours, the team's, production's — setting it, and the processes that hold it. */
 
 import { parseArgs } from "node:util";
 
-import type { AgentList, TuningAnswer, TuningBody } from "@pinecall/protocol";
+import type { TuningAnswer, TuningBody } from "@pinecall/protocol";
 
 import { FIELDS, linesOf, readSettings, settingsPath, WIRE, type Field } from "./agent-lines.js";
 import { filesRun } from "./agent-files.js";
+import { listed, stopped } from "./agent-processes.js";
 import { versionsRun } from "./agent-versions.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
@@ -15,7 +16,7 @@ import { refusal } from "./whoami.js";
 
 const USAGE = [
   "usage: pinecall agent [--agent <slug>] [--json]",
-  "       pinecall agent list",
+  "       pinecall agent list · stop <app>",
   "       pinecall agent set [--voice x] [--tts x] [--tts-model x] [--stt x] [--llm x] [--greeting '…' | --reply '…']",
   "                          [--hangup '…'] [--endpointing-ms n] [--min-interruption-words n]",
   "                          [--remember '…' …] [--forget '…' …] [--team] [--note '…']",
@@ -25,7 +26,7 @@ const USAGE = [
 ].join("\n");
 
 export const group: Group = {
-  purpose: "what the org set over the class — yours, the team's, production's — and setting it",
+  purpose: "what the org set over the class — yours, the team's, production's — setting it, and the processes that hold it",
   usage: `${USAGE}
 
   With nothing after it: the agent's settings as your key sees them, three corners side by side —
@@ -49,7 +50,10 @@ export const group: Group = {
   pull prints the corner's config as JSON; push sends a file as the next version, --team to the
   team's corner.
 
-  list prints the agents this org is holding in your key's world.`,
+  list prints every process holding this org's agents in the world asked — one line an app: its id,
+  the agents it holds, whose corner, the machine and the address it connected from, the SDK, and
+  since when. stop <app> closes that app's socket; a pinecall that hears it exits instead of
+  dialling back, so its agents are free — though a supervisor (systemd, pm2) starts it again.`,
   run,
 };
 
@@ -91,7 +95,8 @@ export async function run(argv: string[], how: Setting = {}): Promise<number> {
   if (door === undefined) return 2;
   const [verb, ...rest] = positionals;
   try {
-    if (verb === "list") return await list(door, out);
+    if (verb === "list") return await listed(door, out);
+    if (verb === "stop") return await stopped(door, rest[0], out, err);
     const aFile = notASlug(values.agent);
     if (aFile !== undefined) {
       err.write(`${aFile}\n`);
@@ -120,19 +125,6 @@ export async function run(argv: string[], how: Setting = {}): Promise<number> {
 }
 
 // ── the verbs ───────────────────────────────────────────────────────────────────
-
-async function list(door: Door, out: NodeJS.WritableStream): Promise<number> {
-  const held = await asked<AgentList>(door, "/v1/agents");
-  if (held.agents.length === 0) {
-    out.write("no agent is held here: `pinecall start` holds one\n");
-    return 0;
-  }
-  for (const one of held.agents) {
-    const whose = one.holder === null || one.holder === undefined ? "the org's own" : (one.holder.name ?? one.holder.holder ?? "");
-    out.write(`${one.slug}  ${one.channels.join(", ") || "no doors"}  ${whose}\n`);
-  }
-  return 0;
-}
 
 // The door takes the WHOLE set with the version it was read at, so what this command line did
 // not name is read back off the corner's own row and sent again: `set --llm x` must not quietly

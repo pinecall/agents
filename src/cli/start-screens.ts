@@ -20,7 +20,7 @@ export type Listen = (listener: (event: CamelEvent) => void) => () => void;
 export async function stream(pc: Pinecall, listen: Listen): Promise<number> {
   listen((event) => process.stdout.write(`${JSON.stringify(event)}\n`));
   await pc.connect();
-  await forever();
+  await held(pc);
   return 0;
 }
 
@@ -53,7 +53,7 @@ export async function plain(pc: Pinecall, agents: Plain[], url: string): Promise
   for (const agent of agents) {
     for (const said of await agent.after()) process.stdout.write(`${prefix(agent.slug)}${said}\n`);
   }
-  await forever();
+  await held(pc);
   return 0;
 }
 
@@ -98,6 +98,7 @@ export async function live(pc: Pinecall, listen: Listen, watching: Watching): Pr
   await pc.connect();
   const timer = setInterval(paint, FRAME_MS);
   paint();
+  let why: string | undefined;
   await new Promise<void>((done) => {
     const stop = onKey((key) => {
       if (key === "q" || key === "\u0003") {
@@ -113,9 +114,15 @@ export async function live(pc: Pinecall, listen: Listen, watching: Watching): Pr
       if (key === "s") prompt = prompt === undefined ? watching.prompt() : undefined;
       dirty = true;
     });
+    pc.onStopped((said) => {
+      why = said;
+      stop();
+      done();
+    });
   });
   clearInterval(timer);
   process.stdout.write(CLEAR);
+  if (why !== undefined) process.stderr.write(`${why}\n`);
   return 0;
 }
 
@@ -141,6 +148,18 @@ function onKey(handle: (key: string) => void): () => void {
     input.setRawMode(false);
     input.pause();
   };
+}
+
+// `start` ends on a signal, or when a member of the org stops the app from `pinecall agent stop` or
+// the console: then it says who, and exits instead of dialling back.
+function held(pc: Pinecall): Promise<void> {
+  return new Promise<void>((done) => {
+    pc.onStopped((why) => {
+      process.stderr.write(`${why}\n`);
+      done();
+    });
+    void forever().then(done);
+  });
 }
 
 // The verb ends when the process is signalled, not when a promise settles: it registers an

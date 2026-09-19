@@ -187,7 +187,7 @@ Beside `src/`:
 
 | entity | where | fields |
 |---|---|---|
-| `Pinecall` | `client/client.ts` | `sdk`, `url`, `apiKey`, `env`, `agent()`, `connect()`, `close()`, `connected`, `on`/`onAny`/`onErrors`, `observe`, `history` |
+| `Pinecall` | `client/client.ts` | `sdk`, `host`, `url`, `apiKey`, `env`, `agent()`, `connect()`, `close()`, `connected`, `on`/`onAny`/`onErrors`/`onStopped`, `observe`, `history` |
 | `Agent` (client) | `client/agent.ts` | `slug`, `calls`, `config`, `app`, `open()`, `configure()`, `declare(tools)`, `command()`, `take(entry)`, `ping()` |
 | `Call` (client) | `client/calls.ts` | `id`, `status`, `channel`, `from`, `to`, `contact`, `state`, `today`, and one method per command |
 | `CallBook` | `client/calls.ts` | `live`, `of(id, at)`, `forget(call)` |
@@ -365,6 +365,11 @@ class, no view, no CLI. It knows two things — `@pinecall/protocol` and `ws`.
   takes unclaimed calls, and a call keeps the socket it opened on for its whole life. That is what
   makes a rolling deploy work and what makes `pinecall chat` a console: it registers with
   `takesUnclaimed: false` and its caller socket names `?app=<its own id>`.
+- **A stop is the one close that is not retried.** Every other close is a blip and is redialled
+  with jittered backoff for ever. An `error` coded `stopped` for no agent — a member of the org
+  pressed Stop (`POST /v1/apps/{app}/stop`) — closes the connection for good and is handed to
+  `onStopped`; `pinecall start` prints it and exits. `agent.register` names the machine (`host`),
+  so the gateway's list of processes (`GET /v1/apps`) says where each one runs.
 - **Two commands are awaited** (`agent.register` → `agent.registered`, `agent.configure` →
   `agent.configured`), each answered by the event it lands as or by an `error` naming its id.
   Everything else is fire-and-read-the-log.

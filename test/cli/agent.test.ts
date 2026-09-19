@@ -1,5 +1,5 @@
 // `pinecall agent`: the three corners on one page, a set that carries the corner's row and its
-// version, the fields cleared, the history read, and a promote that carries the goldens.
+// version, the fields cleared, the history read, and the processes that hold the org's agents.
 
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
@@ -24,6 +24,17 @@ const TEAM = {
   config: { voice: "carolina", llm: "anthropic/claude-haiku-4-5", greeting: { say: "Clínica Norte, buenas." }, memory: { remember: ["allergies"], forget: [] } },
 };
 const YOURS = { holder: "m_ana", version: 3, author: "m_ana", note: null, set_at: 1758310000, config: { voice: "amelia" } };
+
+const PROCESS = {
+  app: "app_7",
+  agents: [AGENT, "clinica-norte-sales"],
+  env: "production",
+  host: "web-1",
+  address: "34.1.2.3",
+  sdk: "pinecall/0.5.1",
+  holder: null,
+  connected_at: 1758300000,
+};
 
 /** One request as the gateway heard it. */
 interface Heard {
@@ -75,6 +86,8 @@ class FakeGateway {
       response.end(JSON.stringify(body));
     };
     if (this.refuse !== undefined && heard.method !== "GET") return answer(this.refuse.status, { detail: this.refuse.detail });
+    if (heard.path === "/v1/apps") return answer(200, { apps: [PROCESS] });
+    if (heard.path.endsWith("/stop")) return answer(200, { app: "app_7", stopped: true });
     if (heard.path.endsWith("/history?team=true")) return answer(200, { world: "sandbox", holder: "", rows: [TEAM, { ...TEAM, version: 10, note: null, config: { voice: "carolina" } }] });
     if (heard.path.includes("/diff")) return answer(200, { ours: YOURS, theirs: TEAM, changed: ["voice", "llm"] });
     return answer(200, { world: "sandbox", yours: this.yours, team: TEAM, production: null });
@@ -227,5 +240,33 @@ describe("the versions", () => {
     await run(["rollback", "10", "--agent", AGENT, "--team"], { out: written().stream, env: environment() });
 
     expect(gateway.written).toEqual({ version: 10, team: true });
+  });
+});
+
+describe("the processes", () => {
+  it("lists every app holding the org's agents: whose, where it runs, the sdk, since when", async () => {
+    const out = written();
+
+    expect(await run(["list"], { out: out.stream, env: environment() })).toBe(0);
+
+    expect(out.text()).toBe("app_7  clinica-norte, clinica-norte-sales  the org's · web-1 (34.1.2.3) · pinecall/0.5.1 · since 2025-09-19 16:40\n");
+  });
+
+  it("stops one by its id, in the world --prod names", async () => {
+    const out = written();
+
+    withoutTheWorldFlag(["agent", "stop", "app_7", "--prod"]);
+    expect(await run(["stop", "app_7"], { out: out.stream, env: environment() })).toBe(0);
+    withoutTheWorldFlag([]);
+
+    expect(gateway.heard.at(-1)).toMatchObject({ method: "POST", path: "/v1/apps/app_7/stop", world: "production" });
+    expect(out.text()).toContain("stopped app_7");
+  });
+
+  it("asks which app when none is named", async () => {
+    const err = written();
+
+    expect(await run(["stop"], { out: written().stream, err: err.stream, env: environment() })).toBe(2);
+    expect(err.text()).toContain("pinecall agent list");
   });
 });

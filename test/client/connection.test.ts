@@ -1,4 +1,6 @@
-// The socket: the key at the door, the declaration on the way in, and again on the way back.
+// The socket: the key at the door, the declaration on the way in, again on the way back, and a stop.
+
+import { hostname } from "node:os";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Pinecall, Refused } from "../../src/client/index.js";
@@ -40,6 +42,7 @@ describe("connecting", () => {
       { channel: "web", number: null },
     ]);
     expect(register?.data["sdk"]).toMatch(/^pinecall\//);
+    expect(register?.data["host"]).toBe(hostname());
 
     const [configure] = gateway.commandsOf("agent.configure");
     expect(configure?.data["config"]).toMatchObject({ language: "es", greeting: { say: "Clínica Norte, ¿en qué puedo ayudarte?" } });
@@ -90,5 +93,34 @@ describe("connecting", () => {
     pc.agent("clinica-norte", {});
     await pc.connect();
     await vi.waitFor(() => expect(gateway.commandsOf("ping").length).toBeGreaterThan(1), { timeout: 4_000 });
+  });
+});
+
+describe("being stopped", () => {
+  it("hears why, closes, and never dials back", async () => {
+    const pc = await connected({ backoff: { firstMs: 10, capMs: 20 } });
+    pc.agent("clinica-norte", {});
+    const heard: string[] = [];
+    pc.onStopped((why) => heard.push(why));
+    await pc.connect();
+
+    gateway.stop("stopped by Ana");
+    await vi.waitFor(() => expect(heard).toEqual(["stopped by Ana"]));
+    await new Promise((waited) => setTimeout(waited, 100));
+
+    expect(pc.connected).toBe(false);
+    expect(gateway.connections).toBe(0);
+    expect(gateway.commandsOf("agent.register")).toHaveLength(1);
+  });
+
+  it("says it on the error door when nobody listens for a stop", async () => {
+    const pc = await connected();
+    const errors: string[] = [];
+    pc.onErrors((error) => errors.push(error.message));
+    pc.agent("clinica-norte", {});
+    await pc.connect();
+
+    gateway.stop("stopped by Ana");
+    await vi.waitFor(() => expect(errors).toContain("stopped by Ana"));
   });
 });

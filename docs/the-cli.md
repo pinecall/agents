@@ -532,7 +532,7 @@ nothing.
 
 ```
 pinecall agent [--agent <slug>] [--json]
-pinecall agent list
+pinecall agent list · stop <app>
 pinecall agent set [--voice x] [--tts x] [--tts-model x] [--stt x] [--llm x] [--greeting '…' | --reply '…']
                    [--hangup '…'] [--endpointing-ms n] [--min-interruption-words n]
                    [--remember '…' …] [--forget '…' …] [--team] [--note '…']
@@ -585,6 +585,21 @@ second is told `this corner is at v4 now, not the version you read`. `history` p
 with who set it, why, and what it changed; `diff` reads this corner against the team's or
 production's; `rollback <n>` brings one back as the next version — `rollback <n> --prod` is how a
 production change that went wrong is undone, in one line.
+
+**What is running, and where.** `list` prints every process holding the org's agents in the world
+asked — one line an app socket: its id, the agents it holds, whose corner, the machine and address
+it connected from, the SDK, and since when:
+
+```console
+$ pinecall agent list --prod
+app_7  maravilla  the org's · web-1 (34.68.177.78) · pinecall/0.5.1 · since 2026-09-19 14:02
+```
+
+`stop <app>` closes that socket with the `stopped` code (`POST /v1/apps/{app}/stop`, a key with
+`app`): the process prints `stopped by <name>` and exits instead of dialling back, and its agents
+are free. A supervisor that restarts whatever exits — systemd's `Restart=always`, pm2 — starts it
+again, so a process kept that way is stopped where it is supervised. An app on the SDK hears it on
+`pc.onStopped(why => …)`. The Overview's Processes card is the same list, with a Stop per row.
 
 **Git, for whoever wants it.** `pinecall agent pull > pinecall/maravilla.json` writes the corner's
 config as a file; `pinecall agent push pinecall/maravilla.json --team` sends it back as the next

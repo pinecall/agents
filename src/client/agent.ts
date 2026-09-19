@@ -35,6 +35,7 @@ export interface AgentGateway {
   seen(event: CamelEvent, call: Call | null): void;
   onError(error: Error): void;
   readonly sdk: string;
+  readonly host: string;
 }
 
 const ANSWER_MS = 10_000;
@@ -139,6 +140,7 @@ export class Agent implements CallGateway {
     const registered = await this.#ask("agent.register", "agent.registered", {
       routes: this.#routes.map((route) => ({ channel: route.channel, number: route.number ?? null, ...(route.label === undefined ? {} : { label: route.label }) })),
       sdk: this.gateway.sdk,
+      host: this.gateway.host,
       takesUnclaimed: this.#takesUnclaimed,
     });
     // A reconnect mints a new socket and so a new id: the one kept is always this socket's own.
