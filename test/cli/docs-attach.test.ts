@@ -109,15 +109,23 @@ describe("attaching a base", () => {
     await run(["attach", "clinica", "--k", "8", "--agent", AGENT, "--team"], { out: out.stream, env });
 
     expect(gateway.written).toEqual({ config: { voice: "carolina", bases: [{ base: "clinica", k: 8 }] }, if_version: 11, note: "attached clinica", team: true });
-    expect(out.text()).toBe(`${AGENT} · clinica attached · the team's v12\n`);
+    expect(out.text()).toBe(`${AGENT} · clinica attached · the team's corner v12\n`);
   });
 
-  it("starts a corner that set nothing yet from an empty row", async () => {
+  // A production token, a CI key: the gateway writes the org's own corner for a key that holds
+  // none, so the attach has to be built on THAT row. Built on an empty one it took the corner's
+  // knowledge and its voice out with it — the whole set travels (2026-09-19, on the box).
+  it("carries the corner the gateway will write when the key holds none of its own", async () => {
     gateway.yours = null;
 
     await run(["attach", "tarifas", "--agent", AGENT], { out: written().stream, env });
 
-    expect(gateway.written).toEqual({ config: { bases: [{ base: "tarifas" }] }, if_version: null, note: "attached tarifas", team: false });
+    expect(gateway.written).toEqual({
+      config: { voice: "carolina", bases: [{ base: "clinica", k: 4 }, { base: "tarifas" }] },
+      if_version: 11,
+      note: "attached tarifas",
+      team: false,
+    });
   });
 
   it("names production when --prod does, on the read and on the write", async () => {
@@ -143,7 +151,7 @@ describe("detaching a base", () => {
     expect(await run(["detach", "clinica", "--agent", AGENT, "--team"], { out: out.stream, env })).toBe(0);
 
     expect(gateway.written).toEqual({ config: { voice: "carolina" }, if_version: 11, note: "detached clinica", team: true });
-    expect(out.text()).toBe(`${AGENT} · clinica detached · the team's v12\n`);
+    expect(out.text()).toBe(`${AGENT} · clinica detached · the team's corner v12\n`);
   });
 
   it("says so when the base was not attached in that corner, and writes nothing", async () => {
