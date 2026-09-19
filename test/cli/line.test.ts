@@ -1,4 +1,4 @@
-// The sentence `pinecall line` and `pinecall run` both print: where a ring lands, and the move
+// The sentence `pinecall line` and `pinecall start` both print: where a ring lands, and the move
 // that changes it. A member id is never in it — a person recognises a colleague by their email.
 
 import { describe, expect, it } from "vitest";
@@ -89,7 +89,7 @@ describe("whether an agent has a ring to land anywhere", () => {
     expect(rings([{ channel: "phone", number: "+59829001199" }])).toBe(true);
   });
 
-  it("is false of one that only answers a widget, so `run` says nothing about a line", () => {
+  it("is false of one that only answers a widget, so `start` says nothing about a line", () => {
     expect(rings([{ channel: "web" }])).toBe(false);
     expect(rings(undefined)).toBe(false);
   });

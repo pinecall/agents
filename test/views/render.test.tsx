@@ -22,7 +22,7 @@ import ClinicaNorte from "../agent/clinica-norte.js";
 const KNOWN = "+34 600 000 001";
 
 // The class docstring lives above the class, where `Ctor.toString()` cannot see it, so whoever
-// loaded the file hands it over. Here that is the test; in production it is `pinecall run`.
+// loaded the file hands it over. Here that is the test; in production it is `pinecall start --prod`.
 describeClass(ClinicaNorte, readFileSync(new URL("../agent/clinica-norte.tsx", import.meta.url), "utf8"));
 
 /** The clinic answering a call on that door, which is what a `promptOf()` reads off `this.call`. */

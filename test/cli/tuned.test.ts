@@ -1,4 +1,4 @@
-// What `pinecall run` prints beside a class that still declares what the world now owns: one line
+// What `pinecall start` prints beside a class that still declares what the world now owns: one line
 // per field the corner says differently, and nothing when they agree or the class says nothing.
 
 import { describe, expect, it } from "vitest";

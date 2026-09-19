@@ -268,5 +268,7 @@ describe("the processes", () => {
 
     expect(await run(["stop"], { out: written().stream, err: err.stream, env: environment() })).toBe(2);
     expect(err.text()).toContain("pinecall agent list");
+    expect(await run(["stop", ""], { out: written().stream, err: written().stream, env: environment() })).toBe(2);
+    expect(gateway.heard.filter((one) => one.method === "POST")).toEqual([]);
   });
 });

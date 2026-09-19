@@ -1,4 +1,4 @@
-// The verb a person types at an agent: `run` starts it, says what it registered, prints where the
+// The verb a person types at an agent: `start` starts it, says what it registered, prints where the
 // console is, and binds no port on this machine — the gateway serves the page.
 
 import { readdirSync, readFileSync } from "node:fs";
@@ -22,7 +22,7 @@ function collected(): { stream: NodeJS.WritableStream; text(): string } {
   return { stream, text: () => written.join("") };
 }
 
-describe("the line `pinecall run` prints when the socket is up", () => {
+describe("the line `pinecall start` prints when the socket is up", () => {
   // It names no page: the console's URL is its own line, minted after the socket is up, because
   // it carries a one-use code this line cannot have before the gateway answers.
   it("names the agent, the gateway, the tools and the doors, and no page", () => {
@@ -80,7 +80,7 @@ describe("the line `pinecall run` prints when the socket is up", () => {
   });
 });
 
-describe("the console's URL `pinecall run` prints", () => {
+describe("the console's URL `pinecall start` prints", () => {
   // The gateway serves the console at /a/<agent>, and the browser signs in with a one-use code
   // this process minted: the code rides the URL once, the key never does.
   it("is the gateway's page for this agent, with the code, and never a key", () => {
@@ -102,9 +102,9 @@ describe("the console's URL `pinecall run` prints", () => {
   });
 });
 
-describe("`pinecall run` opens no port", () => {
+describe("`pinecall start` opens no port", () => {
   // The agent's process serves no UI: the one thing under the tenant's CLI that listens for a
-  // connection is the sandbox's console, `pinecall serve`, in src/cli/serve/ — and `run` reaches
+  // connection is the sandbox's console, `pinecall serve`, in src/cli/serve/ — and `start` reaches
   // it only when `--serve` asks. A grep is the honest test of that — a suite cannot prove the
   // absence of a socket, and this catches the file that would bring a second one in.
   it("has nothing under cli/ that binds one, but the sidecar", () => {
@@ -185,7 +185,7 @@ describe("every built verb has a help page", () => {
 // every request with the org key. It is the gateway's page now (docs/decisions/console.md), so the
 // verb is gone, not deprecated: nothing was published and nobody had a bookmark.
 describe("`ui` is not a verb of this CLI", () => {
-  it("is refused, and the usage names `run`, which prints where the console is", async () => {
+  it("is refused, and the usage names `start`, which prints where the console is", async () => {
     const out = collected();
     const err = collected();
 
