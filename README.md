@@ -76,7 +76,9 @@ Every verb reads `PINECALL_KEY` (and `PINECALL_URL`, when the gateway is not the
 environment, else from the project's `.env`, which `pinecall link` wrote; each is the sandbox until
 `--prod` says production, for a person whose org lets them act there. On a server the agent runs
 on a server's token from the console's Tokens screen, as `pinecall start --prod` or mounted inside
-your own Node app — [docs/production.md](docs/production.md).
+your own Node app — [docs/production.md](docs/production.md). `pinecall agent list --prod` says
+which process holds each agent, on which machine, since when, and `pinecall agent stop <app>` stops
+one.
 
 A tenant that installed `pinecall` from npm has it on the PATH and writes `pinecall start`. A
 repository of several agents keeps each in `agents/<name>.tsx`, and one `pinecall start` at its root
