@@ -61,7 +61,7 @@ export function Crumbs({ crumbs }: { crumbs: readonly string[] }): ReactNode {
   );
 }
 
-/** The switch that flips a page between daylight and dark, for as long as the tab lives. */
+/** The switch that flips a page between daylight and dark, kept until the system's own theme changes. */
 export function ThemeToggle(): ReactNode {
   const [theme, setTheme] = useState<Theme>(() => currentTheme());
   const goingTo: Theme = theme === "dark" ? "light" : "dark";

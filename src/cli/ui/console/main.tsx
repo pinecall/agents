@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router";
 
 import { onUnauthorized } from "../shared/api";
+import { followTheSystemTheme } from "../shared/theme";
 import { BASE } from "./lib/base";
 import { CredentialsProvider } from "../shared/credentials";
 import { loginToOrg, loginWithCode, type Signed } from "./lib/login";
@@ -22,6 +23,10 @@ const root = document.getElementById("root");
 if (root === null) {
   throw new Error("index.html has no #root for the console to mount in");
 }
+
+// Before anything renders: the page already follows the system through CSS (ui/tokens.css), so this
+// only matters to a person who flipped the theme by hand.
+followTheSystemTheme();
 
 // The query parameter a production `pinecall start` prints: a one-use code standing for that process's key, spent
 // here for a key of this tab's own and taken out of the address bar before anything renders, so a

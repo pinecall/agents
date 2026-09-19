@@ -815,9 +815,9 @@ textarea:focus {
 }
 
 .ui-chip-on {
-  background: var(--ink);
+  background: var(--solid);
   border-color: var(--ink);
-  color: var(--on-accent);
+  color: var(--on-solid);
   font-weight: 550;
 }
 
@@ -834,8 +834,8 @@ textarea:focus {
 }
 
 .ui-choice-on {
-  background: var(--ink);
-  color: var(--on-accent);
+  background: var(--solid);
+  color: var(--on-solid);
   font-weight: 550;
 }
 
@@ -1032,8 +1032,8 @@ textarea:focus {
 }
 
 .ui-tint-ink {
-  background: var(--ink);
-  color: var(--on-accent);
+  background: var(--solid);
+  color: var(--on-solid);
 }
 
 .ui-code {

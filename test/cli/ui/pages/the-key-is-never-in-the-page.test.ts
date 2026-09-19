@@ -26,12 +26,12 @@ const AN_ENVIRONMENT_KEY = /PINECALL_(API|DEV)_KEY/;
 // console's person is the browser's since 2026-09-16 — a login code spends once, and a per-tab
 // store left every other tab signed out — so its keys are in localStorage, and signing out forgets
 // them in every tab; the world and the corner a tab looks at stay the tab's. Two files and not
-// one, on purpose: the two credentials must never meet. `pane-widths.ts` is the one other file that
-// reaches localStorage, and what it keeps is how wide a person dragged a pane: a number under a
-// prefix of its own, which a test below holds it to.
+// one, on purpose: the two credentials must never meet. Two other files reach localStorage and
+// neither keeps a credential: `pane-widths.ts` keeps how wide a person dragged a pane, and
+// `shared/theme.ts` whether they flipped the page to light or dark.
 test("one file per page reaches a browser's storage", () => {
   expect(sourceFilesReaching("sessionStorage")).toEqual(["admin/lib/ops-key.ts", "console/lib/session-key.ts"]);
-  expect(sourceFilesReaching("localStorage")).toEqual(["console/lib/pane-widths.ts", "console/lib/session-key.ts"]);
+  expect(sourceFilesReaching("localStorage")).toEqual(["console/lib/pane-widths.ts", "console/lib/session-key.ts", "shared/theme.ts"]);
 });
 
 // The key rides one header and that header is spelled in one place for both pages: every door

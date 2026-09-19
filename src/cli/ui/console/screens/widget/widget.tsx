@@ -221,7 +221,7 @@ export function Widget(): ReactNode {
                     key={one}
                     type="button"
                     className="widget-accent"
-                    style={{ background: one, boxShadow: one === accent ? `0 0 0 2px var(--on-accent),0 0 0 4px ${one}` : undefined }}
+                    style={{ background: one, boxShadow: one === accent ? `0 0 0 2px var(--ground),0 0 0 4px ${one}` : undefined }}
                     onClick={() => setAccent(one)}
                     aria-label={one}
                     aria-pressed={one === accent}

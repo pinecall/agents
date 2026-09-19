@@ -22,6 +22,19 @@
   align-self: flex-start;
 }
 
+/* The wordmark is ink: one drawn dark for daylight, one drawn light for the dark theme. */
+.login-logo-dark {
+  display: none;
+}
+
+:root[data-theme="dark"] .login-logo-daylight {
+  display: none;
+}
+
+:root[data-theme="dark"] .login-logo-dark {
+  display: block;
+}
+
 .login-form {
   width: 100%;
   max-width: 352px;
@@ -382,7 +395,7 @@ select.login-workspace-input {
   width: 16px;
   height: 16px;
   border-radius: 4px;
-  background: var(--ink);
+  background: var(--solid);
 }
 
 .login-sso-pick {

@@ -18,9 +18,7 @@
   border: 1px solid var(--line);
   border-radius: 14px;
   background: var(--ground);
-  box-shadow:
-    0 1px 2px rgba(16, 16, 20, 0.04),
-    0 12px 32px -8px rgba(16, 16, 20, 0.18);
+  box-shadow: var(--shadow-toast);
   animation: ring-arrive 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.2);
 }
 
@@ -172,7 +170,7 @@
   border: 1px solid var(--line);
   border-radius: 50%;
   background: var(--ground);
-  box-shadow: 0 2px 6px rgba(16, 16, 20, 0.12);
+  box-shadow: var(--shadow-nub);
   width: 24px;
   height: 24px;
   color: var(--ink-5);

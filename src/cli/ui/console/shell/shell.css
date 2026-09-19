@@ -292,8 +292,8 @@
   width: 26px;
   height: 26px;
   border-radius: 8px;
-  background: var(--ink);
-  color: var(--on-accent);
+  background: var(--solid);
+  color: var(--on-solid);
   display: grid;
   place-items: center;
   font-size: 10.5px;
@@ -435,6 +435,24 @@
 
 .top-leave:hover {
   border-color: var(--line-hover);
+}
+
+.top-theme {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--line-control);
+  border-radius: 8px;
+  background: var(--ground);
+  color: var(--ink-3);
+  cursor: pointer;
+}
+
+.top-theme:hover {
+  border-color: var(--line-hover);
+  color: var(--ink);
 }
 
 /* ── the switcher ─────────────────────────────────────────────────────────── */
@@ -701,7 +719,7 @@
   position: fixed;
   inset: 0;
   z-index: 60;
-  background: rgba(16, 16, 20, 0.24);
+  background: var(--scrim);
   display: flex;
   justify-content: center;
   align-items: flex-start;

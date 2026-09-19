@@ -7,6 +7,7 @@ import { useLeaving } from "../lib/leaving";
 import { AGENT_SCREENS, BOX_SCREENS, MODE, ORG_SCREENS } from "../lib/mode";
 import { orgOf, useWhoami } from "../lib/whoami";
 import { Switcher } from "./switcher";
+import { ThemeButton } from "./theme-button";
 
 /** The page's title, from the path: the screen's name, or Session one level under Sessions. */
 export function titleOf(pathname: string, agent: string): string {
@@ -39,6 +40,7 @@ export function Top({ agent }: { agent: string }): ReactNode {
       <span className="top-title">{titleOf(pathname, agent)}</span>
       <div className="top-right">
         <Switcher agent={agent} />
+        <ThemeButton />
         {/* Nothing to sign out of on a machine's own console: it holds no key. */}
         {MODE === "hosted" && (
           <button type="button" className="top-leave" onClick={leave}>

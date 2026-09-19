@@ -1,69 +1,111 @@
-/* The console's palette, type and measures: the redesign's values, named once. The only colours in the console. */
+/* The console's palette, type and measures: the redesign's values, named once. The only colours in the console.
+ *
+ * Every colour is a pair — light-dark(daylight, dark) — so a token is still defined once and a theme is only which
+ * half the page reads. The page follows the system through color-scheme before any script runs; shared/theme.ts
+ * stamps data-theme when a person flipped it, and color-scheme follows the stamp. Dark is near-black with a breath
+ * of violet: hairlines instead of shadows, the accent brightened to carry on black, tints that glow rather than
+ * sit on the page like stickers. */
+
+:root {
+  color-scheme: light dark;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
 
 :root {
   /* ink, darkest to faintest */
-  --ink: #101014;
-  --ink-2: #3c3a47;
-  --ink-3: #6b6975;
-  --ink-4: #8a8895;
-  --ink-5: #9d9baa;
-  --ink-6: #a3a1ad;
-  --ink-7: #c0bdc9;
+  --ink: light-dark(#101014, #ededf2);
+  --ink-2: light-dark(#3c3a47, #c9c7d3);
+  --ink-3: light-dark(#6b6975, #a09eac);
+  --ink-4: light-dark(#8a8895, #85838f);
+  --ink-5: light-dark(#9d9baa, #72707d);
+  --ink-6: light-dark(#a3a1ad, #676572);
+  --ink-7: light-dark(#c0bdc9, #484651);
 
   /* lines */
-  --line: #eeedf2;
-  --line-2: #f2f1f5;
-  --line-3: #f7f6fa;
-  --line-control: #e8e6ee;
-  --line-field: #e4e2ea;
-  --line-hover: #d6d3df;
-  --line-hover-2: #cfccd8;
-  --line-muted: #d8d4e4;
+  --line: light-dark(#eeedf2, #202028);
+  --line-2: light-dark(#f2f1f5, #1b1b22);
+  --line-3: light-dark(#f7f6fa, #17171d);
+  --line-control: light-dark(#e8e6ee, #272730);
+  --line-field: light-dark(#e4e2ea, #2b2b35);
+  --line-hover: light-dark(#d6d3df, #373742);
+  --line-hover-2: light-dark(#cfccd8, #40404c);
+  --line-muted: light-dark(#d8d4e4, #34323f);
 
   /* grounds */
-  --ground: #fff;
-  --ground-side: #fbfafc;
-  --ground-3: #f7f6fa;
-  --ground-4: #f4f3f7;
-  --ground-5: #f1f0f5;
-  --ground-tint: #faf9ff;
+  --ground: light-dark(#fff, #0c0c0f);
+  --ground-side: light-dark(#fbfafc, #0f0f13);
+  --ground-3: light-dark(#f7f6fa, #141419);
+  --ground-4: light-dark(#f4f3f7, #18181e);
+  --ground-5: light-dark(#f1f0f5, #1c1c23);
+  --ground-tint: light-dark(#faf9ff, #13111e);
 
   /* the accent */
-  --accent: #5b3df5;
+  --accent: light-dark(#5b3df5, #7c63ff);
   --on-accent: #fff;
-  --accent-hover: #4c2fe0;
-  --accent-soft: #ede9fe;
-  --accent-selected: #efeafe;
-  --accent-2: #8b6bff;
-  --accent-3: #c4b5fd;
-  --accent-line: #cfc7fb;
-  --accent-tint-line: #e6e0fd;
-  --accent-ink: #6b5fd0;
-  --accent-ring: 0 0 0 3px rgba(91, 61, 245, 0.12);
-  --selection: #ddd6fe;
+  --accent-hover: light-dark(#4c2fe0, #917bff);
+  --accent-soft: light-dark(#ede9fe, rgb(124 99 255 / 0.16));
+  --accent-selected: light-dark(#efeafe, rgb(124 99 255 / 0.2));
+  --accent-2: light-dark(#8b6bff, #a18cff);
+  --accent-3: light-dark(#c4b5fd, #5a48c4);
+  --accent-line: light-dark(#cfc7fb, rgb(124 99 255 / 0.42));
+  --accent-tint-line: light-dark(#e6e0fd, rgb(124 99 255 / 0.26));
+  --accent-ink: light-dark(#6b5fd0, #aa9bff);
+  --accent-ring: 0 0 0 3px light-dark(rgba(91, 61, 245, 0.12), rgb(124 99 255 / 0.3));
+  --selection: light-dark(#ddd6fe, rgb(124 99 255 / 0.38));
+
+  /* the solid: a filled chip, a picked choice, an avatar — ink turned into a ground, and what is written on it */
+  --solid: light-dark(#101014, #ededf2);
+  --on-solid: light-dark(#fff, #101014);
 
   /* the tints a pill, an avatar or a row wears */
-  --green: #15803d;
-  --green-dot: #16a34a;
-  --green-soft: #dcfce7;
-  --amber: #a16207;
+  --green: light-dark(#15803d, #4ade80);
+  --green-dot: light-dark(#16a34a, #22c55e);
+  --green-soft: light-dark(#dcfce7, rgb(34 197 94 / 0.14));
+  --amber: light-dark(#a16207, #fbbf24);
   --amber-dot: #f59e0b;
-  --amber-soft: #fef3c7;
-  --amber-tint: #fffdf5;
-  --red: #b91c1c;
-  --red-soft: #fee2e2;
-  --red-line: #f3c8c8;
-  --indigo: #4338ca;
-  --indigo-soft: #e0e7ff;
-  --pink: #be185d;
-  --pink-soft: #fce7f3;
-  --teal: #0f766e;
+  --amber-soft: light-dark(#fef3c7, rgb(245 158 11 / 0.14));
+  --amber-tint: light-dark(#fffdf5, rgb(245 158 11 / 0.05));
+  --red: light-dark(#b91c1c, #f87171);
+  --red-soft: light-dark(#fee2e2, rgb(239 68 68 / 0.15));
+  --red-line: light-dark(#f3c8c8, rgb(239 68 68 / 0.38));
+  --indigo: light-dark(#4338ca, #a5b4fc);
+  --indigo-soft: light-dark(#e0e7ff, rgb(99 102 241 / 0.18));
+  --pink: light-dark(#be185d, #f472b6);
+  --pink-soft: light-dark(#fce7f3, rgb(236 72 153 / 0.15));
+  --teal: light-dark(#0f766e, #2dd4bf);
 
-  --shadow-pop: 0 16px 40px -16px rgba(16, 16, 20, 0.26), 0 2px 6px rgba(16, 16, 20, 0.05);
-  --shadow-card: 0 1px 2px rgba(16, 16, 20, 0.04);
-  --shadow-raised: 0 1px 2px rgba(16, 16, 20, 0.08);
-  --shadow-talk: 0 10px 24px -12px rgba(91, 61, 245, 0.9);
-  --shadow-preview: 0 8px 20px -14px rgba(16, 16, 20, 0.3);
+  /* On black a shadow barely reads, so the dark half deepens it and lights the top edge instead. */
+  --shadow-pop:
+    0 16px 40px -16px light-dark(rgba(16, 16, 20, 0.26), rgb(0 0 0 / 0.7)),
+    0 2px 6px light-dark(rgba(16, 16, 20, 0.05), rgb(0 0 0 / 0.4)),
+    inset 0 1px 0 light-dark(transparent, rgb(255 255 255 / 0.05));
+  --shadow-card: 0 1px 2px light-dark(rgba(16, 16, 20, 0.04), rgb(0 0 0 / 0.3));
+  --shadow-raised: 0 1px 2px light-dark(rgba(16, 16, 20, 0.08), rgb(0 0 0 / 0.5));
+  --shadow-talk: 0 10px 24px -12px light-dark(rgba(91, 61, 245, 0.9), rgb(124 99 255 / 0.7));
+  --shadow-preview: 0 8px 20px -14px light-dark(rgba(16, 16, 20, 0.3), rgb(0 0 0 / 0.7));
+  --shadow-toast:
+    0 1px 2px light-dark(rgba(16, 16, 20, 0.04), rgb(0 0 0 / 0.3)),
+    0 12px 32px -8px light-dark(rgba(16, 16, 20, 0.18), rgb(0 0 0 / 0.65)),
+    inset 0 1px 0 light-dark(transparent, rgb(255 255 255 / 0.05));
+  --shadow-nub: 0 2px 6px light-dark(rgba(16, 16, 20, 0.12), rgb(0 0 0 / 0.5));
+  --shadow-room:
+    0 1px 2px light-dark(rgba(16, 16, 20, 0.04), rgb(0 0 0 / 0.3)),
+    0 26px 60px -28px light-dark(rgba(16, 16, 20, 0.35), rgb(0 0 0 / 0.8)),
+    inset 0 1px 0 light-dark(transparent, rgb(255 255 255 / 0.05));
+  /* a customer's site, where the widget is previewed: theirs and not ours, so daylight in either theme */
+  --site-ground: #fff;
+  --site-ink: #a3a1ad;
+  --site-red: #b91c1c;
+
+  /* what dims the page behind ⌘K */
+  --scrim: light-dark(rgba(16, 16, 20, 0.24), rgb(0 0 0 / 0.6));
 
   --face: Inter, system-ui, -apple-system, sans-serif;
   --face-fixed: ui-monospace, SFMono-Regular, Menlo, monospace;

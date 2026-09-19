@@ -199,7 +199,7 @@ dropped (`use-watched-call.ts`), so a remount never doubles a row.
 `ui/tokens.css` is the only file of the console with a colour in it: seven inks (`--ink` …
 `--ink-7`), the lines, six grounds, the accent `#5b3df5` with its hover, soft, selected, second and
 third steps and its focus ring, the tints (green, amber, red, indigo, pink, teal), five shadows,
-Inter and a system monospace, the sidebar's two widths and the top bar's height. **Light only.**
+Inter and a system monospace, the sidebar's two widths and the top bar's height. **Light and dark**: every colour is a `light-dark()` pair; the page follows the system, and the top bar's sun or moon flips it.
 `ui/ui.css` is the vocabulary and `ui/*.tsx` its parts, imported as one (`../../ui`):
 
 | part | what it is |
@@ -922,7 +922,7 @@ Not a style rule among them — each is pinned by a test or by a decision.
 4. **The console holds no truth of its own.** The reducer and the wire types are `@pinecall/protocol`'s. The one exception is named and temporary: `lib/sessions-wire.ts` reads a session list with the `score`, `flags`, `total` and `next` a newer gateway adds, all optional, because the protocol this package depends on is strict and predates them — a list read with it would be refused whole. It goes the day that protocol is published.
 5. **A refusal is shown in the gateway's own words**, never rephrased, never swallowed; **a door that is not there is an element not drawn**, never an error.
 6. **Nothing is invented.** A value that is not known is `—`, not a zero; a stage nobody measured says so; a judge that did not answer is not a pass; a number the gateway does not count is folded from rows the page holds, and says nothing it cannot.
-7. **Light only, and one file holds the colours**: `ui/tokens.css`. Every other stylesheet names a token.
+7. **One file holds the colours, in both themes**: `ui/tokens.css`, each one a `light-dark()` pair. Every other stylesheet names a token.
 8. **A class lives in one stylesheet** — vite bundles them into one file, so a class name is global: `test/cli/ui/pages/one-stylesheet-one-class.test.ts`. A screen's classes carry its prefix (`fl-`, `lv-`, `ib-`, `ui-`…).
 9. **No dependency for looks**: the icons are paths in `ui/icon.tsx`, the fonts one request to Google Fonts; `test/the-imports.test.ts` lists what the page may import.
 10. **The desk is whole, whatever a design draws**: listen, whisper, say, take the line, hand back, transfer, end. It sends one verb per move (`the-desk-sends-one-verb.test.ts`), a supervisor's move reads as one line wherever the log is drawn (`a-supervisor-reads-as-one-line.test.ts`), and the two irreversible verbs never leave on a single click.
