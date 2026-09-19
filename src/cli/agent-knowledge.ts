@@ -95,7 +95,10 @@ async function inTheEditor(text: string): Promise<string> {
   const file = join(folder, "knowledge.md");
   try {
     writeFileSync(file, text);
-    const opened = spawnSync(editor, [file], { stdio: "inherit", shell: true });
+    // One command line, not a command and an argument: `$EDITOR` is a LINE a person wrote — `code
+    // -w`, `emacsclient -nw` — and a shell is what reads it. The path is quoted here because the
+    // shell would otherwise split a temp directory with a space in it.
+    const opened = spawnSync(`${editor} '${file.replaceAll("'", "'\\''")}'`, { stdio: "inherit", shell: true });
     if (opened.status !== 0) throw new Error(`${editor} exited with ${opened.status}: nothing written`);
     return readFileSync(file, "utf8");
   } finally {
