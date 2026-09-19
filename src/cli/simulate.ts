@@ -36,7 +36,7 @@ export const group: Group = {
   --persona <name>    a file of test/personas, by its name
   --judge             read back the call.score the log seals on, and print every judge
   --turns n           how many turns the caller improvises before hanging up (default 6)
-  --voice             a real line: a room, the persona's own voice, the box's speech
+  --voice             a real line: a room, and the caller in a person's voice, not the agent's
   --listen            the call on this machine's speakers while it happens; turns --voice on
   --background-noise  dB under the caller: a television behind them. Spoken runs only
   --packet-loss       percent of the caller's packets that never arrive. Spoken runs only
@@ -227,9 +227,9 @@ async function inWriting(
   return heard.call ?? "";
 }
 
-// The spoken door: a room, the agent dispatched into it, and the persona's own voice on a line
-// that may be spoiled on purpose. The whole call is held in the runtime, where the LiveKit pair
-// and the box's speech tool are; this side mints the id and watches the log while it happens.
+// The spoken door: a room, the agent dispatched into it, and the caller in a voice of its own on a
+// line that may be spoiled on purpose. The whole call is held in the runtime, where the LiveKit
+// pair and the vendor keys are; this side mints the id and watches the log while it happens.
 async function outLoud(
   door: Door,
   slug: string,

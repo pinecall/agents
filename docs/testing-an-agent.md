@@ -112,7 +112,7 @@ already going.
 
 The report is a matrix: a line per golden, the evidence under the ones that broke, and the median
 latency each was answered with. `--voice` runs the same goldens as ring 2: each line is said out
-loud by this machine's speech tool on a real line to a worker, and the same judges read the log
+loud on a real line to a worker, in an ElevenLabs voice the agent does not have and in its language, and the same judges read the log
 it leaves. It needs a worker running beside the gateway, and `--background-noise` and
 `--packet-loss` spoil the line the way they do for `simulate`.
 
