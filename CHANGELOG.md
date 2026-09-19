@@ -6,6 +6,8 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## 0.8.2 — The console in the dark
+
 ### Added
 - **The console has a dark theme.** It follows the system's light or dark, and the sun or moon in
   the top bar flips it; the flip is kept in the browser until the system's own theme changes.
