@@ -10,6 +10,13 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 - **Simulations is a screen of its own, under Sessions.** The Simulate button left the Live floor:
   the screen starts a simulation and stays on it, and a spoken one is heard live, the caller and
   the agent, the moment its room opens. Voice starts on there, and the turns field is *Max turns*.
+- **Settings, rebuilt for the person setting it.** One tab a section — STT, LLM, Voice,
+  Conversation, Memory, Knowledge, Bases — and every choice a list of values that run: a vendor
+  appears only when the box has its key and runs models at it, the model is picked from those, the
+  voice from the curated names, the turn's silence and interruption words and a base's chunks from
+  values the runtime takes. Nothing is typed that could name something that does not exist. The
+  form opens on what the agent runs on (your corner before you set it is the team's), and the
+  corner-by-corner comparison sits under it.
 
 ### Fixed
 - **A settings write no longer erases the corner it lands in.** The gateway writes the org's own
