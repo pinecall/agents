@@ -18,12 +18,14 @@ import { Evals } from "./screens/evals";
 import { FloorLive, FloorSessions } from "./screens/floor";
 import { Home } from "./screens/home";
 import { Keys } from "./screens/keys";
+import { Lexicon } from "./screens/lexicon";
 import { Providers } from "./screens/providers";
 import { Knowledge } from "./screens/knowledge";
 import { Memory } from "./screens/memory";
 import { Numbers, PhoneTesting } from "./screens/numbers";
 import { Pipeline } from "./screens/pipeline";
 import { Session, Sessions } from "./screens/sessions";
+import { Settings } from "./screens/settings";
 import { Talk } from "./screens/talk";
 import { Terminal } from "./screens/terminal";
 import { Team } from "./screens/team";
@@ -47,6 +49,7 @@ const ORG: Record<string, ReactNode> = {
   providers: <Providers />,
   team: <Team />,
   usage: <Usage />,
+  lexicon: <Lexicon />,
 };
 
 // The box's. They are routed for anybody on the gateway's page, because the router is built before
@@ -66,6 +69,7 @@ const AGENT: Record<string, ReactNode> = {
   devchat: <Chat />,
   calls: <Calls />,
   sessions: <Sessions />,
+  settings: <Settings />,
   pipeline: <Pipeline />,
   knowledge: <Knowledge />,
   memory: <Memory />,

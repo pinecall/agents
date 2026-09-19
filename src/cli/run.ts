@@ -18,6 +18,7 @@ import { callingFrom } from "./profiles.js";
 import { agentFilesOfTheProject, instanceFor, load, mountOptions } from "./load.js";
 import { AGENT_FLAG, homesFor } from "./home.js";
 import { goldensOf } from "./testing/goldens.js";
+import { worldsWord } from "./tuned.js";
 import type { Door } from "./testing/gateway.js";
 import { chattingFrom, linesFromThisProcess, type Chatting } from "./ui/chatting.js";
 import { devHandler, ownVerbs } from "./ui/doors.js";
@@ -220,7 +221,7 @@ export async function run(argv: string[]): Promise<number> {
           env: who.env,
           source: door.source,
         }),
-        after: () => onceUp(door, mounted.slug, rings(mounted.options.routes), who.env === PRODUCTION ? HOSTED : (local ?? NOWHERE)),
+        after: () => onceUp(door, mounted, rings(mounted.options.routes), who.env === PRODUCTION ? HOSTED : (local ?? NOWHERE)),
       }));
       return await plain(pc, agents, url);
     }
@@ -245,12 +246,14 @@ export async function run(argv: string[]): Promise<number> {
   }
 }
 
-// What is only true once the socket is up: the console's URL, and — when the agent answers at a
-// number — whose terminal that number rings in. Both are asked of the gateway, and neither is
-// worth failing the run over: a gateway that refuses says so on its own line and the app runs on.
-async function onceUp(door: Door, slug: string, rings: boolean, where: string): Promise<string[]> {
-  const said = [await consoleLine(door, slug, where)];
-  if (rings) said.push(await lineLine(door, slug));
+// What is only true once the socket is up: the console's URL, — when the agent answers at a
+// number — whose terminal that number rings in, and every field the class still declares that
+// the world says differently. All asked of the gateway, and none worth failing the run over: a
+// gateway that refuses says so on its own line and the app runs on.
+async function onceUp(door: Door, mounted: Mounted, rings: boolean, where: string): Promise<string[]> {
+  const said = [await consoleLine(door, mounted.slug, where)];
+  if (rings) said.push(await lineLine(door, mounted.slug));
+  said.push(...(await worldsWord(door, mounted.slug, mounted.options)));
   return said;
 }
 

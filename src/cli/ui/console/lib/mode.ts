@@ -26,7 +26,7 @@ export const WORLD_OF: Record<Mode, World> = { hosted: "production", local: "san
 export type Group = "gateway" | "settings" | "box";
 
 /** The sidebar's icons, by name (ui/icon.tsx). */
-export type ScreenIcon = "home" | "grid" | "activity" | "list" | "chart" | "phone" | "key" | "plug" | "users" | "building" | "server" | "route" | "sliders" | "check" | "memory";
+export type ScreenIcon = "home" | "grid" | "activity" | "list" | "chart" | "phone" | "key" | "plug" | "users" | "building" | "server" | "route" | "sliders" | "check" | "memory" | "words";
 
 /** One screen: where it is, what the sidebar calls it, which group it sits in, and which console has it. */
 export interface Screen {
@@ -65,6 +65,8 @@ export const ORG_SCREENS: readonly Screen[] = [
   { key: "keys", path: "keys", name: "Keys", in: HOSTED, group: "settings", icon: "key" },
   { key: "providers", path: "providers", name: "Providers", in: HOSTED, group: "settings", icon: "plug" },
   { key: "team", path: "team", name: "Team", in: HOSTED, group: "settings", icon: "users" },
+  // The org's words, in both consoles: set in the sandbox, promoted to production, read in either.
+  { key: "lexicon", path: "lexicon", name: "Lexicon", in: BOTH, group: "settings", icon: "words" },
 ];
 
 // The BOX's screens: every tenant, the fleet under them, the doors, the bill of all of them, and
@@ -88,6 +90,7 @@ export const AGENT_SCREENS: readonly Screen[] = [
   { key: "devchat", path: "dev-chat", name: "Dev chat", in: LOCAL },
   { key: "calls", path: "calls", name: "Calls", in: BOTH },
   { key: "sessions", path: "sessions", name: "Sessions", in: BOTH },
+  { key: "settings", path: "settings", name: "Settings", in: BOTH },
   { key: "pipeline", path: "pipeline", name: "Pipeline", in: BOTH },
   { key: "knowledge", path: "knowledge", name: "Knowledge", in: BOTH },
   { key: "memory", path: "memory", name: "Memory", in: BOTH },

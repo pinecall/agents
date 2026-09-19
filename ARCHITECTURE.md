@@ -114,6 +114,8 @@ a directory earns its place there by having a line in that table (§13).
 | `run-console.ts` · `run-screens.ts` | the `console` line `run` prints — the sidecar's URL or the verb that opens one in the sandbox, the gateway's link with a one-use code in production — and the three ways `run` shows a log: plain, `--ui`, `--events` |
 | `run.ts` · `chat.ts` · `prompt.ts` | the app, the app in this terminal — or a written call at an agent somebody else is holding, named by slug — and the prompt offline |
 | `test.ts` · `simulate.ts` · `eval.ts` · `runs/` | ring 1, a live persona, ring 3, and what the gateway has run |
+| `agent.ts` · `agent-lines.ts` · `agent-versions.ts` · `agent-files.ts` | **the settings**: what the org set over the class — yours, the team's, production's — on one page (`agent-lines.ts`); the whole set written with the version it was read at, or fields cleared; the versions — history, diff, rollback, and the two hops of promote, the second carrying the goldens beside the agent — and a corner as a file for CI. `pipeline.ts` only reads now |
+| `lexicon.ts` · `memory-policy.ts` · `tuned.ts` | the org's words, whole and versioned, promoted with no goldens between · the memory field of the settings on its own · what `run` prints beside a class that still declares what the world now owns: one line per field the world says differently — the world wins |
 | `knowledge.ts` · `memory.ts` | the folder pushed whole under a name, listed, dropped · one contact's facts, and the right to be forgotten. Each also holds its golden's verb: `eval` prints `recall@k` and `nDCG@10`, computed in the gateway by code with no model, and exits 1 on a miss |
 | `keys.ts` | the API keys this org's machines run on: one issued for a machine and printed once, the rows read back as fingerprints, one revoked |
 | `numbers.ts` | which number reaches which agent: the org's doors listed, one imported off its carrier, one MOVED between the worlds — an org buys one number, so that move is what makes a staging run cost nothing — one let go |
@@ -195,13 +197,20 @@ Two kinds of field live on the instance, and the difference is the whole model.
 
 **Config** — the names in `CONFIG_FIELDS` (`agent/agent.ts`). They configure the agent; they
 are not state. They are never diffed, never rendered by a view, never in a snapshot, and assigning
-one does not go through the change recorder.
+one does not go through the change recorder. **Most of them are the world's now**: `voice`, `llm`,
+`stt`, `greeting`, `hangup`, `memory` and `docs` are the agent's settings on the gateway — per
+world, per corner, versioned (the runtime's `docs/protocol/settings-api.md`), set with `pinecall
+agent set` — and `says`/`hears` are the org's lexicon. The class still sends them (`optionsFor`),
+and the gateway seeds a world that has nothing set from them once; after that the world wins, and
+`cli/tuned.ts` prints the difference beside every `pinecall run`. The knowledge chapter moves
+`knowledge` and `docs` the same way; the cut refuses the fields at load.
 
 | field | becomes |
 |---|---|
 | `phone`, `whatsapp`, `web` | the routes in `agent.register` (`runtime/channels.ts`); truthy means "this agent answers there" |
 | `voice` | `VoiceConfig` — a **name**, resolved to a vendor and an id by the platform, never sent as an id |
 | `llm` | `ModelConfig` — `"haiku"`/`"sonnet"`/`"opus"` are lowered to real model ids; `"provider/model"` names both halves |
+| `stt` | `ModelConfig` — a vendor, `"deepgram"`, or `"vendor/model"`; a vendor alone travels with an empty model, which the runtime reads as the vendor's own |
 | `says` | `Pronunciation[]` — `{ Vidal: "bidál" }` written as a map, carried as a list |
 | `hears` | the words the ears must know |
 | `language` | which of `views/lang.ts`'s two word-sets the `identity` block carries |
@@ -209,6 +218,7 @@ one does not go through the change recorder.
 | `knowledge` | one file, relative to `agent.tsx`: read there by `runtime/grounding.ts` and sent whole as `{path, text}`. The runtime writes its text into the `knowledge` block, once per call; the app sends nothing for that block. A missing file is refused at load |
 | `docs` | the knowledge base **by the name it was pushed under** (`pinecall knowledge push --base`): `"clinica-norte"` or `{ base, mode?, k?, minScore? }`. The old glob form is refused with the verb that replaces it |
 | `memory` | `{ remember, forget }`, in the tenant's words: what the runtime extracts at hang-up and what it never writes. Each fact is filed under the word it was remembered by, and `this.remembers(word)` is how a `render()` asks whether this call has been told one |
+| `hangup` | `HangupConfig` — `{ when }`: the model may end the call, and when; `{}` leaves the wording to livekit's own `end_call`. A class that declares nothing cannot hang up |
 
 **State** — everything else the app puts on the instance, plus its getters. The rules, enforced in
 code:

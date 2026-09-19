@@ -1,5 +1,5 @@
-// `pinecall pipeline`: the three legs read back, and the five knobs turned over a door that takes
-// the whole set — so what this verb sends is what the next call is built with, and nothing else.
+// `pinecall pipeline`: the three legs read back as the next call would be built, and the six knobs
+// answered to `pinecall agent set`, where they live now.
 
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
@@ -96,7 +96,7 @@ describe("what the agent runs on", () => {
     expect(code).toBe(0);
     expect(out.text()).toContain("deepgram · nova-3 · es");
     expect(out.text()).toContain("anthropic · claude-haiku-4-5");
-    expect(out.text()).toContain("elevenlabs · eleven_flash_v2_5 · Lucia · es   ← turned: voice");
+    expect(out.text()).toContain("elevenlabs · eleven_flash_v2_5 · Lucia · es   ← set: voice");
     expect(out.text()).toContain("Clínica Norte");
     expect(out.text()).toContain("eou_delay 0.31s");
     expect(out.text()).toContain("cartesia is not available here: no key on this box");
@@ -111,64 +111,28 @@ describe("what the agent runs on", () => {
   });
 });
 
-describe("turning a knob", () => {
-  // The door replaces the whole set, so a `set` that names one knob must carry back every knob
-  // that was already turned: otherwise turning the llm tonight gives the voice back to the class.
-  it("sends the whole set: what was turned before, and what this command line named", async () => {
-    const out = written();
+describe("the knobs, moved", () => {
+  // The six are fields of the agent's settings now, set per corner and versioned by one verb.
+  it("says where set went, and knocks at no door", async () => {
+    const err = written();
 
     const code = await run(["set", "--agent", AGENT, "--llm", "anthropic/claude-haiku-4-5"], {
-      out: out.stream,
-      env: environment(),
-    });
-
-    expect(code).toBe(0);
-    expect(gateway.turned).toEqual({ voice: "Lucia", llm: "anthropic/claude-haiku-4-5" });
-  });
-
-  it("gives one knob back and keeps the rest", async () => {
-    const out = written();
-
-    await run(["clear", "voice", "--agent", AGENT], { out: out.stream, env: environment() });
-
-    expect(gateway.turned).toEqual({});
-  });
-
-  it("gives every knob back when nobody names one, without reading the door first", async () => {
-    const out = written();
-
-    await run(["clear", "--agent", AGENT], { out: out.stream, env: environment() });
-
-    expect(gateway.turned).toEqual({});
-    expect(gateway.heard.filter((one) => one.method === "GET")).toHaveLength(0);
-  });
-
-  it("refuses a knob nobody has, and names the five", async () => {
-    const out = written();
-    const err = written();
-
-    const code = await run(["clear", "temperature", "--agent", AGENT], {
-      out: out.stream,
-      err: err.stream,
-      env: environment(),
-    });
-
-    expect(code).toBe(1);
-    expect(err.text()).toContain("no knob called temperature");
-    expect(err.text()).toContain("tts-model");
-  });
-
-  it("says the gateway's own sentence when the door refuses the set", async () => {
-    gateway.refuse = { status: 400, detail: "no tts vendor named 'acme'; this build has elevenlabs" };
-    const err = written();
-
-    const code = await run(["set", "--agent", AGENT, "--voice", "acme"], {
       out: written().stream,
       err: err.stream,
       env: environment(),
     });
 
-    expect(code).toBe(1);
-    expect(err.text()).toContain("no tts vendor named 'acme'");
+    expect(code).toBe(2);
+    expect(err.text()).toContain("pinecall agent set");
+    expect(gateway.heard).toHaveLength(0);
+  });
+
+  it("says where clear went too, naming the knobs typed", async () => {
+    const err = written();
+
+    const code = await run(["clear", "voice", "--agent", AGENT], { out: written().stream, err: err.stream, env: environment() });
+
+    expect(code).toBe(2);
+    expect(err.text()).toContain("pinecall agent clear voice");
   });
 });

@@ -17,7 +17,7 @@ export const StageSchema = z.object({
 });
 export type Stage = z.infer<typeof StageSchema>;
 
-/** The six knobs an operator may turn. A knob left out of a PUT stops being overridden. */
+/** The six knobs of the old door, as the report still draws which of them is set. */
 export const OverriddenSchema = z.object({
   voice: z.string().nullable(),
   // `tts` is the vendor that speaks, written like the other two: `cartesia`, or `cartesia/sonic-3`.
@@ -73,33 +73,12 @@ export async function readPipeline(credentials: Credentials, agent: string): Pro
   return ReportSchema.parse(await read(credentials, door(agent)));
 }
 
-// The door answers the whole report, so the screen redraws from what the gateway now holds rather
-// than from what the form believed it had sent.
-/** Turn the knobs. The body is the whole set; the answer is the pipeline as it now stands. */
-export async function turnKnobs(
-  credentials: Credentials,
-  agent: string,
-  knobs: Partial<Overridden>,
-): Promise<Report> {
-  return ReportSchema.parse(await put(credentials, `${door(agent)}/overrides`, knobs));
-}
-
 function door(agent: string): string {
   return `/v1/agents/${encodeURIComponent(agent)}/pipeline`;
 }
 
-// The knob below the line is a text box and therefore always sets words, so the screen has to say
-// which of the two the class declared: typing over an improvised opening changes what it IS, and
-// an operator about to press save should be able to see that before they do.
-/** What the class declared, as the one line the control shows above its box. */
-export function greetingLine(greeting: Greeting | null): string {
-  if (greeting === null) return "";
-  if (greeting.say !== null && greeting.say !== undefined) return greeting.say;
-  return `the class improvises: ${greeting.reply ?? ""}`;
-}
-
-// The hold melody has doors of its own and is not a seventh knob: the overrides PUT replaces the
-// whole set, so a console that did not know about it would have silenced it by saving a voice.
+// The hold melody has doors of its own and is not a field of the settings: a whole-set PUT that
+// did not know about it would have silenced it by saving a voice.
 /** What an agent plays while a tool runs: the runtime's own melody, none, or a file of yours. */
 export const HoldAudioSchema = z.object({
   played: z.enum(["default", "off", "custom"]),

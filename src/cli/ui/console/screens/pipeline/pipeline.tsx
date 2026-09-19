@@ -1,28 +1,26 @@
 /** Pipeline: the three providers a turn passes through, the anatomy of a turn, and what may be changed. */
 
 import type { ReactNode } from "react";
-import { useParams } from "react-router";
+
+import { Link, useParams } from "react-router";
 
 import { Card, Empty, Page, PageHead } from "../../ui";
-import { Controls } from "./controls";
-import { greetingLine } from "./door";
 import { HoldMelody } from "./hold";
 import { DecidesLeg, HearsLeg, SpeaksLeg } from "./legs";
-import { Overrides } from "./overrides";
 import { usePipeline } from "./use-pipeline";
 import { Waterfall } from "./waterfall";
 import "./pipeline.css";
 
 export function Pipeline(): ReactNode {
   const agent = useParams()["agent"] ?? "";
-  const { report, saving, error, turn } = usePipeline(agent);
+  const { report, error } = usePipeline(agent);
 
   return (
     <Page tight>
       <PageHead
         title="Pipeline"
         ledeWidth={660}
-        lede="The three legs of a voice turn as data, not prose: what hears, what decides, what speaks — every value read from the gateway with this agent's overrides already applied."
+        lede="The three legs of a voice turn as data, not prose: what hears, what decides, what speaks — every value read from the gateway with this agent's settings already laid over the class."
       />
 
       {report === null ? (
@@ -43,25 +41,12 @@ export function Pipeline(): ReactNode {
 
           <Waterfall medians={report.medians} calls={report.calls} agent={agent} />
 
-          <Controls
-            key={agent}
-            turned={report.overrides}
-            declared={{
-              stt: `${report.hears.vendor}/${report.hears.model ?? ""}`,
-              llm: `${report.decides.vendor}/${report.decides.model ?? ""}`,
-              tts: report.speaks.vendor,
-              voice: report.speaks.voice_id ?? "",
-              tts_model: report.speaks.model ?? "",
-              greeting: greetingLine(report.greeting),
-            }}
-            voices={report.voices}
-            providers={report.providers}
-            saving={saving}
-            error={error}
-            onTurn={turn}
-          />
+          <Card>
+            <Empty>
+              Changing any of it is the <Link to={`/a/${encodeURIComponent(agent)}/settings`}>Settings</Link> tab: the vendors and models with the opening, the cut of a turn and what is remembered, per corner and versioned.
+            </Empty>
+          </Card>
           <HoldMelody key={`hold-${agent}`} agent={agent} />
-          <Overrides turned={report.overrides} />
         </>
       )}
     </Page>

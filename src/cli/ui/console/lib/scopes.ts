@@ -10,6 +10,10 @@ export const SCOPE_OF: Record<string, string> = {
   calls: "calls",
   sessions: "calls",
   pipeline: "pipeline",
+  // Settings and the lexicon open to `pipeline` OR `words` at the gateway; every person's key that
+  // holds either holds `words`, so the rail gates them by the one both sides have.
+  settings: "words",
+  lexicon: "words",
   knowledge: "knowledge",
   memory: "memory",
   evals: "evals",
@@ -38,7 +42,7 @@ export function notOpened(screen: string): string {
 
 // Every scope a key may carry (runtime types/key.py). A person's key never holds `app` in production,
 // so a key with every other one is, as far as a person reading a list cares, everything.
-const EVERY_SCOPE = ["app", "calls", "evals", "keys", "knowledge", "memory", "numbers", "pipeline", "providers", "supervise", "talk", "team", "usage"];
+const EVERY_SCOPE = ["app", "calls", "evals", "keys", "knowledge", "memory", "numbers", "pipeline", "providers", "supervise", "talk", "team", "usage", "words"];
 
 /** What a key may do, as one short line: "everything", or its scopes. */
 export function scopesLine(scopes: readonly string[]): string {

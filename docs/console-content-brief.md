@@ -15,10 +15,10 @@ The same page is served in two places, and it is a different product in each:
 | who uses it | whoever runs the org: the owner, a supervisor, qa | whoever writes the agent |
 | signing in | email and password — and *Continue with Google* when the box's operator wired it, *Continue with SSO* when the org did; a key kept by the browser | none: the sidecar signs what the page asks, the page holds no key, and there is no sign out |
 | sidebar ▸ Gateway (local: *Sandbox*) | Home `/`, Overview `/overview`, Live, Sessions, Evals, Memory, Usage | Home, Overview, Live, Sessions, Evals, Memory |
-| sidebar ▸ Settings | Numbers, Keys, Providers, Team | Phone testing |
+| sidebar ▸ Settings | Numbers, Keys, Providers, Team, Lexicon | Phone testing, Lexicon |
 | sidebar ▸ Box — a person the box made an **operator**, and nobody else | Organizations, Fleet, Routes, Box usage, Box settings | — |
 | outside the sidebar | `/cli`, `/invitations/<token>` | — |
-| an agent's tabs | Talk, Chat, Calls, Sessions, Pipeline, Knowledge, Memory, Evals (scored calls, drift), Widget | the same, plus **Dev chat**, Evals ▸ runs and *Run all* |
+| an agent's tabs | Talk, Chat, Calls, Sessions, Settings (read, roll back), Pipeline, Knowledge, Memory, Evals (scored calls, drift), Widget | the same, plus **Dev chat**, Settings that *sets*, Evals ▸ runs and *Run all* |
 | copies | one: the org's, *deployed on the box* | the reader's; a key with `team` opens a teammate's |
 
 Which is which is a `<meta name="pinecall-console" content="local">` the sidecar puts in the page
@@ -55,7 +55,9 @@ switcher and the ⌘K box are the tab's and die with it.
 | `/a/:agent/dev-chat[/:call]` | Dev chat (local) |
 | `/a/:agent/calls[/:call]` | Calls — the inbox; a call in the path opens the thread holding it |
 | `/a/:agent/sessions[/:call]` | the agent's sessions; one read whole (deep-linkable to a line: `#seq-93`) |
-| `/a/:agent/pipeline` · `knowledge` · `memory` · `widget` | one tab each |
+| `/a/:agent/settings` | Settings — the three corners (yours, the team's, production's), the whole set as a form with the version it was read at, the history with roll back, promote yours to the team; on the gateway's page production is read and rolled back, never set: `GET`/`PUT /v1/agents/{slug}/settings`, `…/history`, `…/rollback`, `…/promote` |
+| `/lexicon` | Lexicon — the org's words, said and heard, whole and versioned, promoted with no goldens: `GET`/`PUT /v1/lexicon`, `…/promote`. A `words` key (supervisor, manager) opens it |
+| `/a/:agent/pipeline` · `knowledge` · `memory` · `widget` | one tab each; Pipeline reads and points at Settings |
 | `/a/:agent/evals?view=runs\|calls\|drift&run=<id>` | Evals |
 | `/a/:agent/widget/preview?name=&company=&tagline=&phone=&accent=&greeting=` | a blank page with nothing but the widget on it, outside the shell |
 | `/cli?c=<word>` | hosted: the card a person opens from `pinecall login` to sign that terminal in |

@@ -7,6 +7,28 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **`pinecall agent`: what the org set over the class, per world and per corner, a version a row.**
+  The three corners on one page — yours, the team's, production's — `set` with the version it
+  was read at (a corner that moved is told so, never written over), `clear`, `history`, `diff`,
+  `rollback`, the two hops of `promote` (yours to the team's; the team's sandbox to production,
+  carrying the goldens beside the agent and refusing when one does not hold), and `pull`/`push`
+  for whoever keeps a corner in git. `list` prints the agents held. The class's own `voice`,
+  `llm`, `stt`, `greeting`, `hangup`, `memory` and `docs` seed a world that has nothing set, once;
+  after that **the world wins**, and `pinecall run` prints one line per field the class still
+  says differently, with what to delete.
+- **`pinecall lexicon`**: the org's words — how the voice says a brand, what the ears must know —
+  laid over every agent's own `says` and `hears`, whole and versioned, promoted with no goldens
+  between. A supervisor's or a manager's key opens it (`words`). **`pinecall memory policy`** is
+  the memory field of the settings on its own.
+- **Agent ▸ Settings and Org ▸ Lexicon in the console.** The corners, the form, the history with
+  roll back, promote yours to the team; the gateway's console reads production and rolls it back,
+  and says which verb writes it. A `words` key sees the opening and the memory as fields and
+  nothing else.
+
+### Changed
+- **`pinecall pipeline` reads.** `set` and `clear` say where they went (`pinecall agent set`) and
+  exit 2; the Pipeline tab lost its form and points at Settings. The hold melody stays where it was.
+- **`agents` left the planned verbs**: it is `pinecall agent list`.
 - **Team ▸ Roles says `supervisor` and `manager` open memory**, as the runtime's presets now do.
 - **Memory in the sidebar, beside Evals.** What every agent of the org carries between calls, on
   one page: each fact with the agent whose call taught it (a link to that agent's Memory tab), a

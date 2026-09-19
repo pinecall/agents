@@ -102,22 +102,27 @@ The class is the **default export** of `agent.tsx`. Its name gives the slug it r
 ### Config, and state
 
 A handful of field names configure the agent instead of remembering something. They are never
-diffed, never rendered, never in a snapshot:
+diffed, never rendered, never in a snapshot. **Most of them are the world's now, not the class's**:
+what an agent runs on is set with `pinecall agent set` (or the console's Settings tab), per world
+and per corner, versioned — and a class that still declares one of them seeds the world's first
+version the first time it registers, after which the world wins and `pinecall run` says so beside
+every field the class still says differently. The class keeps the contract; the table says which
+is which:
 
-| field | what it means |
-|---|---|
-| `phone`, `whatsapp`, `web` | the doors this agent answers. A number, or `true` for a door with none |
-| `voice` | a voice **by name** — the platform resolves it to a vendor and an id |
-| `llm` | `"haiku"`, `"sonnet"`, `"opus"`, or `"provider/model"` |
-| `stt` | the ears: `"deepgram"` (Flux), `"soniox"`, or `"vendor/model"`. Unsaid, the runtime's own |
-| `language` | which standing rules the framework contributes (`es`, `en`) |
-| `greeting` | how the call opens: the words, or what the model reads before finding its own |
-| `says` | `{ DKV: "de ka uve" }` — how a word the voice would misread is said |
-| `hears` | the words the ears must know: names, brands, the doctor's surname |
-| `knowledge` | one file, its path relative to the class's own file, sent whole: cached ahead of everything |
-| `docs` | the knowledge base retrieved per turn, **by the name it was pushed under** |
-| `memory` | what to remember about a caller across calls, and what never to |
-| `hangup` | `{ when: "…" }` — the model may end the call itself, and when, in your words (`{}` leaves the wording to livekit's own `end_call`). A class that declares nothing cannot hang up: only the caller and a supervisor end the call |
+| field | what it means | the class's, or the world's |
+|---|---|---|
+| `phone`, `whatsapp`, `web` | the doors this agent answers. A number, or `true` for a door with none | the class's |
+| `language` | which standing rules the framework contributes (`es`, `en`) | the class's: the prompt is written in it |
+| `voice` | a voice **by name** — the platform resolves it to a vendor and an id | the world's: `pinecall agent set --voice` |
+| `llm` | `"haiku"`, `"sonnet"`, `"opus"`, or `"provider/model"` | the world's: `--llm` |
+| `stt` | the ears: `"deepgram"` (Flux), `"soniox"`, or `"vendor/model"`. Unsaid, the runtime's own | the world's: `--stt` |
+| `greeting` | how the call opens: the words, or what the model reads before finding its own | the world's: `--greeting` · `--reply` |
+| `says` | `{ DKV: "de ka uve" }` — how a word the voice would misread is said | the org's **lexicon**: `pinecall lexicon add` |
+| `hears` | the words the ears must know: names, brands, the doctor's surname | the org's lexicon: `pinecall lexicon hear` |
+| `knowledge` | one file, its path relative to the class's own file, sent whole: cached ahead of everything | still the class's — the knowledge chapter moves it |
+| `docs` | the knowledge base retrieved per turn, **by the name it was pushed under** | the world's, as the first of its bases: `knowledge` in the settings |
+| `memory` | what to remember about a caller across calls, and what never to | the world's: `pinecall memory policy` |
+| `hangup` | `{ when: "…" }` — the model may end the call itself, and when, in your words (`{}` leaves the wording to livekit's own `end_call`). A class that declares nothing cannot hang up: only the caller and a supervisor end the call | the world's: `--hangup` |
 
 **Everything else you put on the instance is state**, and so is every getter — `get identified()
 { return !!this.patient }` is exactly what a tool's `when` asks about. Two consequences worth
@@ -154,9 +159,10 @@ The opening is a `turn.agent` like any other: it is on the log, the console draw
 judges the call it starts. `{ say }` costs nothing; `{ reply }` costs one model turn.
 
 Two places it deliberately does **not** sound. A **golden** never hears it — a golden is one turn
-under the state it declares, so the call it runs is already underway. And an **operator** can
-replace it from the pipeline screen without a deploy; because that box takes words, turning it
-also stops an agent that improvises.
+under the state it declares, so the call it runs is already underway. And the **world** sets it:
+`pinecall agent set --greeting '…'`, or the Settings tab, replaces it without a deploy, and a
+supervisor's key may do that; because words are words, setting them also stops an agent that
+improvises.
 
 Mid-call the same two verbs are methods, for when something happens that the caller should hear
 now: `this.say("Se ha liberado una hora a las diez y cuarto.")` and

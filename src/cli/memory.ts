@@ -17,6 +17,7 @@ import { refusal } from "./whoami.js";
 
 const USAGE = `usage: pinecall memory <contact>
        pinecall memory forget <contact>
+       pinecall memory policy [--remember '…' …] [--forget '…' …] [--team] [--agent <slug>]
        pinecall memory eval [golden.json] [--k <n>] [--agent <name>] [--file agent.tsx]`;
 
 // The golden beside the agent that answers with those facts: the questions recall is held to, and
@@ -49,7 +50,11 @@ export const group: Group = {
   is what memory holds about that question's contact — and prints recall@k and nDCG@10, computed by
   code with no model in the loop, plus every question it did not answer whole. No contact of yours
   is read or written: each question's facts go to a scratch contact and are deleted again. A golden
-  is fixed and the ranking is the variable: never soften a question so a change can pass.`,
+  is fixed and the ranking is the variable: never soften a question so a change can pass.
+
+  policy is what the agent keeps about a caller and what it never does — the org's to say, set in
+  the world beside the agent's other settings (\`pinecall agent\`), and a supervisor's or a
+  manager's key opens it. With nothing typed it prints the policy of the three corners.`,
   run,
 };
 
@@ -66,6 +71,8 @@ export interface Recalling {
 export async function run(argv: string[], how: Recalling = {}): Promise<number> {
   const out = how.out ?? process.stdout;
   const err = how.err ?? process.stderr;
+  // The policy is a field of the agent's settings and takes their flags, so it parses its own.
+  if (argv[0] === "policy") return await (await import("./memory-policy.js")).policy(argv.slice(1), how);
   const { values, positionals } = parseArgs({
     args: argv,
     allowPositionals: true,

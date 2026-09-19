@@ -10,7 +10,7 @@ import { withoutTheProfileFlag } from "./profiles.js";
 // The order this table is written is the order the help prints: run and chat first, because
 // they are what a person types on the first day, and the planned groups after, in the design's
 // order. run is rails server and chat is rails console — see docs/decisions/tenant-cli.md.
-const BUILT = ["run", "serve", "chat", "prompt", "test", "simulate", "eval", "sessions", "runs", "pipeline", "line", "numbers", "personas", "knowledge", "memory", "remember", "supervise", "keys", "providers", "callbacks", "login", "whoami", "gateway", "config", "use"] as const;
+const BUILT = ["run", "serve", "chat", "prompt", "test", "simulate", "eval", "sessions", "runs", "agent", "lexicon", "pipeline", "line", "numbers", "personas", "knowledge", "memory", "remember", "supervise", "keys", "providers", "callbacks", "login", "whoami", "gateway", "config", "use"] as const;
 
 /** Everything `pinecall` answers to, built and planned alike, in the order help prints them. */
 export function groupNames(): string[] {
@@ -72,6 +72,8 @@ export async function groupFor(name: string, out: NodeJS.WritableStream = proces
   if (name === "simulate") return (await import("./simulate.js")).group;
   if (name === "eval") return (await import("./eval.js")).group;
   if (name === "runs") return (await import("./runs/index.js")).group;
+  if (name === "agent") return (await import("./agent.js")).group;
+  if (name === "lexicon") return (await import("./lexicon.js")).group;
   if (name === "pipeline") return (await import("./pipeline.js")).group;
   if (name === "line") return (await import("./line.js")).group;
   if (name === "personas") return (await import("./personas.js")).group;
@@ -112,6 +114,8 @@ export function usage(): string {
     "  eval      ring 3: one real call, re-evaluated by the runtime's code checks",
     "  sessions  list | show a call's log, with what it cost and how it was judged",
     "  runs      list | show | diff the suites, promote a call, and watch the drift",
+    "  agent     what the org set over the class — yours, the team's, production's — set, history, promote",
+    "  lexicon   the org's words: how the voice says them and what the ears must know",
     "  pipeline  what the agent hears, decides and speaks with, and the knobs over it",
     "  line      which phone is yours, and whose terminal anybody else's call rings in",
     "  numbers   list | import | move | drop the numbers the org answers at",

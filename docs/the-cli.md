@@ -35,7 +35,9 @@ path end to end, with every output under it.
 | [`eval`](#eval) | ring 3: one real call re-checked by code | yes |
 | [`sessions`](#sessions) | the calls this agent has run, and one of them whole | yes |
 | [`runs`](#runs) | the suites: list, show, diff, promote a call, watch the drift | yes |
-| [`pipeline`](#pipeline) | what it hears, decides and speaks with, and the six knobs | yes |
+| [`agent`](#agent) | what the org set over the class — yours, the team's, production's — set, history, diff, rollback, promote, pull, push | yes |
+| [`lexicon`](#lexicon) | the org's words: how the voice says them and what the ears must know, shared by every agent | yes |
+| [`pipeline`](#pipeline) | what it hears, decides and speaks with, as the next call would be built | yes |
 | [`line`](#line) | which phone is yours, and whose terminal a call from anybody else's rings in | yes |
 | [`numbers`](#numbers) | which number reaches which agent, and the world it answers in | yes |
 | [`personas`](#personas) | the synthetic callers in `test/personas` | for `try` |
@@ -51,8 +53,7 @@ path end to end, with every output under it.
 | [`config`](#config--use) · [`use`](#config--use) | the profiles this machine holds, and which org and world the next verb goes to | no |
 | [`whoami`](#whoami) | which gateway, which org, which world, and where the key came from | yes |
 
-Declared and not written: `new`, `g`, `observe`, `costs`, `call`, `tokens`, `agents`,
-`deploy`. Typing one prints `<verb> is not built yet: <what it is for>` and exits 0 — a person who types a verb deserves
+Declared and not written: `new`, `g`, `observe`, `costs`, `call`, `tokens`, `deploy`. Typing one prints `<verb> is not built yet: <what it is for>` and exits 0 — a person who types a verb deserves
 better than "unknown command". `src/cli/groups.ts` is the one place that says which half of the
 CLI is still a design, and a verb leaves that table in the commit that writes it.
 
@@ -540,12 +541,97 @@ With a call id: that call whole — what it was, how long, why it ended, what it
 hold. The judging is ring 4's, at hang-up, in the gateway; this verb reads it back and runs
 nothing.
 
+## `agent`
+
+```
+pinecall agent [--agent <slug>] [--json]
+pinecall agent list
+pinecall agent set [--voice x] [--tts x] [--tts-model x] [--stt x] [--llm x] [--greeting '…' | --reply '…']
+                   [--hangup '…'] [--endpointing-ms n] [--min-interruption-words n]
+                   [--remember '…' …] [--forget '…' …] [--team] [--note '…']
+pinecall agent clear [voice|tts|tts-model|stt|llm|greeting|hangup|turn|memory|knowledge …] [--team]
+pinecall agent history [--team] · diff [--against team|production] · rollback <version> [--team]
+pinecall agent promote [--to team|production] [--note '…']
+pinecall agent pull [--team] · push <file> [--team]
+```
+
+```console
+$ pinecall agent
+maravilla · sandbox
+
+                yours           team                        production
+  voice         amelia          carolina                    carolina
+  tts           —               —                           —
+  tts model     —               —                           —
+  stt           —               deepgram                    deepgram
+  llm           —               anthropic/claude-haiku-4-5  anthropic/claude-haiku-4-5
+  greeting      —               "Thanks for calling Marav…  "Thanks for calling Marav…
+  hangup        —               when the person has what…   when the person has what…
+  turn          —               —                           —
+  memory        —               remember 4 · forget 1       remember 4 · forget 1
+  knowledge     —               maravilla (k 4)             maravilla (k 4)
+
+  yours: v3 · m_ana · 2026-09-19 14:32 · "flat on the phone" · team: v11 · m_bruno · 2026-09-18 10:04 · production: v11 · m_ana · 2026-09-12 …
+```
+
+**What an agent runs on is the org's, not the class's** — per world, per corner, a version a row
+(the runtime's `docs/protocol/settings-api.md`). The class declares the contract: its tools, its
+state, its `render()`, its language. The voice, the models, the opening, how a call ends, how a
+turn is cut, what is remembered and which bases are read are **settings**, kept by the gateway and
+laid over the class at the one place every session is built. A class that still declares one of
+them seeds the world's first version the first time it registers there, and from then on **the
+world wins**: `pinecall run` prints one line per field the class still says differently, and the
+line says what to delete.
+
+**Three corners.** In the sandbox your key has a corner of its own: what you `set` is yours until
+you promote it, and a colleague's next call does not hear it — so two developers testing two
+voices never change each other's. A corner that set nothing reads the team's (`(team's)` in your
+column), which is the org's own corner, written with `--team`. Production has one corner and is
+**written by promote alone**.
+
+**Versions.** Every `set` is a new row; nothing is updated, nothing deleted. The whole set travels
+with the version it was read at, so two people saving at once never write over each other: the
+second is told `this corner is at v4 now, not the version you read`. `history` prints every version
+with who set it, why, and what it changed; `diff` reads this corner against the team's or
+production's; `rollback <n>` brings one back as the next version.
+
+**Promote**, two hops, one verb. `pinecall agent promote` makes yours the team's next version.
+`pinecall agent promote --to production` reads the goldens beside the agent and sends them with
+the ask: the gateway drives them through the app serving your sandbox corner under the team's
+settings, and writes production only when every one holds — otherwise it names the goldens that
+did not, and production stays as it is. It is `--to production` and never `--prod`: that flag
+takes the production *key*, and this hop is made from the sandbox.
+
+**Git, for whoever wants it.** `pinecall agent pull > pinecall/maravilla.json` writes the corner's
+config as a file; `pinecall agent push pinecall/maravilla.json --team` sends it back as the next
+version, with no version check — it is what CI applies.
+
+## `lexicon`
+
+```
+pinecall lexicon [--json]
+pinecall lexicon add <word> --say '…' [--team] [--note '…']
+pinecall lexicon hear <word> [<word> …] [--team]
+pinecall lexicon rm <word> [<word> …] [--team]
+pinecall lexicon history [--team]
+pinecall lexicon promote [--to team|production]
+```
+
+The org's words, laid over every agent's own `says` and `hears`: a brand, a surname, an acronym is
+the same word whichever agent says it, and the org's word wins where both say the same one. Whole
+and versioned like the settings, per corner, with the same `--team` and the same refusal when the
+corner moved. A **supervisor's or a manager's key opens it** (`words`): the person who hears a word
+said wrong forty times a day fixes it, without a developer and without a deploy. `promote` makes
+the two hops with no goldens between — a word said wrong is what the agent already does.
+
+`pinecall memory policy [--remember '…' …] [--forget '…' …] [--team]` is the memory field of the
+same settings, on its own for the person whose job it is: what the agent keeps about a caller and
+what it never does.
+
 ## `pipeline`
 
 ```
 pinecall pipeline [--agent <slug>] [--json]
-pinecall pipeline set [--stt x] [--llm x] [--tts x] [--voice x] [--tts-model x] [--greeting '…']
-pinecall pipeline clear [stt|llm|tts|voice|tts-model|greeting …]
 ```
 
 ```console
@@ -561,17 +647,12 @@ clinica-norte · 9 calls
   transcription_delay 0.39s · end_of_turn_delay 0.41s · llm_node_ttft 0.86s · e2e_latency 2.36s
 ```
 
-The three legs as the **next** call would be built, with `← turned` beside any knob an operator has
-moved. `set` turns one for every call from the next one, held by the gateway and not by a deploy. A
-model knob reads three ways: `--llm anthropic/claude-haiku-4-5` names both, `--llm cartesia` names a
-**vendor** and keeps that vendor's own default model, and `--llm claude-haiku-4-5` keeps whichever
-vendor is in use. `--tts` is the vendor that speaks — the stage that could not be moved until it
-existed — and `--voice` beside it is then that vendor's own id for a voice, in that vendor's own
-shape. `pinecall providers` lists every vendor a knob may name.
-
-A knob nobody names is left exactly as it stands, because the door takes the whole set and this
-verb reads it back before it sends. `clear` gives one back to what the app declared; with no name,
-all six. There is no blank value: an empty voice once silenced a whole line of calls.
+The three legs as the **next** call would be built, with `← set` beside any knob the agent's
+settings set. It reads and nothing else: the six knobs are fields of the settings now, and
+`pinecall agent set` sets them with the rest — a model knob still reads three ways there,
+`--llm anthropic/claude-haiku-4-5`, `--llm cartesia` (a vendor, its own model), `--llm
+claude-haiku-4-5` (a model, the vendor in use). `pinecall pipeline set` and `clear` say so and
+exit 2. `pinecall providers` lists every vendor a stage may be moved onto.
 
 ## `supervise`
 
@@ -938,7 +1019,10 @@ code can call — over HTTP, in any language, with the same key.
 | `simulate --voice` · `test --voice` | `POST /v1/evals/voice`, `POST /v1/evals/caller` |
 | `test` · `runs` | `POST /v1/evals/run`, `GET /v1/evals/runs[/{id}]` |
 | `eval` | `POST /v1/evals/replay/{call}` |
-| `pipeline` | `GET /v1/agents/{slug}/pipeline`, `PUT …/pipeline/overrides` |
+| `agent` | `GET`·`PUT /v1/agents/{slug}/settings`, `GET …/settings/history`, `GET …/settings/diff`, `POST …/settings/rollback`, `POST …/settings/promote` (the goldens in the body for `--to production`), `GET /v1/agents` for `list` |
+| `lexicon` · `memory policy` | `GET`·`PUT /v1/lexicon`, `GET …/history`, `POST …/promote` · `GET`·`PUT /v1/agents/{slug}/settings` |
+| `run`, once connected, too | `GET /v1/agents/{slug}/settings`, `GET /v1/lexicon` — the lines that say where the world says otherwise |
+| `pipeline` | `GET /v1/agents/{slug}/pipeline` |
 | `knowledge` | `PUT`·`GET`·`DELETE /v1/knowledge[/{base}]`, `POST /v1/knowledge/{base}/eval` |
 | `memory` | `GET`·`DELETE /v1/contacts/{contact}/memory`, `POST /v1/contacts/memory/eval` |
 | `remember` | `POST /v1/agents/{slug}/memory/extraction` |
