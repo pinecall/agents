@@ -8,31 +8,22 @@ import { agentOfThisDirectory, notASlug } from "./load.js";
 import { asked, type Door } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
 
-const USAGE = [
-  "usage: pinecall pipeline [--agent <slug>] [--json]",
-  "       pinecall pipeline set [--stt x] [--llm x] [--tts x] [--voice x] [--tts-model x] [--greeting '…']",
-  "       pinecall pipeline clear [stt|llm|tts|voice|tts-model|greeting …]",
-].join("\n");
+const USAGE = "usage: pinecall pipeline [--agent <slug>] [--json]";
+
+/** Where the six knobs went: the settings verb, which sets the whole of them per corner. */
+export const MOVED = "pipeline {verb} moved: the six knobs are the agent's settings now — pinecall agent {verb}";
 
 export const group: Group = {
-  purpose: "what the agent hears, decides and speaks with, and the six knobs an operator turns",
+  purpose: "what the agent hears, decides and speaks with, as the next call would be built",
   usage: `${USAGE}
 
-  With nothing after it: the three legs of the pipeline as the NEXT call would be built — the
-  vendor, the model and the one knob worth showing — what the class declared as its opening, the
-  medians livekit measured over the agent's recent calls, and which of the six knobs is turned.
+  The three legs of the pipeline as the NEXT call would be built — the vendor, the model and the
+  one knob worth showing — the opening, the medians livekit measured over the agent's recent
+  calls, and which of the six knobs is set, marked \`← set\` where it shows.
 
-  set turns a knob for every call from the next one, held by the gateway and not by a deploy. A
-  model knob reads three ways: \`--llm anthropic/claude-haiku-4-5\` names both, \`--llm cartesia\`
-  names a VENDOR and keeps that vendor's own default model, and \`--llm claude-haiku-4-5\` keeps
-  whichever vendor is in use. \`--tts\` is the vendor that speaks, and the voice beside it is then
-  that vendor's own id. A knob nobody names here is left exactly as it stands.
-
-  clear gives a knob back to what the app declared. With no name it gives back all six. There is
-  no blank value: an empty voice once silenced a whole line of calls, and the door refuses one.
-
-  \`pinecall providers\` lists every vendor a knob may name and what each one still wants; the same
-  six knobs are the console's Pipeline screen, over the same two doors.`,
+  Setting them is \`pinecall agent set\`: the six are fields of the agent's settings now, with the
+  opening, the cut of a turn, what is remembered and the bases beside them, per corner and
+  versioned. \`pinecall providers\` lists every vendor a stage may be moved onto.`,
   run,
 };
 
@@ -75,16 +66,6 @@ interface Report {
   unavailable_reasons: Record<string, string>;
 }
 
-/** The knob as it is typed, and the knob as the wire carries it. One table, both directions. */
-const KNOBS: Record<string, keyof Overridden> = {
-  stt: "stt",
-  llm: "llm",
-  tts: "tts",
-  voice: "voice",
-  "tts-model": "tts_model",
-  greeting: "greeting",
-};
-
 /** What the verb can be told besides the argv: where to print, and which environment. Tests only. */
 export interface Turning {
   out?: NodeJS.WritableStream;
@@ -124,8 +105,12 @@ export async function run(argv: string[], how: Turning = {}): Promise<number> {
   const [verb, ...named] = positionals;
   try {
     if (verb === undefined) return said(await read(door, agent), values.json === true, out);
-    if (verb === "set") return said(await turned(door, agent, asKnobs(values)), values.json === true, out);
-    if (verb === "clear") return said(await cleared(door, agent, named), values.json === true, out);
+    // The six knobs are fields of the agent's settings now, with the rest of them: one verb sets
+    // the whole of it, per corner and versioned, and this one only reads.
+    if (verb === "set" || verb === "clear") {
+      err.write(`${MOVED.replaceAll("{verb}", verb)}${named.length === 0 ? "" : ` ${named.join(" ")}`}\n`);
+      return 2;
+    }
   } catch (refused) {
     // The gateway's own sentence: it is the one that knows this build's vendors and this build's
     // voices, and a knob refused here says which of the six it was and what it may be.
@@ -136,50 +121,10 @@ export async function run(argv: string[], how: Turning = {}): Promise<number> {
   return 2;
 }
 
-// ── the two doors ───────────────────────────────────────────────────────────────
+// ── the one door ────────────────────────────────────────────────────────────────
 
 async function read(door: Door, agent: string): Promise<Report> {
   return await asked<Report>(door, `${pathFor(agent)}`);
-}
-
-// The door takes the WHOLE set, so a knob nobody named on this command line is read back and sent
-// again: `set --llm x` twice in a row must not quietly give the voice back to the class.
-async function turned(door: Door, agent: string, wanted: Partial<Overridden>): Promise<Report> {
-  const standing = (await read(door, agent)).overrides;
-  return await asked<Report>(door, `${pathFor(agent)}/overrides`, {
-    method: "PUT",
-    body: { ...held(standing), ...wanted },
-  });
-}
-
-async function cleared(door: Door, agent: string, named: string[]): Promise<Report> {
-  const unknown = named.filter((name) => KNOBS[name] === undefined);
-  if (unknown.length > 0) throw new Error(`no knob called ${unknown.join(", ")}: ${Object.keys(KNOBS).join(" · ")}`);
-  // No name at all is every knob at once: the whole set left out is how the door says "as declared".
-  if (named.length === 0) return await asked<Report>(door, `${pathFor(agent)}/overrides`, { method: "PUT", body: {} });
-  const keeping = held((await read(door, agent)).overrides);
-  for (const name of named) delete keeping[KNOBS[name]!];
-  return await asked<Report>(door, `${pathFor(agent)}/overrides`, { method: "PUT", body: keeping });
-}
-
-/** What is turned right now, as a body the door takes: a knob nobody turned is not a field at all. */
-function held(standing: Overridden): Partial<Record<keyof Overridden, string>> {
-  const body: Partial<Record<keyof Overridden, string>> = {};
-  for (const knob of Object.values(KNOBS)) {
-    const value = standing[knob];
-    if (typeof value === "string" && value !== "") body[knob] = value;
-  }
-  return body;
-}
-
-/** The knobs this command line named, under the names the wire uses. */
-function asKnobs(values: Record<string, unknown>): Partial<Overridden> {
-  const wanted: Partial<Overridden> = {};
-  for (const [typed, knob] of Object.entries(KNOBS)) {
-    const value = values[typed];
-    if (typeof value === "string") wanted[knob] = value;
-  }
-  return wanted;
 }
 
 function pathFor(agent: string): string {
@@ -231,5 +176,5 @@ function openingLine(report: Report): string {
 // be able to tell what the app declared from what somebody turned last night.
 function turnedAt(report: Report, ...knobs: (keyof Overridden)[]): string {
   const turned = knobs.filter((knob) => typeof report.overrides[knob] === "string" && report.overrides[knob] !== "");
-  return turned.length === 0 ? "" : `   ← turned: ${turned.join(", ")}`;
+  return turned.length === 0 ? "" : `   ← set: ${turned.join(", ")}`;
 }

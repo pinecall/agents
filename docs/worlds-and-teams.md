@@ -145,9 +145,9 @@ box (`pinecall-runtime orgs invite`). A role is a preset of what those keys open
 | role | opens | who |
 |---|---|---|
 | `qa` | calls, evals | reads finished calls and the suites |
-| `supervisor` | + supervise, talk, memory | the live floor: listen, whisper, take a call over, and what the agent remembers about the caller |
-| `manager` | + numbers, keys, providers, usage, team | runs the floor and the org's accounts; never the agent's declaration |
-| `developer` | app, calls, talk, supervise, pipeline, knowledge, memory, evals | writes and runs the agent — `app` in the sandbox only |
+| `supervisor` | + supervise, talk, memory, words | the live floor: listen, whisper, take a call over, what the agent remembers about the caller — and the words: the opening, the lexicon, what is remembered, fixed by whoever hears them wrong |
+| `manager` | + numbers, keys, providers, usage, team | runs the floor and the org's accounts, and the words; never which vendor or model the agent runs on |
+| `developer` | app, calls, talk, supervise, pipeline, words, knowledge, memory, evals | writes and runs the agent — `app` in the sandbox only |
 | `admin` | every door | the org's owner |
 
 The roles are presets and nothing more: every door reads the key's scopes, and a role re-cut
