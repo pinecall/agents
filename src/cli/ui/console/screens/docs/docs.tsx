@@ -91,7 +91,7 @@ export function Docs(): ReactNode {
       <PageHead
         title="Docs"
         ledeWidth={620}
-        lede="The documents this agent searches on a turn — the RAG. The folder is pushed whole and the base is replaced, never merged; which bases the agent reads is its Settings. What it knows by heart is Settings ▸ Knowledge, not a document."
+        lede="The documents this agent searches on a turn — the RAG. A base opens onto its files, read and edited one at a time; a project pushes its folder whole from here. Which bases the agent reads is its Settings; what it knows by heart is Settings ▸ Knowledge, not a document."
       />
 
       <Attached agent={agent} />
@@ -149,9 +149,9 @@ export function Docs(): ReactNode {
           <Empty>No base pushed yet. Push the folder above, or `pinecall docs push` from the project.</Empty>
         ) : (
           <>
-            <TableHead columns={COLUMNS} labels={["Base", "Chunks", "Embedder", "Pushed", "Action>"]} />
+            <TableHead columns={COLUMNS} labels={["Base", "Chunks", "Embedder", "Pushed", ""]} />
             {(bases ?? []).map((one) => (
-              <TableRow key={one.base} columns={COLUMNS}>
+              <TableRow key={one.base} columns={COLUMNS} to={`/docs/${encodeURIComponent(one.base)}`}>
                 <span className="ui-cell-strong ui-clip">{one.base}</span>
                 <span className="ui-cell-ink">{one.chunks}</span>
                 <span className="ui-cell ui-clip">{one.model}</span>

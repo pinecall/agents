@@ -6,6 +6,7 @@ import { Link } from "react-router";
 import { useCredentials } from "../../../shared/credentials";
 import { dayAndTime } from "../../lib/format";
 import { Card, Empty, Page, PageHead, Refused, TableHead, TableRow } from "../../ui";
+import "./org-docs.css";
 import { readBasesRead, type BaseRead } from "./door";
 
 const COLUMNS = "minmax(0,1fr) 90px 140px 150px minmax(0,1fr)";
@@ -16,7 +17,7 @@ function saidBy(failed: unknown): string {
 
 // The agent's own Docs tab pushes a folder and asks a golden; this is the org's view across
 // every base, and the one column it adds is WHO reads each — off every agent's newest settings.
-// Pushing and attaching are the terminal's (`pinecall docs`), and the Settings tab's.
+// A base opens onto its files, read and edited one at a time; attaching one is the Settings tab's.
 export function OrgDocs(): ReactNode {
   const credentials = useCredentials();
   const [bases, setBases] = useState<BaseRead[] | null>(null);
@@ -39,7 +40,7 @@ export function OrgDocs(): ReactNode {
 
   return (
     <Page width={1060} tight>
-      <PageHead title="Docs" ledeWidth={640} lede="Every base pushed in this world, and which agents search it. A base is pushed from a project's docs/ folder (`pinecall docs push`) and attached to an agent in its Settings." />
+      <PageHead title="Docs" ledeWidth={640} lede="Every base of documents in this world, and which agents search it. Open a base to read, add, edit or take out its files; attach one to an agent in its Settings. A project pushes a whole folder with `pinecall docs push`." />
 
       <Refused>{refused}</Refused>
 
@@ -52,7 +53,7 @@ export function OrgDocs(): ReactNode {
           <>
             <TableHead columns={COLUMNS} labels={["Base", "Chunks", "Embedder", "Pushed", "Read by"]} />
             {bases.map((one) => (
-              <TableRow key={one.base} columns={COLUMNS}>
+              <TableRow key={one.base} columns={COLUMNS} to={`/docs/${encodeURIComponent(one.base)}`}>
                 <span className="ui-cell-strong ui-clip">{one.base}</span>
                 <span className="ui-cell-ink">{one.chunks}</span>
                 <span className="ui-cell ui-clip">{one.model}</span>

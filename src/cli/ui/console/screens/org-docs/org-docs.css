@@ -1,0 +1,64 @@
+/* The org's Docs: a base's files, the editor under them, and the two ways a file arrives. */
+
+.od-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* A file input dressed as the button beside it: the input is there for the click and unseen. */
+.od-upload {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.od-upload input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.od-busy {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.od-row-end {
+  text-align: right;
+}
+
+.od-open {
+  color: var(--accent);
+}
+
+.od-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.od-path {
+  max-width: 420px;
+}
+
+.od-text {
+  min-height: 420px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.od-editor-foot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.od-said {
+  font-size: 12.5px;
+  color: var(--ink-4);
+}

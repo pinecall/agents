@@ -57,7 +57,7 @@ switcher and the ⌘K box are the tab's and die with it.
 | `/a/:agent/sessions[/:call]` | the agent's sessions; one read whole (deep-linkable to a line: `#seq-93`) |
 | `/a/:agent/settings` | Settings — the three corners (yours, the team's, production's), the whole set as a form with the version it was read at — the vendors and models, the opening, the cut of a turn, what is remembered, **Knowledge** (what the agent knows by heart) and **Bases** (which it searches) — the history with roll back; the gateway's page sets production's corner (while the person acts in production), the local one yours or, ticked, the team's. No promote: `GET`/`PUT /v1/agents/{slug}/settings`, `…/history`, `…/rollback` |
 | `/lexicon` | Lexicon — the org's words, said and heard, whole and versioned; the gateway's page sets production's words, the local one yours or the team's: `GET`/`PUT /v1/lexicon`. A `words` key (supervisor, manager) opens it |
-| `/docs` | Docs — every base pushed in this world and which agents search it: `GET /v1/knowledge`, `GET /v1/knowledge/attached`. A `knowledge` key opens it |
+| `/docs[/:base]` | Docs — every base pushed in this world and which agents search it: `GET /v1/knowledge`, `GET /v1/knowledge/attached`; a base opens onto its files, read, put and taken out one at a time (`GET`·`PUT`·`DELETE /v1/knowledge/{base}/files/{path}`). A `knowledge` key opens it |
 | `/a/:agent/pipeline` · `docs` · `memory` · `widget` | one tab each; Pipeline reads and points at Settings |
 | `/a/:agent/evals?view=runs\|calls\|drift&run=<id>` | Evals |
 | `/a/:agent/widget/preview?name=&company=&tagline=&phone=&accent=&greeting=` | a blank page with nothing but the widget on it, outside the shell |
@@ -166,7 +166,7 @@ to the `pinecall start` holding the agent (the runtime's `docs/protocol/dev-verb
 | `GET /v1/evals/runs?agent=&limit=200` | Evals |
 | `GET /v1/agents/{slug}/pipeline` · `PUT …/pipeline/overrides` | Pipeline |
 | `GET`·`PUT …/pipeline/hold-audio` · `…/hold-audio/audio` · `PUT …/hold-audio/played` | Pipeline ▸ Hold melody |
-| `GET /v1/knowledge` · `DELETE /v1/knowledge/{base}` · `GET /v1/knowledge/attached` | Docs, the agent's tab and the org's screen (push and golden go through `pinecall start`; which bases an agent reads is its settings) |
+| `GET /v1/knowledge` · `DELETE /v1/knowledge/{base}` · `GET /v1/knowledge/attached` · `GET /v1/knowledge/{base}` · `GET`·`PUT`·`DELETE …/{base}/files/{path}` | Docs, the agent's tab and the org's screen (push and golden go through `pinecall start`; a base's files are read and changed one at a time from the org's Docs; which bases an agent reads is its settings) |
 | `GET /v1/agents/{slug}/memory` · `DELETE /v1/memory/facts/{id}` · `GET/DELETE /v1/contacts/{contact}/memory` | Memory |
 | `GET/PUT /v1/agents/{slug}/widget` · `GET /widget/pinecall-widget.js` | Widget |
 | `GET /v1/numbers` · `POST /v1/numbers[/buy]?dry_run=` · `DELETE /v1/numbers/{number}` · `GET /v1/numbers/available` · `GET/PUT/DELETE /v1/carrier` | Numbers, Overview, Home's setup, the Widget's Phone field |
@@ -332,16 +332,25 @@ and **Load more** while the gateway has another page. Empty: *No agent remembers
 any caller yet. An agent that declares `memory` writes what it learns when a call hangs up.*, or
 *Nothing remembered matches.* A gateway with no database says it keeps no memory.
 
-## 2e. Docs — `/docs`
+## 2e. Docs — `/docs[/:base]`
 
-*Every base pushed in this world, and which agents search it. A base is pushed from a project's
-`docs/` folder (`pinecall docs push`) and attached to an agent in its Settings.*
+*Every base of documents in this world, and which agents search it. Open a base to read, add,
+edit or take out its files; attach one to an agent in its Settings. A project pushes a whole
+folder with `pinecall docs push`.*
 
 - **The table** (`GET /v1/knowledge`, `GET /v1/knowledge/attached`, `knowledge` scope): Base ·
-  Chunks · Embedder · Pushed · **Read by** — each agent a link to its Settings, or *nobody*. Empty:
-  *No base pushed yet. `pinecall docs push` from a project sends its folder here.*
-- Nothing is pushed or dropped from here: the folder is a project's, and the Docs tab of the agent
-  whose `pinecall start` holds it is where it is pushed.
+  Chunks · Embedder · Pushed · **Read by** — each agent a link to its Settings, or *nobody*. A row
+  opens the base. Empty: *No base pushed yet. `pinecall docs push` from a project sends its folder
+  here.*
+- **A base** (`/docs/:base`, `GET /v1/knowledge/{base}`): the title is its name, **← Docs** goes
+  back; in the head, **Add files…** (a file picker, `.md`/`.txt`, several at once, each put under
+  its own name) and **Write one**. The table: File · Characters · Chunks · Arrived · **Take out**
+  (asks first; `DELETE …/files/{path}`). A row opens the file (`?file=<path>`, `GET
+  …/files/{path}`): its text in an editor, *N characters*, **Save** (`PUT …/files/{path}`, enabled
+  once the text differs) and what the save answered — *<path> kept · N chunks · ms*. **Write one**
+  is `?file=new`: a path box (*its path in the base: faq/horarios.md*) over an empty editor, **Add
+  to the base**. A base pushed before its files were kept (`kept: false`) says so: *push it again
+  from its project, or add a file: from then on the files are kept.*
 
 ## 3. Live — `/live[/:call]`
 
@@ -623,7 +632,7 @@ Settings ▸ Knowledge, not a document.*
 - **The golden**, after a run: `base · embedder · N questions · ms`, `recall@k`, `nDCG@10`, and
   every miss: the question, what it wanted, what came back first.
 - **Every base this org has pushed** in this world: Base · Chunks · Embedder · Pushed · **Drop**
-  (asks first). Empty: *No base pushed yet. Push the folder above, or `pinecall docs push` from the
+  (asks first); a row opens the base's files, the org's Docs page (§2e). Empty: *No base pushed yet. Push the folder above, or `pinecall docs push` from the
   project.*
 - **Attached bases** — *what this agent reads on every call — set in Settings, per corner and
   versioned*: each base with its mode (`retrieved` unless said), its `k` and its minimum score, off

@@ -13,7 +13,7 @@ import { Calls } from "./screens/calls";
 import { Chat } from "./screens/chat";
 import { OrgEvals } from "./screens/org-evals";
 import { OrgMemory } from "./screens/org-memory";
-import { OrgDocs } from "./screens/org-docs";
+import { OrgBase, OrgDocs } from "./screens/org-docs";
 import { RoomChat } from "./screens/talk";
 import { Evals } from "./screens/evals";
 import { FloorLive, FloorSessions } from "./screens/floor";
@@ -112,6 +112,8 @@ export const router = createBrowserRouter(
         // Where `pinecall login` sends a person: the card that signs their terminal in. The
         // gateway's alone — a machine that serves its own console is signed in already.
         ...(MODE === "hosted" ? [{ path: "cli", element: <Terminal /> }] : []),
+        // One base of the org's documents, its files read and edited one at a time.
+        { path: "docs/:base", element: <OrgBase /> },
       ],
     },
     {
