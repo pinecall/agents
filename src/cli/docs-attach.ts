@@ -2,7 +2,7 @@
 
 import type { DocsConfig, KnowledgeUses, TuningAnswer } from "@pinecall/protocol";
 
-import { readSettings, settingsPath } from "./agent-lines.js";
+import { readSettings, settingsPath, theCornerCalled, theCornerWritten } from "./agent-lines.js";
 import { asked, type Door } from "./testing/gateway.js";
 
 /** How the base is attached: how a turn reads it, how many chunks, and under what score. */
@@ -25,7 +25,7 @@ export const NOT_ATTACHED = (agent: string, base: string): string => `${base} is
 /** The base attached to the agent in this corner, as the next version; a base already there is replaced. */
 export async function attach(door: Door, agent: string, base: string, how: Attaching, team: boolean, out: NodeJS.WritableStream): Promise<number> {
   const standing = await readSettings(door, agent);
-  const row = team ? standing.team : standing.yours;
+  const row = theCornerWritten(standing, team);
   const kept = (row?.config.bases ?? []).filter((one) => one.base !== base);
   const docs: DocsConfig = { base };
   if (how.k !== undefined) docs.k = how.k;
@@ -42,7 +42,7 @@ export async function attach(door: Door, agent: string, base: string, how: Attac
 /** The base taken out of the agent's list in this corner, as the next version. */
 export async function detach(door: Door, agent: string, base: string, team: boolean, out: NodeJS.WritableStream, err: NodeJS.WritableStream): Promise<number> {
   const standing = await readSettings(door, agent);
-  const row = team ? standing.team : standing.yours;
+  const row = theCornerWritten(standing, team);
   const bases = row?.config.bases ?? [];
   if (!bases.some((one) => one.base === base)) {
     err.write(`${NOT_ATTACHED(agent, base)}\n`);
@@ -90,8 +90,11 @@ export function attachingOf(values: { k?: string; mode?: string; "min-score"?: s
   return how;
 }
 
+// The corner the GATEWAY wrote, not the one the flag asked for: a key with no corner of its own
+// writes the org's own, and a line that called it "your corner v?" was naming a row that is not
+// where the base landed.
 function cornerLine(answer: TuningAnswer, team: boolean): string {
-  const row = team ? answer.team : answer.yours;
-  const corner = team ? "the team's" : "your corner";
+  const row = theCornerWritten(answer, team);
+  const corner = theCornerCalled(answer, team);
   return row === null ? corner : `${corner} v${row.version}`;
 }

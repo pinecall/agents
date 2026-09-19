@@ -4,6 +4,17 @@ All notable changes to `pinecall`, the package a tenant writes an agent in. The 
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version numbers and tags are the
 maintainer's call, so everything sits under Unreleased until one is cut.
 
+## [Unreleased]
+
+### Fixed
+- **A settings write no longer erases the corner it lands in.** The gateway writes the org's own
+  corner for a key that holds none — a production token, a person acting in production, a CI key —
+  and `agent set`, `agent clear`, `agent knowledge edit` and `docs attach|detach` were building the
+  whole set on an empty row, so each one took out what the last one had written: on the box,
+  writing the knowledge dropped the base attached a minute earlier, and setting a voice dropped the
+  knowledge. Every write now reads the corner the door will write, as `agent pull` already did, and
+  the line it prints names that corner and its version instead of "your corner v?".
+
 ## 0.7.0 — The class is code, the world is environment
 
 ### Changed

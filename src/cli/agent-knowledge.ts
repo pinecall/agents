@@ -7,7 +7,7 @@ import { join } from "node:path";
 
 import type { TuningAnswer, TuningBody, TuningRow } from "@pinecall/protocol";
 
-import { readSettings, settingsPath } from "./agent-lines.js";
+import { readSettings, settingsPath, theCornerCalled, theCornerWritten } from "./agent-lines.js";
 import { asked, type Door } from "./testing/gateway.js";
 
 /** What opens the text for a person and hands back what they left: $EDITOR, or a test's answer. */
@@ -37,7 +37,7 @@ export async function knowledgeRun(
   const team = flags.team === true;
   const standing = await readSettings(door, agent);
   const row = team ? standing.team : (standing.yours ?? standing.team);
-  const corner = cornerName(standing, team);
+  const corner = theCornerCalled(standing, team);
   const text = row?.config.knowledge ?? undefined;
   if (verb === undefined) {
     if (text === undefined) {
@@ -56,13 +56,13 @@ export async function knowledgeRun(
     out.write(`${UNCHANGED}\n`);
     return 0;
   }
-  const own = team ? standing.team : standing.yours;
+  const own = theCornerWritten(standing, team);
   const config = kept(own?.config ?? {}, written);
   const answer = await asked<TuningAnswer>(door, settingsPath(agent), {
     method: "PUT",
     body: { config, if_version: own?.version ?? null, note: flags.note ?? "knowledge", team },
   });
-  const now = team ? answer.team : answer.yours;
+  const now = theCornerWritten(answer, team);
   out.write(`${agent} · knowledge ${written.trim() === "" ? "taken out" : `${written.length.toLocaleString("en-US")} chars`} · ${corner} v${now?.version ?? "?"}\n`);
   return 0;
 }
@@ -73,11 +73,6 @@ export async function knowledgeRun(
 function kept(config: TuningBody, written: string): TuningBody {
   const { knowledge: _was, ...rest } = config;
   return written.trim() === "" ? rest : { ...rest, knowledge: written };
-}
-
-function cornerName(answer: TuningAnswer, team: boolean): string {
-  if (answer.world === "production") return "production";
-  return team || answer.yours === null ? "the team's corner" : "your corner";
 }
 
 /** Whether a corner's row sets the text: the page that draws a row asks. */

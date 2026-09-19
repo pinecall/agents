@@ -4,7 +4,7 @@ import { parseArgs } from "node:util";
 
 import type { TuningAnswer, TuningBody } from "@pinecall/protocol";
 
-import { FIELDS, linesOf, readSettings, settingsPath, WIRE, type Field } from "./agent-lines.js";
+import { FIELDS, linesOf, readSettings, settingsPath, theCornerWritten, WIRE, type Field } from "./agent-lines.js";
 import { filesRun } from "./agent-files.js";
 import { knowledgeRun } from "./agent-knowledge.js";
 import { listed, stopped } from "./agent-processes.js";
@@ -142,7 +142,7 @@ export async function run(argv: string[], how: Setting = {}): Promise<number> {
 // take the voice out of the row. The corner written is yours, or the team's with --team.
 async function set(door: Door, agent: string, values: Typed): Promise<TuningAnswer> {
   const standing = await readSettings(door, agent);
-  const row = values.team === true ? standing.team : standing.yours;
+  const row = theCornerWritten(standing, values.team === true);
   const config: TuningBody = { ...(row?.config ?? {}), ...typed(values, row?.config ?? {}) };
   return await asked<TuningAnswer>(door, settingsPath(agent), {
     method: "PUT",
@@ -154,7 +154,7 @@ async function clear(door: Door, agent: string, named: string[], team: boolean):
   const unknown = named.filter((name) => !(FIELDS as readonly string[]).includes(name));
   if (unknown.length > 0) throw new Error(`no field called ${unknown.join(", ")}: ${FIELDS.join(" · ")}`);
   const standing = await readSettings(door, agent);
-  const row = team ? standing.team : standing.yours;
+  const row = theCornerWritten(standing, team);
   const config: TuningBody = named.length === 0 ? {} : { ...(row?.config ?? {}) };
   for (const name of named) delete config[WIRE[name as Field]];
   return await asked<TuningAnswer>(door, settingsPath(agent), {

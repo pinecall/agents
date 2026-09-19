@@ -49,6 +49,7 @@ interface Heard {
 class FakeGateway {
   readonly heard: Heard[] = [];
   yours: typeof YOURS | null = YOURS;
+  team: typeof TEAM | null = TEAM;
   refuse: { status: number; detail: string } | undefined;
   #server!: Server;
   url = "";
@@ -90,7 +91,7 @@ class FakeGateway {
     if (heard.path.endsWith("/stop")) return answer(200, { app: "app_7", stopped: true });
     if (heard.path.endsWith("/history?team=true")) return answer(200, { world: "sandbox", holder: "", rows: [TEAM, { ...TEAM, version: 10, note: null, config: { voice: "carolina" } }] });
     if (heard.path.includes("/diff")) return answer(200, { ours: YOURS, theirs: TEAM, changed: ["voice", "llm"] });
-    return answer(200, { world: "sandbox", yours: this.yours, team: TEAM, production: null });
+    return answer(200, { world: "sandbox", yours: this.yours, team: this.team, production: null });
   }
 }
 
@@ -164,12 +165,30 @@ describe("setting", () => {
     expect(body.config["llm"]).toBe("anthropic/claude-haiku-4-5");
   });
 
-  it("starts a corner of your own from nothing, with no version to check", async () => {
+  it("starts a corner from nothing when no corner has anything, with no version to check", async () => {
     gateway.yours = null;
+    gateway.team = null;
 
     await run(["set", "--agent", AGENT, "--voice", "mateo", "--endpointing-ms", "300"], { out: written().stream, env: environment() });
 
     expect(gateway.written).toEqual({ config: { voice: "mateo", turn: { endpointing_ms: 300 } }, if_version: null, note: null, team: false });
+  });
+
+  // A production token holds no corner of its own, and the gateway writes the org's own corner for
+  // it. Reading `yours` there meant building the whole set on an EMPTY row: on the box, `agent
+  // knowledge edit` took out the base that had just been attached, and `set --voice` took out the
+  // knowledge — each write erasing what the last one wrote, in production, without a word.
+  it("carries the team's row when the key holds no corner of its own, so a set erases nothing", async () => {
+    gateway.yours = null;
+
+    await run(["set", "--agent", AGENT, "--voice", "mateo"], { out: written().stream, env: environment() });
+
+    const body = gateway.written as { config: Record<string, unknown>; if_version: number | null; team: boolean };
+    expect(body.config["voice"]).toBe("mateo");
+    expect(body.config["llm"]).toBe("anthropic/claude-haiku-4-5");
+    expect(body.config["memory"]).toEqual({ remember: ["allergies"], forget: [] });
+    expect(body.if_version).toBe(11);
+    expect(body.team).toBe(false);
   });
 
   it("replaces the memory lists whole", async () => {

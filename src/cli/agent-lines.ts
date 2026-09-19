@@ -15,6 +15,23 @@ export async function readSettings(door: Door, agent: string): Promise<TuningAns
   return await asked<TuningAnswer>(door, settingsPath(agent));
 }
 
+// The gateway writes the org's own corner when the request asks for it (`--team`) OR when the key
+// holds no corner of its own: a production token, a person acting in production, a CI key. A write
+// that read `yours` in that case would send the WHOLE set built on an EMPTY row and take the
+// corner's other fields out — in production `agent set --voice` erased the knowledge and the base,
+// silently (2026-09-19, the simulated team on the box). The read has to name the same corner the
+// door will write, and `pull` already did: this is that line, once, for every verb that writes.
+/** The row a write lands on: the team's when asked for it or when this key has no corner. */
+export function theCornerWritten(standing: TuningAnswer, team: boolean): TuningRow | null {
+  return team ? standing.team : (standing.yours ?? standing.team);
+}
+
+/** What to call the corner a write lands on, so the line a person reads is the corner written. */
+export function theCornerCalled(standing: TuningAnswer, team: boolean): string {
+  if (standing.world === "production") return "production";
+  return team || standing.yours === null ? "the team's corner" : "your corner";
+}
+
 /** The fields on the page, in the order a person reads them, under the names a person types. */
 export const FIELDS = ["voice", "tts", "tts-model", "stt", "llm", "greeting", "hangup", "turn", "memory", "knowledge", "bases"] as const;
 export type Field = (typeof FIELDS)[number];
