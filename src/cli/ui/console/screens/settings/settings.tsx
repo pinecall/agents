@@ -96,7 +96,7 @@ export function Settings(): ReactNode {
       <PageHead
         title="Settings"
         ledeWidth={680}
-        lede="What the org set over the class, per world and per corner, a version a row: which vendors and models, how the call opens and ends, how a turn is cut, what is remembered, which bases are read. Set here, in the world this console looks at, and kept forever: every version, who set it, and a roll back."
+        lede="What the agent runs on, per world and per corner, a version a row: which vendors and models, how the call opens and ends, how a turn is cut, what is remembered, what it knows by heart, which bases it searches. Set here, in the world this console looks at, and kept forever: every version, who set it, and a roll back."
       />
 
       <Card>

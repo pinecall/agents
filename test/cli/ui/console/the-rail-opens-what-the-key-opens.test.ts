@@ -17,7 +17,7 @@ test("every gated screen names a scope the gateway has", () => {
 test("a qa key reads calls and evals, and nothing it would be refused", () => {
   const qa = ["calls", "evals"];
   expect(["calls", "sessions", "evals", "agents", "live"].every((screen) => opens(qa, screen))).toBe(true);
-  expect(["talk", "chat", "pipeline", "settings", "lexicon", "knowledge", "memory", "numbers", "team", "usage"].some((screen) => opens(qa, screen))).toBe(false);
+  expect(["talk", "chat", "pipeline", "settings", "lexicon", "docs", "org-docs", "memory", "numbers", "team", "usage"].some((screen) => opens(qa, screen))).toBe(false);
   // Every key has tokens of its own to see: the laptop `pinecall link` wrote, at least.
   expect(opens(qa, "tokens")).toBe(true);
 });

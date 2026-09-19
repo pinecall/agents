@@ -21,7 +21,7 @@ export function helpFor(name: string, group: Group): string {
 // is still a design. A verb leaves it in the commit that writes it.
 /** What each group the design declares is for, for the ones this tree has not written yet. */
 export const PLANNED: Record<string, string> = {
-  new: "scaffold an app: agent.tsx, knowledge, lib, test, .env",
+  new: "scaffold a project: agents/<name>/agent.tsx, lib, docs, test, .env",
   g: "generate a tool, a component, a golden, a persona, a channel",
   observe: "the agent log as it happens, with a persistent cursor",
   costs: "what the calls cost, by agent, model or channel",

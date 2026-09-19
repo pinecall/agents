@@ -1,21 +1,14 @@
 /** The bridge: an Agent class mounted on a Pinecall client, one live instance per call. */
 
-import type {
-  Camel,
-  CommandData,
-  CommandType,
-  ModelConfig,
-  Pronunciation,
-  ToolSpec,
-  VoiceConfig,
-} from "@pinecall/protocol";
+import type { Camel, CommandData, CommandType, ToolSpec } from "@pinecall/protocol";
 import type { Agent as SdkAgent, AgentOptions, Call as SdkCall, Pinecall, Tool } from "../client/index.js";
 
-import { Agent, type GreetingDeclaration, type HangupDeclaration, onChange, onLog, recalled, seal, setCall, setLast } from "../agent/agent.js";
+import { Agent, onChange, onLog, recalled, seal, setCall, setLast } from "../agent/agent.js";
 import { eventsOf } from "../agent/accepts.js";
 import { visibilityOf } from "../agent/visibility.js";
-import { CallWorld } from "../call/call.js";
+import { CallWorld, type Searching } from "../call/call.js";
 import { describe } from "../agent/docstrings.js";
+import { searchesKnowledge } from "../agent/searching.js";
 import { runHook, type Call as HookCall } from "../agent/lifecycle.js";
 import { snapshot, type LastCall, type Snapshot } from "../agent/state.js";
 import { toolNamed } from "../agent/tools.js";
@@ -23,7 +16,7 @@ import { PROMPT_BLOCKS } from "../views/layout.js";
 import { promptOf } from "../views/render.js";
 import { routesOf } from "./channels.js";
 import { inOrder, type Serving } from "./dispatch.js";
-import { groundingOf } from "./grounding.js";
+import { refuseTheEnvironment } from "./environment.js";
 import { wordsRecalled } from "./recall.js";
 import { runTool, ToolFailed } from "./run-tool.js";
 
@@ -32,7 +25,7 @@ export interface MountOptions {
   pc: Pinecall;
   /** The class's own source, so docstrings and parameter types survive compilation. */
   source?: string;
-  /** The agent file's own path: the dialect its source is parsed as, and where its knowledge file is read. */
+  /** The agent file's own path: the dialect its source is parsed as. */
   file?: string;
   /** Override the slug the class name would give. */
   slug?: string;
@@ -87,124 +80,26 @@ export function slugOf(ctor: Function): string {
     .toLowerCase();
 }
 
-// `llm = "haiku"` is how the design writes it, and the wire wants a provider and a real model id:
-// "haiku" on its own is a 404 from Anthropic. The three short names are the family's tiers as the
-// runtime prices them; anything else is passed through as written, with "provider/model" naming
-// both halves and a bare name defaulting to Anthropic. An object written out in full is untouched.
-const SHORT_NAMES: Record<string, string> = {
-  haiku: "claude-haiku-4-5-20251001",
-  sonnet: "claude-sonnet-5",
-  opus: "claude-opus-5",
-};
-
-/** The model a bare name means, so `llm = "haiku"` reaches the provider as an id it recognises. */
-export function modelOf(value: unknown): Camel<ModelConfig> | undefined {
-  if (typeof value === "object" && value !== null) return value as Camel<ModelConfig>;
-  if (typeof value !== "string" || value === "") return undefined;
-  const [provider, name] = value.includes("/") ? value.split("/", 2) : ["anthropic", value];
-  return { provider: provider!, model: SHORT_NAMES[name!] ?? name! };
-}
-
-// `stt = "deepgram"` names the ears' vendor and keeps that vendor's own model — the runtime's
-// door for Deepgram is Flux, Soniox's is its real-time model — and "deepgram/flux-general-en"
-// names both halves. There are no short names to translate here, and the wire's ModelConfig
-// wants a model string, so a vendor alone travels with an empty one, which the runtime reads as
-// "yours". Until this field existed the ears could only be turned on the gateway, per agent, by
-// an operator: a class that said `llm` and `voice` and could not say what it heard with.
-export function earsOf(value: unknown): Camel<ModelConfig> | undefined {
-  if (typeof value === "object" && value !== null) return value as Camel<ModelConfig>;
-  if (typeof value !== "string" || value === "") return undefined;
-  const [provider, model = ""] = value.split("/", 2);
-  return { provider: provider!, model };
-}
-
-// `voice = "carolina"` is a name, not an id: sending it as one is how a call spent twenty seconds
-// retrying 1008 voice_id_does_not_exist while the model apologised. The word the class wrote travels
-// as the word it is, and the platform resolves it to a vendor and an id when this declaration lands
-// — so a voice nobody curated is refused there, and never at the first utterance.
-function voiceOf(value: unknown): Camel<VoiceConfig> | undefined {
-  if (typeof value === "object" && value !== null) return value as Camel<VoiceConfig>;
-  if (typeof value !== "string" || value === "") return undefined;
-  return { name: value };
-}
-
-// `says = { Vidal: "bidál" }` is how the class writes it, because a map is how anybody thinks
-// about it; the wire carries a list so the schema can name both halves. The voice is given the
-// spoken form on its way out and the log keeps what the model actually wrote.
-function saysOf(value: unknown): Camel<Pronunciation>[] | undefined {
-  if (typeof value !== "object" || value === null) return undefined;
-  const said = Object.entries(value as Record<string, unknown>)
-    .filter(([word, spoken]) => word !== "" && typeof spoken === "string" && spoken !== "")
-    .map(([word, spoken]) => ({ word, spoken: spoken as string }));
-  return said.length === 0 ? undefined : said;
-}
-
-/** `hears = ["Clínica Norte"]`: the words the ears must know, as the class wrote them. */
-function hearsOf(value: unknown): string[] | undefined {
-  if (!Array.isArray(value)) return undefined;
-  const heard = value.filter((word): word is string => typeof word === "string" && word !== "");
-  return heard.length === 0 ? undefined : heard;
-}
-
-// The same sentence the runtime refuses with, because it is the same rule: a greeting names one
-// of the two verbs the wire already has, and a class that named both has not decided which.
-const GREETING_IS_ONE_VERB =
-  "a greeting is one of two things: `say` the words, or `reply` what the model reads before it finds its own.";
-
-/** `greeting = "Buenos días."` or `greeting = { reply: "saluda y preséntate" }`: the opening. */
-function greetingOf(value: unknown): AgentOptions["greeting"] {
-  if (typeof value === "string") return value === "" ? undefined : { say: value };
-  if (typeof value !== "object" || value === null) return undefined;
-  const declared = value as GreetingDeclaration;
-  const said = declared.say !== undefined;
-  const replied = declared.reply !== undefined;
-  if (said === replied) {
-    throw new Error(`${GREETING_IS_ONE_VERB} ${said ? "Both were declared" : "Neither was"} — pick one.`);
-  }
-  const greeting: NonNullable<AgentOptions["greeting"]> = said ? { say: declared.say } : { reply: declared.reply };
-  if (declared.allowInterruptions !== undefined) greeting.allowInterruptions = declared.allowInterruptions;
-  return greeting;
-}
-
-// Only what the class declared: a field nobody wrote a visibility for is tenant by the wire's own
-// default, and saying so again would be the framework inventing a declaration.
-// `hangup = {}` is a declaration too: the empty object says the model may end the call and leaves
-// the wording to livekit's own description. Only a class that says nothing at all gets no tool.
-function hangupOf(value: unknown): AgentOptions["hangup"] {
-  if (typeof value !== "object" || value === null) return undefined;
-  const declared = value as HangupDeclaration;
-  return { when: declared.when ?? "" };
-}
-
 function stateFieldsOf(ctor: Function): AgentOptions["stateFields"] {
   const declared = visibilityOf(ctor);
   return declared.length === 0 ? undefined : declared;
 }
 
 /**
- * Everything the class says about itself, as the declaration the gateway is sent. The probe is one
- * instance of the class, read and thrown away; mount builds it once and hands it in. `file` is
- * where the class came from, so what it knows is read beside it.
+ * Everything the class says about itself, as the declaration the gateway is sent: its doors, its
+ * tools, its language, its layout, whether it searches its bases, its visibilities and events —
+ * the contract, and nothing of the environment, which is refused here (runtime/environment.ts).
+ * The probe is one instance of the class, read and thrown away; mount builds it once and hands it
+ * in. Whether the class searches is read off its source — the file's when given, else the class's
+ * own body — with the same parser that reads its docstrings.
  */
-export function optionsFor(ctor: Ctor, tools: Tool[], instance: Agent = new ctor(), file?: string): AgentOptions {
+export function optionsFor(ctor: Ctor, tools: Tool[], instance: Agent = new ctor(), file?: string, source?: string): AgentOptions {
   const probe = instance as unknown as Record<string, unknown>;
-  const options: AgentOptions = { routes: routesOf(probe), tools, ...groundingOf(probe, file) };
+  refuseTheEnvironment(probe);
+  const options: AgentOptions = { routes: routesOf(probe), tools };
+  if (searchesKnowledge(source ?? ctor.toString(), file)) options.usesKnowledge = true;
   const language = probe["language"];
   if (typeof language === "string") options.language = language;
-  const llm = modelOf(probe["llm"]);
-  if (llm) options.llm = llm;
-  const stt = earsOf(probe["stt"]);
-  if (stt) options.stt = stt;
-  const voice = voiceOf(probe["voice"]);
-  if (voice) options.voice = voice;
-  const says = saysOf(probe["says"]);
-  if (says) options.says = says;
-  const hears = hearsOf(probe["hears"]);
-  if (hears) options.hears = hears;
-  const greeting = greetingOf(probe["greeting"]);
-  if (greeting) options.greeting = greeting;
-  const hangup = hangupOf(probe["hangup"]);
-  if (hangup) options.hangup = hangup;
   // The layout is always sent whole: the send order is the framework's contract, and the wire
   // carrying it is what lets the runtime and the console name every block the same way.
   options.prompt = [...PROMPT_BLOCKS];
@@ -233,12 +128,14 @@ export function mount(
     ...(spec as unknown as Camel<ToolSpec>),
     run: (args, call) => call_(live, call, spec.name, args),
   }));
-  const options = { ...optionsFor(ctor, tools, probe, file), takesUnclaimed };
+  const options = { ...optionsFor(ctor, tools, probe, file, source), takesUnclaimed };
   const agent = pc.agent(name, options);
 
   agent.on("call.started", (_payload, call) => {
     if (call !== null) {
-      void start(ctor, live, call, (type, id, data) => agent.command(type, id, data), last, opening);
+      const send: Send = (type, id, data) => agent.command(type, id, data);
+      const searching: Searching = (query, k) => pc.search(call.id, query, k);
+      void start(ctor, live, call, send, searching, last, opening);
     }
   });
   agent.on("call.ended", (_payload, call) => {
@@ -269,12 +166,13 @@ async function start(
   live: Map<string, Live>,
   call: SdkCall,
   send: Send,
+  searching: Searching,
   last?: LastCall,
   opening?: (call: SdkCall) => Snapshot | undefined,
 ): Promise<void> {
   const agent = seal(new ctor());
   if (last !== undefined) setLast(agent, last);
-  const world = new CallWorld(hookCall(call), (type, data) => send(type, call.id, data));
+  const world = new CallWorld(hookCall(call), (type, data) => send(type, call.id, data), searching);
   setCall(agent, world);
   const serving: Serving = { agent, ctor, call: world, warned: new Set<string>(), queue: Promise.resolve() };
   const link: Live = { agent, sent: { blocks: new Map() }, stop: [], serving };

@@ -24,6 +24,7 @@ const PUBLIC = [
   "camelEvent",
   "frame",
   "history",
+  "lookupUrl",
   "nextId",
   "observe",
 ];

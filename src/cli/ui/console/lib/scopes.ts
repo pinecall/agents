@@ -14,7 +14,7 @@ export const SCOPE_OF: Record<string, string> = {
   // holds either holds `words`, so the rail gates them by the one both sides have.
   settings: "words",
   lexicon: "words",
-  knowledge: "knowledge",
+  docs: "knowledge",
   memory: "memory",
   evals: "evals",
   widget: "talk",
@@ -22,6 +22,7 @@ export const SCOPE_OF: Record<string, string> = {
   live: "calls",
   "org-evals": "evals",
   "org-memory": "memory",
+  "org-docs": "knowledge",
   numbers: "numbers",
   providers: "providers",
   team: "team",

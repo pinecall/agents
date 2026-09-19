@@ -19,7 +19,8 @@ in four ways that all cost a business:
 
 An extraction golden is one call **already held** — both speakers, because nothing is re-run — the
 facts memory already holds about that caller, and what must come of it. One file per case, in
-`test/memory/` (`test/memory/<name>/` for each agent of a project of several):
+`test/<name>/memory/` — the agent's own folder, on the one layout every project has
+([writing-an-agent.md](writing-an-agent.md)):
 
 ```jsonc
 {
@@ -38,14 +39,14 @@ facts memory already holds about that caller, and what must come of it. One file
 | `holds` | what memory already holds about this caller. They are shown to the model with ids, and nothing is written to or read from the memory table |
 | `plants` | sentences somebody tried to get into memory. Planting one IS the assertion: admission must refuse every one of them |
 | `channel` | `phone` (the default), `web` or `whatsapp`, as the model is told it |
-| `expect.writes` | every category named got at least one fact. The words are your class's own `memory.remember` — a category you never declared is refused as a bug in the golden, not run |
-| `expect.never` | no fact was written under any of these. Your class's own `memory.forget` words |
+| `expect.writes` | every category named got at least one fact. The words are the memory policy's own `remember` list (`pinecall memory policy`, or the Settings tab) — a category the world never declared is refused as a bug in the golden, not run |
+| `expect.never` | no fact was written under any of these. The policy's own `forget` words |
 | `expect.never_says` | **the sharper one**: no fact CARRIES this value, under whatever category. Matched on the words as they fold and on the digits alone, so `4242 4242 4242 4242` catches `4242424242424242` too |
 | `expect.invalidates` | every held fact named here was superseded — and, the mirror, **no other held fact was**. That is the half that catches a model which replaces whatever it touches |
 
 ```bash
-pinecall remember                            # every case in test/memory/ (in a project: --agent <name>)
-pinecall remember test/memory/alergia.json   # one of them
+pinecall remember                                        # every case in test/<name>/memory/ (several agents: --agent <name>)
+pinecall remember test/clinica-norte/memory/alergia.json # one of them
 pinecall remember --grep tarjeta             # while writing one
 pinecall remember --json                     # for a pipe
 ```
@@ -121,7 +122,7 @@ whitespace. A fact is a sentence a model wrote and you know the substance, not t
 `"Alérgica a la penicilina"` is not answered by *"Alérgica"*, which says less than you asked for.
 
 ```bash
-pinecall memory eval                  # memory/golden.json beside the agent file (memory/<name>.golden.json in a project)
+pinecall memory eval                  # test/<name>/goldens/memory.json (several agents: --agent <name>)
 pinecall memory eval --k 1            # the best fact alone: is the right one first?
 ```
 
@@ -154,8 +155,8 @@ runs answer the same numbers; one embedding per fact and one per question is the
 is why this belongs in CI beside the index's golden and the extraction golden does not.
 
 A golden is fixed and the ranking is the variable. **A question is never softened so a change can
-pass.** What you change instead is the words a fact is written in — `memory.remember` is that
-vocabulary — the embedder, or `k`.
+pass.** What you change instead is the words a fact is written in — the memory policy's `remember`
+list is that vocabulary — the embedder, or `k`.
 
 ## The index has a golden of its own
 
@@ -164,8 +165,9 @@ conversation, so it only ever sees the passage retrieval handed over. Whether a 
 and was missed is a question no conversation can answer, because the model never saw the one it
 missed.
 
-That is what a knowledge golden is for. One file beside the documents it asks about, a question and
-the chunk that should answer it:
+That is what a retrieval golden is for: `test/<name>/goldens/docs.json`, beside the conversation
+goldens, asking about the documents in `docs/<name>/` — a question and the chunk that should
+answer it:
 
 ```json
 [
@@ -181,9 +183,9 @@ Naming a file alone accepts any chunk of it; naming a heading accepts that secti
 under it. Fifty to a hundred questions per base is the size that stops being noise.
 
 ```bash
-pinecall knowledge eval                        # knowledge/golden.json beside the agent file (knowledge/<name>.golden.json in a project)
-pinecall knowledge eval --k 4                  # as many chunks as the class asks for
-pinecall knowledge eval golden.json --base clinica-norte
+pinecall docs eval                             # test/<name>/goldens/docs.json against the base named after the agent
+pinecall docs eval --k 4                       # as many chunks as the attachment asks for
+pinecall docs eval questions.json --base clinica-norte
 ```
 
 ```
@@ -198,13 +200,19 @@ clinica-norte · pplx-embed-context-v1-0.6b · 7 questions · recall@4 1.00 · n
 
 Every question it missed is printed with what came back instead, and the verb **exits 1** when
 anything did — so a base belongs in CI beside the unit tests, before the release step that pushes
-it to production (`pinecall knowledge push --prod`, [production.md](production.md)). Both figures are computed by code,
+it to production (`pinecall docs push --prod`, [production.md](production.md)). Both figures are computed by code,
 with no model in the loop, so two runs over one base answer the same numbers and a change is a
 change and not a mood.
 
 A golden is fixed and the index is the variable. **A question is never softened so a change can
 pass** — the same rule the conversation goldens are held to. What you change instead is the
-documents, the chunking, `k`, `min_score`, or the embedder, and then you run it again.
+documents, the chunking, `k`, `min_score` (`pinecall docs attach`, or the Settings tab's Bases), or
+the embedder, and then you run it again.
+
+**What the agent knows by heart has no golden, because nothing ranks it.** The settings' knowledge
+— the page the org writes in Settings ▸ Knowledge, or `pinecall agent knowledge edit` — reaches the
+model whole, on every call, as the `knowledge` block. There is no index to miss a passage of; what a
+call does with it is what the conversation goldens and the `grounded` judge ask.
 
 ## Is there a score for retrieval on a call?
 

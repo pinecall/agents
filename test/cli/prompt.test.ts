@@ -9,7 +9,7 @@ import { showPrompt } from "../../src/views/render.js";
 import { instanceFor, load } from "../../src/cli/load.js";
 import { firstState, run } from "../../src/cli/prompt.js";
 
-const AGENT = fileURLToPath(new URL("./clinic/agent.tsx", import.meta.url));
+const AGENT = fileURLToPath(new URL("./clinic/agents/clinica-norte/agent.tsx", import.meta.url));
 const GOLDENS = fileURLToPath(new URL("./choose.json", import.meta.url));
 
 function collected(): { stream: NodeJS.WritableStream; text(): string } {
@@ -38,16 +38,12 @@ describe("loading an agent from disk", () => {
     await expect(load("does/not/exist.ts")).rejects.toThrow(/no agent at/);
   });
 
-  // Nobody named a file: a class with a render() lives in agent.tsx, and agent.ts still loads for
-  // one that has none. Both names are looked for, and the refusal says so rather than naming one.
-  it("finds the agent of this directory by name, and names both when there is neither", async () => {
+  // Nobody named a file: the one agent of the project this terminal stands in is that agent.
+  it("finds the one agent of the project this terminal stands in", async () => {
     const was = process.cwd();
     try {
       process.chdir(fileURLToPath(new URL("./clinic", import.meta.url)));
       expect((await load()).file).toBe(AGENT);
-
-      process.chdir(fileURLToPath(new URL(".", import.meta.url)));
-      await expect(load()).rejects.toThrow(/no agent here: looked for agent.tsx and agent.ts, and agents\/\*\.tsx, in /);
     } finally {
       process.chdir(was);
     }

@@ -12,13 +12,13 @@ traps in them are skills under `.claude/skills/`.
 pnpm install                     # the workspace, and the wire from the repo next door
 pnpm test                        # the framework and the console, two vitest projects — from the sources
 pnpm lint                        # tsc over src and test, then over the console against the DOM
-pnpm -r test                     # both examples, and the wire's own suite
+pnpm -r test                     # the example, and the wire's own suite
 scripts/build                    # what is published: dist/, and the console bundle inside it
 scripts/check                    # build → lint → test, in that order — what CI runs
 pnpm vitest run test/agent       # one directory; `-t "a sentence"` for one test
 cd examples/clinica-norte && pnpm exec pinecall link     # once: your key for the org, in ./.env
 cd examples/clinica-norte && pnpm exec pinecall chat     # the agent in this terminal
-cd examples/clinica-norte && pnpm exec pinecall prompt --state test/prompts/states.json
+cd examples/clinica-norte && pnpm exec pinecall prompt --state test/clinica-norte/prompts/states.json
 ```
 
 Nothing has to be built to lint or test: every package in the workspace exports its sources.
@@ -35,7 +35,7 @@ change to `src/cli/ui/console/`: the sidecar serves `dist/cli/ui/console`, not t
     `pinecall serve`); under `cli/ui/console/` the page, one bundle the gateway serves as production's
     console and the sidecar as the sandbox's — which screens each has is `lib/mode.ts`, one table
 - `test/` mirrors `src/`; `the-tree`, `the-imports`, `index` and `client/index` are the tree's rules
-- `examples/` two tenants written the way a customer writes one — and what the nightly drives
+- `examples/` one tenant written the way a customer writes one — and what the nightly drives
 - `docs/` how to build an agent · `docs/decisions/` the maintainer's notebook, **git-ignored**:
   a clone has no such directory, and a comment naming a page there points at a note. A page of
   the runtime's notebook is named as **the runtime's** `docs/decisions/<page>.md`, never bare

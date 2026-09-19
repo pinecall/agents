@@ -76,7 +76,7 @@ function said(agent: string, answer: TuningAnswer, out: NodeJS.WritableStream): 
       continue;
     }
     if (memory === undefined) {
-      out.write(`  ${name.padEnd(12)}v${row.version} · as the class declares\n`);
+      out.write(`  ${name.padEnd(12)}v${row.version} · nothing remembered\n`);
       continue;
     }
     out.write(`  ${name.padEnd(12)}v${row.version}\n`);

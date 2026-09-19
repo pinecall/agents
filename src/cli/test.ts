@@ -5,7 +5,7 @@ import { parseArgs } from "node:util";
 
 import { Pinecall } from "../client/index.js";
 
-import { modelOf } from "../runtime/connect.js";
+import { modelOf } from "./testing/models.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { load } from "./load.js";

@@ -9,7 +9,7 @@ import type { ContactFact, ContactMemory, Forgotten, MemoryScore } from "@pineca
 
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
-import { dayAndTime, theQuestionsIn } from "./knowledge.js";
+import { dayAndTime, theQuestionsIn } from "./docs.js";
 import { load } from "./load.js";
 import { AGENT_FLAG, homeOf, oneHome } from "./home.js";
 import { asked, type Door } from "./testing/gateway.js";
@@ -19,10 +19,6 @@ const USAGE = `usage: pinecall memory <contact>
        pinecall memory forget <contact>
        pinecall memory policy [--remember '…' …] [--forget '…' …] [--team] [--agent <slug>]
        pinecall memory eval [golden.json] [--k <n>] [--agent <name>] [--file agent.tsx]`;
-
-// The golden beside the agent that answers with those facts: the questions recall is held to, and
-// what each should have brought back. `memory/golden.json` is where `eval` looks when nobody says.
-export const DEFAULT_GOLDEN = "memory/golden.json";
 
 // The door takes the whole golden and needs no contact: every question carries its own facts.
 const EVAL = "/v1/contacts/memory/eval";

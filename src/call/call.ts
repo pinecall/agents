@@ -7,6 +7,19 @@ import { ParticipantHandle, Room, type Commander, type ParticipantKind } from ".
 /** How long a say or a reply waits for the turn it lands as before it gives up saying so. */
 const ACK_MS = 30_000;
 
+/** One chunk a search found, as the model reads it: where it came from, and its text. */
+export interface Found {
+  path: string;
+  heading: string | null;
+  text: string;
+}
+
+/** What runs a search for this call: the gateway, through the client that holds the call. */
+export type Searching = (query: string, k?: number) => Promise<Found[]>;
+
+/** A search asked of a call nobody is serving through a gateway: a prompt printed offline, a test. */
+export const NO_GATEWAY_TO_SEARCH = "this call cannot search: no gateway is serving it";
+
 /** What the call world needs to know about the line, beyond what the room's entries tell it. */
 export interface CallLine extends HookCall {
   today?: string;
@@ -38,6 +51,7 @@ export class CallWorld implements HookCall {
   constructor(
     line: CallLine,
     private readonly out: Commander,
+    private readonly searching: Searching | null = null,
     private readonly ackMs = ACK_MS,
   ) {
     this.id = line.id;
@@ -73,6 +87,16 @@ export class CallWorld implements HookCall {
   reply(instructions: string, options: { allowInterruptions?: boolean } = {}): Promise<boolean> {
     this.out("agent.reply", { instructions, ...options });
     return this.#spoken();
+  }
+
+  /**
+   * The best chunks of the bases this agent reads, for these words. The gateway searches — the
+   * bases are the world's, attached to the agent in its settings — and writes what it found on
+   * the call's log, so the grounded judge weighs it. `k` is how many; each base's own when unsaid.
+   */
+  search(query: string, options: { k?: number } = {}): Promise<Found[]> {
+    if (this.searching === null) return Promise.reject(new Error(NO_GATEWAY_TO_SEARCH));
+    return this.searching(query, options.k);
   }
 
   /** Invite somebody into the room: the room's own verb, reachable from the call for symmetry. */

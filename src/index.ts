@@ -9,6 +9,7 @@
 // way of deciding what to answer wants it without any of this.
 
 export * from "./agent/agent.js";
+export * from "./agent/knowledge.js";
 export * from "./agent/authors.js";
 export * from "./agent/state.js";
 export * from "./agent/tools.js";

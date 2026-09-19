@@ -152,7 +152,7 @@ export function Lexicon(): ReactNode {
             </div>
             <div className="lex-heard">
               <div className="ui-label">Heard</div>
-              {words.heard.length === 0 && <div className="pipe-note">The ears know only what each class declares.</div>}
+              {words.heard.length === 0 && <div className="pipe-note">The ears know only the names the state carries.</div>}
               <div className="lex-chips">
                 {words.heard.map((one) => (
                   <span key={one} className="ui-pill-muted lex-chip">

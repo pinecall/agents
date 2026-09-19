@@ -6,10 +6,11 @@ import { eventOf, type Camel, type CommandData, type CommandType, type Entry, ty
 import { Agent, type AgentGateway, type AgentOptions } from "./agent.js";
 import type { Call } from "./calls.js";
 import { Connection, type Backoff, type ConnectionOptions } from "./connection.js";
+import { lookupUrl } from "./endpoints.js";
 import { PinecallError, frame } from "./frames.js";
 import { Listeners, asError, type AnyListener, type CamelEvent, type Listener } from "./listeners.js";
 import { history, observe, type LogTarget, type Observation, type Page, type ReadOptions } from "./observe.js";
-import type { World } from "./signed.js";
+import { signed, type World } from "./signed.js";
 
 // Two levels up from dist/client/, and from src/client/ under a loader: the package's own manifest.
 const { version } = createRequire(import.meta.url)("../../package.json") as { version: string };
@@ -17,6 +18,13 @@ const { version } = createRequire(import.meta.url)("../../package.json") as { ve
 // The code of the `error` a member of the org sends by stopping this app (`POST /v1/apps/{app}/stop`):
 // the socket closes right after it, and the app stays closed — one that dialled back would stop nothing.
 const STOPPED = "stopped";
+
+/** One chunk a search found, as the model reads it: where it came from, and its text. */
+export interface Found {
+  path: string;
+  heading: string | null;
+  text: string;
+}
 
 /** Where the gateway is, who we are to it, and which world we hold our agents in. */
 export interface PinecallOptions {
@@ -157,6 +165,23 @@ export class Pinecall implements AgentGateway {
     return history(target, this.#reading(options));
   }
 
+  /**
+   * One search of the bases the agent reads, for a call this client is serving: the gateway runs
+   * it — the base is its, and so is the log line saying what was found — and the chunks come back
+   * as the model would read them. `k` is how many; the base's own when not said.
+   */
+  async search(call: string, query: string, k?: number): Promise<Found[]> {
+    const answered = await fetch(lookupUrl(this.url, call), {
+      method: "POST",
+      headers: { ...signed(this.apiKey, this.env), "content-type": "application/json" },
+      body: JSON.stringify({ tool: "search", input: k === undefined ? { query } : { query, k } }),
+    });
+    const text = await answered.text();
+    // The gateway's own sentence: which call is not open here, which base the org may not keep.
+    if (!answered.ok) throw new PinecallError(`search: the gateway answered ${answered.status}: ${detailOf(text)}`);
+    return (JSON.parse(text) as { output: { chunks: Found[] } }).output.chunks;
+  }
+
   // ── what the agents send through ────────────────────────────────────────────
 
   /** One command frame up the socket, checked against its schema before it leaves. */
@@ -238,5 +263,15 @@ export class Pinecall implements AgentGateway {
 
   #reading(options: Partial<ReadOptions>): ReadOptions {
     return { url: this.url, apiKey: this.apiKey, ...(this.env === undefined ? {} : { env: this.env }), ...options };
+  }
+}
+
+/** The `detail` a refused door answers with, or the body as it came when it is not that shape. */
+function detailOf(text: string): string {
+  try {
+    const parsed = JSON.parse(text) as { detail?: unknown };
+    return typeof parsed.detail === "string" ? parsed.detail : text;
+  } catch {
+    return text;
   }
 }

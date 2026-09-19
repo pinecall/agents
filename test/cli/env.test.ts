@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { CLOUD_URL, doorFrom, doorLine, NO_KEY, theDoor } from "../../src/cli/env.js";
 import { readDotenv, writeDotenv } from "../../src/cli/dotenv.js";
-import { withoutTheWorldFlag } from "../../src/cli/world.js";
+import { inTheWorld, withoutTheWorldFlag } from "../../src/cli/world.js";
 import { written } from "./said.js";
 
 const BOX = "http://127.0.0.1:8080";
@@ -18,7 +18,6 @@ let project = "";
 
 beforeEach(() => {
   project = mkdtempSync(join(tmpdir(), "pinecall-project-"));
-  withoutTheWorldFlag([]);
 });
 
 describe("the door a verb is handed", () => {
@@ -38,10 +37,9 @@ describe("the door a verb is handed", () => {
 
   // Every verb that connects opens with this line: which gateway, where the key was read, and the
   // world when --prod named one.
-  it("names the gateway, where the key was read and --prod, on one line", () => {
+  it("names the gateway, where the key was read and --prod, on one line", async () => {
     writeFileSync(join(project, ".env"), `PINECALL_KEY=${A_KEY}\n`);
-    withoutTheWorldFlag(["sessions", "--prod"]);
-    const open = theDoor({}, written().stream, project);
+    const open = await inTheWorld("production", async () => theDoor({}, written().stream, project));
 
     expect(open).toBeDefined();
     expect(doorLine(open!)).toBe(`gateway ${CLOUD_URL} · key from .env · production (--prod)`);
@@ -76,11 +74,11 @@ describe("the .env link writes", () => {
 });
 
 describe("--prod", () => {
-  it("is taken out of the argv every group reads, and names production for this command only", () => {
-    expect(withoutTheWorldFlag(["agent", "set", "--prod", "--voice", "carolina"])).toEqual(["agent", "set", "--voice", "carolina"]);
+  it("is taken out of the argv every group reads, and names production for this command only", async () => {
+    expect(withoutTheWorldFlag(["agent", "set", "--prod", "--voice", "carolina"])).toEqual({ argv: ["agent", "set", "--voice", "carolina"], world: "production" });
+    expect(withoutTheWorldFlag(["agent"])).toEqual({ argv: ["agent"], world: undefined });
     writeFileSync(join(project, ".env"), `PINECALL_KEY=${A_KEY}\n`);
-    expect(doorFrom({}, project).world).toBe("production");
-    withoutTheWorldFlag(["agent"]);
+    expect(await inTheWorld("production", async () => doorFrom({}, project).world)).toBe("production");
     expect(doorFrom({}, project).world).toBeUndefined();
   });
 });

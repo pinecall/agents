@@ -30,13 +30,9 @@ export function Pipeline(): ReactNode {
       ) : (
         <>
           <div className="pipe-legs">
-            <HearsLeg stage={report.hears} unavailable={report.unavailable_reasons["hears"] ?? null} turned={report.overrides.stt !== null} />
-            <DecidesLeg stage={report.decides} unavailable={report.unavailable_reasons["decides"] ?? null} turned={report.overrides.llm !== null} />
-            <SpeaksLeg
-              stage={report.speaks}
-              unavailable={report.unavailable_reasons["speaks"] ?? null}
-              turned={report.overrides.tts !== null || report.overrides.voice !== null || report.overrides.tts_model !== null}
-            />
+            <HearsLeg stage={report.hears} unavailable={report.unavailable_reasons["hears"] ?? null} />
+            <DecidesLeg stage={report.decides} unavailable={report.unavailable_reasons["decides"] ?? null} />
+            <SpeaksLeg stage={report.speaks} unavailable={report.unavailable_reasons["speaks"] ?? null} />
           </div>
 
           <Waterfall medians={report.medians} calls={report.calls} agent={agent} />

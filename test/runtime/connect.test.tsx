@@ -8,15 +8,15 @@ import { Pinecall } from "../../src/client/index.js";
 import { FakeGateway } from "../../src/client/testing/index.js";
 
 import ClinicaNorte from "../agent/clinica-norte.js";
-import { earsOf, modelOf, mount, optionsFor, slugOf, type Mounted } from "../../src/runtime/connect.js";
+import { THE_WORLDS, movedToTheWorld } from "../../src/runtime/environment.js";
+import { mount, optionsFor, slugOf, type Mounted } from "../../src/runtime/connect.js";
 
 const KEY = "pk_test";
 const SLUG = "clinica-norte";
 const CALL = "CA_1";
 const KNOWN = "+34 600 000 001";
 // The class's own .ts, so the parameter types survive a transpiler that strips them: without it
-// `day: string` is an untyped argument and the schema can say nothing about it. Its path is what
-// the knowledge file is found beside.
+// `day: string` is an untyped argument and the schema can say nothing about it.
 const FILE = fileURLToPath(new URL("../agent/clinica-norte.tsx", import.meta.url));
 const SOURCE = readFileSync(FILE, "utf8");
 
@@ -92,8 +92,8 @@ it("registers the class under its name in kebab-case, with its four tools and it
   ]);
 });
 
-// The knowledge file travels whole in the declaration and the runtime writes it into its own
-// block: the app sends nothing for it, so a block with nothing to say is never on the wire.
+// The knowledge block is the gateway's — the whole documents of the bases the world attaches —
+// so the app sends nothing for it, and a block with nothing to say is never on the wire.
 it("sends every block that has text, in send order, and the visible tools when a call starts", async () => {
   await connected();
   started();
@@ -232,168 +232,26 @@ it("runs onEnd and forgets the instance when the call ends", async () => {
   expect(mounted.instanceOf(CALL)).toBeUndefined();
 });
 
-// `stt = "deepgram"` is a vendor and its own model; "deepgram/flux-general-en" is both halves.
-it("stt names the ears' vendor, with or without the model", () => {
-  expect(earsOf("deepgram")).toEqual({ provider: "deepgram", model: "" });
-  expect(earsOf("deepgram/flux-general-en")).toEqual({ provider: "deepgram", model: "flux-general-en" });
-  expect(earsOf("")).toBeUndefined();
-  class Hears extends ClinicaNorte {
-    stt = "deepgram";
+// The class declares the contract and nothing of the environment: a voice, the models, an
+// opening, a hangup, the words, what it remembers, what it reads are the world's — set with
+// `pinecall agent`, `lexicon`, `memory policy`, `docs` — and a class still carrying one is refused
+// at load, naming the verb, before a prompt is printed or a gateway is knocked at.
+it.each(Object.keys(THE_WORLDS))("refuses a class that still declares %s, naming the verb that sets it", (field) => {
+  class DeAntes extends ClinicaNorte {
+    constructor() {
+      super();
+      // Assigned, not declared: the compiler refuses most of these as fields already, and this is
+      // what a class compiled elsewhere, on an older package, still hands the bridge.
+      Object.defineProperty(this, field, { value: "carolina", enumerable: true });
+    }
   }
-  const options = optionsFor(Hears, [], undefined, FILE);
-  const stateNames = (options.stateFields ?? []).map((field) => field.name);
-  expect([options.stt, stateNames.includes("stt")]).toEqual([{ provider: "deepgram", model: "" }, false]);
+  expect(() => optionsFor(DeAntes, [], new DeAntes(), FILE)).toThrow(movedToTheWorld(field));
+  expect(movedToTheWorld(field)).toContain("pinecall ");
 });
 
-// `llm = "haiku"` is the design's sugar; the provider needs the id behind it or the first turn is a 404.
-it("expands a short model name to the id the provider recognises", () => {
-  expect(modelOf("haiku")).toEqual({ provider: "anthropic", model: "claude-haiku-4-5-20251001" });
-  expect(modelOf("openai/gpt-4.1-mini")).toEqual({ provider: "openai", model: "gpt-4.1-mini" });
-  expect(modelOf({ provider: "anthropic", model: "claude-opus-5" })).toEqual({
-    provider: "anthropic",
-    model: "claude-opus-5",
-  });
-});
-
-// `voice = "carolina"` reached ElevenLabs as a voice_id once and came back 1008 seven times in one
-// call. The class's word travels as the word it is; the platform holds the table that has the id.
-it("sends the voice as the word the class wrote, never as a vendor's id", async () => {
-  await connected();
-  expect(mounted.options.voice).toEqual({ name: "carolina" });
-});
-
-// A map is how anybody thinks about how a word is said; the wire carries a list so the schema can
-// name both halves, and the voice is given the spoken form while the log keeps what was written.
-it("sends the class's pronunciation map as the wire's list of both halves", async () => {
-  await connected();
-  expect(mounted.options.says).toEqual([{ word: "Vidal", spoken: "bidál" }]);
-});
-
-it("sends the words the ears must know in the order the class wrote them", async () => {
-  await connected();
-  expect(mounted.options.hears).toEqual(["Clínica Norte", "doctora Vidal"]);
-});
-
-// What the class knows, reads and remembers travels in the declaration: the knowledge file whole,
-// so the runtime writes its text into the knowledge block once per call; the base by the name it
-// was pushed under; the memory policy in the tenant's own words.
-it("sends the knowledge file whole, the docs base by name and the memory policy in the configure", async () => {
+it("sends the language, and none of the environment, in the configure", async () => {
   await connected();
   const config = commands("agent.configure")[0]?.["config"] as Record<string, unknown>;
-  expect(config["knowledge"]).toEqual({
-    path: "./knowledge/clinica.md",
-    text: readFileSync(fileURLToPath(new URL("../agent/knowledge/clinica.md", import.meta.url)), "utf8"),
-  });
-  expect(config["docs"]).toEqual({ base: "clinica-norte" });
-  expect(config["memory"]).toEqual({ remember: ["cómo prefiere que le llamen", "alergias"], forget: ["pagos"] });
-});
-
-/** The clinic saying how its chunks reach the model, in the words a class writes them in. */
-class ConAjustes extends ClinicaNorte {
-  override docs = { base: "clinica-norte", k: 4, minScore: 0.5 };
-}
-
-it("writes a docs object out in the wire's own keys: minScore on the class, min_score on the wire", async () => {
-  await connected(ConAjustes);
-  const config = commands("agent.configure")[0]?.["config"] as Record<string, unknown>;
-  expect(config["docs"]).toEqual({ base: "clinica-norte", k: 4, min_score: 0.5 });
-});
-
-/** The clinic as it was written before the base had a name: a glob the app expanded itself. */
-class ConGlob extends ClinicaNorte {
-  override docs = "./knowledge/docs/**/*.md";
-}
-
-it("refuses the old glob form of docs, naming the verb that pushes the base", () => {
-  expect(() => optionsFor(ConGlob, [], new ConGlob(), FILE)).toThrow(
-    "docs name the base they were pushed to: run `pinecall knowledge push ./knowledge/docs --base <slug>`",
-  );
-});
-
-/** The clinic naming a file nobody wrote. */
-class SinFichero extends ClinicaNorte {
-  override knowledge = "./knowledge/nadie.md";
-}
-
-it("refuses a knowledge file that is not there, with the path it looked at", () => {
-  expect(() => optionsFor(SinFichero, [], new SinFichero(), FILE)).toThrow(
-    /^knowledge \.\/knowledge\/nadie\.md: no such file at .*test\/agent\/knowledge\/nadie\.md$/,
-  );
-});
-
-/** The clinic that opens the call with the words themselves, in the bare-string form. */
-class Saluda extends ClinicaNorte {
-  greeting = "Clínica Norte, buenos días.";
-}
-
-it("reads the bare string form of a greeting as the words, said as written", () => {
-  expect(optionsFor(Saluda, [], new Saluda(), FILE).greeting).toEqual({ say: "Clínica Norte, buenos días." });
-});
-
-/** The clinic that lets the model find its own opening, and says what it is for. */
-class Improvisa extends ClinicaNorte {
-  greeting = { reply: "saluda, di que eres la recepción y pregunta en qué puedes ayudar" };
-}
-
-it("sends an improvised opening as the instruction the model reads and the caller never hears", () => {
-  expect(optionsFor(Improvisa, [], new Improvisa(), FILE).greeting).toEqual({
-    reply: "saluda, di que eres la recepción y pregunta en qué puedes ayudar",
-  });
-});
-
-/** The clinic that reads a legal notice: nobody talks over it. */
-class NoSeInterrumpe extends ClinicaNorte {
-  greeting = { say: "Esta llamada será grabada.", allowInterruptions: false };
-}
-
-it("carries allowInterruptions when the class asked for it, and leaves it out when it did not", () => {
-  expect(optionsFor(NoSeInterrumpe, [], new NoSeInterrumpe(), FILE).greeting).toEqual({
-    say: "Esta llamada será grabada.",
-    allowInterruptions: false,
-  });
-  expect(optionsFor(Saluda, [], new Saluda(), FILE).greeting).not.toHaveProperty("allowInterruptions");
-});
-
-/** A class that declared both has not decided which of the two it means. */
-class DiceLasDos extends ClinicaNorte {
-  greeting = { say: "Buenos días.", reply: "saluda" };
-}
-
-it("refuses a greeting that names both verbs, and one that names neither", () => {
-  expect(() => optionsFor(DiceLasDos, [], new DiceLasDos(), FILE)).toThrow(/Both were declared — pick one/);
-  class DiceNinguna extends ClinicaNorte {
-    greeting = {};
-  }
-  expect(() => optionsFor(DiceNinguna, [], new DiceNinguna(), FILE)).toThrow(/Neither was — pick one/);
-});
-
-it("sends no greeting for a class that declares none, so nobody speaks until the caller does", () => {
-  expect(optionsFor(ClinicaNorte, [], new ClinicaNorte(), FILE).greeting).toBeUndefined();
-});
-
-/** The clinic that may not hang up: the field the class never wrote. */
-class SinColgar extends ClinicaNorte {
-  hangup = undefined as unknown as { when?: string };
-}
-
-it("sends no hangup for a class that declares none, so nobody but the caller ends the call", () => {
-  expect(optionsFor(SinColgar, [], new SinColgar(), FILE).hangup).toBeUndefined();
-});
-
-/** The clinic that may hang up, and says in its own words when. */
-class Cuelga extends ClinicaNorte {
-  hangup = { when: "cuando el paciente se despide" };
-}
-
-it("sends the tenant's own words for when the model may end the call", () => {
-  expect(optionsFor(Cuelga, [], new Cuelga(), FILE).hangup).toEqual({ when: "cuando el paciente se despide" });
-});
-
-/** `hangup = {}`: the model may end the call, and the wording is livekit's own. */
-class CuelgaSinPalabras extends ClinicaNorte {
-  hangup = {};
-}
-
-it("an empty declaration is still a declaration: the tool is there with no words of ours", () => {
-  expect(optionsFor(CuelgaSinPalabras, [], new CuelgaSinPalabras(), FILE).hangup).toEqual({ when: "" });
+  expect(config["language"]).toBe("es");
+  for (const field of Object.keys(THE_WORLDS)) expect(config[field]).toBeUndefined();
 });

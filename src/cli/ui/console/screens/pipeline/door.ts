@@ -1,4 +1,4 @@
-/** The envelope `GET /v1/agents/{slug}/pipeline` answers in, and the body its overrides door takes. */
+/** The envelope `GET /v1/agents/{slug}/pipeline` answers in, and the hold melody's doors beside it. */
 
 import { z } from "zod";
 
@@ -16,19 +16,6 @@ export const StageSchema = z.object({
   language: z.string().nullable(),
 });
 export type Stage = z.infer<typeof StageSchema>;
-
-/** The six knobs of the old door, as the report still draws which of them is set. */
-export const OverriddenSchema = z.object({
-  voice: z.string().nullable(),
-  // `tts` is the vendor that speaks, written like the other two: `cartesia`, or `cartesia/sonic-3`.
-  // It is the newest of the six, and the speaking stage was the one an operator could not move.
-  tts: z.string().nullable(),
-  tts_model: z.string().nullable(),
-  stt: z.string().nullable(),
-  llm: z.string().nullable(),
-  greeting: z.string().nullable(),
-});
-export type Overridden = z.infer<typeof OverriddenSchema>;
 
 // `name` is one of MEASURES: the door reads it off the runtime's log/latencies.py, which is
 // the same five in the same order, so the screen never meets a metric lib/metrics.ts has not heard of.
@@ -48,14 +35,13 @@ export const GreetingSchema = z.object({
 });
 export type Greeting = z.infer<typeof GreetingSchema>;
 
-/** The whole screen in one answer: the stages, their cost, what is turned, what may be asked. */
+/** The whole screen in one answer: the stages, their cost, what may be asked. */
 export const ReportSchema = z.object({
   agent: z.string(),
   hears: StageSchema,
   decides: StageSchema,
   speaks: StageSchema,
   greeting: GreetingSchema.nullable(),
-  overrides: OverriddenSchema,
   // The names the voice knob may be turned to, off the runtime's one voices table. The console
   // keeps no list of its own: a name this build does not curate is an id no vendor answers for.
   voices: z.array(z.string()),

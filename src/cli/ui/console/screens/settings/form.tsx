@@ -1,4 +1,4 @@
-/** The whole set on one form: the vendors and models, the opening, the cut of a turn, what is remembered. */
+/** The whole set on one form: the vendors and models, the opening, the cut of a turn, what is remembered, what is known by heart, the bases. */
 
 import { useState, type FormEvent, type ReactNode } from "react";
 
@@ -33,6 +33,7 @@ export interface Typed {
   remember: string;
   forget: string;
   knowledge: string;
+  bases: string;
   note: string;
 }
 
@@ -53,7 +54,8 @@ export function typedOf(config: TuningBody): Typed {
     min_interruption_words: typeof turn?.min_interruption_words === "number" ? String(turn.min_interruption_words) : "",
     remember: (memory?.remember ?? []).join("\n"),
     forget: (memory?.forget ?? []).join("\n"),
-    knowledge: (config.knowledge ?? []).map((one) => (typeof one.k === "number" ? `${one.base} ${one.k}` : one.base)).join("\n"),
+    knowledge: config.knowledge ?? "",
+    bases: (config.bases ?? []).map((one) => (typeof one.k === "number" ? `${one.base} ${one.k}` : one.base)).join("\n"),
     note: "",
   };
 }
@@ -82,6 +84,9 @@ export function configOf(typed: Typed, wordsOnly: boolean, standing: TuningBody)
   const forget = lines(typed.forget);
   if (remember.length > 0 || forget.length > 0) config.memory = { remember, forget };
   else delete config.memory;
+  // What the agent knows by heart is the floor's to write, as the opening is.
+  if (typed.knowledge.trim() !== "") config.knowledge = typed.knowledge;
+  else delete config.knowledge;
   if (!wordsOnly) {
     const hangup = typed.hangup.trim();
     if (hangup !== "") config.hangup = { when: hangup };
@@ -89,11 +94,11 @@ export function configOf(typed: Typed, wordsOnly: boolean, standing: TuningBody)
     if (typed.endpointing_ms.trim() !== "") turn.endpointing_ms = Number(typed.endpointing_ms);
     if (typed.min_interruption_words.trim() !== "") turn.min_interruption_words = Number(typed.min_interruption_words);
     if (Object.keys(turn).length > 0) config.turn = turn;
-    const bases = lines(typed.knowledge).map((line) => {
+    const bases = lines(typed.bases).map((line) => {
       const [base, k] = line.split(/\s+/);
       return k === undefined ? { base: base ?? "" } : { base: base ?? "", k: Number(k) };
     });
-    if (bases.length > 0) config.knowledge = bases;
+    if (bases.length > 0) config.bases = bases;
   }
   return config;
 }
@@ -161,7 +166,7 @@ export function SettingsForm({
             <Label>Voice</Label>
             {speaking === CURATED ? (
               <Select value={typed.voice} onChange={(event) => change("voice", event.target.value)}>
-                <option value="">as the class declares</option>
+                <option value="">the runtime's default</option>
                 {(voices.includes(typed.voice) || typed.voice === "" ? voices : [typed.voice, ...voices]).map((name) => (
                   <option key={name} value={name}>
                     {name}
@@ -201,10 +206,15 @@ export function SettingsForm({
           <Label>Never keep</Label>
           <TextArea value={typed.forget} rows={3} placeholder="what is never written down, one line each" onChange={(event) => change("forget", event.target.value)} />
         </div>
+        <div className="set-field set-field-wide">
+          <Label>Knowledge</Label>
+          <TextArea value={typed.knowledge} rows={14} spellCheck={false} placeholder={"what the agent knows by heart, in Markdown: the business as you describe it — hours, prices, what needs an authorisation. Read whole on every call."} onChange={(event) => change("knowledge", event.target.value)} />
+          <p className="pipe-note">{typed.knowledge.length.toLocaleString("en-US")} characters. This is not the documents it searches: those are the Docs tab, attached below as bases.</p>
+        </div>
         {!wordsOnly && (
           <div className="set-field">
-            <Label>Knowledge</Label>
-            <TextArea value={typed.knowledge} rows={2} placeholder={"bases the agent reads, one per line: name, and k after a space"} onChange={(event) => change("knowledge", event.target.value)} />
+            <Label>Bases</Label>
+            <TextArea value={typed.bases} rows={2} placeholder={"bases the agent searches, one per line: name, and k after a space"} onChange={(event) => change("bases", event.target.value)} />
           </div>
         )}
         <div className="set-field set-field-wide">
@@ -216,7 +226,7 @@ export function SettingsForm({
         <Button kind="primary" size="form" type="submit" disabled={saving}>
           {saving ? "Saving…" : "Save as the next version"}
         </Button>
-        {error !== null ? <span className="pipe-save-error">{error}</span> : saved ? <span className="pipe-save-note">Kept. The corners above are the gateway's answer.</span> : <span className="pipe-save-note">An empty field gives it back to what the class declares.</span>}
+        {error !== null ? <span className="pipe-save-error">{error}</span> : saved ? <span className="pipe-save-note">Kept. The corners above are the gateway's answer.</span> : <span className="pipe-save-note">An empty field gives it back to the runtime's default.</span>}
       </div>
     </form>
   );
@@ -248,7 +258,7 @@ function Stage({ value, offered, onChange }: { value: string; offered: readonly 
   return (
     <div className="set-stage">
       <Select value={vendor} onChange={(event) => onChange(asOneString(event.target.value, model))}>
-        <option value="">as the class declares</option>
+        <option value="">the runtime's default</option>
         {offered.map((one) => (
           <option key={one.name} value={one.name}>
             {one.name}

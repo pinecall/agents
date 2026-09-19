@@ -155,9 +155,8 @@ jobs:
       # does not hold is not this step's business: it writes the run down and the gate below reads
       # it, so a red on the second model is a finding in the summary rather than a dead job.
       #
-      # One step per agent, and never one process for both: `pinecall test` mounts the class of the
-      # directory it runs in, and the gateway runs one suite at a time and answers a second with a
-      # 409. So the two runs are serial by construction, and each writes down its own matrix.
+      # `pinecall test` mounts the class of the project it runs in, and the gateway runs one suite at
+      # a time: the run writes down its own matrix.
       - name: pinecall test, two models — clinica-norte
         working-directory: agents/examples/clinica-norte
         run: |
@@ -165,19 +164,12 @@ jobs:
             --model haiku --model openai/gpt-4.1-mini \
             --json > "$RUNNER_TEMP/clinica-norte.json" || true
 
-      - name: pinecall test, two models — tienda-sur
-        working-directory: agents/examples/tienda-sur
-        run: |
-          pnpm exec pinecall test \
-            --model haiku --model openai/gpt-4.1-mini \
-            --json > "$RUNNER_TEMP/tienda-sur.json" || true
-
       # The matrix as a person reads it, and the one gate: a golden that does not hold on the
       # BASELINE model fails the night. A golden two models disagree about is the whole reason
       # there are two of them, so it is written into the summary as a finding and fails nothing —
       # the answer to a divergence is a fix, never a softened golden.
       - name: the matrix, and the gate on the baseline model
-        run: python3 agents/.github/nightly-summary.py "$RUNNER_TEMP/clinica-norte.json" "$RUNNER_TEMP/tienda-sur.json"
+        run: python3 agents/.github/nightly-summary.py "$RUNNER_TEMP/clinica-norte.json"
 
       # The second gate, and it reads nothing new: each judge's held-rate is a count over the
       # `call.score` verdicts this gateway's own log already carries, and the delta between two
@@ -193,7 +185,7 @@ jobs:
         working-directory: agents
         run: |
           code=0
-          for agent in clinica-norte tienda-sur; do
+          for agent in clinica-norte; do
             node bin/pinecall.js runs drift \
               --agent "$agent" --window 7d --baseline 30d --threshold 10 \
               > "$RUNNER_TEMP/drift-$agent.txt" || code=$?

@@ -9,10 +9,10 @@ export type { AgentGateway, AgentOptions, DevHandler, RouteInput, Tool } from ".
 export { Call, CallBook } from "./calls.js";
 export type { CallGateway, CallStatus } from "./calls.js";
 export { Pinecall } from "./client.js";
-export type { PinecallOptions } from "./client.js";
+export type { Found, PinecallOptions } from "./client.js";
 export { Connection } from "./connection.js";
 export type { Backoff, ConnectionHandlers, ConnectionOptions } from "./connection.js";
-export { agentLogUrl, appsUrl, callLogUrl } from "./endpoints.js";
+export { agentLogUrl, appsUrl, callLogUrl, lookupUrl } from "./endpoints.js";
 export { DevRefused, PinecallError, Refused, frame, nextId } from "./frames.js";
 export { Listeners, camelEvent } from "./listeners.js";
 export type { AnyListener, CamelEvent, Listener, Payload } from "./listeners.js";

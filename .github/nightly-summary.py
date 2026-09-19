@@ -104,8 +104,8 @@ def judged(path):
     ]
 
 
-# Every agent is judged, and only then does the night answer: a red clinica must not hide a red
-# tienda, so both tables are written before the exit code is decided.
+# Every agent is judged, and only then does the night answer: one red agent must not hide another,
+# so every table is written before the exit code is decided.
 failed = [line for path in sys.argv[1:] for line in judged(path)]
 for line in failed:
     print(line)

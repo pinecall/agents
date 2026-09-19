@@ -71,7 +71,7 @@ export function SuiteForm({ agent, roster, onOpened }: { agent: string; roster: 
         <div className="ev-suite-controls">
           <div className="ev-suite-models">
             <Label>Models</Label>
-            <Input size="sm" value={models} placeholder="the one the class declared · vendor/model, comma separated" onChange={(event) => setModels(event.target.value)} />
+            <Input size="sm" value={models} placeholder="the one the settings name · vendor/model, comma separated" onChange={(event) => setModels(event.target.value)} />
           </div>
           <Check checked={voice} onChange={setVoice}>
             Voice — ring 2, a real line

@@ -1,5 +1,7 @@
 // A gateway that is not there: enough of the app socket to test an app's own agents, in process.
 
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+
 import { CommandSchema, EPHEMERAL_EVENTS, type Command, type Entry, type EventType } from "@pinecall/protocol";
 import { WebSocket, WebSocketServer } from "ws";
 
@@ -20,6 +22,24 @@ export interface FakeGatewayOptions {
 /** One command the fake gateway received, as it arrived. */
 export type Received = Command;
 
+/** One chunk this gateway answers a search with: what the real one reads off the base. */
+export interface Scripted {
+  path: string;
+  heading: string | null;
+  text: string;
+}
+
+/** One search an agent made through this gateway: for which call, what it asked, how many. */
+export interface Searched {
+  call: string;
+  query: string;
+  k: number | undefined;
+}
+
+// The one HTTP door this fake has: the search a class makes with `this.knowledge.search`. The
+// real gateway runs it on the base; this one answers what the test scripted, under the same key.
+const LOOKUP = /^\/v1\/calls\/([^/]+)\/lookup$/;
+
 /**
  * A gateway with no session, no store and no model: it numbers entries, answers the three
  * commands the app socket answers itself, and lets a test push any entry it likes down the wire.
@@ -29,14 +49,19 @@ export type Received = Command;
  */
 export class FakeGateway {
   readonly received: Received[] = [];
+  /** Every search made through this gateway, in order. */
+  readonly searched: Searched[] = [];
+  readonly #http: Server;
   readonly #server: WebSocketServer;
+  #found: Scripted[] = [];
   readonly #sockets = new Set<WebSocket>();
   readonly #refused: Set<string>;
   #seq = 0;
   #apps = 0;
   #port = 0;
 
-  private constructor(server: WebSocketServer, private readonly options: FakeGatewayOptions) {
+  private constructor(http: Server, server: WebSocketServer, private readonly options: FakeGatewayOptions) {
+    this.#http = http;
     this.#server = server;
     this.#refused = new Set(options.taken ?? []);
   }
@@ -45,18 +70,19 @@ export class FakeGateway {
   // opens is what a wrong key looks like from the app's side, not one that opens and shuts.
   /** Start one on a port nobody chose. Close it when the test is over. */
   static async start(options: FakeGatewayOptions = {}): Promise<FakeGateway> {
+    // One HTTP server under both: the socket's upgrade at /v1/apps, and the search door beside it.
+    const http = createServer((request, response) => void gateway.#answerHttp(request, response));
     const server = new WebSocketServer({
-      port: 0,
-      // The address `url` hands out, and nothing wider. Without it the listener takes the IPv6
-      // wildcard, which the kernel will grant on a port another program already holds on IPv4 —
-      // and then the client's `127.0.0.1` connection is served by that program instead of by us.
-      host: LOOPBACK,
+      server: http,
       path: "/v1/apps",
       verifyClient: ({ req }, done) => done(options.apiKey === undefined || req.headers.authorization === `Bearer ${options.apiKey}`, FORBIDDEN),
     });
-    await new Promise<void>((resolve) => server.once("listening", resolve));
-    const gateway = new FakeGateway(server, options);
-    const address = server.address();
+    const gateway = new FakeGateway(http, server, options);
+    // The address `url` hands out, and nothing wider. Without it the listener takes the IPv6
+    // wildcard, which the kernel will grant on a port another program already holds on IPv4 —
+    // and then the client's `127.0.0.1` connection is served by that program instead of by us.
+    await new Promise<void>((resolve) => http.listen(0, LOOPBACK, resolve));
+    const address = http.address();
     gateway.#port = typeof address === "object" && address !== null ? address.port : 0;
     server.on("connection", (socket) => gateway.#accept(socket));
     return gateway;
@@ -86,6 +112,11 @@ export class FakeGateway {
     return entry;
   }
 
+  /** What the next searches answer: the chunks, best first, as the real gateway would read them off the base. */
+  finds(chunks: Scripted[]): void {
+    this.#found = chunks;
+  }
+
   /** Drop every open socket without closing the door: what a gateway restart looks like. */
   cut(): void {
     for (const socket of this.#sockets) {
@@ -109,6 +140,26 @@ export class FakeGateway {
   async close(): Promise<void> {
     this.cut();
     await new Promise<void>((resolve, reject) => this.#server.close((failed) => (failed ? reject(failed) : resolve())));
+    this.#http.closeAllConnections();
+    await new Promise<void>((resolve, reject) => this.#http.close((failed) => (failed ? reject(failed) : resolve())));
+  }
+
+  async #answerHttp(request: IncomingMessage, response: ServerResponse): Promise<void> {
+    const call = LOOKUP.exec(request.url ?? "")?.[1];
+    if (request.method !== "POST" || call === undefined) {
+      response.writeHead(404).end();
+      return;
+    }
+    if (this.options.apiKey !== undefined && request.headers.authorization !== `Bearer ${this.options.apiKey}`) {
+      response.writeHead(401, { "content-type": "application/json" }).end(JSON.stringify({ detail: "this door takes an API key" }));
+      return;
+    }
+    const chunks: Buffer[] = [];
+    for await (const chunk of request) chunks.push(chunk as Buffer);
+    const { input } = JSON.parse(Buffer.concat(chunks).toString("utf8")) as { input: { query: string; k?: number } };
+    this.searched.push({ call: decodeURIComponent(call), query: input.query, k: input.k });
+    const found = input.k === undefined ? this.#found : this.#found.slice(0, input.k);
+    response.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify({ output: { chunks: found }, took_ms: 1 }));
   }
 
   #accept(socket: WebSocket): void {

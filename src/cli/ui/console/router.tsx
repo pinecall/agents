@@ -13,6 +13,7 @@ import { Calls } from "./screens/calls";
 import { Chat } from "./screens/chat";
 import { OrgEvals } from "./screens/org-evals";
 import { OrgMemory } from "./screens/org-memory";
+import { OrgDocs } from "./screens/org-docs";
 import { RoomChat } from "./screens/talk";
 import { Evals } from "./screens/evals";
 import { FloorLive, FloorSessions } from "./screens/floor";
@@ -20,7 +21,7 @@ import { Home } from "./screens/home";
 import { Tokens } from "./screens/tokens";
 import { Lexicon } from "./screens/lexicon";
 import { Providers } from "./screens/providers";
-import { Knowledge } from "./screens/knowledge";
+import { Docs } from "./screens/docs";
 import { Memory } from "./screens/memory";
 import { Numbers, PhoneTesting } from "./screens/numbers";
 import { Pipeline } from "./screens/pipeline";
@@ -43,6 +44,7 @@ const ORG: Record<string, ReactNode> = {
   sessions: <FloorSessions />,
   "org-evals": <OrgEvals />,
   "org-memory": <OrgMemory />,
+  "org-docs": <OrgDocs />,
   numbers: <Numbers />,
   phone: <PhoneTesting />,
   tokens: <Tokens />,
@@ -71,7 +73,7 @@ const AGENT: Record<string, ReactNode> = {
   sessions: <Sessions />,
   settings: <Settings />,
   pipeline: <Pipeline />,
-  knowledge: <Knowledge />,
+  docs: <Docs />,
   memory: <Memory />,
   evals: <Evals />,
   widget: <Widget />,

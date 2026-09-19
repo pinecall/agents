@@ -23,7 +23,7 @@ export function History({
       {kept === null ? (
         <Empty>Asking the gateway…</Empty>
       ) : kept.rows.length === 0 ? (
-        <Empty>Nothing set in this corner yet: the class declares what the next call runs on.</Empty>
+        <Empty>Nothing set in this corner yet: the next call runs on what the corner falls back to.</Empty>
       ) : (
         kept.rows.map((row, at) => {
           const older = kept.rows[at + 1];

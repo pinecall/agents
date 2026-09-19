@@ -50,7 +50,7 @@ extends the preset the package ships:
 ```json
 { "extends": "pinecall/tsconfig.tenant.json",
   "compilerOptions": { "noEmit": true, "types": ["node"] },
-  "include": ["agent.tsx", "test"] }
+  "include": ["agents", "test"] }
 ```
 
 In that directory, sign in and tie the folder to the org. The password is
@@ -65,7 +65,7 @@ Put `.env` in the project's `.gitignore` — `link` says so until it is. A machi
 CI, a container — links nothing: it gets `PINECALL_KEY` in its environment, a server's token from
 the console's Tokens screen ([production.md](production.md)).
 
-Then `agent.tsx`. This is the whole thing:
+Then `agents/clinica-norte/agent.tsx`. This is the whole thing:
 
 ```tsx
 import { Agent, tool, state, type Stages } from "pinecall";
@@ -73,8 +73,6 @@ import { Agent, tool, state, type Stages } from "pinecall";
 /** Eres la recepción de Clínica Norte. Hablas de usted, con frases cortas. */
 export default class ClinicaNorte extends Agent {
   web = true;
-  voice = "carolina";
-  llm = "haiku";
 
   @state stage: Stages<"identify" | "resolve"> = "identify";
   @state patient?: { name: string; phone: string };
@@ -108,6 +106,11 @@ Four things are worth naming, because they are the whole design:
   `state.changed` line in the log with who wrote it, and moves the console.
 - **`render()` is the prompt.** It is a method of the class, `this` is the state, and it is the only
   part of the prompt that differs between two turns of a call.
+
+Nothing in it says which voice or which model: the class is code, and what it runs on is the
+world's — `pinecall agent set --voice carolina --llm haiku`, or the console's Settings tab, versioned
+and changed without a deploy. A class that still declares `voice = "carolina"` is refused when it
+loads, with that verb.
 
 Before running anything, look at what the model would read. No key, no gateway, no network:
 
@@ -164,45 +167,60 @@ Your tools run in the first process. A breakpoint in `findPatient` lands in the 
 
 ---
 
-## 4. Knowledge: one file the agent knows by heart
+## 4. Knowledge: what the agent knows by heart
 
-Write `knowledge/clinica.md` — hours, prices, what needs an authorisation — and name it on the
-class:
+Hours, prices, what needs an authorisation: a page of Markdown the business writes about itself.
+It is not a file in your repository — it is a setting of the world, kept by the gateway beside the
+voice and the greeting, versioned, and changed without a deploy. Open it in your editor:
 
-```ts
-knowledge = "./knowledge/clinica.md";
+```
+pinecall agent knowledge edit
 ```
 
-The bridge reads the file beside your class and sends it whole. The runtime puts its text in the
-cached prefix, once per call, so the model has it in every turn and you pay for it once. The
-provider's cache is what makes that cheap: with Anthropic, `system` arrives as three separate
-blocks and rewriting the tool list leaves the identity and the knowledge read from cache.
+```
+clinica-norte · knowledge 1,412 chars · your corner v2
+```
 
-Use this for what is small, stable and always relevant. Seventeen thousand characters is fine. A
-folder of a hundred documents is not, and that is the next step.
+Or type it in the console, on the agent's **Settings** tab under **Knowledge**. `pinecall agent
+knowledge` prints what the corner holds; `--team` writes the team's corner instead of yours, and
+`--prod` production's.
+
+The gateway writes the text whole into the `knowledge` block of the prompt, in the cached prefix,
+once per call, so the model has it in every turn and you pay for it once. The provider's cache is
+what makes that cheap: with Anthropic, `system` arrives as three separate blocks and rewriting the
+tool list leaves the identity and the knowledge read from cache.
+
+Use this for what is small, stable and always relevant. A page is fine. A folder of a hundred
+documents is not, and that is the next step.
 
 ---
 
-## 5. The knowledge base: what it looks up per turn
+## 5. The base: what it looks up per turn
 
-Put your Markdown under `knowledge/docs/`, one file per subject, with headings. Push it:
+Put your Markdown under `docs/clinica-norte/`, one file per subject, with headings. Push it:
 
 ```
-pinecall knowledge push ./knowledge/docs --base clinica-norte
+pinecall docs push
 ```
 
 ```
 clinica-norte · 2 files · 9 chunks · 353 ms
 ```
 
-Then name the base on the class:
+The folder is the base named after the agent (`--base` names another). Then attach it to the
+agent, in the world that reads it:
 
-```ts
-docs = { base: "clinica-norte", k: 4, minScore: 0.5 };
+```
+pinecall docs attach clinica-norte --k 4 --min-score 0.5
 ```
 
-That is all. There is no vector-database client, no `await search(...)` in your code, no `if` that
-decides when to look.
+```
+clinica-norte · clinica-norte attached · your corner v3
+```
+
+That is all. There is no vector-database client in your code and no `if` that decides when to
+look: the platform searches before every turn. (A tool that wants to search on its own asks
+`this.knowledge.search(question, { k: 3 })` — [writing-an-agent.md](writing-an-agent.md#knowledge-by-heart-and-searched).)
 
 **What the push did.** Each file was cut at its headings, each chunk prefixed with its heading path
 (`tarifas.md › Tarifas › Revisión`), and embedded — **contextually**, one document at a time, so a
@@ -215,20 +233,23 @@ come back. The caller waits **0 ms** at the end of their sentence on most turns,
 was already there — measured on a live call: five turns of six waited nothing, against 125–251 ms
 when the same lookup ran at turn end.
 
-**`k` and `minScore`.** `k` is how many chunks reach the model. `minScore` is on a 0..1 scale
-normalised by the best chunk, so `0.5` cuts the tail and `0.02` cuts nothing.
+**`--k` and `--min-score`.** `k` is how many chunks reach the model. `min-score` is on a 0..1 scale
+normalised by the best chunk, so `0.5` cuts the tail and `0.02` cuts nothing. The attachment is one
+field of the agent's settings, `bases`: `pinecall agent` shows it beside the voice, and
+`pinecall docs attached` says which agents read which base.
 
-Two more verbs:
+Three more verbs:
 
 ```
-pinecall knowledge list
-pinecall knowledge drop clinica-norte
+pinecall docs list
+pinecall docs detach clinica-norte
+pinecall docs drop clinica-norte
 ```
 
 A push replaces the base whole. Re-push after every edit; it is one command and always right.
 
-**Hold the base to a golden.** Write `knowledge/golden.json`: the questions people really ask, and
-the chunk each should have found.
+**Hold the base to a golden.** Write `test/clinica-norte/goldens/docs.json`: the questions people
+really ask, and the chunk each should have found.
 
 ```json
 [
@@ -238,7 +259,7 @@ the chunk each should have found.
 ```
 
 ```
-pinecall knowledge eval
+pinecall docs eval
 ```
 
 ```
@@ -256,15 +277,13 @@ index is the variable: never soften a question so a change can pass.
 
 ## 6. Memory: what it keeps between calls
 
-```ts
-memory = {
-  remember: ["cómo prefiere que le llamen", "alergias", "su médico habitual"],
-  forget: ["pagos"],
-};
+```
+pinecall memory policy --remember "cómo prefiere que le llamen" "alergias" "su médico habitual" --forget "pagos"
 ```
 
-`remember` is the vocabulary, **in your own words**, of what is worth keeping about a person.
-`forget` is what is never written whatever the model heard.
+`--remember` is the vocabulary, **in your own words**, of what is worth keeping about a person.
+`--forget` is what is never written whatever the model heard. Like the knowledge, it is the world's:
+a setting, not a field of the class, and a supervisor may change it without a deploy.
 
 **Reading, on a turn.** A `recall` runs beside the `search`, on the same eager path. It answers the
 contact's facts, ranked by relevance, recency and importance — no model call, so it costs nothing
@@ -275,7 +294,7 @@ answers add / update / invalidate. Facts are bi-temporal: an updated fact is a n
 supersedes the old one, and nothing is deleted except by `forget`.
 
 **Who a caller is.** On the phone and on WhatsApp the number is the identity. On the web nobody is
-anybody until you say so, and an agent that declares `memory` remembers nothing of an anonymous
+anybody until you say so, and an agent whose world has a policy remembers nothing of an anonymous
 visitor — which is right. To exercise it from your terminal:
 
 ```
@@ -302,7 +321,7 @@ Forgetting always works, on any plan, whatever the quota.
 
 ## 7. What the model actually receives
 
-This is what the three declarations above produce, and it is the part worth understanding:
+This is what the three settings above produce, and it is the part worth understanding:
 
 ```
 system:   identity · knowledge · tools           ← cached, unchanged while the call runs
@@ -362,7 +381,7 @@ control returns. It is the same bytes streamed and stored, and it is a public co
 ```ts
 import { expect, test } from "vitest";
 import { runTool, toolNamed, promptOf } from "pinecall";
-import ClinicaNorte from "../agent.js";
+import ClinicaNorte from "../../agents/clinica-norte/agent.js";
 
 test("una vez identificado, el prompt deja de pedir el nombre", async () => {
   const clinica = new ClinicaNorte();
@@ -388,9 +407,9 @@ is for.
 
 ## Where to go next
 
-- **A second agent in the same repository**: move the class to `agents/<name>.tsx` and each folder
-  under its name — [Several agents in one project](writing-an-agent.md#several-agents-in-one-project).
-  `pinecall start` at the root then holds both.
+- **A second agent in the same repository**: a second folder under `agents/`, and `docs/`, `test/`
+  under its name — [The shape on disk](writing-an-agent.md#the-shape-on-disk). `pinecall start` at
+  the root then holds both; a verb about one of them takes `--agent <name>`.
 
 | you want | read |
 |---|---|

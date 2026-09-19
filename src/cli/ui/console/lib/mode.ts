@@ -28,7 +28,7 @@ export const WORLD_OF: Record<Mode, World> = { hosted: "production", local: "san
 export type Group = "gateway" | "settings" | "box";
 
 /** The sidebar's icons, by name (ui/icon.tsx). */
-export type ScreenIcon = "home" | "grid" | "activity" | "list" | "chart" | "phone" | "key" | "plug" | "users" | "building" | "server" | "route" | "sliders" | "check" | "memory" | "words";
+export type ScreenIcon = "home" | "grid" | "activity" | "list" | "chart" | "phone" | "key" | "plug" | "users" | "building" | "server" | "route" | "sliders" | "check" | "memory" | "words" | "book";
 
 /** One screen: where it is, what the sidebar calls it, which group it sits in, and which console has it. */
 export interface Screen {
@@ -61,6 +61,8 @@ export const ORG_SCREENS: readonly Screen[] = [
   { key: "sessions", path: "sessions", name: "Sessions", in: BOTH, group: "gateway", icon: "list" },
   { key: "org-evals", path: "evals", name: "Evals", in: BOTH, group: "gateway", icon: "check" },
   { key: "org-memory", path: "memory", name: "Memory", in: BOTH, group: "gateway", icon: "memory" },
+  // Every base of the world and who searches it: pushed from a project, attached in an agent's Settings.
+  { key: "org-docs", path: "docs", name: "Docs", in: BOTH, group: "gateway", icon: "book" },
   { key: "usage", path: "usage", name: "Usage", in: HOSTED, group: "gateway", icon: "chart" },
   { key: "numbers", path: "numbers", name: "Numbers", in: HOSTED, group: "settings", icon: "phone" },
   { key: "phone", path: "phone", name: "Phone testing", in: LOCAL, group: "settings", icon: "phone" },
@@ -94,7 +96,7 @@ export const AGENT_SCREENS: readonly Screen[] = [
   { key: "sessions", path: "sessions", name: "Sessions", in: BOTH },
   { key: "settings", path: "settings", name: "Settings", in: BOTH },
   { key: "pipeline", path: "pipeline", name: "Pipeline", in: BOTH },
-  { key: "knowledge", path: "knowledge", name: "Knowledge", in: BOTH },
+  { key: "docs", path: "docs", name: "Docs", in: BOTH },
   { key: "memory", path: "memory", name: "Memory", in: BOTH },
   { key: "evals", path: "evals", name: "Evals", in: BOTH },
   { key: "widget", path: "widget", name: "Widget", in: BOTH },

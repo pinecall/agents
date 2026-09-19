@@ -14,11 +14,11 @@ The same page is served in two places, and it is a different product in each:
 | looks at | production, and only production | the sandbox: the reader's own corner |
 | who uses it | whoever runs the org: the owner, a supervisor, qa | whoever writes the agent |
 | signing in | email and password — and *Continue with Google* when the box's operator wired it, *Continue with SSO* when the org did; the person's one key, kept by the browser, and `pinecall-env: production` on every request — a person whose production switch is off gets *No production access* | none: the sidecar signs what the page asks, the page holds no key, and there is no sign out |
-| sidebar ▸ Gateway (local: *Sandbox*) | Home `/`, Overview `/overview`, Live, Sessions, Evals, Memory, Usage | Home, Overview, Live, Sessions, Evals, Memory |
+| sidebar ▸ Gateway (local: *Sandbox*) | Home `/`, Overview `/overview`, Live, Sessions, Evals, Memory, Docs, Usage | Home, Overview, Live, Sessions, Evals, Memory, Docs |
 | sidebar ▸ Settings | Numbers, Tokens, Providers, Team, Lexicon | Phone testing, Lexicon |
 | sidebar ▸ Box — a person the box made an **operator**, and nobody else | Organizations, Fleet, Routes, Box usage, Box settings | — |
 | outside the sidebar | `/cli`, `/invitations/<token>` | — |
-| an agent's tabs | Talk, Chat, Calls, Sessions, Settings (production's corner: set, history, roll back), Pipeline, Knowledge, Memory, Evals (scored calls, drift), Widget | the same, plus **Dev chat**, Settings over your corner or the team's, Evals ▸ runs and *Run all* |
+| an agent's tabs | Talk, Chat, Calls, Sessions, Settings (production's corner: set, history, roll back), Pipeline, Docs, Memory, Evals (scored calls, drift), Widget | the same, plus **Dev chat**, Settings over your corner or the team's, Evals ▸ runs and *Run all* |
 | copies | one: the org's, *deployed on the box* | the reader's; a key with `team` opens a teammate's |
 
 Which is which is a `<meta name="pinecall-console" content="local">` the sidecar puts in the page
@@ -55,9 +55,10 @@ switcher and the ⌘K box are the tab's and die with it.
 | `/a/:agent/dev-chat[/:call]` | Dev chat (local) |
 | `/a/:agent/calls[/:call]` | Calls — the inbox; a call in the path opens the thread holding it |
 | `/a/:agent/sessions[/:call]` | the agent's sessions; one read whole (deep-linkable to a line: `#seq-93`) |
-| `/a/:agent/settings` | Settings — the three corners (yours, the team's, production's), the whole set as a form with the version it was read at, the history with roll back; the gateway's page sets production's corner (while the person acts in production), the local one yours or, ticked, the team's. No promote: `GET`/`PUT /v1/agents/{slug}/settings`, `…/history`, `…/rollback` |
+| `/a/:agent/settings` | Settings — the three corners (yours, the team's, production's), the whole set as a form with the version it was read at — the vendors and models, the opening, the cut of a turn, what is remembered, **Knowledge** (what the agent knows by heart) and **Bases** (which it searches) — the history with roll back; the gateway's page sets production's corner (while the person acts in production), the local one yours or, ticked, the team's. No promote: `GET`/`PUT /v1/agents/{slug}/settings`, `…/history`, `…/rollback` |
 | `/lexicon` | Lexicon — the org's words, said and heard, whole and versioned; the gateway's page sets production's words, the local one yours or the team's: `GET`/`PUT /v1/lexicon`. A `words` key (supervisor, manager) opens it |
-| `/a/:agent/pipeline` · `knowledge` · `memory` · `widget` | one tab each; Pipeline reads and points at Settings |
+| `/docs` | Docs — every base pushed in this world and which agents search it: `GET /v1/knowledge`, `GET /v1/knowledge/attached`. A `knowledge` key opens it |
+| `/a/:agent/pipeline` · `docs` · `memory` · `widget` | one tab each; Pipeline reads and points at Settings |
 | `/a/:agent/evals?view=runs\|calls\|drift&run=<id>` | Evals |
 | `/a/:agent/widget/preview?name=&company=&tagline=&phone=&accent=&greeting=` | a blank page with nothing but the widget on it, outside the shell |
 | `/cli?c=<word>` | hosted: the card a person opens from `pinecall login` (or `pinecall link`) to sign that terminal in |
@@ -143,7 +144,7 @@ pane its first width back. A browser that refuses storage keeps nothing and the 
 When a screen has nothing to show it says so **in a sentence, never a spinner**.
 
 Data reaches it through the gateway's doors and one stream shape. What needs the agent's
-**directory** — its goldens, personas, knowledge folder, memory goldens, a chat with the class — is
+**directory** — its goldens, personas, docs folder, memory goldens, a chat with the class — is
 asked of the gateway too, at `POST /v1/agents/{slug}/dev/{family}/{verb}`, and the gateway relays it
 to the `pinecall start` holding the agent (the runtime's `docs/protocol/dev-verbs.md`). Gateway doors:
 
@@ -165,7 +166,7 @@ to the `pinecall start` holding the agent (the runtime's `docs/protocol/dev-verb
 | `GET /v1/evals/runs?agent=&limit=200` | Evals |
 | `GET /v1/agents/{slug}/pipeline` · `PUT …/pipeline/overrides` | Pipeline |
 | `GET`·`PUT …/pipeline/hold-audio` · `…/hold-audio/audio` · `PUT …/hold-audio/played` | Pipeline ▸ Hold melody |
-| `GET /v1/knowledge` · `DELETE /v1/knowledge/{base}` | Knowledge (push and golden go through `pinecall start`) |
+| `GET /v1/knowledge` · `DELETE /v1/knowledge/{base}` · `GET /v1/knowledge/attached` | Docs, the agent's tab and the org's screen (push and golden go through `pinecall start`; which bases an agent reads is its settings) |
 | `GET /v1/agents/{slug}/memory` · `DELETE /v1/memory/facts/{id}` · `GET/DELETE /v1/contacts/{contact}/memory` | Memory |
 | `GET/PUT /v1/agents/{slug}/widget` · `GET /widget/pinecall-widget.js` | Widget |
 | `GET /v1/numbers` · `POST /v1/numbers[/buy]?dry_run=` · `DELETE /v1/numbers/{number}` · `GET /v1/numbers/available` · `GET/PUT/DELETE /v1/carrier` | Numbers, Overview, Home's setup, the Widget's Phone field |
@@ -330,6 +331,17 @@ a dot) · Written · **Drop** (asks first; the rest of what memory keeps about t
 and **Load more** while the gateway has another page. Empty: *No agent remembers anything about
 any caller yet. An agent that declares `memory` writes what it learns when a call hangs up.*, or
 *Nothing remembered matches.* A gateway with no database says it keeps no memory.
+
+## 2e. Docs — `/docs`
+
+*Every base pushed in this world, and which agents search it. A base is pushed from a project's
+`docs/` folder (`pinecall docs push`) and attached to an agent in its Settings.*
+
+- **The table** (`GET /v1/knowledge`, `GET /v1/knowledge/attached`, `knowledge` scope): Base ·
+  Chunks · Embedder · Pushed · **Read by** — each agent a link to its Settings, or *nobody*. Empty:
+  *No base pushed yet. `pinecall docs push` from a project sends its folder here.*
+- Nothing is pushed or dropped from here: the folder is a project's, and the Docs tab of the agent
+  whose `pinecall start` holds it is where it is pushed.
 
 ## 3. Live — `/live[/:call]`
 
@@ -558,11 +570,9 @@ cannot show a pipeline the next call will not run.
 - **Anatomy of a turn** — *medians over the last N calls · M turns*: Transcription · End of turn ·
   LLM first token · Speech starts · End to end, a bar each scaled to the slowest, and the
   milliseconds. A stage nobody measured is `—`, never a zero-width bar read as instant.
-- **Control** — *applies to the next session*: Hears, Decides and Speaks as vendor plus model (the
-  vendors off `GET /v1/providers`, ready ones first), the voice (a list for the vendor this build
-  curates, else that vendor's own id), the tts model, and the greeting — *spoken verbatim as the
-  call opens — said, never generated*. *An empty field gives the knob back to what the app
-  declared.* Saving answers with the whole report, so the cards above are the gateway's answer.
+- **Changing any of it is the Settings tab**, said in a card that links there: the vendors and
+  models with the opening, the cut of a turn and what is remembered, per corner and versioned.
+  Nothing on this screen writes.
 - **Hold melody** — *what the caller hears while a tool runs — phone and web alike, from the next
   call*: what plays now (*A New Life*, the runtime's own; the name of a file of yours; or *Off*),
   its length, **Listen**, **Upload a file…** (a wav, an mp3, an ogg or an m4a, up to 20 MB and five
@@ -570,18 +580,46 @@ cannot show a pipeline the next call will not run.
   own doors (`…/pipeline/hold-audio`), saved the moment it is chosen and never by the form's Save.
 - **Turned**: what is overridden right now, apart from the form.
 
-## 7b. Knowledge — `/a/:agent/knowledge`
+## 7a. Settings — `/a/:agent/settings`
 
-*What this agent answers from. The folder is pushed whole and the base is replaced, never merged.*
+*What the agent runs on, per world and per corner, a version a row.* The class is code and the
+world is environment: nothing here is in the repository.
 
-- **This directory** (the directory's `knowledge.roster`): the base name (editable), the folder's
-  path, *N markdown files*, **Push the folder**, *N questions*, **Run the golden**. While asking:
-  *Asking the process that holds <agent>…*; when it does not answer, the sentence says so — and the
-  bases below still load.
+- **Set** — one form, the whole set, *over vN — a corner that moved since is told so, never
+  written over*: Hears, Decides and Speaks as vendor plus model (the vendors off `GET
+  /v1/providers`), the voice, the tts model; the opening — said verbatim, or what the model reads
+  before it finds its own; the hang-up; the cut of a turn; what is remembered and what never is,
+  one line each; **Knowledge** — *what the agent knows by heart, in Markdown: the business as you
+  describe it — hours, prices, what needs an authorisation. Read whole on every call.* — with its
+  count of characters and the sentence *This is not the documents it searches: those are the Docs
+  tab, attached below as bases*; **Bases** — *bases the agent searches, one per line: name, and k
+  after a space*; a Note for the history. A key that opens `words` and not `pipeline` sees the
+  opening's words, what is remembered and Knowledge, and nothing else.
+- **History** — every version of this corner, newest first, who set it, why, what it changed;
+  **Roll back** brings one back as the next version (not for a `words`-only key).
+- Three corners on the gateway's page read as production's; on the local page, yours or, ticked,
+  the team's. `GET`/`PUT /v1/agents/{slug}/settings`, `…/history`, `…/rollback`.
+
+## 7b. Docs — `/a/:agent/docs`
+
+*The documents this agent searches on a turn — the RAG. The folder is pushed whole and the base is
+replaced, never merged; which bases the agent reads is its Settings. What it knows by heart is
+Settings ▸ Knowledge, not a document.*
+
+- **This directory** (the directory's `knowledge.roster`, answered by the `pinecall start` holding
+  the agent): the base name (editable), the folder's path — `docs/<name>/` of the project — *N
+  markdown files*, **Push the folder**, *N questions* (`test/<name>/goldens/docs.json`, or *no
+  golden beside it*), **Run the golden**. While asking: *Asking the process that holds <agent>…*;
+  when it does not answer, the sentence says so — and the bases below still load. A process
+  holding another agent's project says whose, and where to run `pinecall start` instead.
 - **The golden**, after a run: `base · embedder · N questions · ms`, `recall@k`, `nDCG@10`, and
   every miss: the question, what it wanted, what came back first.
-- **Every base this org has pushed**: Base · Chunks · Embedder · Pushed · **Drop** (asks first).
-  Empty: *No base pushed yet…*
+- **Every base this org has pushed** in this world: Base · Chunks · Embedder · Pushed · **Drop**
+  (asks first). Empty: *No base pushed yet. Push the folder above, or `pinecall docs push` from the
+  project.*
+- **Attached bases** — *what this agent reads on every call — set in Settings, per corner and
+  versioned*: each base with its mode (`retrieved` unless said), its `k` and its minimum score, off
+  the agent's settings; *Change them in Settings*.
 
 ## 7c. Memory — `/a/:agent/memory`
 
@@ -595,10 +633,10 @@ cannot show a pipeline the next call will not run.
   their category, superseded ones dimmed with the day they stopped holding (`GET
   /v1/contacts/{contact}/memory`), and **Forget** the contact whole, after a confirm.
   Empty: *Memory keeps nothing about any caller of this agent yet.*
-- **Recall** (`memory/golden.json`, or `memory/<name>.golden.json` in a project of several): N
-  questions, scored by code with no model on a scratch contact — `recall@k · nDCG@10`, each miss.
-- **Extraction** (`test/memory`, or `test/memory/<name>/`): one written call per case and one model
-  call each — `held/cases`, each broken case with `check: detail`.
+- **Recall** (`test/<name>/goldens/memory.json`): N questions, scored by code with no model on a
+  scratch contact — `recall@k · nDCG@10`, each miss.
+- **Extraction** (`test/<name>/memory/`): one written call per case and one model call each —
+  `held/cases`, each broken case with `check: detail`.
 - Both goldens are the directory's; when its process does not answer, the card says so.
 
 ## 7d. Evals — `/a/:agent/evals`
@@ -700,7 +738,7 @@ writes into a project — and the tokens this org's servers run on. A server's t
 opens one world, and it stays when the person who made it leaves.* **New server token** (a key that
 opens `app`) — a label (`maravilla web`) and a world, `production` disabled for a person whose
 production switch is off (*Production's is made by somebody your org lets act in production.*), else
-*It holds the agent in that world and pushes its knowledge base in a release — nothing else.* The
+*It holds the agent in that world and pushes its documents in a release — nothing else.* The
 token comes back **once**, as `PINECALL_KEY=pc_live_…` (`pc_test_…` in the sandbox) in a card with
 Copy — *Copy it now and put it in your server's secrets* — and is kept by nothing. The table: Name ·
 World · Whose (`the org's · made by <name>`, or `<name> · their own` for a person's key) · Last used
@@ -853,7 +891,7 @@ foot, and on the right half an illustration of the inbox — drawn, not data.
 
 - **What an org may dial** — the org's own Numbers ▸ Outbound calls shows the four guards and never sets them; setting them is the operator's, on the Box's Limits tab (§8b) or `pinecall-runtime orgs dialling`.
 - **A number moved between worlds** — `PUT /v1/numbers/{number}/env` (`pinecall numbers move`).
-- **The agent's own declaration** — `GET /v1/agents/{slug}/config`: tools, stages, state fields, events. Only the visibility half is read today (the state pane). Whether the model may end the call itself — the class's `hangup` field, livekit's `end_call` tool — is drawn nowhere in the console; a call it ended reads `agent_hung_up` like any other end reason.
+- **The agent's own declaration** — `GET /v1/agents/{slug}/config`: tools, stages, state fields, events, whether it searches. Only the visibility half is read today (the state pane). Whether the model may end the call itself is the settings' hang-up, livekit's `end_call` tool, set on the Settings tab; a call it ended reads `agent_hung_up` like any other end reason.
 - **Fleet and callbacks** — `GET /v1/fleet/standing`, `GET/POST /v1/callbacks`, events `fleet.full` and `callback.requested`.
 - **`GET /v1/calls/{call}/state`**, `GET /v1/evals/runs/{id}`, `POST /v1/evals/run`, `PUT /v1/knowledge/{base}` and the two goldens' own doors: the console goes through the log, the runs list and `pinecall start` instead.
 

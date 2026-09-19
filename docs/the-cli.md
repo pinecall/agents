@@ -36,13 +36,13 @@ path end to end, with every output under it.
 | [`eval`](#eval) | ring 3: one real call re-checked by code | yes |
 | [`sessions`](#sessions) | the calls this agent has run, and one of them whole | yes |
 | [`runs`](#runs) | the suites: list, show, diff, promote a call, watch the drift | yes |
-| [`agent`](#agent) | what the org set over the class — yours, the team's, production's — set, history, diff, rollback, pull, push | yes |
+| [`agent`](#agent) | the agent's settings — yours, the team's, production's — set, knowledge, history, diff, rollback, pull, push | yes |
 | [`lexicon`](#lexicon) | the org's words: how the voice says them and what the ears must know, shared by every agent | yes |
 | [`pipeline`](#pipeline) | what it hears, decides and speaks with, as the next call would be built | yes |
 | [`line`](#line) | which phone is yours, and whose terminal a call from anybody else's rings in | yes |
 | [`numbers`](#numbers) | which number reaches which agent, and the world it answers in | yes |
-| [`personas`](#personas) | the synthetic callers in `test/personas` | for `try` |
-| [`knowledge`](#knowledge) | the base the agent answers from: push, list, drop, eval | yes |
+| [`personas`](#personas) | the synthetic callers in `test/<name>/personas/` | for `try` |
+| [`docs`](#docs) | the documents the agent searches: push, list, drop, eval, attach, detach, attached | yes |
 | [`memory`](#memory) | what memory kept about a contact, forgetting it, and recall's golden | yes |
 | [`remember`](#remember) | the extraction goldens: what a hang-up makes of a call | yes |
 | [`supervise`](#supervise) | listen in on a live call and move on it | yes |
@@ -76,7 +76,7 @@ switched. There are no profiles, no active mark and no flag that points one comm
 ```console
 ~/clinica $ pinecall link
   1. clinica
-  2. tienda-sur
+  2. dental-sur
 which org is this project? 1
 ▸ clinica · PINECALL_KEY written to .env
 ```
@@ -118,48 +118,53 @@ never logged, and never put in a URL. A `.env` that `link` creates is `0600` too
 
 # Writing the agent
 
-## A project of several agents
+## The project
 
-One repository may hold several agents. Each is a file under `agents/`, and every folder the
-verbs read is shared, by the agent's name:
+One layout, whether the repository holds one agent or five. Every folder a verb reads is under the
+project's root, by the agent's name (`src/cli/home.ts`):
 
 ```
-agents/dispatch.tsx              one agent: its class, its slug declared on it
-agents/sales.tsx                 another
-lib/                             what both import
-knowledge/dispatch.md            what dispatch knows by heart — `knowledge = "../knowledge/dispatch.md"`
-knowledge/sales/                 the documents `knowledge push` sends to sales's base
-knowledge/sales.golden.json      the questions `knowledge eval` holds that base to
-memory/<name>.golden.json        what `memory eval` asks
-test/dispatch.test.ts            ring 0, one file per agent
-test/goldens/<name>/             what `test` runs for that agent
-test/personas/<name>/            the callers `simulate` and `personas` read for that agent
-test/memory/<name>/              what `remember` runs for that agent
+agents/<name>/agent.tsx          the class — and beside it only what this agent uses (callbacks.ts)
+lib/                             what two or more agents share
+docs/<name>/                     the documents the agent SEARCHES — the RAG — sent by `docs push`
+test/<name>/agent.test.ts        ring 0: the class as software
+test/<name>/goldens/             ring 1: the conversations `test` runs; beside them `docs.json`,
+                                 the questions `docs eval` asks the base, and `memory.json`,
+                                 the questions `memory eval` asks recall
+test/<name>/personas/            ring 2: the callers `simulate` and `personas` read
+test/<name>/memory/              the extraction cases `remember` runs
 ```
 
-At the root of such a project every verb that reads a class acts on **every agent**, each against
-its own folders, or on the one `--agent <name>` names — by its file's name (`sales`) or by its slug
+**The business is not in the repository.** What the agent knows by heart — hours, prices, what
+needs an authorisation — is one field of its settings, per world and corner, written in the
+console's Settings ▸ Knowledge or with [`pinecall agent knowledge edit`](#agent-knowledge), and
+read whole into the prompt on every call. `docs/<name>/` holds only what a turn searches. A class
+that still carries a voice, a model, an opening, a memory policy, a knowledge file or a base is
+refused at load, and the refusal names the verb that sets it now
+([writing-an-agent.md](writing-an-agent.md)).
+
+At the root, every verb that reads a class acts on **every agent**, each against its own folders,
+or on the one `--agent <name>` names — by its folder's name (`sales`) or by its slug
 (`bidfire-sales`):
 
 | at the root | does |
 |---|---|
 | `pinecall start` | every agent at once, **on one socket, in one process**; each line prefixed by the slug, one console URL each (`--serve` puts them all on one page). `--show-prompt` prints every agent's prompt under its slug |
 | `pinecall test` | each agent's goldens through its own class, one after another; the exit code is the worst. Paths and `--watch` are for one agent, so they need `--agent` |
-| `pinecall knowledge push` · `eval` | every agent that has `knowledge/<name>/` · `knowledge/<name>.golden.json`; the rest are named and skipped |
+| `pinecall docs push` · `eval` | every agent that has `docs/<name>/` · `test/<name>/goldens/docs.json`; the rest are named and skipped |
 | `pinecall personas list` | every agent's callers, under its name |
 | `pinecall chat` · `simulate` · `prompt` · `remember` · `memory eval` · `line` · `personas show\|try` · `start --ui` | one agent: `--agent <name>` is required when there are several |
 
-A directory that holds an `agent.tsx` of its own is one agent's folder, and everything reads
-beside that file as it always has: `knowledge/docs`, `knowledge/golden.json`, `memory/golden.json`,
-`test/goldens`, `test/personas`, `test/memory`. The two layouts are one idea — an agent's *home*
-(`src/cli/home.ts`) — and a verb never computes a path of its own. A folder the verb reads and
-nobody has written yet is empty, not an error: an agent with no `test/goldens` has no goldens, the
+A project of several with nobody named is refused with the names: `this project has 2 agents: name
+one with --agent dispatch or --agent sales`. A directory with no `agents/` at all is one somebody
+typed the verb in by mistake, and the refusal says where it looked. A folder the verb reads and
+nobody has written yet is empty, not an error: an agent with no `goldens/` has no goldens, the
 console's roster says so, and `pinecall test` names the folder to write one in.
 
 `--agent` means two things, one per kind of verb. In a verb that loads a class it names an agent of
 this project, by name or by slug. In a verb that only asks the gateway — `sessions`, `pipeline`,
-`runs drift`, `numbers import`, `callbacks` — it is a slug, because there is no class to find.
-`--file` is always a file.
+`runs drift`, `numbers import`, `callbacks`, `docs attach` — it is a slug, because there is no
+class to find. `--file` is always a file.
 
 ## `start`
 
@@ -167,8 +172,8 @@ this project, by name or by slug. In a verb that only asks the gateway — `sess
 pinecall start [agent.tsx] [--agent <name>] [--prod] [--serve] [--ui] [--events] [--show-prompt]
 ```
 
-At a project's root with no file named, every `agents/*.tsx` is held at once, on one socket: see
-[A project of several agents](#a-project-of-several-agents).
+At a project's root with no file named, every `agents/<name>/agent.tsx` is held at once, on one
+socket: see [The project](#the-project).
 
 The app registered on the gateway and answering: **this is the process you deploy**, the same one
 on a laptop and on a server. With nothing said it holds the **sandbox** agent, and in the sandbox
@@ -223,7 +228,7 @@ line     rings in this terminal · also running: carla@clinica.test
 
 **It answers the console for this directory.** What a screen needs of the agent's directory — a
 written call to the class here, the personas and a simulation, the goldens and a suite, the
-knowledge folder pushed and its golden asked, the memory goldens, a call promoted to a candidate,
+documents pushed and their golden asked, the memory goldens, a call promoted to a candidate,
 the drift, a reproduction a broken run left — the console asks the gateway, and the gateway asks
 THIS process over the socket it already holds (`dev.request` → `dev.answer`; the runtime's
 `docs/protocol/dev-verbs.md`). The lines those verbs print land here, as if you had typed them.
@@ -238,7 +243,7 @@ pinecall serve [--port <n>] [--no-open]
 **The sandbox's console, on your own machine.** The gateway's page shows production and only
 production — what customers reach, watched by the people who run it. What YOU are running is
 watched here: `http://localhost:4100`, the same console, looking at your corner of the sandbox —
-your copies of the agents, their calls as they happen, chat, evals and their suites, knowledge,
+your copies of the agents, their calls as they happen, chat, evals and their suites, docs,
 memory, the widget and its preview, and how to reach your copy by phone. It mounts no agent:
 `start` does that, and `pinecall start --serve` does both in one terminal.
 
@@ -352,7 +357,7 @@ $ pinecall chat clinica-norte
 the caller's side: a written call at whatever is already holding that slug — your own `pinecall
 start` in the other terminal, or a colleague's, in the corner your key reaches. `--file` is how you
 name the class to mount by its path, and it is the same word in every verb that loads a file
-(`test`, `simulate`, `remember`, `personas`, `knowledge`, `memory`); `--agent` names one agent of a
+(`test`, `simulate`, `remember`, `personas`, `docs`, `memory`); `--agent` names one agent of a
 project of several, by its name or its slug, and is required there because a chat talks to one.
 
 `--as` is who is calling — the id memory files the call under. `--state file [--case n]` opens the
@@ -371,7 +376,7 @@ regions in the order the model receives them, then the stage and the tools that 
 verb you run while writing a `render()`, and it answers in the time it takes to save the file.
 
 ```console
-$ pinecall prompt --state test/goldens/identifica-al-paciente.json
+$ pinecall prompt --state test/clinica-norte/goldens/identifica-al-paciente.json
 ── identity (static) ──
 Eres la recepción de Clínica Norte. Hablas de usted, con frases cortas. …
 
@@ -393,7 +398,7 @@ pinecall test [paths] [--agent <name>] [--file agent.tsx] [--model m]… [--grep
 pinecall test --voice [--background-noise dB] [--packet-loss 0.05]
 ```
 
-Ring 1: every golden of `test/goldens` (in a project, `test/goldens/<name>/` for each agent) through
+Ring 1: every golden of `test/<name>/goldens/` (at a project's root, each agent's own) through
 the class **this terminal holds**, scored by the gateway's judges, printed as a matrix. Exits 1
 when a golden did not hold. One agent with no goldens yet is told where to write one and exits 2;
 in a project, an agent with none is named and skipped. Every broken golden is
@@ -448,8 +453,8 @@ written call has no audio in it. `--judge` reads back the `call.score` the log s
 pinecall personas list | show <name> | try <name> [--agent <name>] [--file agent.tsx]
 ```
 
-The callers are `test/personas` beside the agent, or `test/personas/<name>/` in a project, where
-`list` prints every agent's under its name and `show` and `try` need `--agent`.
+The callers are `test/<name>/personas/`; at a project's root, `list` prints every agent's under
+its name and `show` and `try` need `--agent`.
 
 ```console
 $ pinecall personas list
@@ -536,7 +541,8 @@ pinecall agent list · stop <app>
 pinecall agent set [--voice x] [--tts x] [--tts-model x] [--stt x] [--llm x] [--greeting '…' | --reply '…']
                    [--hangup '…'] [--endpointing-ms n] [--min-interruption-words n]
                    [--remember '…' …] [--forget '…' …] [--team] [--note '…']
-pinecall agent clear [voice|tts|tts-model|stt|llm|greeting|hangup|turn|memory|knowledge …] [--team]
+pinecall agent knowledge [--team] · knowledge edit [--team] [--note '…']
+pinecall agent clear [voice|tts|tts-model|stt|llm|greeting|hangup|turn|memory|knowledge|bases …] [--team]
 pinecall agent history [--team] · diff [--against team|production] · rollback <version> [--team]
 pinecall agent pull [--team] · push <file> [--team]
                                         … and any of them with --prod, in production
@@ -556,19 +562,20 @@ maravilla · sandbox
   hangup        —               when the person has what…   when the person has what…
   turn          —               —                           —
   memory        —               remember 4 · forget 1       remember 4 · forget 1
-  knowledge     —               maravilla (k 4)             maravilla (k 4)
+  knowledge     —               2,140 chars                 2,140 chars
+  bases         —               maravilla (k 4)             maravilla (k 4)
 
   yours: v3 · m_ana · 2026-09-19 14:32 · "flat on the phone" · team: v11 · m_bruno · 2026-09-18 10:04 · production: v11 · m_ana · 2026-09-12 …
 ```
 
 **What an agent runs on is the org's, not the class's** — per world, per corner, a version a row
 (the runtime's `docs/protocol/settings-api.md`). The class declares the contract: its tools, its
-state, its `render()`, its language. The voice, the models, the opening, how a call ends, how a
-turn is cut, what is remembered and which bases are read are **settings**, kept by the gateway and
-laid over the class at the one place every session is built. A class that still declares one of
-them seeds the world's first version the first time it registers there, and from then on **the
-world wins**: `pinecall start` prints one line per field the class still says differently, and the
-line says what to delete.
+state, its `render()`, its language, its doors. The voice, the models, the opening, how a call
+ends, how a turn is cut, what is remembered, what is known by heart and which bases are searched
+are **settings**, kept by the gateway and laid over the class at the one place every session is
+built. A class that still declares one of them is refused at load — before a prompt is printed or
+a gateway is knocked at — and the refusal names the verb: `` `voice` is the world's now, not the
+class's: pinecall agent set --voice <name> — remove it from the class``.
 
 **Three corners.** In the sandbox your key has a corner of its own: what you `set` is yours, and a
 colleague's next call does not hear it — so two developers testing two voices never change each
@@ -605,6 +612,34 @@ again, so a process kept that way is stopped where it is supervised. An app on t
 config as a file; `pinecall agent push pinecall/maravilla.json --team` sends it back as the next
 version, with no version check — it is what CI applies, and `push … --prod` is what a release
 applies to production.
+
+### `agent knowledge`
+
+```
+pinecall agent knowledge [--team]
+pinecall agent knowledge edit [--team] [--note '…']
+```
+
+**What the agent knows by heart** — the business as the org describes it, a page of Markdown:
+hours, prices, what needs an authorisation, what to say when asked for the doctor's mobile. It
+is one field of the settings, versioned like the rest, and the runtime reads it **whole** into
+the prompt's static `knowledge` block on every call — so it is read once and cached, and never
+searched. Alone, the verb prints the corner's text; `edit` opens it in `$VISUAL` or `$EDITOR`,
+the way `git commit` does, and what you leave is the next version. An unchanged file writes
+nothing; an empty one takes the field out. The console's Settings ▸ Knowledge is the same
+textarea, and a **supervisor's or a manager's key opens it** (`words`) — the person who knows
+the prices changes them, without a developer and without a deploy.
+
+```console
+$ pinecall agent knowledge
+maravilla knows nothing by heart in your corner: `pinecall agent knowledge edit` writes it
+$ EDITOR=vim pinecall agent knowledge edit --team --note "prices for 2027"
+maravilla · knowledge 2,140 chars · the team's corner v12
+```
+
+It is not the RAG. The documents a turn *searches* — a catalogue, a policy manual, anything
+too long to read whole — are [`pinecall docs`](#docs), attached to the same settings as `bases`.
+`pinecall agent` prints the two on two rows: `knowledge` as a size, `bases` by name.
 
 ## `lexicon`
 
@@ -846,20 +881,25 @@ org clinica · key k_4f2a… · production · ana-macbook · production: yes
 
 # What it remembers, and what it knows
 
-## `knowledge`
+## `docs`
 
 ```
-pinecall knowledge push [dir] [--base <name>] [--agent <name>] [--file agent.tsx]
-pinecall knowledge list
-pinecall knowledge drop <base>
-pinecall knowledge eval [golden.json] [--base <name>] [--k <n>] [--agent <name>] [--file agent.tsx]
+pinecall docs push [dir] [--base <name>] [--agent <name>] [--file agent.tsx]
+pinecall docs list
+pinecall docs drop <base>
+pinecall docs eval [docs.json] [--base <name>] [--k <n>] [--agent <name>] [--file agent.tsx]
+pinecall docs attach <base> [--k <n>] [--mode retrieved|tool] [--min-score <x>] [--agent <slug>] [--team]
+pinecall docs detach <base> [--agent <slug>] [--team]
+pinecall docs attached
+                                        … and any of them with --prod, in production
 ```
 
-`push` reads every `*.md` under the directory — `./knowledge/docs` beside the agent file when none
-is named, or `knowledge/<name>/` for each agent of a project — and sends the folder **whole**: the
-base is replaced, never merged. At a project's root with nothing typed, `push` and `eval` act on
-every agent that has documents or a golden (`knowledge/<name>.golden.json`), and name the rest. The base is the
-agent's slug unless `--base` says otherwise, and the class names it with `docs = "<base>"`.
+**The documents a turn searches** — the RAG, and only that. `push` reads every `*.md` under the
+directory — `docs/<name>/` of the agent when none is named — and sends the folder **whole** to
+`PUT /v1/knowledge/<base>`: the base is replaced, never merged. At a project's root with nothing
+typed, `push` and `eval` act on every agent that has documents or a golden, and name the rest. The
+base is the agent's slug unless `--base` says otherwise. What the agent knows *by heart* is not a
+document and is never pushed: it is [`pinecall agent knowledge`](#agent-knowledge).
 
 **The base you push is the world's the command runs in.** A push from a laptop replaces the sandbox
 base — what your own `pinecall start` answers from — and never the one the telephone answers from.
@@ -868,15 +908,37 @@ by the server's token or by a person whose switch is on ([production.md](product
 and `drop` read the same world.
 
 ```console
-$ pinecall knowledge push
+$ pinecall docs push
 clinica-norte · 7 files · 41 chunks · 812 ms      # base · sent · became · took
 ```
 
-`eval` asks the base every question of a golden — a JSON list of `{asks, expects}`, where `expects`
-is the heading path the answer should carry — and prints `recall@k` and `nDCG@10`, computed by code
-with **no model in the loop**, plus every question it missed and what came back instead. Exits 1
-when anything missed, so CI can hold a base to it. A golden is fixed and the index is the variable:
-never soften a question so a change can pass.
+**`attach` says an agent reads a base.** It is one field of the agent's settings (`bases`),
+written as the next version of the corner — yours, the team's with `--team`, production's with
+`--prod` — with how a turn reads it: `--k` chunks, `--mode` (`retrieved`: the platform searches
+before the turn and hands the model what it found; `tool`: the model decides when to search),
+`--min-score`. A base attached twice is replaced, not doubled. `detach` takes it out; `attached`
+prints which agents read which base in the world asked.
+
+```console
+$ pinecall docs attach clinica-norte --k 4
+clinica-norte · clinica-norte attached · your corner v4
+$ pinecall docs attached
+clinica-norte · read by clinica-norte
+```
+
+The class reaches the base from inside a tool, and nowhere else: `await
+this.knowledge.search("horarios", { k: 3 })` asks the gateway for the best chunks of the bases the
+world attached, for these words ([writing-an-agent.md](writing-an-agent.md)). Which base is the
+world's to say, so a class that searches and registers in a world where nothing is attached is
+refused at registration: `clinica-norte searches its bases, and none is attached to it in sandbox:
+pinecall docs attach <base> --agent clinica-norte`. A base attached and never pushed is refused
+the same way, naming `pinecall docs push`.
+
+`eval` asks the base every question of a golden — `test/<name>/goldens/docs.json`, a JSON list of
+`{asks, expects}`, where `expects` is the heading path the answer should carry — and prints
+`recall@k` and `nDCG@10`, computed by code with **no model in the loop**, plus every question it
+missed and what came back instead. Exits 1 when anything missed, so CI can hold a base to it. A
+golden is fixed and the index is the variable: never soften a question so a change can pass.
 
 ## `memory`
 
@@ -891,8 +953,8 @@ current facts first and the ones a later call superseded dimmed, with the date t
 holding. `forget` erases all of it, the right to be forgotten; on a terminal it asks once, and
 prints how many facts went.
 
-`eval` holds **recall** to a golden of `{holds, asks, expects}` — `memory/golden.json` beside the
-agent, or `memory/<name>.golden.json` in a project: each question brings its own facts, so no
+`eval` holds **recall** to a golden of `{holds, asks, expects}` — `test/<name>/goldens/memory.json`:
+each question brings its own facts, so no
 contact of yours is read or written — they go to a scratch contact and are deleted again.
 
 ## `remember`
@@ -901,7 +963,7 @@ contact of yours is read or written — they go to a scratch contact and are del
 pinecall remember [paths] [--agent <name>] [--file agent.tsx] [--grep x] [--json]
 ```
 
-The cases are `test/memory` beside the agent, or `test/memory/<name>/` in a project.
+The cases are `test/<name>/memory/`, one file per call written down.
 
 The other half of memory: the **write** side. A case is one call written down — both speakers,
 because nothing is re-run — the facts memory already holds, and what must come of it: which
@@ -943,10 +1005,9 @@ code can call — over HTTP, in any language, with the same key.
 | `test` · `runs` | `POST /v1/evals/run`, `GET /v1/evals/runs[/{id}]` |
 | `eval` | `POST /v1/evals/replay/{call}` |
 | `agent` | `GET`·`PUT /v1/agents/{slug}/settings`, `GET …/settings/history`, `GET …/settings/diff`, `POST …/settings/rollback`, `GET /v1/agents` for `list` |
-| `lexicon` · `memory policy` | `GET`·`PUT /v1/lexicon`, `GET …/history` · `GET`·`PUT /v1/agents/{slug}/settings` |
-| `start`, once connected, too | `GET /v1/agents/{slug}/settings`, `GET /v1/lexicon` — the lines that say where the world says otherwise |
+| `agent knowledge` · `lexicon` · `memory policy` · `docs attach` · `detach` | `GET`·`PUT /v1/agents/{slug}/settings` · `GET`·`PUT /v1/lexicon`, `GET …/history` |
 | `pipeline` | `GET /v1/agents/{slug}/pipeline` |
-| `knowledge` | `PUT`·`GET`·`DELETE /v1/knowledge[/{base}]`, `POST /v1/knowledge/{base}/eval` |
+| `docs` | `PUT`·`GET`·`DELETE /v1/knowledge[/{base}]`, `POST /v1/knowledge/{base}/eval`, `GET /v1/knowledge/attached` |
 | `memory` | `GET`·`DELETE /v1/contacts/{contact}/memory`, `POST /v1/contacts/memory/eval` |
 | `remember` | `POST /v1/agents/{slug}/memory/extraction` |
 | `numbers` | `GET`·`POST /v1/numbers`, `PUT /v1/numbers/{number}/env`, `DELETE /v1/numbers/{number}` |

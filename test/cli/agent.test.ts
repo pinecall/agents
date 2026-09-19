@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { linesOf } from "../../src/cli/agent-lines.js";
 import { changes } from "../../src/cli/agent-versions.js";
 import { run } from "../../src/cli/agent.js";
-import { withoutTheWorldFlag } from "../../src/cli/world.js";
+import { inTheWorld } from "../../src/cli/world.js";
 import { pointingAt } from "./home.js";
 import { written } from "./said.js";
 
@@ -227,9 +227,7 @@ describe("the versions", () => {
   // Production is set where it is, by a person their org lets act there: --prod names the world on
   // the request, and the gateway decides. Nothing is promoted into it from the sandbox.
   it("sets production when --prod names it, and names no world otherwise", async () => {
-    withoutTheWorldFlag(["agent", "set", "--prod"]);
-    await run(["set", "--agent", AGENT, "--voice", "amelia"], { out: written().stream, env: environment() });
-    withoutTheWorldFlag([]);
+    await inTheWorld("production", () => run(["set", "--agent", AGENT, "--voice", "amelia"], { out: written().stream, env: environment() }));
     await run(["set", "--agent", AGENT, "--voice", "carolina"], { out: written().stream, env: environment() });
 
     const writes = gateway.heard.filter((one) => one.method === "PUT");
@@ -255,9 +253,7 @@ describe("the processes", () => {
   it("stops one by its id, in the world --prod names", async () => {
     const out = written();
 
-    withoutTheWorldFlag(["agent", "stop", "app_7", "--prod"]);
-    expect(await run(["stop", "app_7"], { out: out.stream, env: environment() })).toBe(0);
-    withoutTheWorldFlag([]);
+    expect(await inTheWorld("production", () => run(["stop", "app_7"], { out: out.stream, env: environment() }))).toBe(0);
 
     expect(gateway.heard.at(-1)).toMatchObject({ method: "POST", path: "/v1/apps/app_7/stop", world: "production" });
     expect(out.text()).toContain("stopped app_7");

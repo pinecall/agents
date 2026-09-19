@@ -12,5 +12,5 @@
     // way, which matters because `pinecall start` loads agent.ts with tsx and a path mapping
     // would hand the process a second one.
   },
-  "include": ["agent.tsx", "lib", "test"]
+  "include": ["agents", "test"]
 }

@@ -44,7 +44,7 @@ export async function rollbackTo(credentials: Credentials, agent: string, versio
 }
 
 /** The fields the page draws, in reading order, under the names it draws them with. */
-export const FIELDS = ["voice", "tts", "tts_model", "stt", "llm", "greeting", "hangup", "turn", "memory", "knowledge"] as const;
+export const FIELDS = ["voice", "tts", "tts_model", "stt", "llm", "greeting", "hangup", "turn", "memory", "knowledge", "bases"] as const;
 export type Field = (typeof FIELDS)[number];
 
 export const LABEL: Record<Field, string> = {
@@ -58,6 +58,7 @@ export const LABEL: Record<Field, string> = {
   turn: "turn",
   memory: "memory",
   knowledge: "knowledge",
+  bases: "bases",
 };
 
 /** One field of one config as a cell; undefined when the config does not set it. */
@@ -85,7 +86,11 @@ export function shown(config: TuningBody, field: Field): string | undefined {
     return memory === undefined ? undefined : `remember ${memory.remember?.length ?? 0} · forget ${memory.forget?.length ?? 0}`;
   }
   if (field === "knowledge") {
-    const bases = config.knowledge ?? undefined;
+    const text = config.knowledge ?? undefined;
+    return text === undefined ? undefined : `${text.length.toLocaleString("en-US")} chars`;
+  }
+  if (field === "bases") {
+    const bases = config.bases ?? undefined;
     return bases === undefined || bases.length === 0 ? undefined : bases.map((one) => `${one.base}${typeof one.k === "number" ? ` (k ${one.k})` : ""}`).join(" · ");
   }
   const value = config[field];

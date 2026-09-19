@@ -1,5 +1,7 @@
 /** Which world a verb works in: the sandbox, or production when `--prod` names it for one command. */
 
+import { AsyncLocalStorage } from "node:async_hooks";
+
 import type { World } from "../client/signed.js";
 import type { Open } from "./env.js";
 import { refusal, whoIs, type Who } from "./whoami.js";
@@ -10,26 +12,35 @@ export const SANDBOX: World = "sandbox";
 /** The world the org's customers reach. A person acts there while their org lets them. */
 export const PRODUCTION: World = "production";
 
-// Read once per invocation, off argv, before any group sees it — so every verb goes where the
-// command said without each of them parsing the flag. The one piece of process-wide state this
-// CLI keeps, and it is reset on every parse.
-let production = false;
+// The world one invocation named, carried by the async context and not by a module-level flag:
+// every verb under it reads the same answer, a test running two verbs at once reads two, and
+// nothing is left standing for the next command. The same mechanism the state's author uses.
+const chosen = new AsyncLocalStorage<World>();
+
+/** An invocation with `--prod` taken out of it, and the world it named. */
+export interface Named {
+  argv: string[];
+  /** `production` when `--prod` was typed; undefined names no world, which is the sandbox. */
+  world: World | undefined;
+}
 
 /**
- * Take `--prod` out of an invocation's argv, and remember it.
- *
- * Returns what is left, so the group sees only its own flags. `--prod` belongs to no group: it says
- * which world THIS command runs in, and the gateway lets it through only while the person's row
- * opens production. Nothing is kept: the next command is in the sandbox again.
+ * Take `--prod` out of an invocation's argv. It belongs to no group: it says which world THIS
+ * command runs in, and the gateway lets it through only while the person's row opens production.
+ * The group sees only its own flags.
  */
-export function withoutTheWorldFlag(argv: readonly string[]): string[] {
-  production = argv.includes("--prod");
-  return argv.filter((word) => word !== "--prod");
+export function withoutTheWorldFlag(argv: readonly string[]): Named {
+  return { argv: argv.filter((word) => word !== "--prod"), world: argv.includes("--prod") ? PRODUCTION : undefined };
+}
+
+/** Run one command in the world it named: everything under it, `theChosenWorld()` answers this. */
+export function inTheWorld<T>(world: World | undefined, body: () => Promise<T>): Promise<T> {
+  return world === undefined ? body() : chosen.run(world, body);
 }
 
 /** Production when this invocation said `--prod`; otherwise nothing is named and it is the sandbox. */
 export function theChosenWorld(): World | undefined {
-  return production ? PRODUCTION : undefined;
+  return chosen.getStore();
 }
 
 /** What the gateway says this key is, in the world this command asked for. */
