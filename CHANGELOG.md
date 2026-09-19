@@ -6,6 +6,11 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Changed
+- **`--voice` says what the caller sounds like now.** The gateway reads a simulated caller's lines
+  in an ElevenLabs voice the agent does not have, in the agent's language (runtime); `simulate
+  --help` and the testing page no longer speak of the box's speech tool.
+
 ## 0.8.0 — Simulations you hear, Settings you pick from
 
 ### Changed
