@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { FakeGateway } from "../../src/client/testing/index.js";
 import { Pinecall } from "../../src/client/index.js";
-import { aLostSocket } from "../../src/cli/run.js";
+import { aLostSocket } from "../../src/cli/start.js";
 
 const KEY = "pk_test_key";
 

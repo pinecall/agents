@@ -7,25 +7,56 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **`pinecall link`: a project's folder is linked to one org.** In the project's folder it signs
+  the machine in through the browser if it is not, asks which of your orgs this is (`--org`
+  names it), mints your key there and writes `PINECALL_KEY` — and `PINECALL_URL` when the gateway
+  is not the cloud — into `./.env`, leaving every other line as it was, and warns when `.env` is
+  not in `.gitignore`. A second org is a second folder.
+- **One key per person, and `--prod` on any verb.** Your role says what you do; a per-person
+  **production** switch, set by an admin (an admin's is always on), says whether you may do it in
+  production. `--prod` anywhere on the line sends `pinecall-env: production` for that command; the
+  gateway answers `403 <name> has no production access: an admin gives it in Team` when the switch
+  is off. Nothing named is the sandbox. `pinecall whoami` ends `· production: yes|no`.
 - **`pinecall agent`: what the org set over the class, per world and per corner, a version a row.**
   The three corners on one page — yours, the team's, production's — `set` with the version it
   was read at (a corner that moved is told so, never written over), `clear`, `history`, `diff`,
-  `rollback`, the two hops of `promote` (yours to the team's; the team's sandbox to production,
-  carrying the goldens beside the agent and refusing when one does not hold), and `pull`/`push`
-  for whoever keeps a corner in git. `list` prints the agents held. The class's own `voice`,
-  `llm`, `stt`, `greeting`, `hangup`, `memory` and `docs` seed a world that has nothing set, once;
-  after that **the world wins**, and `pinecall run` prints one line per field the class still
-  says differently, with what to delete.
+  `rollback`, and `pull`/`push` for whoever keeps a corner in git; `--team` writes the team's,
+  `--prod` production's. `list` prints the agents held. The class's own `voice`, `llm`, `stt`,
+  `greeting`, `hangup`, `memory` and `docs` seed a world that has nothing set, once; after that
+  **the world wins**, and `pinecall start` prints one line per field the class still says
+  differently, with what to delete.
 - **`pinecall lexicon`**: the org's words — how the voice says a brand, what the ears must know —
-  laid over every agent's own `says` and `hears`, whole and versioned, promoted with no goldens
-  between. A supervisor's or a manager's key opens it (`words`). **`pinecall memory policy`** is
+  laid over every agent's own `says` and `hears`, whole and versioned per corner, production's with
+  `--prod`. A supervisor's or a manager's key opens it (`words`). **`pinecall memory policy`** is
   the memory field of the settings on its own.
 - **Agent ▸ Settings and Org ▸ Lexicon in the console.** The corners, the form, the history with
-  roll back, promote yours to the team; the gateway's console reads production and rolls it back,
-  and says which verb writes it. A `words` key sees the opening and the memory as fields and
-  nothing else.
+  roll back. On the gateway's console both are **editable**: they write production's corner
+  directly, with its history and rollback. A `words` key sees the opening and the memory as fields
+  and nothing else.
+- **Tokens, where Keys was** (`/tokens`, open to every key): your own keys, and **New server
+  token** — a label and a world, production's only for somebody with production access — shown
+  once as `PINECALL_KEY=…` for the server's secrets. A server token (`pc_live_`/`pc_test_`) is the
+  org's and outlives whoever made it; the list says which world, whose ("the org's · made by Ana",
+  "Bruno · their own"), when it was last used, and revokes. Overview says "New server token" and
+  "Tokens in use".
+- **Team ▸ Production**: a switch per person (an admin's reads *always*), and one in the invite
+  form. A person without it who opens the gateway's console sees **No production access**.
+- **The SDK takes the world.** `new Pinecall({ url, apiKey, env: "production" })` for a person's
+  key; a server's token needs none. `World` is exported from `pinecall/client`. With `mount`, an
+  app runs the agent inside its own server — `docs/production.md`.
 
 ### Changed
+- **`pinecall run` is `pinecall start`.** `pinecall start --prod` runs production's agent, on a
+  person's key with production access or on a server's token; `--serve` stays the sandbox's.
+- **The key is the project's.** Every verb reads `PINECALL_KEY` and `PINECALL_URL` from the
+  environment, else from the nearest `.env` up from where it runs; the gateway is
+  `https://box.pinecall.io` unless one names another. v1's `PINECALL_API_KEY` is never read. The
+  first line says `key from the environment` or the `.env`'s path.
+- **`pinecall login` only signs the machine in**, kept in `~/.pinecall/session.json` (0600,
+  `PINECALL_HOME` moves it) with the phone `pinecall line from` said; no verb runs on that key,
+  `link` mints from it.
+- **The local console, refused, says** *This project is not linked*: `pinecall link`, then
+  `pinecall serve`.
 - **`pinecall pipeline` reads.** `set` and `clear` say where they went (`pinecall agent set`) and
   exit 2; the Pipeline tab lost its form and points at Settings. The hold melody stays where it was.
 - **`agents` left the planned verbs**: it is `pinecall agent list`.
@@ -38,9 +69,16 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   or off, with **Listen** before a caller does. It has its own doors (`…/pipeline/hold-audio`) and
   is saved when chosen, never by the knobs' Save, which replaces their whole set.
 
-### Changed
-- **`pinecall config --help` says the whole order**: `--profile`, then the org the project's
-  package.json names, then the active profile — and what `--prod` does. It said the ▸ alone.
+### Removed
+- **Profiles**: `~/.pinecall/config.json`, `pinecall config`, `pinecall use`, `pinecall gateway`,
+  `--profile`, `pinecall login --key-stdin`/`--as`, and the `"pinecall": { "org" }` field of a
+  package.json. A project is linked instead; a server keeps its token in its secrets.
+- **`pinecall keys`**: a server's token is made in the console's Tokens screen.
+- **`--env` on `start` and `chat`**: `--prod` says the world. `numbers move --env` is unchanged.
+- **Promote, for settings and words**: `pinecall agent promote`, `pinecall lexicon promote` and
+  the console's Promote buttons. `--prod` writes production directly, history and rollback are the
+  safety, and the goldens (`pinecall test`, `pinecall knowledge eval`) run in CI before a deploy.
+  `pinecall runs promote`, a call written down as a golden candidate, is unchanged.
 
 ## 0.4.0 — The project names its org, `--prod` looks at production, and no signup
 

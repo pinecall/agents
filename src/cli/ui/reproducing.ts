@@ -30,7 +30,7 @@ const NOT_HERE = (run: string): string =>
   "and a run that was green wrote none";
 
 /**
- * One `Reproducing` for the life of a `pinecall run`. A reproduction is a FILE the suite left in
+ * One `Reproducing` for the life of a `pinecall start`. A reproduction is a FILE the suite left in
  * the directory it ran in — `.pinecall/evals/<run>/<golden>.json` — so the page can only have it
  * through the process standing there. It carries the one thing the log deliberately does not: the
  * requests the model actually answered, region by region, because the log keeps a hash of each

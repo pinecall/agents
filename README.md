@@ -57,22 +57,29 @@ on a laptop in one sitting. To read this code or run the two examples, clone ins
 ```
 pnpm install                       nothing to build: the checkout runs from its sources
 cd examples/clinica-norte
+pnpm exec pinecall link            sign in through a browser, pick the org: your key, in ./.env
 pnpm exec pinecall chat            the agent in this terminal, and a prompt against it
 pnpm exec pinecall prompt --state test/prompts/states.json   the exact prompt a state produces
-pnpm exec pinecall run             the app: the process you deploy
-pnpm exec pinecall run --serve     the same, and its console on http://localhost:4100
+pnpm exec pinecall start           the app: the process you deploy
+pnpm exec pinecall start --serve   the same, and its console on http://localhost:4100
 pnpm exec pinecall serve           that console alone: your sandbox, on this machine
 pnpm exec pinecall knowledge push  ./knowledge/docs to the gateway, under the agent's name
 pnpm exec pinecall test            ring 1: the goldens, through the app in this process
 ```
 
 Two consoles, one per world. What you are running is in the sandbox and is watched on your own
-machine — `pinecall serve` forwards every request to the gateway with the terminal's key, so there
+machine — `pinecall serve` forwards every request to the gateway with the project's key, so there
 is nothing to sign in to. Production is watched on the gateway's own page, which shows production
 and nothing else. [docs/the-cli.md](docs/the-cli.md#serve).
 
-A tenant that installed `pinecall` from npm has it on the PATH and writes `pinecall run`. A
-repository of several agents keeps each in `agents/<name>.tsx`, and one `pinecall run` at its root
+Every verb reads `PINECALL_KEY` (and `PINECALL_URL`, when the gateway is not the cloud) from the
+environment, else from the project's `.env`, which `pinecall link` wrote; each is the sandbox until
+`--prod` says production, for a person whose org lets them act there. On a server the agent runs
+on a server's token from the console's Tokens screen, as `pinecall start --prod` or mounted inside
+your own Node app — [docs/production.md](docs/production.md).
+
+A tenant that installed `pinecall` from npm has it on the PATH and writes `pinecall start`. A
+repository of several agents keeps each in `agents/<name>.tsx`, and one `pinecall start` at its root
 holds them all — [docs/writing-an-agent.md](docs/writing-an-agent.md#several-agents-in-one-project).
 
 Working on the framework itself:
@@ -131,7 +138,8 @@ means editing a list on purpose, which is the point.
 | [docs/testing-an-agent.md](docs/testing-an-agent.md) | the five rings: unit tests, goldens, personas, one call replayed, the score every call gets |
 | [docs/testing-memory-and-knowledge.md](docs/testing-memory-and-knowledge.md) | memory's own goldens, the index's, and why a call has no retrieval score |
 | [docs/the-cli.md](docs/the-cli.md) | every verb, what it needs, and where its key comes from — one agent, or a project of several |
-| [docs/worlds-and-teams.md](docs/worlds-and-teams.md) | from the sign-up to the deploy: the two worlds, what is yours and what is the org's, the team and its seats |
+| [docs/worlds-and-teams.md](docs/worlds-and-teams.md) | one key per person, the production switch, the two worlds, a team from the invitation to the rollback |
+| [docs/production.md](docs/production.md) | running the agent on your own server: the server's token, the two ways, the release push, changes with `--prod` |
 | [CHANGELOG.md](CHANGELOG.md) · [CLAUDE.md](CLAUDE.md) | what changed · the working agreement |
 
 ## The wire

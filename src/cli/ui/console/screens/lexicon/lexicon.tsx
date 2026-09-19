@@ -8,7 +8,7 @@ import { useCredentials } from "../../../shared/credentials";
 import { dayAndTime } from "../../lib/format";
 import { MODE } from "../../lib/mode";
 import { Button, Card, CardHead, Check, Empty, Input, Page, PageHead, Refused, TextAction } from "../../ui";
-import { promoteLexicon, readLexicon, setLexicon } from "./door";
+import { readLexicon, setLexicon } from "./door";
 import "../pipeline/pipeline.css";
 import "./lexicon.css";
 
@@ -27,8 +27,8 @@ function wordsOf(row: LexiconRow | null): Words {
 }
 
 // The person who hears a brand said wrong forty times a day fixes it here, without a developer
-// and without a deploy: a supervisor's key opens this page. The gateway's console is production,
-// written by promote alone, so there the page reads and promotes; the sandbox's console sets.
+// and without a deploy: a supervisor's key opens this page. The gateway's console sets production's
+// words, while the person's org lets them act there; the sandbox's console sets yours or the team's.
 export function Lexicon(): ReactNode {
   const credentials = useCredentials();
   const [answer, setAnswer] = useState<LexiconAnswer | null>(null);
@@ -49,7 +49,7 @@ export function Lexicon(): ReactNode {
       (read) => {
         if (gone) return;
         setAnswer(read);
-        setWords(wordsOf(read.yours ?? read.team));
+        setWords(wordsOf(production ? read.production : (read.yours ?? read.team)));
       },
       (failed: unknown) => !gone && setRefused(saidBy(failed)),
     );
@@ -58,7 +58,7 @@ export function Lexicon(): ReactNode {
     };
   }, [credentials]);
 
-  const standing = answer === null ? null : team ? answer.team : answer.yours;
+  const standing = answer === null ? null : production ? answer.production : team ? answer.team : answer.yours;
 
   const save = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
@@ -69,23 +69,9 @@ export function Lexicon(): ReactNode {
     try {
       const kept = await setLexicon(credentials, body, standing?.version ?? null, note.trim() === "" ? null : note.trim(), team);
       setAnswer(kept);
-      setWords(wordsOf(team ? kept.team : (kept.yours ?? kept.team)));
+      setWords(wordsOf(production ? kept.production : team ? kept.team : (kept.yours ?? kept.team)));
       setNote("");
       setSaid("Kept as the next version. Every agent of the org says it from its next call in this corner.");
-    } catch (failed) {
-      setRefused(saidBy(failed));
-    } finally {
-      setSaving(null);
-    }
-  };
-
-  const promote = async (to: "team" | "production"): Promise<void> => {
-    setSaving("Promoting…");
-    setRefused(null);
-    try {
-      const promoted = await promoteLexicon(credentials, to);
-      setSaid(`${to === "production" ? "Production" : "The team's sandbox"} is at v${promoted.version}: every agent says it from the next call.`);
-      setAnswer(await readLexicon(credentials));
     } catch (failed) {
       setRefused(saidBy(failed));
     } finally {
@@ -118,18 +104,7 @@ export function Lexicon(): ReactNode {
       />
 
       <Card>
-        <CardHead title="Where every corner is" meta={answer?.world}>
-          {answer !== null && !production && answer.yours !== null && (
-            <Button size="sm" onClick={() => void promote("team")} disabled={saving !== null}>
-              Promote yours to the team
-            </Button>
-          )}
-          {answer !== null && !production && answer.team !== null && (
-            <Button size="sm" onClick={() => void promote("production")} disabled={saving !== null}>
-              Promote the team's to production
-            </Button>
-          )}
-        </CardHead>
+        <CardHead title="Where every corner is" meta={answer?.world} />
         {answer === null ? (
           <Empty>{refused ?? "Asking the gateway…"}</Empty>
         ) : (
@@ -162,22 +137,18 @@ export function Lexicon(): ReactNode {
                   <span className="lex-word">{one.word}</span>
                   <span className="lex-arrow">→</span>
                   <span className="lex-spoken">“{one.spoken}”</span>
-                  {!production && (
-                    <TextAction danger onClick={() => setWords({ ...words, said: words.said.filter((kept) => kept.word !== one.word) })}>
-                      Remove
-                    </TextAction>
-                  )}
+                  <TextAction danger onClick={() => setWords({ ...words, said: words.said.filter((kept) => kept.word !== one.word) })}>
+                    Remove
+                  </TextAction>
                 </div>
               ))}
-              {!production && (
-                <div className="lex-add">
-                  <Input size="sm" value={word} placeholder="the word, as written" onChange={(event) => setWord(event.target.value)} />
-                  <Input size="sm" value={spoken} placeholder="how it is said" onChange={(event) => setSpoken(event.target.value)} />
-                  <Button size="sm" onClick={add}>
-                    Add
-                  </Button>
-                </div>
-              )}
+              <div className="lex-add">
+                <Input size="sm" value={word} placeholder="the word, as written" onChange={(event) => setWord(event.target.value)} />
+                <Input size="sm" value={spoken} placeholder="how it is said" onChange={(event) => setSpoken(event.target.value)} />
+                <Button size="sm" onClick={add}>
+                  Add
+                </Button>
+              </div>
             </div>
             <div className="lex-heard">
               <div className="ui-label">Heard</div>
@@ -186,30 +157,24 @@ export function Lexicon(): ReactNode {
                 {words.heard.map((one) => (
                   <span key={one} className="ui-pill-muted lex-chip">
                     {one}
-                    {!production && (
-                      <TextAction onClick={() => setWords({ ...words, heard: words.heard.filter((kept) => kept !== one) })}>×</TextAction>
-                    )}
+                    <TextAction onClick={() => setWords({ ...words, heard: words.heard.filter((kept) => kept !== one) })}>×</TextAction>
                   </span>
                 ))}
               </div>
-              {!production && (
-                <div className="lex-add">
-                  <Input size="sm" value={hear} placeholder="words the ears must know, comma-separated" onChange={(event) => setHear(event.target.value)} />
-                  <Button size="sm" onClick={addHeard}>
-                    Add
-                  </Button>
-                </div>
-              )}
+              <div className="lex-add">
+                <Input size="sm" value={hear} placeholder="words the ears must know, comma-separated" onChange={(event) => setHear(event.target.value)} />
+                <Button size="sm" onClick={addHeard}>
+                  Add
+                </Button>
+              </div>
             </div>
           </div>
-          {!production && (
-            <div className="pipe-save">
-              <Input value={note} placeholder="why, for the history" onChange={(event) => setNote(event.target.value)} />
-              <Button kind="primary" size="form" type="submit" disabled={saving !== null}>
-                {saving ?? "Save as the next version"}
-              </Button>
-            </div>
-          )}
+          <div className="pipe-save">
+            <Input value={note} placeholder="why, for the history" onChange={(event) => setNote(event.target.value)} />
+            <Button kind="primary" size="form" type="submit" disabled={saving !== null}>
+              {saving ?? "Save as the next version"}
+            </Button>
+          </div>
         </form>
       )}
 

@@ -184,8 +184,9 @@ function line(call: string, endedAt: number, said: { live?: boolean } = {}): Ses
 // The verb needs a door before it knocks; `fetch` is stubbed below, so which gateway it is does
 // not matter — only that this machine knows one at all.
 function aProfile(): void {
-  const home = pointingAt("http://127.0.0.1:1", "pk_nobody_will_ever_deploy_this")["PINECALL_HOME"]!;
-  vi.stubEnv("PINECALL_HOME", home);
+  const env = pointingAt("http://127.0.0.1:1", "pk_nobody_will_ever_deploy_this");
+  vi.stubEnv("PINECALL_KEY", env["PINECALL_KEY"]!);
+  vi.stubEnv("PINECALL_URL", env["PINECALL_URL"]!);
 }
 
 function aGateway(said: { broken?: number } = {}): void {

@@ -26,7 +26,7 @@ export interface Wanted {
   packet_loss?: number;
 }
 
-/** The personas of the directory `pinecall run` was typed in, and which class they are for. */
+/** The personas of the directory `pinecall start` was typed in, and which class they are for. */
 export async function readRoster(credentials: Credentials, agent: string): Promise<Roster> {
   return RosterSchema.parse(await dev(credentials, agent, "simulate.roster"));
 }

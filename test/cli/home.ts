@@ -1,21 +1,16 @@
-// A ~/.pinecall of this test's own, with one profile in it. Every CLI test used to hand a verb
-// its key through PINECALL_URL and PINECALL_API_KEY, because there was nowhere else to put one;
-// there is a file now, and a verb reads only that.
+// What a verb reads its key and gateway from, for a test: the process's environment, the way a
+// server's secrets hand them over. A project's `.env` is read the same way (env.test.ts).
 
-import { mkdtempSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
-import { writeProfile } from "../../src/cli/profiles.js";
-
-/** An environment whose whole content is a home with one active profile pointing at that gateway. */
+/** An environment whose whole content is that gateway and that key. */
 export function pointingAt(url: string, key: string): NodeJS.ProcessEnv {
-  const home = mkdtempSync(join(tmpdir(), "pinecall-home-"));
-  writeProfile("test", { url, key }, home);
-  return { PINECALL_HOME: home };
+  return { PINECALL_KEY: key, PINECALL_URL: url };
 }
 
-/** A home with no profile at all: what a machine that has never logged in looks like. */
+/**
+ * An environment with no key in it. The verb then looks for a `.env` up from where the suite runs,
+ * and this checkout keeps none — `.env` is git-ignored, and a test that found one would be reading
+ * somebody's own key.
+ */
 export function pointingNowhere(): NodeJS.ProcessEnv {
-  return { PINECALL_HOME: mkdtempSync(join(tmpdir(), "pinecall-home-")) };
+  return {};
 }

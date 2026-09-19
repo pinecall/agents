@@ -6,6 +6,7 @@ import type { AddressInfo } from "node:net";
 import { extname, join, normalize, resolve, sep } from "node:path";
 import { Readable } from "node:stream";
 
+import { signed as signedBy } from "../../client/signed.js";
 import type { Door } from "../testing/gateway.js";
 
 // Loopback only: nothing on the network can reach this console.
@@ -14,7 +15,7 @@ const LOOPBACK = "127.0.0.1";
 /** The port a person remembers: `http://localhost:4100` is the sandbox's console on every laptop. */
 export const DEFAULT_PORT = 4100;
 
-/** Where a sidecar says what it is, so a `pinecall run` beside it can tell one from a stranger's port. */
+/** Where a sidecar says what it is, so a `pinecall start` beside it can tell one from a stranger's port. */
 export const ABOUT = "/.pinecall/serve";
 
 // The gateway's doors, as the console asks for them. Everything else is a file of the console, or
@@ -139,7 +140,7 @@ export class LocalConsole {
   // The one place the key is spent. The response streams back as it arrives, which is what a log
   // over SSE needs; a browser that navigates away aborts the request behind it.
   async #forward(request: IncomingMessage, response: ServerResponse, path: string, signed: boolean): Promise<void> {
-    const headers: Record<string, string> = signed ? { authorization: `Bearer ${this.#door.apiKey}` } : {};
+    const headers: Record<string, string> = signed ? signedBy(this.#door.apiKey, this.#door.world) : {};
     for (const name of FORWARDED) {
       const value = request.headers[name];
       if (typeof value === "string") headers[name] = value;

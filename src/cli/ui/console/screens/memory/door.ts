@@ -34,7 +34,7 @@ export async function forgetContact(credentials: Credentials, contact: string): 
   return ForgottenSchema.parse(await drop(credentials, `/v1/contacts/${encodeURIComponent(contact)}/memory`));
 }
 
-/** What the agent's directory holds: the two goldens, read off its disk by the `pinecall run` there. */
+/** What the agent's directory holds: the two goldens, read off its disk by the `pinecall start` there. */
 export async function readHere(credentials: Credentials, agent: string): Promise<Here> {
   return HereSchema.parse(await dev(credentials, agent, "memory.roster", { agent }));
 }

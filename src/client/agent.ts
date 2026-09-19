@@ -47,7 +47,7 @@ const ANSWER_MS = 10_000;
 export type DevHandler = (verb: DevVerb, data: Record<string, unknown>) => Promise<Record<string, unknown>>;
 
 // A process that registered no handler is a plain app, and a console asking it is told so.
-const NO_DEV_HANDLER = "this process answers no dev verbs: it is not a `pinecall run` in the agent's directory";
+const NO_DEV_HANDLER = "this process answers no dev verbs: it is not a `pinecall start` in the agent's directory";
 
 type Waiter = { type: EventType; id: string; settle: (data: unknown) => void; refuse: (error: Error) => void };
 
@@ -112,7 +112,7 @@ export class Agent implements CallGateway {
 
   /**
    * Answer a console's asks of this process — `dev.request`, relayed by the gateway. Only the
-   * process standing in the agent's directory has one: `pinecall run` registers it, a plain app
+   * process standing in the agent's directory has one: `pinecall start` registers it, a plain app
    * never does, and a console asking a plain app is told so.
    */
   onDev(handler: DevHandler): void {

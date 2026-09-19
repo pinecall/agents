@@ -66,14 +66,14 @@ const A_LOOK_EVERY_MS = 250;
 
 const NOT_THIS_DIRECTORY = (asked: string, here: string | null): string =>
   here === null
-    ? `no agent class in this directory: run \`pinecall run\` where ${asked}'s agent.tsx is`
-    : `this process runs in ${here}'s directory: to run ${asked}'s goldens, run \`pinecall run\` there`;
+    ? `no agent class in this directory: run \`pinecall start\` where ${asked}'s agent.tsx is`
+    : `this process runs in ${here}'s directory: to run ${asked}'s goldens, run \`pinecall start\` there`;
 
 const ONLY_ON_A_LINE = "background noise and packet loss are about audio: a spoken run";
 const NO_RUN = "the suite ended before the gateway opened a run";
 
 /**
- * One `Testing` for the life of a `pinecall run`: the door it was opened with, the class of the
+ * One `Testing` for the life of a `pinecall start`: the door it was opened with, the class of the
  * directory it runs in, and where the report goes — the terminal that typed `ui`, exactly as
  * `pinecall test` prints it. The run itself is read from the page off `GET /v1/evals/runs`, like
  * any other run; the reproductions are written where the verb writes them.

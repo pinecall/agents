@@ -7,7 +7,7 @@ import { GatewayError } from "../../../shared/api";
 import { useCredentials } from "../../../shared/credentials";
 import { meIn } from "../../lib/corners";
 import { useWhoami } from "../../lib/whoami";
-import { Button, Card, CardHead, Empty, Field, Input, Page, PageHead, Refused, Select, TableHead, Tabs, TextAction } from "../../ui";
+import { Button, Card, CardHead, Empty, Field, Input, Page, PageHead, Refused, Select, Switch, TableHead, Tabs, TextAction } from "../../ui";
 import { change, invite, readMembers, removeMember, resetLink, ROLES, type Invited, type Member } from "./door";
 import { COLUMNS, MemberRow } from "./member-row";
 import { Roles } from "./roles";
@@ -141,14 +141,14 @@ export function Team(): ReactNode {
                 <Empty>Nobody is a member yet: the org's machine key alone opens its doors. Invite the first person.</Empty>
               ) : (
                 <>
-                  <TableHead columns={COLUMNS} labels={["Name", "Email", "Role", "Agents", "Status>", ""]} />
+                  <TableHead columns={COLUMNS} labels={["Name", "Email", "Role", "Agents", "Production", "Status>", ""]} />
                   {members.map((member) => (
                     <MemberRow
                       key={member.id}
                       member={member}
                       onChange={(said) => changed(member.id, said)}
                       onResend={async () => {
-                        await inviteOne({ email: member.email, name: member.name, role: member.role, agents: member.agents });
+                        await inviteOne({ email: member.email, name: member.name, role: member.role, agents: member.agents, production: member.production });
                       }}
                       onReset={() => reset(member.id)}
                       onRemove={() => remove(member.id)}
@@ -214,6 +214,7 @@ function InviteForm({
   const [name, setName] = useState("");
   const [role, setRole] = useState<Member["role"]>("qa");
   const [agents, setAgents] = useState("");
+  const [production, setProduction] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const submit = async (event: FormEvent): Promise<void> => {
@@ -225,6 +226,7 @@ function InviteForm({
         name: name.trim(),
         role,
         agents: agents.split(/[\s,]+/).filter((one) => one !== ""),
+        production,
       });
     } finally {
       setBusy(false);
@@ -251,6 +253,13 @@ function InviteForm({
         </Field>
         <Field label="Agents" minWidth={150}>
           <Input placeholder="every agent" value={agents} onChange={(event) => setAgents(event.target.value)} />
+        </Field>
+        <Field label="Production" minWidth={90}>
+          {role === "admin" ? (
+            <span className="ui-cell-faint">always</span>
+          ) : (
+            <Switch on={production} label="acts in production" onChange={setProduction} />
+          )}
         </Field>
         <Button kind="primary" size="form" type="submit" disabled={busy}>
           {busy ? "Inviting…" : "Invite"}

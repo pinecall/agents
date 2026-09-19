@@ -111,8 +111,8 @@ export function Knowledge(): ReactNode {
         {here !== null && !mine && (
           <Empty>
             {here.agent === null
-              ? "No agent class in the directory the agent's `pinecall run` runs in, so there is nothing here to push."
-              : `The process holding the agent runs in ${here.agent}'s directory: to push ${agent}'s knowledge, run \`pinecall run\` there.`}
+              ? "No agent class in the directory the agent's `pinecall start` runs in, so there is nothing here to push."
+              : `The process holding the agent runs in ${here.agent}'s directory: to push ${agent}'s knowledge, run \`pinecall start\` there.`}
           </Empty>
         )}
         {mine && (

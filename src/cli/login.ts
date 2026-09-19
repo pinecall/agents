@@ -1,18 +1,16 @@
-/** `pinecall login [gateway]`: signed in through a browser, and the key it mints kept in ~/.pinecall. */
+/** `pinecall login [gateway]`: this machine signed in through a browser, as a person, for `link` to mint from. */
 
 import { hostname } from "node:os";
 import { parseArgs } from "node:util";
 
 import { openInABrowser } from "./browser.js";
-import { pinecallHome, writeGateway } from "./credentials.js";
-import { activate, chosenGateway, nameFor, nameForOrg, readConfig, writeProfile, type Keys, type World } from "./profiles.js";
 import { CLOUD_URL } from "./env.js";
 import type { Group } from "./groups.js";
-import { aLineOfStdin } from "./secret.js";
+import { pinecallHome, signIn } from "./signed-in.js";
 import { asked } from "./testing/gateway.js";
-import { orgOf, refusal, whoIs, type Who } from "./whoami.js";
+import { refusal, whoIs, type Who } from "./whoami.js";
 
-const USAGE = "usage: pinecall login [gateway-url] [--as <profile>] [--key-stdin]";
+const USAGE = "usage: pinecall login [gateway-url]";
 
 // How often the terminal asks, and for how long. The gateway's word lives ten minutes, so this
 // gives up a little after it does rather than polling a word that cannot come back.
@@ -22,28 +20,20 @@ const GIVE_UP_MS = 11 * 60 * 1_000;
 const TOOK_TOO_LONG = "nobody approved this terminal: `pinecall login` again when you are ready";
 
 export const group: Group = {
-  purpose: "sign in through a browser and keep the key it mints",
+  purpose: "sign this machine in through a browser; `link` asks for it when it is needed",
   usage: `${USAGE}
 
   Prints a link and opens it. You sign in there — in a browser, where a password belongs — and
   the page hands this terminal a key of its OWN, minted for you and labelled as this machine, so
-  it is revoked on its own from the Keys screen. Nothing types a password into a shell, and the
-  day your org signs in with Google this verb does not change.
+  it is revoked on its own from Tokens. Nothing types a password into a shell, and the day your
+  org signs in with Google this verb does not change.
 
-  With no URL it is the gateway this machine is pointed at — ${CLOUD_URL} until \`pinecall gateway
-  <url>\` says otherwise — and it says which one out loud before anything is kept.
+  With no URL it is ${CLOUD_URL}, and it says so before anything is kept.
 
-  One login keeps everything you hold: a profile per org you belong to, named after the org,
-  each with your key in BOTH worlds. The sandbox one is in hand, so \`pinecall run\` and \`pinecall
-  chat\` answer in a world of your own and never in the one your customers call; \`pinecall use
-  <org>\` moves between orgs and \`pinecall use <org> production\` looks at production. --as keeps
-  ONE profile under a name of yours instead.
-
-  --key-stdin reads a KEY from one line of stdin instead, for a machine: a server, a CI job, a
-  container. That is what \`pinecall keys issue\` mints, and it writes the same profile — so a
-  machine and a person hold a key the same way, in a 0600 file read once rather than in an
-  environment every child process and every \`ps\` can read. PINECALL_HOME says where that file
-  goes, and it is the only variable this CLI reads.`,
+  The key is the machine's sign-in, kept in ~/.pinecall/session.json (0600; PINECALL_HOME moves
+  it), and no verb runs on it: a project runs on the key \`pinecall link\` writes into its own
+  .env. \`link\` signs the machine in itself when it is not, so this is rarely typed. A server has
+  no login at all: a server's token from Tokens, in its secrets as PINECALL_KEY.`,
   run: login,
 };
 
@@ -59,129 +49,40 @@ export interface Signing {
   until?: number;
 }
 
-/** Sign in through a browser, or keep a machine's key; either way it is proved before it is kept. */
+/** Sign this machine in through a browser; the key is proved before it is kept. */
 export async function login(argv: string[], how: Signing = {}): Promise<number> {
   const out = how.out ?? process.stdout;
   const err = how.err ?? process.stderr;
-  const { values, positionals } = parseArgs({
-    args: argv,
-    allowPositionals: true,
-    options: { "key-stdin": { type: "boolean", default: false }, as: { type: "string" } },
-  });
-  const { url, assumed } = theGateway(positionals[0], pinecallHome(how.env ?? process.env));
-  if (assumed !== undefined) out.write(`${assumed}\n`);
+  const { positionals } = parseArgs({ args: argv, allowPositionals: true, options: {} });
+  const url = positionals[0] ?? CLOUD_URL;
+  if (positionals[0] === undefined) out.write(`gateway  ${CLOUD_URL}   (the default — \`pinecall login <url>\` for your own)\n`);
+  return (await signedInThrough(url, how, out, err)) === null ? 1 : 0;
+}
 
-  const key =
-    values["key-stdin"] === true ? (await aLineOfStdin()).trim() : await throughABrowser(url, how, out, err);
-  if (key === null) return 1;
-  if (key === "") {
-    err.write("no key was typed: nothing was kept\n");
-    return 2;
-  }
-
-  // Proved before it is kept, whichever way it was got: a key that opens nothing is a file a
-  // person will trust tomorrow and a refusal they will not understand.
+/**
+ * The browser's dance, the key proved, and this machine signed in: what `login` is and what
+ * `link` does first on a machine that never signed in. The key, or null once the refusal was said.
+ */
+export async function signedInThrough(
+  url: string,
+  how: Signing,
+  out: NodeJS.WritableStream,
+  err: NodeJS.WritableStream,
+): Promise<string | null> {
+  const key = await throughABrowser(url, how, out, err);
+  if (key === null) return null;
+  // Proved before it is kept: a key that opens nothing is a file a person will trust tomorrow and
+  // a refusal they will not understand.
   let who: Who;
   try {
     who = await whoIs({ url, apiKey: key });
   } catch (refused) {
     err.write(`${refusal(refused)}\n`);
-    return 1;
-  }
-  const environment = how.env ?? process.env;
-  const home = pinecallHome(environment);
-  // The slug and not the id, in the file as on the line: a person opening the config to see which
-  // org a gateway is has to read a word they recognise.
-  //
-  // It is kept twice on purpose, for exactly one release: `config.json` is what every verb reads
-  // now, and `credentials` is what v1's CLI on this same machine still reads. The second write
-  // goes with the second half of this change.
-  const name = values.as ?? nameFor(url, readConfig(home));
-  const kept = await everyOrgOfTheirs({ url, apiKey: key }, who, values.as ?? name, values.as !== undefined, home);
-  writeGateway(url, { api_key: key, org: orgOf(who) }, home);
-  for (const line of kept) out.write(`${line}\n`);
-  return 0;
-}
-
-// What a person held was ONE key: the sandbox of whichever org of theirs was oldest. A second org,
-// or a look at production, meant logging in again with a flag nobody could guess. The gateway
-// mints the rest from the key in hand (POST /v1/login/org, POST /v1/login/env), so the login does
-// it here, once: a profile per org, both worlds in each, and `pinecall use` is the whole of moving.
-/** Every org this key's person belongs to, kept as a profile each, with the keys of both worlds. */
-async function everyOrgOfTheirs(door: Door, who: Who, fallback: string, named: boolean, home: string): Promise<string[]> {
-  const world = who.env as World;
-  // `--as` names ONE profile, and a machine key names nobody: both keep exactly the key in hand.
-  const mine = named ? [] : await theirOrgs(door);
-  if (mine.length === 0) {
-    const keys = await bothWorlds(door, world);
-    writeProfile(fallback, { url: door.url, key: door.apiKey, keys, org: orgOf(who), env: who.env }, home);
-    return [`▸ ${fallback} · ${door.url} · org ${orgOf(who)} · ${worldsIn(keys, world)}`];
-  }
-  const said: string[] = [];
-  let here: string | undefined;
-  for (const org of mine) {
-    const key = org.here ? door.apiKey : await inThatOrg(door, org.org);
-    if (key === null) continue;
-    const name = nameForOrg(org.slug ?? org.org, door.url, readConfig(home));
-    const keys = await bothWorlds({ url: door.url, apiKey: key }, world);
-    writeProfile(name, { url: door.url, key, keys, org: org.slug ?? org.org, env: who.env }, home);
-    if (org.here) here = name;
-    said.push(`${org.here ? "▸" : " "} ${name} · ${door.url} · ${worldsIn(keys, world)}`);
-  }
-  // The org they signed in to is the one in hand; the rest are a `pinecall use` away.
-  if (here !== undefined) activate(here, home);
-  if (said.length > 1) said.push("  `pinecall use <org>` moves between them; `pinecall use <org> production` looks at production");
-  return said;
-}
-
-/** The orgs the person holds a key in, or none for a machine key and for a gateway without the door. */
-async function theirOrgs(door: Door): Promise<Mine[]> {
-  try {
-    return (await asked<{ orgs: Mine[] }>(door, "/v1/login/orgs", { method: "GET" })).orgs.filter((org) => org.member !== false);
-  } catch {
-    return [];
-  }
-}
-
-/** The same person's key in another org of theirs, or null when the gateway would not mint one. */
-async function inThatOrg(door: Door, org: string): Promise<string | null> {
-  try {
-    return (await asked<{ key: string }>(door, "/v1/login/org", { method: "POST", body: { org } })).key;
-  } catch {
     return null;
   }
-}
-
-/** This key and its sibling in the other world, when the gateway mints one for this person. */
-async function bothWorlds(door: Door, world: World): Promise<Keys> {
-  const other: World = world === "sandbox" ? "production" : "sandbox";
-  const keys: Keys = { [world]: door.apiKey };
-  try {
-    keys[other] = (await asked<{ key: string }>(door, "/v1/login/env", { method: "POST", body: { env: other } })).key;
-  } catch {
-    // A machine key opens one world and may not mint the other: the profile holds what there is.
-  }
-  return keys;
-}
-
-// The world in hand first and marked, so the line reads as where the next verb goes.
-function worldsIn(keys: Keys, inHand: World): string {
-  const other: World = inHand === "sandbox" ? "production" : "sandbox";
-  return keys[other] === undefined ? inHand : `${inHand} (and ${other})`;
-}
-
-interface Door {
-  url: string;
-  apiKey: string;
-}
-
-/** One row of `GET /v1/login/orgs`: the org, the word a person reads, and whether this key is its. */
-interface Mine {
-  org: string;
-  slug?: string | null;
-  here: boolean;
-  /** False where an operator may enter without belonging: not theirs to keep a profile of. */
-  member?: boolean;
+  signIn(url, key, pinecallHome(how.env ?? process.env));
+  out.write(`signed in to ${url} as ${who.name ?? who.label ?? "this key's person"}\n`);
+  return key;
 }
 
 /**
@@ -212,23 +113,6 @@ async function throughABrowser(
   out.write(`\nopen this to sign in:\n${link}\n\nwaiting…\n`);
   (how.open ?? openInABrowser)(link);
   return await collected(door, opened.code, how, err);
-}
-
-/**
- * Which gateway this login is for, and the line to print when nobody said.
- *
- * A URL nobody typed is the cloud's, and that is said OUT LOUD before anything is kept: a person
- * who meant their own box has to be able to see that this one was assumed, in the line above the
- * link, rather than discovering it in `pinecall whoami` tomorrow.
- */
-export function theGateway(named: string | undefined, home?: string): { url: string; assumed?: string } {
-  if (named !== undefined) return { url: named };
-  const chosen = chosenGateway(home);
-  if (chosen !== undefined) return { url: chosen, assumed: `gateway  ${chosen}   (this machine's, from \`pinecall gateway\`)` };
-  return {
-    url: CLOUD_URL,
-    assumed: `gateway  ${CLOUD_URL}   (the default — \`pinecall gateway <url>\` for your own box)`,
-  };
 }
 
 /** Where the person signs this terminal in: the gateway's own page, carrying the word. */

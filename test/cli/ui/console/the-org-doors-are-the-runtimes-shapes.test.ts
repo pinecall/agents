@@ -24,7 +24,7 @@ const A_USAGE_PAGE = {
 const A_DOOR = { route: { org: "clinica", agent: "clinica-norte", channel: "phone", number: "+34910000000", label: null, env: "production" }, source: "app" };
 
 // runtime api/members.py: one member as the wire says it.
-const A_MEMBER = { id: "m_1", email: "ana@clinica.uy", name: "Ana", role: "supervisor", agents: ["clinica-norte"], status: "active", scopes: ["calls", "evals", "supervise", "talk"] };
+const A_MEMBER = { id: "m_1", email: "ana@clinica.uy", name: "Ana", role: "supervisor", agents: ["clinica-norte"], status: "active", scopes: ["calls", "evals", "supervise", "talk"], production: true };
 
 function answering(body: unknown): void {
   globalThis.window = { location: { origin: "https://box.pinecall.io" } } as unknown as Window & typeof globalThis;
@@ -45,6 +45,7 @@ test("a number is a route with its source, and a member is who they are with wha
   expect((await readNumbers(CREDENTIALS))[0]?.source).toBe("app");
   answering({ members: [A_MEMBER] });
   expect((await readMembers(CREDENTIALS))[0]?.scopes).toContain("supervise");
+  expect((await readMembers(CREDENTIALS))[0]?.production).toBe(true);
   answering({ members: [{ ...A_MEMBER, role: "owner" }] });
   await expect(readMembers(CREDENTIALS)).rejects.toBeInstanceOf(z.ZodError);
 });

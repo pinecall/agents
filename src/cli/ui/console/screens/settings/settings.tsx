@@ -1,4 +1,4 @@
-/** Settings: what the org set over the class — yours, the team's, production's — set, kept, promoted. */
+/** Settings: what the org set over the class — yours, the team's, production's — set, kept, rolled back. */
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useParams } from "react-router";
@@ -10,9 +10,9 @@ import { useCredentials } from "../../../shared/credentials";
 import { dayAndTime } from "../../lib/format";
 import { MODE } from "../../lib/mode";
 import { useScopes } from "../../lib/whoami";
-import { Button, Card, CardHead, Check, Empty, Page, PageHead, Refused, TableHead } from "../../ui";
+import { Card, CardHead, Check, Empty, Page, PageHead, Refused, TableHead } from "../../ui";
 import { readPipeline, type Report } from "../pipeline/door";
-import { edited, FIELDS, LABEL, promoteToTeam, readHistory, readSettings, rollbackTo, setSettings, shown } from "./door";
+import { edited, FIELDS, LABEL, readHistory, readSettings, rollbackTo, setSettings, shown } from "./door";
 import { SettingsForm } from "./form";
 import { History } from "./history";
 import "../pipeline/pipeline.css";
@@ -24,10 +24,10 @@ function saidBy(failed: unknown): string {
   return failed instanceof Error ? failed.message : String(failed);
 }
 
-// The gateway's console is production, and production is written by promote alone: the page
-// there reads and rolls back, and says which verb writes it. The sandbox's console sets — your own
-// corner, or the team's with the box ticked. A key that opens words and not the pipeline sets the
-// opening and what is remembered, and sees nothing else as a field.
+// The gateway's console is production and sets production's corner — the gateway lets a person
+// write there while their org lets them act in production, and says so when it does not. The
+// sandbox's console sets your own corner, or the team's with the box ticked. A key that opens
+// words and not the pipeline sets the opening and what is remembered, and sees nothing else.
 export function Settings(): ReactNode {
   const credentials = useCredentials();
   const agent = useParams()["agent"] ?? "";
@@ -70,7 +70,7 @@ export function Settings(): ReactNode {
     setRefused(null);
     try {
       setAnswer(await setSettings(credentials, agent, { config, if_version: ifVersion, note, team }));
-      setHistory(await readHistory(credentials, agent, team));
+      setHistory(await readHistory(credentials, agent, production || team));
     } catch (failed) {
       setRefused(saidBy(failed));
     } finally {
@@ -89,17 +89,6 @@ export function Settings(): ReactNode {
     }
   };
 
-  const promote = async (): Promise<void> => {
-    setRefused(null);
-    try {
-      const promoted = await promoteToTeam(credentials, agent);
-      setSaid(`Yours is the team's v${promoted.version}: every colleague's next call reads it.`);
-      await reread();
-    } catch (failed) {
-      setRefused(saidBy(failed));
-    }
-  };
-
   const standing = answer === null ? null : edited(answer, production || team);
 
   return (
@@ -107,7 +96,7 @@ export function Settings(): ReactNode {
       <PageHead
         title="Settings"
         ledeWidth={680}
-        lede="What the org set over the class, per world and per corner, a version a row: which vendors and models, how the call opens and ends, how a turn is cut, what is remembered, which bases are read. Set here, kept forever, promoted from the sandbox to production once the goldens hold."
+        lede="What the org set over the class, per world and per corner, a version a row: which vendors and models, how the call opens and ends, how a turn is cut, what is remembered, which bases are read. Set here, in the world this console looks at, and kept forever: every version, who set it, and a roll back."
       />
 
       <Card>
@@ -138,25 +127,13 @@ export function Settings(): ReactNode {
         )}
       </Card>
 
-      {answer !== null && production ? (
-        <Card pad>
-          <Empty>
-            Production is written by promote, never set here: set it in the sandbox — <code>pinecall serve</code> — and promote it with <code>pinecall agent promote --to production</code>, which runs the agent's goldens first. Rolling back to a version production already ran is allowed below.
-          </Empty>
-        </Card>
-      ) : (
-        answer !== null && (
+      {answer !== null && (
           <>
-            {!wordsOnly && (
+            {!wordsOnly && !production && (
               <div className="set-corner-pick">
                 <Check checked={team} onChange={setTeam}>
                   Write the team's corner, which every corner falls back to — not only yours
                 </Check>
-                {answer.yours !== null && (
-                  <Button size="sm" onClick={() => void promote()}>
-                    Promote yours to the team
-                  </Button>
-                )}
               </div>
             )}
             <SettingsForm
@@ -171,7 +148,6 @@ export function Settings(): ReactNode {
               onSave={save}
             />
           </>
-        )
       )}
 
       <History kept={history} canRollBack={!wordsOnly} onRollBack={rollBack} />

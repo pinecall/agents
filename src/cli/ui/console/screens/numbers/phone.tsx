@@ -29,7 +29,7 @@ export function PhoneTesting(): ReactNode {
   // commands and leaves the numbers to the gateway's own console.
   const [numbers, setNumbers] = useState<ToCall[] | null>(null);
   // The phones the gateway knows are this person's. It keeps them beside a live socket, so with
-  // no `pinecall run` up it knows none — which is also when none would be diverted.
+  // no `pinecall start` up it knows none — which is also when none would be diverted.
   const [calling, setCalling] = useState<string[]>([]);
 
   useEffect(() => {
@@ -67,7 +67,7 @@ export function PhoneTesting(): ReactNode {
         <SectionLabel>Once per machine</SectionLabel>
         <pre className="ui-code">pinecall line from +1XXXXXXXXXX     # this mobile is mine</pre>
         <SectionLabel ruled>While you work</SectionLabel>
-        <pre className="ui-code">{"pinecall run --serve                # your copies up, and this console\npinecall line forget                # give your calls back to production"}</pre>
+        <pre className="ui-code">{"pinecall start --serve                # your copies up, and this console\npinecall line forget                # give your calls back to production"}</pre>
         <div className="ui-card-foot">
           <span>
             The call shows up here, in Sessions, marked <span className="ui-fixed">diverted_from: production</span>.
@@ -109,7 +109,7 @@ export function PhoneTesting(): ReactNode {
         <div className="num-body">
           {mine.length === 0 ? (
             <>
-              Nothing: no copy of yours is running, so your calls reach production. Start <span className="ui-fixed">pinecall run</span> in the project.
+              Nothing: no copy of yours is running, so your calls reach production. Start <span className="ui-fixed">pinecall start</span> in the project.
             </>
           ) : calling.length === 0 ? (
             <>
@@ -119,7 +119,7 @@ export function PhoneTesting(): ReactNode {
           ) : (
             <>
               Your copy of {mine.map((held) => held.slug).join(", ")}, from {calling.map(prettyNumber).join(", ")} — for as long as{" "}
-              <span className="ui-fixed">pinecall run</span> stays up.
+              <span className="ui-fixed">pinecall start</span> stays up.
             </>
           )}
         </div>

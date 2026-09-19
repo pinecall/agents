@@ -1,60 +1,43 @@
-/** Which world a verb works in. The KEY decides it; `--env` is how a person says they know which. */
+/** Which world a verb works in: the sandbox, or production when `--prod` names it for one command. */
 
+import type { World } from "../client/signed.js";
 import type { Open } from "./env.js";
-import { theChosenWorld } from "./profiles.js";
 import { refusal, whoIs, type Who } from "./whoami.js";
 
 /** The world a laptop is in: what is being written, held per person, nobody's customers calling. */
-export const SANDBOX = "sandbox";
+export const SANDBOX: World = "sandbox";
 
-/** The world a deployment is in: the org's own, held by a key issued for a machine. */
-export const PRODUCTION = "production";
+/** The world the org's customers reach. A person acts there while their org lets them. */
+export const PRODUCTION: World = "production";
 
-const WORLDS = [PRODUCTION, SANDBOX];
+// Read once per invocation, off argv, before any group sees it — so every verb goes where the
+// command said without each of them parsing the flag. The one piece of process-wide state this
+// CLI keeps, and it is reset on every parse.
+let production = false;
 
 /**
- * The `--env` every registering verb takes, declared once so the flag is spelled in one place.
+ * Take `--prod` out of an invocation's argv, and remember it.
  *
- * It selects NOTHING. A key opens one world and that is a property of the key, so a flag that
- * chose would be a flag that lies: what this one does is say out loud which world you believe you
- * are in, and refuse when the key disagrees. Sandbox is what a verb assumes when nothing is said,
- * because a laptop is where things are written and a deployment is the deliberate act.
+ * Returns what is left, so the group sees only its own flags. `--prod` belongs to no group: it says
+ * which world THIS command runs in, and the gateway lets it through only while the person's row
+ * opens production. Nothing is kept: the next command is in the sandbox again.
  */
-export const ENV_FLAG = { env: { type: "string" as const } };
+export function withoutTheWorldFlag(argv: readonly string[]): string[] {
+  production = argv.includes("--prod");
+  return argv.filter((word) => word !== "--prod");
+}
 
-/** What the gateway says this key is: asked once, and used for both the check and the line. */
+/** Production when this invocation said `--prod`; otherwise nothing is named and it is the sandbox. */
+export function theChosenWorld(): World | undefined {
+  return production ? PRODUCTION : undefined;
+}
+
+/** What the gateway says this key is, in the world this command asked for. */
 export async function standing(door: Open): Promise<Who> {
   return await whoIs(door);
 }
 
-/**
- * Why this verb will not run with the key in hand, or undefined when it will.
- *
- * The whole reason this exists: `pinecall run` used to register wherever the key it happened to
- * find pointed, and the line it printed read the same either way — so an agent landed in
- * production, in somebody else's org, and nothing said so until a customer called it.
- */
-export function notThisWorld(verb: string, who: Who, said: string | undefined): string | undefined {
-  if (said !== undefined && !WORLDS.includes(said)) {
-    return `--env takes ${WORLDS.join(" or ")}, not ${JSON.stringify(said)}`;
-  }
-  const wanted = said ?? theChosenWorld() ?? SANDBOX;
-  if (who.env === wanted) return undefined;
-  if (said !== undefined) {
-    return (
-      `--env ${said} asks for ${said}, and this key opens ${who.env}: a key opens one world and`
-      + " no flag changes that.\n"
-      + `  \`pinecall use <profile>\` for a key that opens ${said} — \`pinecall config\` lists them.`
-    );
-  }
-  return (
-    `this key opens ${who.env}, and \`pinecall ${verb}\` answers in the ${SANDBOX} unless you say so.\n`
-    + `  \`pinecall ${verb} --env ${who.env}\` if that is what you meant: it is what a deployment types.\n`
-    + "  `pinecall use <profile>` to work on a key of your own — `pinecall config` lists them."
-  );
-}
-
-/** When the gateway will not say which world the key opens: guessing is the bug this replaces. */
+/** When the gateway will not say who this key is: guessing is the bug this replaces. */
 export function cannotTell(verb: string, failed: unknown): string {
-  return `\`pinecall ${verb}\` will not guess which world this key opens: ${refusal(failed)}`;
+  return `\`pinecall ${verb}\` will not guess who this key is: ${refusal(failed)}`;
 }

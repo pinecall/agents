@@ -7,11 +7,11 @@ import { RouterProvider } from "react-router";
 import { onUnauthorized } from "../shared/api";
 import { BASE } from "./lib/base";
 import { CredentialsProvider } from "../shared/credentials";
-import { loginToOrg, loginToWorld, loginWithCode, type Signed } from "./lib/login";
+import { loginToOrg, loginWithCode, type Signed } from "./lib/login";
 import { NotSignedIn } from "./screens/login/not-signed-in";
 import { LeavingProvider } from "./lib/leaving";
 import { MODE, WORLD_OF } from "./lib/mode";
-import { forgetEveryKey, forgetKey, keepCorner, keepKey, keptCorner, keptKey } from "./lib/session-key";
+import { forgetKey, keepCorner, keepKey, keptCorner, keptKey } from "./lib/session-key";
 import { WhoamiProvider } from "./lib/whoami";
 import { WorldProvider } from "./lib/world";
 import { router } from "./router";
@@ -23,7 +23,7 @@ if (root === null) {
   throw new Error("index.html has no #root for the console to mount in");
 }
 
-// The query parameter a production `pinecall run` prints: a one-use code standing for that process's key, spent
+// The query parameter a production `pinecall start` prints: a one-use code standing for that process's key, spent
 // here for a key of this tab's own and taken out of the address bar before anything renders, so a
 // reload, a bookmark or a screenshot never carries it.
 const LOGIN = "login";
@@ -47,16 +47,6 @@ const WORLD = WORLD_OF[MODE];
 // request it forwards (src/cli/serve/server.ts), so the page holds none and signs in to nothing.
 const THE_SIDECARS = "";
 
-/**
- * A proof of who signed in, as a production key. The gateway's console is production's, and three
- * things still answer with a sandbox key: a `pinecall run` older than `pinecall serve` printing
- * its `?login=` link, an invitation accepted, and a browser that signed in before the sandbox
- * moved out. Each is the same person, so their key mints their production one (POST /v1/login/env).
- */
-async function inProduction(signed: Signed): Promise<Signed> {
-  return signed.env === "production" ? signed : loginToWorld({ base: BASE, key: signed.key }, "production");
-}
-
 /** The key the gateway's console starts with: spent from `?login=`, or kept, or none. */
 async function theKeyToStartWith(): Promise<string | null> {
   if (MODE === "local") return THE_SIDECARS;
@@ -66,27 +56,15 @@ async function theKeyToStartWith(): Promise<string | null> {
     address.searchParams.delete(LOGIN);
     window.history.replaceState(null, "", address.toString());
     try {
-      const signed = await inProduction(await loginWithCode(BASE, code));
-      keepKey("production", signed.key);
+      const signed = await loginWithCode(BASE, code);
+      keepKey(signed.key);
       return signed.key;
     } catch {
       // A code spent already, or expired: the person logs in the long way, and is told nothing
       // a stranger who found the URL would not be.
     }
   }
-  const kept = keptKey("production");
-  const sandbox = keptKey("sandbox");
-  if (sandbox === null) return kept;
-  // A key from before the sandbox moved out: it is nothing this page looks at any more.
-  forgetKey("sandbox");
-  if (kept !== null) return kept;
-  try {
-    const signed = await loginToWorld({ base: BASE, key: sandbox }, "production");
-    keepKey("production", signed.key);
-    return signed.key;
-  } catch {
-    return null;
-  }
+  return keptKey();
 }
 
 /** The app, or the login until there is a key: one component, so a dead key falls back to login. */
@@ -99,41 +77,44 @@ function Console({ startingWith }: { startingWith: string | null }): ReactNode {
     setCorner(other);
   }, []);
   onUnauthorized(() => {
-    forgetKey(WORLD);
+    forgetKey();
     setKey(null);
   });
 
   // The org switch's one move. The same person's key in the org picked (POST /v1/login/org)
   // replaces the key this browser holds, and the console reopens at its root: the agent in the
-  // address was the old org's too. The gateway's console alone: a machine's org is its profile's.
+  // address was the old org's too. The gateway's console alone: a machine's org is its project's
+  // .env, which `pinecall link` wrote.
   const moveTo = useCallback(
     async (org: string): Promise<void> => {
       if (key === null) return;
       const signed = await loginToOrg({ base: BASE, key }, org);
-      forgetEveryKey();
       keepCorner(null);
-      keepKey("production", (await inProduction(signed)).key);
+      keepKey(signed.key);
       window.location.assign(BASE);
     },
     [key],
   );
   const worlds = useMemo(() => ({ world: WORLD, moveTo, corner, lookInto }), [moveTo, corner, lookInto]);
-  const credentials = useMemo(() => ({ base: BASE, key: key ?? "", corner }), [key, corner]);
+  // The gateway's console names production on every request; a machine's own names nothing — the
+  // sidecar signs what it forwards, in the sandbox.
+  const credentials = useMemo(
+    () => ({ base: BASE, key: key ?? "", corner, ...(MODE === "hosted" ? { world: WORLD } : {}) }),
+    [key, corner],
+  );
 
   // Nothing else in this page may reach storage (lib/session-key.ts), so there is nowhere else a
   // key could still be.
   const leave = useCallback((): void => {
-    forgetEveryKey();
+    forgetKey();
     keepCorner(null);
     setCorner(null);
     setKey(null);
   }, []);
 
   const signed = (proof: Signed): void => {
-    void inProduction(proof).then((one) => {
-      keepKey("production", one.key);
-      setKey(one.key);
-    });
+    keepKey(proof.key);
+    setKey(proof.key);
   };
 
   if (key === null) {

@@ -1,6 +1,6 @@
 ---
 name: add-a-console-screen
-description: Add or change a screen of the console `pinecall ui` serves (Talk, Calls, Sessions, Pipeline, Evals). Use for any edit under src/cli/ui/console — a route, a panel, a stylesheet, a door the page reads.
+description: Add or change a screen of the console — the gateway's (production) or the one `pinecall serve` puts on this machine (the sandbox) — Talk, Calls, Sessions, Settings, Tokens, Team and the rest. Use for any edit under src/cli/ui/console — a route, a panel, a stylesheet, a door the page reads.
 ---
 
 # A screen of the console
@@ -14,14 +14,19 @@ its own laws, and three of them are held by tests written after the bug they des
   `react-dom`, `react-router`, `livekit-client`, `zod` and vite — and nothing else, ours included
   (`test/the-imports.test.ts`). None of `agent/`, `views/`, `runtime/` or `client/` would run in a
   browser, and a build that pulled a TypeScript parser into the bundle is a build nobody notices.
-- **Never touch a key, never send an `authorization` header, never store anything.** The page
-  holds no key: `pinecall ui` signs every request in front of it, so there is nothing to remember.
-  `the-key-is-never-in-the-page.test.ts` greps the source for `localStorage`, `sessionStorage` and
-  `authorization`, and then **builds the console itself** into a temp directory and greps the
-  bundle for anything shaped like a key and for `PINECALL_(API|DEV)_KEY`.
-- **Never build a URL by hand.** `lib/api.ts` is the only place a request to the gateway is built
-  (`read`, `put`, and the SSE in `lib/stream.ts`). Everything is relative to `BASE`, the path the
-  console was opened at.
+- **Never touch a key outside `lib/session-key.ts`, and never write a header by hand.** The
+  gateway's console keeps ONE key — the person's — in `localStorage`, through that file alone;
+  `shared/api.ts:headersFor` puts it on every request as a Bearer, with the world (`pinecall-env:
+  production` on the hosted console) and the corner. The local console holds no key at all:
+  `pinecall serve` signs what it forwards. `signing-out-forgets-the-key.test.ts` pins the sign-out.
+- **Never ask which world a screen is in to decide what it may do.** The mode IS the world
+  (`lib/mode.ts`): the hosted console is production and edits production's corner — Settings and
+  Lexicon included, with history and rollback, and no promote anywhere — while the local one edits
+  your corner or the team's. A person without production access is stopped at the way in
+  (`screens/login/no-production.tsx`), not screen by screen.
+- **Never build a URL by hand.** `shared/api.ts` is the only place a request to the gateway is
+  built (`read`, `put`, and the SSE in `lib/stream.ts`). Everything is relative to `BASE`, the path
+  the console was opened at.
 - **Never rename or reorder a route in `router.tsx`.** It is a seam: append, never reshuffle. And
   import a screen by its **directory** (`./screens/evals`), never a file inside it.
 - **Never invent a metric name or a verdict word.** `lib/metrics.ts` is the only file that names a
@@ -39,8 +44,11 @@ its own laws, and three of them are held by tests written after the bug they des
    is global whatever directory it was written in: `.mark` was the Talk transcript's line *and*
    the Sessions timeline's cell, and a `width: 1.5em` meant for the table squeezed the paragraph
    to one character per line. `styles/page.css` is the one deliberately shared vocabulary.
-4. `router.tsx` — one route under `/a/:agent/…`, appended.
-5. `shell/rail.tsx` — one entry in `SCREENS`, if a person should be able to walk to it.
+4. `lib/mode.ts` — one row in `ORG_SCREENS` or `AGENT_SCREENS`, saying which console has it
+   (`hosted`, `local`, or both): the sidebar draws that table and `router.tsx` routes it, so a
+   screen a console does not have is neither linked nor reachable. `lib/scopes.ts` gates it by the
+   scope that opens its doors; a screen nobody gated is open to every key (Tokens is).
+5. `router.tsx` — the screen's import, by its directory, appended.
 
 **The URL is the state.** Which agent, which screen, which call: nothing the console holds in
 memory decides what is on screen, so a reload lands on exactly the same thing. The console keeps
@@ -69,9 +77,9 @@ holds a key and never talks to LiveKit's API. The desk sends **one** verb per ge
 ```bash
 pnpm lint                     # includes tsc -p tsconfig.console.json: the page against the DOM
 pnpm test                     # the console is the second vitest project; the key test builds its own bundle
-scripts/build                 # vite → dist/cli/ui/console, the path `pinecall ui` serves
-cd examples/clinica-norte && pnpm exec pinecall ui
+scripts/build                 # vite → dist/cli/ui/console, the path `pinecall serve` serves
+cd examples/clinica-norte && pnpm exec pinecall serve
 ```
 
-A checkout must be built once before `pinecall ui` shows anything: a browser reads no TypeScript,
+A checkout must be built once before `pinecall serve` shows anything: a browser reads no TypeScript,
 and the verb says exactly that when the bundle is missing.

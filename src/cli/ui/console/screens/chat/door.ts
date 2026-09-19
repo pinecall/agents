@@ -1,11 +1,11 @@
-/** The chat verbs, asked of the `pinecall run` in the agent's directory: the class there, a call, a turn, a hangup. */
+/** The chat verbs, asked of the `pinecall start` in the agent's directory: the class there, a call, a turn, a hangup. */
 
 import { z } from "zod";
 
 import type { Credentials } from "../../../shared/api";
 import { dev } from "../../lib/dev";
 
-/** The class that process can chat with: the one in the directory `pinecall run` was typed in. */
+/** The class that process can chat with: the one in the directory `pinecall start` was typed in. */
 const RosterSchema = z.object({ agent: z.string().nullable(), states: z.array(z.string()) });
 export type Roster = z.infer<typeof RosterSchema>;
 

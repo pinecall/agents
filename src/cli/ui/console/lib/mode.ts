@@ -1,6 +1,5 @@
 /** Which console this page is — the gateway's or this machine's — and the one table of what each has. */
 
-import type { World } from "./session-key";
 
 // One bundle, two consoles. HOSTED is the gateway's own page: production, and only production —
 // what customers reach, watched by the people who run it. LOCAL is `pinecall serve` on a
@@ -18,6 +17,9 @@ export function gatewayOrigin(): string {
   const said = document.querySelector('meta[name="pinecall-gateway"]')?.getAttribute("content");
   return (said ?? window.location.origin).replace(/\/$/, "");
 }
+
+/** The two worlds a gateway holds. The page names its world on every request (shared/api.ts). */
+export type World = "production" | "sandbox";
 
 /** The world a console looks at. It is not a choice: the mode IS the world. */
 export const WORLD_OF: Record<Mode, World> = { hosted: "production", local: "sandbox" };
@@ -62,10 +64,10 @@ export const ORG_SCREENS: readonly Screen[] = [
   { key: "usage", path: "usage", name: "Usage", in: HOSTED, group: "gateway", icon: "chart" },
   { key: "numbers", path: "numbers", name: "Numbers", in: HOSTED, group: "settings", icon: "phone" },
   { key: "phone", path: "phone", name: "Phone testing", in: LOCAL, group: "settings", icon: "phone" },
-  { key: "keys", path: "keys", name: "Keys", in: HOSTED, group: "settings", icon: "key" },
+  { key: "tokens", path: "tokens", name: "Tokens", in: HOSTED, group: "settings", icon: "key" },
   { key: "providers", path: "providers", name: "Providers", in: HOSTED, group: "settings", icon: "plug" },
   { key: "team", path: "team", name: "Team", in: HOSTED, group: "settings", icon: "users" },
-  // The org's words, in both consoles: set in the sandbox, promoted to production, read in either.
+  // The org's words, in both consoles: each sets its own world's, production's by somebody who acts there.
   { key: "lexicon", path: "lexicon", name: "Lexicon", in: BOTH, group: "settings", icon: "words" },
 ];
 

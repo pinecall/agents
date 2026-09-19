@@ -1,4 +1,4 @@
-/** The directory verbs: what the console asks the gateway to ask the `pinecall run` in the agent's directory. */
+/** The directory verbs: what the console asks the gateway to ask the `pinecall start` in the agent's directory. */
 
 import type { DevVerb } from "@pinecall/protocol";
 

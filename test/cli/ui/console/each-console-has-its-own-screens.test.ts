@@ -11,7 +11,7 @@ const names = (table: typeof ORG_SCREENS, mode: "local" | "hosted"): string[] =>
 describe("the gateway's console", () => {
   it("looks at production, and runs the org", () => {
     expect(WORLD_OF.hosted).toBe("production");
-    expect(names(ORG_SCREENS, "hosted")).toEqual(["Home", "Overview", "Live", "Sessions", "Evals", "Memory", "Usage", "Numbers", "Keys", "Providers", "Team", "Lexicon"]);
+    expect(names(ORG_SCREENS, "hosted")).toEqual(["Home", "Overview", "Live", "Sessions", "Evals", "Memory", "Usage", "Numbers", "Tokens", "Providers", "Team", "Lexicon"]);
   });
 
   it("talks and chats with what is deployed, and has no Dev chat: that one mounts the class in a developer's own directory", () => {

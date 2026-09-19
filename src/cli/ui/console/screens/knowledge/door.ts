@@ -6,7 +6,7 @@ import { z } from "zod";
 import { drop, read, type Credentials } from "../../../shared/api";
 import { dev } from "../../lib/dev";
 
-/** What the directory `pinecall run` runs in has to push, and what golden sits beside it. */
+/** What the directory `pinecall start` runs in has to push, and what golden sits beside it. */
 const HereSchema = z.object({
   agent: z.string().nullable(),
   base: z.string().nullable(),

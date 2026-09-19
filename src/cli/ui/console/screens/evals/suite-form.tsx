@@ -13,7 +13,7 @@ const NOISE_DB = 15;
 const LOSS_PERCENT = 0;
 
 /**
- * The form. A run mounts the class of the directory `pinecall run` runs in, so only that process
+ * The form. A run mounts the class of the directory `pinecall start` runs in, so only that process
  * can start one — and it is the same suite `pinecall test` runs, reported in that terminal, with
  * every broken golden written out where the verb writes it. The run's row appears in the table
  * below as the gateway opens it.
@@ -65,7 +65,7 @@ export function SuiteForm({ agent, roster, onOpened }: { agent: string; roster: 
     <Card>
       <CardHead
         title="Run a suite"
-        meta="through the class in the directory pinecall run runs in, scored by this gateway"
+        meta="through the class in the directory pinecall start runs in, scored by this gateway"
       />
       <form onSubmit={(event) => void run(event)}>
         <div className="ev-suite-controls">

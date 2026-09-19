@@ -197,7 +197,8 @@ clinica-norte · pplx-embed-context-v1-0.6b · 7 questions · recall@4 1.00 · n
 | the model named | the embedder that wrote the vectors. Two scores are comparable only under one model |
 
 Every question it missed is printed with what came back instead, and the verb **exits 1** when
-anything did — so a base belongs in CI beside the unit tests. Both figures are computed by code,
+anything did — so a base belongs in CI beside the unit tests, before the release step that pushes
+it to production (`pinecall knowledge push --prod`, [production.md](production.md)). Both figures are computed by code,
 with no model in the loop, so two runs over one base answer the same numbers and a change is a
 change and not a mood.
 

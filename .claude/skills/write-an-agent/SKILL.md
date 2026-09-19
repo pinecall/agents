@@ -13,7 +13,7 @@ and what the two examples already paid for. The long form is `docs/writing-an-ag
 
 - **Never add a `paths` mapping for `pinecall`** in a tenant's `tsconfig.json` or
   `vitest.config.ts`. The app resolves it through `node_modules` like a customer; a mapping hands
-  `pinecall run` a second copy of the framework, and the two disagree about every WeakMap in it.
+  `pinecall start` a second copy of the framework, and the two disagree about every WeakMap in it.
 - **Never write state outside a tool or a hook.** It throws `UnauthoredWrite`, on purpose: every
   change carries the name of who made it, and that is what the log and the console read.
 - **Never put a collaborator in a getter.** `get agenda()` becomes state: it lands in the prompt,
@@ -27,13 +27,14 @@ and what the two examples already paid for. The long form is `docs/writing-an-ag
 
 ```bash
 cd examples/clinica-norte
+pnpm exec pinecall link                                      # once: your key for the org, in ./.env
 pnpm exec pinecall prompt --state test/prompts/states.json   # offline: no key, no gateway
 pnpm test                                                    # ring 0: the class as software
 pnpm exec pinecall chat                                      # the app in this terminal
 pnpm exec pinecall test --grep <name> --watch                # ring 1, while writing one golden
 ```
 
-`prompt` and `run --show-prompt` are free and instant. Use them before every ring-1 run: half of
+`prompt` and `start --show-prompt` are free and instant. Use them before every ring-1 run: half of
 what looks like a model problem is a block that says the wrong thing.
 
 ## Adding a tool — the five things that are checked

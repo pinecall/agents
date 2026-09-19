@@ -15,6 +15,8 @@ const MemberSchema = z.object({
   agents: z.array(z.string()),
   status: z.enum(STATUSES),
   scopes: z.array(z.string()),
+  /** Whether a request of theirs may run in production: the admin's switch, or being an admin. */
+  production: z.boolean(),
 });
 export type Member = z.infer<typeof MemberSchema>;
 
@@ -31,7 +33,7 @@ export async function readMembers(credentials: Credentials): Promise<Member[]> {
 /** One more person, invited: the row, and the one-use token shown once. */
 export async function invite(
   credentials: Credentials,
-  who: { email: string; name: string; role: Member["role"]; agents: string[] },
+  who: { email: string; name: string; role: Member["role"]; agents: string[]; production: boolean },
 ): Promise<Invited> {
   return InvitedSchema.parse(await post(credentials, "/v1/members", who));
 }
@@ -50,11 +52,11 @@ export async function removeMember(credentials: Credentials, id: string): Promis
   await drop(credentials, `/v1/members/${encodeURIComponent(id)}`);
 }
 
-/** Replace the role, the agents or the standing. A field left out keeps what the member had. */
+/** Replace the role, the agents, the standing or production. A field left out keeps what the member had. */
 export async function change(
   credentials: Credentials,
   id: string,
-  said: { role?: Member["role"]; agents?: string[]; status?: Member["status"] },
+  said: { role?: Member["role"]; agents?: string[]; status?: Member["status"]; production?: boolean },
 ): Promise<Member> {
   const answer = await fetch(new URL(`${credentials.base.replace(/\/$/, "")}/v1/members/${encodeURIComponent(id)}`, window.location.origin), {
     method: "PATCH",

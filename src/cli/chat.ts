@@ -3,15 +3,16 @@
 import { createInterface } from "node:readline";
 import { parseArgs } from "node:util";
 
-import { Pinecall, type CamelEvent } from "../client/index.js";
+import type { CamelEvent } from "../client/index.js";
+import { signed } from "../client/signed.js";
 import WebSocket from "ws";
 
 import { mount } from "../runtime/connect.js";
-import { theDoor } from "./env.js";
+import { pinecallFor } from "./client-for.js";
+import { theDoor, type Open } from "./env.js";
 import type { Group } from "./groups.js";
 import { load, mountOptions, notASlug } from "./load.js";
 import { AGENT_FLAG, oneHome } from "./home.js";
-import { cannotTell, ENV_FLAG, notThisWorld, standing } from "./world.js";
 import { BROKE, CALLER, lineFor } from "./view.js";
 import { firstState } from "./prompt.js";
 
@@ -19,19 +20,19 @@ const PROMPT = `${CALLER} `;
 
 export const group: Group = {
   purpose: "the app in this terminal's own process, and a prompt against it",
-  usage: `usage: pinecall chat [agent] [--agent <name>] [--file agent.tsx] [--env production] [--as <contact>]
+  usage: `usage: pinecall chat [agent] [--agent <name>] [--file agent.tsx] [--prod] [--as <contact>]
                      [--state file [--case n]] [--events]
 
   With nothing after it: the agent of this directory, mounted in THIS process, and a written
   caller against it. The tools run here, so a breakpoint in a @tool is reachable.
 
   With an agent's slug: a written call at the agent somebody is already holding — your own
-  \`pinecall run\` in another terminal, or a colleague's. Nothing is mounted here, so --state,
+  \`pinecall start\` in another terminal, or a colleague's. Nothing is mounted here, so --state,
   which opens a call in a class this process built, is refused.
 
   --agent <name>  which agent of a project of several, by its file's name or its slug
   --file <path>   which class to mount, by its path
-  --env <world>   the world you believe this key opens; refused when it opens the other
+  --prod          production's agent, if your org lets you act there; the sandbox otherwise
   --as <contact>  who is calling: the id memory files this call under (a phone number, a customer id)
   --state file    the state the call opens in — the same goldens file \`pinecall prompt\` reads
   --case n        which case of that file, when it holds several
@@ -51,11 +52,11 @@ const NOT_YOURS_TO_OPEN =
  * the caller. Typing goes out as `{ text }`; everything that comes back is the call's own log,
  * printed as it lands. The tools run in this process, so a breakpoint in a @tool is reachable.
  *
- * This is `rails console`: it works with no `pinecall run` up and it works with three of them,
+ * This is `rails console`: it works with no `pinecall start` up and it works with three of them,
  * because the caller socket names THIS process's app id and the gateway serves the call from it.
  *
  * Named an agent instead, it mounts nothing and is only the caller's side: a written call at
- * whatever is holding that slug — your own `run` in the other terminal, or a colleague's. The
+ * whatever is holding that slug — your own `start` in the other terminal, or a colleague's. The
  * positional is a SLUG and `--file` is the file, because `--agent` meaning one thing in three
  * verbs and the other in six was a flag nobody could read.
  */
@@ -70,7 +71,6 @@ export async function run(argv: string[]): Promise<number> {
       file: { type: "string" },
       ...AGENT_FLAG,
       events: { type: "boolean", default: false },
-      ...ENV_FLAG,
     },
   });
   const reach = positionals[0];
@@ -85,22 +85,12 @@ export async function run(argv: string[]): Promise<number> {
   }
   const door = theDoor();
   if (door === undefined) return 2;
-  try {
-    const elsewhere = notThisWorld("chat", await standing(door), values.env);
-    if (elsewhere !== undefined) {
-      process.stderr.write(`${elsewhere}\n`);
-      return 2;
-    }
-  } catch (failed) {
-    process.stderr.write(`${cannotTell("chat", failed)}\n`);
-    return 2;
-  }
   const url = door.url;
   if (reach !== undefined) {
-    return await talk(chatUrl(url, reach, undefined, values.as), door.apiKey, values.events === true);
+    return await talk(chatUrl(url, reach, undefined, values.as), door, values.events === true);
   }
   const loaded = await load((await oneHome("chat", values.file, values.agent)).file);
-  const pc = new Pinecall({ url, apiKey: door.apiKey });
+  const pc = pinecallFor(door);
   // takesUnclaimed: false is the other half of the `?app=` below. Holding the agent is what makes
   // this a console; taking a call nobody named would make it a server, and a real phone call would
   // ring in this terminal. See the runtime's docs/decisions/dispatch.md: the registry is its.
@@ -122,7 +112,7 @@ export async function run(argv: string[]): Promise<number> {
     // The id exists only after the register the connect awaited, which is why it is read here
     // and not where the agent was mounted.
     const address = chatUrl(url, mounted.slug, mounted.agent.app, values.as);
-    return await talk(address, door.apiKey, values.events === true);
+    return await talk(address, door, values.events === true);
   } finally {
     pc.close();
   }
@@ -148,8 +138,8 @@ export function chatUrl(base: string, agent: string, app?: string, contact?: str
 // Every line typed is one turn; every frame received is one entry, printed as it lands. The key
 // travels as the upgrade's Authorization header, never in the URL, which is the only thing the
 // chat door accepts and the reason this socket is `ws` and not the runtime's global WebSocket.
-function talk(url: string, apiKey: string, events: boolean): Promise<number> {
-  const socket = new WebSocket(url, { headers: { authorization: `Bearer ${apiKey}` } });
+function talk(url: string, door: Open, events: boolean): Promise<number> {
+  const socket = new WebSocket(url, { headers: signed(door.apiKey, door.world) });
   const lines = createInterface({ input: process.stdin, output: process.stdout, prompt: PROMPT });
   // An entry can land after the keyboard is gone — a piped stdin ends the moment it is read, and
   // the agent's greeting arrives after that — and readline throws on a prompt it has closed.

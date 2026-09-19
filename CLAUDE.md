@@ -16,13 +16,14 @@ pnpm -r test                     # both examples, and the wire's own suite
 scripts/build                    # what is published: dist/, and the console bundle inside it
 scripts/check                    # build → lint → test, in that order — what CI runs
 pnpm vitest run test/agent       # one directory; `-t "a sentence"` for one test
+cd examples/clinica-norte && pnpm exec pinecall link     # once: your key for the org, in ./.env
 cd examples/clinica-norte && pnpm exec pinecall chat     # the agent in this terminal
 cd examples/clinica-norte && pnpm exec pinecall prompt --state test/prompts/states.json
 ```
 
 Nothing has to be built to lint or test: every package in the workspace exports its sources.
 `scripts/build` is for what gets published, and for the console — a browser reads no TypeScript,
-so `pinecall serve` (and `run --serve`) in a checkout needs the bundle once, and again after a
+so `pinecall serve` (and `start --serve`) in a checkout needs the bundle once, and again after a
 change to `src/cli/ui/console/`: the sidecar serves `dist/cli/ui/console`, not the sources.
 
 ## Structure
@@ -83,10 +84,12 @@ sentences; small methods; 150 lines is the norm. Tests read as sentences.
 
 ## Traps — each one cost an afternoon
 
-- **The CLI reads no environment at all.** Which gateway and which key is the active profile in
-  `~/.pinecall/config.json`, and nothing else — `PINECALL_API_KEY`, `PINECALL_URL` and
-  `PINECALL_DEV_KEY` are gone, and exporting one changes nothing. `pinecall whoami` says which key
-  a verb would use, `pinecall config` lists them, `pinecall use <name>` switches.
+- **The CLI reads `PINECALL_KEY` and `PINECALL_URL`, and nothing else.** From the process's
+  environment, else from the nearest `.env` up from the cwd — the project's, which `pinecall link`
+  wrote (`cli/env.ts`). v1's `PINECALL_API_KEY` is never read, and there are no profiles to switch:
+  another org is another folder. `--prod` on any verb is the world for that one command, and the
+  gateway refuses it unless the person's production switch is on. `pinecall whoami` says which key
+  a verb would use, where it was read, and whether it may act in production.
 - **A tool with no docstring is refused,** because without one no model can choose it; and
   `@tool({ stage })` on a class with no `stage` field is refused too.
 - **The class docstring lives above the class,** where `toString()` cannot see it, and parameter

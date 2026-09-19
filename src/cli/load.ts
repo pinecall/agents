@@ -27,7 +27,7 @@ export const DEFAULT_AGENTS = ["agent.tsx", "agent.ts"] as const;
 let registered = false;
 
 /** Register tsx, once per process: the tenant writes .ts and .tsx and never a build step. */
-// `pinecall run` on a fresh clone must work with `pnpm i` and nothing else. Registering is done
+// `pinecall start` on a fresh clone must work with `pnpm i` and nothing else. Registering is done
 // once per process and only when a tenant's file is actually loaded, so `pinecall <planned group>`
 // pays nothing for it. Exported because a persona is a tenant's .ts file too — cli/testing/caller.ts.
 export async function useTypeScript(): Promise<void> {

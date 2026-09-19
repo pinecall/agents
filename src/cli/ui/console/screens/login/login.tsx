@@ -16,7 +16,7 @@ import { WayIn } from "./way-in";
  * whoever runs the gateway, and what arrives here is a person who has a key, a
  * password, or an invitation. It signs in to PRODUCTION: this is the gateway's console, and the
  * sandbox is watched on a developer's own machine (`pinecall serve`), where nothing signs in. A
- * production `pinecall run` prints a URL with a one-use code that skips even this card (lib/login.ts). The refusal is the gateway's sentence, verbatim: one for every wrong
+ * production `pinecall start` prints a URL with a one-use code that skips even this card (lib/login.ts). The refusal is the gateway's sentence, verbatim: one for every wrong
  * thing, by design — a door that told them apart would tell a stranger which orgs exist.
  */
 export function Login({ base, onSigned }: { base: string; onSigned: (signed: Signed) => void }): ReactNode {
@@ -98,7 +98,7 @@ export function Login({ base, onSigned }: { base: string; onSigned: (signed: Sig
     setBusy(true);
     setRefused(null);
     try {
-      onSigned(await loginWithPassword(base, { org: org.trim(), email: email.trim(), password, env: "production" }));
+      onSigned(await loginWithPassword(base, { org: org.trim(), email: email.trim(), password }));
     } catch (failed) {
       setRefused(failed instanceof GatewayError ? failed.message : String(failed));
     } finally {

@@ -158,7 +158,7 @@ const PromotedSchema = z.object({
 });
 export type Promoted = z.infer<typeof PromotedSchema>;
 
-/** Promote one real call to `test/candidates`, in the directory the agent's `pinecall run` stands in. */
+/** Promote one real call to `test/candidates`, in the directory the agent's `pinecall start` stands in. */
 export async function promoteCall(credentials: Credentials, agent: string, call: string): Promise<Promoted> {
   return PromotedSchema.parse(await dev(credentials, agent, "promote.write", { call }));
 }

@@ -16,18 +16,22 @@ export interface Who {
   slug?: string | null;
   key_id: string;
   label: string | null;
-  /** The world this key opens. Where you are IS the key you hold, so the verb says which. */
+  /** The world this request ran in: the one `--prod` named, else the sandbox — or a server token's own. */
   env: string;
+  /** The person the key was minted for; none for a server's token. */
+  name?: string | null;
+  /** Whether this key may act in production: the person's switch (an admin always), or a production token. */
+  production: boolean;
 }
 
 export const group: Group = {
   purpose: "which org and which key this terminal is holding",
   usage: `usage: pinecall whoami
 
-  Prints the gateway every connecting verb would talk to, where the key came from, and what
-  that gateway says the key is: the org, the key's id, the world it opens and the label it was
-  issued under. The
-  key itself is neither printed nor sent anywhere else.`,
+  Prints the gateway every connecting verb would talk to, where the key came from (the
+  environment, or the project's .env), and what that gateway says the key is: the org, the
+  key's id, the world this command runs in, the label it was issued under, and whether you may
+  act in production. The key itself is neither printed nor sent anywhere else.`,
   run,
 };
 
@@ -68,10 +72,11 @@ export function orgOf(who: Who): string {
   return who.slug ?? who.org;
 }
 
-/** One line: whose key, which of theirs, which world it opens, and what it was issued for. */
+/** One line: whose key, which of theirs, the world, what it was issued for, and production. */
 export function describing(who: Who): string {
   const said = [`org ${orgOf(who)}`, `key ${who.key_id}`, who.env];
   if (who.label !== null) said.push(who.label);
+  said.push(`production: ${who.production ? "yes" : "no"}`);
   return said.join(" · ");
 }
 

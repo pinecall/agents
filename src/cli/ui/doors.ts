@@ -14,7 +14,7 @@ import type { Reproducing } from "./reproducing.js";
 import type { Simulating } from "./simulating.js";
 import type { Testing } from "./testing.js";
 
-/** What `pinecall run` hands in. Every field is what one screen of the console needs from this process. */
+/** What `pinecall start` hands in. Every field is what one screen of the console needs from this process. */
 export interface Own {
   simulating?: Simulating | undefined;
   testing?: Testing | undefined;
@@ -32,7 +32,7 @@ export type Verbs = Partial<Record<DevVerb, (asked: unknown) => Promise<unknown>
 /**
  * The table, keyed by the wire's verb. A screen that needs something only this process can do —
  * the class of this directory, its personas, its goldens, its files — adds ONE module and ONE
- * row here; `pinecall run` answers the gateway's dev.request off it and knows nothing else.
+ * row here; `pinecall start` answers the gateway's dev.request off it and knows nothing else.
  */
 export function ownVerbs(own: Own): Verbs {
   const verbs: Verbs = {};
@@ -75,7 +75,7 @@ export function ownVerbs(own: Own): Verbs {
   return verbs;
 }
 
-// A verb nobody registered — a `pinecall run` in a directory with no personas, asked to simulate.
+// A verb nobody registered — a `pinecall start` in a directory with no personas, asked to simulate.
 const NOT_HERE = (verb: string): string => `this process answers no ${verb}: nothing of it is in this directory`;
 
 /**

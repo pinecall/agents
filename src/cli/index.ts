@@ -5,12 +5,12 @@ import { realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
 import { helpFor, PLANNED, plannedGroup, type Group } from "./groups.js";
-import { withoutTheProfileFlag } from "./profiles.js";
+import { withoutTheWorldFlag } from "./world.js";
 
-// The order this table is written is the order the help prints: run and chat first, because
-// they are what a person types on the first day, and the planned groups after, in the design's
-// order. run is rails server and chat is rails console — see docs/decisions/tenant-cli.md.
-const BUILT = ["run", "serve", "chat", "prompt", "test", "simulate", "eval", "sessions", "runs", "agent", "lexicon", "pipeline", "line", "numbers", "personas", "knowledge", "memory", "remember", "supervise", "keys", "providers", "callbacks", "login", "whoami", "gateway", "config", "use"] as const;
+// The order this table is written is the order the help prints: link, start and chat first,
+// because they are what a person types on the first day, and the planned groups after, in the
+// design's order. start is rails server and chat is rails console — see docs/decisions/tenant-cli.md.
+const BUILT = ["link", "start", "serve", "chat", "prompt", "test", "simulate", "eval", "sessions", "runs", "agent", "lexicon", "pipeline", "line", "numbers", "personas", "knowledge", "memory", "remember", "supervise", "providers", "callbacks", "login", "whoami"] as const;
 
 /** Everything `pinecall` answers to, built and planned alike, in the order help prints them. */
 export function groupNames(): string[] {
@@ -31,9 +31,9 @@ export async function main(
   out: NodeJS.WritableStream = process.stdout,
   err: NodeJS.WritableStream = process.stderr,
 ): Promise<number> {
-  // `--profile <name>` belongs to no group: it says which gateway this one command goes to, and
-  // every group would otherwise have to parse it. Out of argv here, before anybody sees it.
-  const [name, ...rest] = withoutTheProfileFlag(argv);
+  // `--prod` belongs to no group: it says which world this one command runs in, and every group
+  // would otherwise have to parse it. Out of argv here, before anybody sees it.
+  const [name, ...rest] = withoutTheWorldFlag(argv);
   if (name === undefined || name === "--help" || name === "-h" || name === "help") {
     out.write(usage());
     return name === undefined ? 2 : 0;
@@ -62,9 +62,10 @@ export async function main(
 }
 
 // A built group is imported only when it is asked for: `pinecall prompt` must not pay for the
-// websocket client that `run` needs, and a stub must not pay for anything at all.
+// websocket client that `start` needs, and a stub must not pay for anything at all.
 export async function groupFor(name: string, out: NodeJS.WritableStream = process.stdout): Promise<Group | undefined> {
-  if (name === "run") return (await import("./run.js")).group;
+  if (name === "link") return (await import("./linking.js")).group;
+  if (name === "start") return (await import("./start.js")).group;
   if (name === "serve") return (await import("./serve.js")).group;
   if (name === "chat") return (await import("./chat.js")).group;
   if (name === "prompt") return (await import("./prompt.js")).group;
@@ -82,20 +83,11 @@ export async function groupFor(name: string, out: NodeJS.WritableStream = proces
   if (name === "remember") return (await import("./remember.js")).group;
   if (name === "supervise") return (await import("./supervise.js")).group;
   if (name === "sessions") return (await import("./sessions.js")).group;
-  if (name === "keys") return (await import("./keys.js")).group;
   if (name === "numbers") return (await import("./numbers.js")).group;
   if (name === "providers") return (await import("./providers.js")).group;
   if (name === "callbacks") return (await import("./callbacks.js")).group;
   if (name === "login") return (await import("./login.js")).group;
-  if (name === "gateway") return (await import("./gateway.js")).group;
   if (name === "whoami") return (await import("./whoami.js")).group;
-  if (name === "config") return (await import("./config.js")).group;
-  // The same module under the word a person reaches for. `use` is `config <name>` and nothing
-  // else — two verbs would be two places deciding what a profile is.
-  if (name === "use") {
-    const config = await import("./config.js");
-    return { ...config.group, run: config.use };
-  }
   const planned = PLANNED[name];
   return planned === undefined ? undefined : plannedGroup(name, planned, out);
 }
@@ -105,7 +97,8 @@ export function usage(): string {
   const lines = [
     "usage: pinecall <group> [args]",
     "",
-    "  run       the app and its doors: the process you deploy",
+    "  link      this project's folder to one of your orgs: your key, in its .env",
+    "  start     the app and its doors: the process you deploy (--prod for production)",
     "  serve     the sandbox's console on this machine: your copies, http://localhost:4100",
     "  chat      the app in this terminal's own process, and a prompt against it",
     "  prompt    the exact prompt a state would produce, offline",
@@ -114,7 +107,7 @@ export function usage(): string {
     "  eval      ring 3: one real call, re-evaluated by the runtime's code checks",
     "  sessions  list | show a call's log, with what it cost and how it was judged",
     "  runs      list | show | diff the suites, promote a call, and watch the drift",
-    "  agent     what the org set over the class — yours, the team's, production's — set, history, promote",
+    "  agent     what the org set over the class — yours, the team's, production's — set, history, rollback",
     "  lexicon   the org's words: how the voice says them and what the ears must know",
     "  pipeline  what the agent hears, decides and speaks with, and the knobs over it",
     "  line      which phone is yours, and whose terminal anybody else's call rings in",
@@ -124,14 +117,12 @@ export function usage(): string {
     "  memory    what memory kept about a contact, forget it, and hold recall to a golden",
     "  remember  the goldens memory.remember is held to: what a call teaches, and what it never keeps",
     "  supervise listen in on a live call: whisper, say, take the line, give it back, end",
-    "  keys      issue | list | revoke the API keys this org's machines run on",
     "  providers add | rm | list the provider keys this org brought of its own",
     "  callbacks the numbers people left when every seat was taken: who to call back",
-    "  login     sign in once; the key is kept as a profile in ~/.pinecall",
-    "  gateway   which gateway this machine talks to: box.pinecall.io until you point it elsewhere",
-    "  config    the gateways this machine knows, and which one the next verb goes to",
-    "  use       another org of yours, or its other world: `pinecall use clinica production`",
-    "  whoami    which gateway, which org, which world, and where this terminal's key came from",
+    "  login     sign this machine in through a browser; `link` asks for it when it is needed",
+    "  whoami    which gateway, which org, whether you act in production, and where the key came from",
+    "",
+    "  --prod on any verb runs it in production, if your org lets you act there.",
     "",
   ];
   for (const [name, purpose] of Object.entries(PLANNED)) {

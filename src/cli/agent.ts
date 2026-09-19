@@ -21,7 +21,6 @@ const USAGE = [
   "                          [--remember '…' …] [--forget '…' …] [--team] [--note '…']",
   "       pinecall agent clear [voice|tts|tts-model|stt|llm|greeting|hangup|turn|memory|knowledge …] [--team]",
   "       pinecall agent history [--team] · diff [--against team|production] · rollback <version> [--team]",
-  "       pinecall agent promote [--to team|production] [--note '…']",
   "       pinecall agent pull [--team] · push <file> [--team]",
 ].join("\n");
 
@@ -33,9 +32,9 @@ export const group: Group = {
   your own sandbox corner, the team's, and production's — a row per field, and which version each
   corner is at. A corner that set nothing reads as what it falls back to.
 
-  set writes a NEW version in your own corner: what you set is yours until you promote it, and a
-  colleague's next call does not hear it. --team writes the org's own corner instead, which every
-  corner falls back to. The whole set travels with the version it was read at, so two people
+  set writes a NEW version in your own corner: what you set is yours, and a colleague's next call
+  does not hear it. --team writes the org's own corner instead, which every corner falls back to.
+  --prod writes production's, if your org lets you act there. The whole set travels with the version it was read at, so two people
   saving at once never write over each other: the second is told where the corner is now. A model
   knob reads three ways — \`--llm anthropic/claude-haiku-4-5\`, \`--llm cartesia\` (a vendor, its own
   model), \`--llm claude-haiku-4-5\` (a model, the vendor in use). --greeting sets the words said as
@@ -45,11 +44,10 @@ export const group: Group = {
   clear takes fields out of the corner's own row, so what the class declared — or the runtime's
   default — stands for them again; with no name, every field. There is no blank value.
 
-  history, diff, rollback and promote are the versions: every one kept, who set it and why; this
-  corner against the team's or production's; one version back as the next one; and the two hops —
-  yours to the team's (the default), the team's sandbox to production, which runs the agent's
-  goldens first and refuses when one does not hold. Nobody writes production any other way.
-  pull prints the corner's config as JSON; push sends a file as the next version.
+  history, diff and rollback are the versions: every one kept, who set it and why; this corner
+  against the team's or production's; one version back as the next one — with --prod, production's.
+  pull prints the corner's config as JSON; push sends a file as the next version, --team to the
+  team's corner.
 
   list prints the agents this org is holding in your key's world.`,
   run,
@@ -65,7 +63,6 @@ export interface Setting {
 /** Every flag the sub-verbs take, declared once: parseArgs is strict, and one table is one seam. */
 export const OPTIONS = {
   agent: { type: "string" },
-  file: { type: "string" },
   json: { type: "boolean", default: false },
   team: { type: "boolean", default: false },
   note: { type: "string" },
@@ -82,7 +79,6 @@ export const OPTIONS = {
   remember: { type: "string", multiple: true },
   forget: { type: "string", multiple: true },
   against: { type: "string" },
-  to: { type: "string" },
 } as const;
 
 export type Typed = ReturnType<typeof parseArgs<{ options: typeof OPTIONS; allowPositionals: true }>>["values"];
@@ -109,7 +105,7 @@ export async function run(argv: string[], how: Setting = {}): Promise<number> {
     if (verb === undefined) return said(agent, await readSettings(door, agent), values.json === true, out);
     if (verb === "set") return said(agent, await set(door, agent, values), values.json === true, out);
     if (verb === "clear") return said(agent, await clear(door, agent, rest, values.team === true), values.json === true, out);
-    if (verb === "history" || verb === "diff" || verb === "rollback" || verb === "promote") {
+    if (verb === "history" || verb === "diff" || verb === "rollback") {
       return await versionsRun(door, agent, verb, rest, values, out, err);
     }
     if (verb === "pull" || verb === "push") return await filesRun(door, agent, verb, rest, values, out, err);
@@ -128,7 +124,7 @@ export async function run(argv: string[], how: Setting = {}): Promise<number> {
 async function list(door: Door, out: NodeJS.WritableStream): Promise<number> {
   const held = await asked<AgentList>(door, "/v1/agents");
   if (held.agents.length === 0) {
-    out.write("no agent is held here: `pinecall run` holds one\n");
+    out.write("no agent is held here: `pinecall start` holds one\n");
     return 0;
   }
   for (const one of held.agents) {

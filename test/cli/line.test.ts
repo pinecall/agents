@@ -4,7 +4,7 @@
 import { describe, expect, it } from "vitest";
 
 import { calling, describing, forgotten } from "../../src/cli/line.js";
-import { rings } from "../../src/cli/run.js";
+import { rings } from "../../src/cli/start.js";
 import type { TheLine } from "@pinecall/protocol";
 
 const AGENT = "tienda-sur";
@@ -60,7 +60,7 @@ describe("the line, as a person reads it", () => {
   });
 
   it("says what to start when nobody is answering it at all", () => {
-    expect(describing(said({ held: false }))).toBe(`nobody is answering ${AGENT}: start \`pinecall run\``);
+    expect(describing(said({ held: false }))).toBe(`nobody is answering ${AGENT}: run \`pinecall start\``);
   });
 });
 

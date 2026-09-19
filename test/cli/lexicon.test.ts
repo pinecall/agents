@@ -92,13 +92,4 @@ describe("the org's words", () => {
     await run(["rm", "GSA", "Maravilla", "--team"], { out: written().stream, env });
     expect((gateway.bodies.at(-1) as { lexicon: unknown }).lexicon).toEqual({ said: [], heard: [] });
   });
-
-  it("promotes to production with no goldens between", async () => {
-    const out = written();
-
-    await run(["promote", "--to", "production"], { out: out.stream, env: pointingAt(gateway.url, A_KEY) });
-
-    expect(gateway.bodies.at(-1)).toEqual({ to: "production", note: null });
-    expect(out.text()).toContain("production v4");
-  });
 });

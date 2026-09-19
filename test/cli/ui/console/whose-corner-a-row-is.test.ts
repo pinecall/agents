@@ -39,7 +39,7 @@ describe("whose copy a row is", () => {
   });
 
   it("is measured against the member this tab is, and nobody for a key that names none", () => {
-    expect(meIn({ org: "clinica", key_id: "k_1", env: "sandbox", scopes: [], subject: ME })).toBe(ME);
+    expect(meIn({ org: "clinica", key_id: "k_1", env: "sandbox", scopes: [], subject: ME, production: false })).toBe(ME);
     expect(meIn(null)).toBeNull();
   });
 });

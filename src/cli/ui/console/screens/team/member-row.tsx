@@ -2,13 +2,13 @@
 
 import { useState, type ReactNode } from "react";
 
-import { Pill, Select, TextAction, Input } from "../../ui";
+import { Pill, Select, Switch, TextAction, Input } from "../../ui";
 import { ROLES, type Member } from "./door";
 
-type Change = { role?: Member["role"]; agents?: string[]; status?: Member["status"] };
+type Change = { role?: Member["role"]; agents?: string[]; status?: Member["status"]; production?: boolean };
 
-/** The table's columns: the design's five, and the move at the end of the row. */
-export const COLUMNS = "minmax(0,1fr) minmax(0,1.3fr) 110px 110px 90px 230px";
+/** The table's columns: who, what they do, which agents, production, the standing, and the move at the end. */
+export const COLUMNS = "minmax(0,1fr) minmax(0,1.3fr) 110px 110px 96px 90px 230px";
 
 const TONE = { active: "green", invited: "amber", disabled: "gray" } as const;
 
@@ -103,6 +103,15 @@ export function MemberRow({
           {member.agents.length === 0 ? "every agent" : member.agents.join(", ")}
         </button>
       )}
+      {/* An admin always acts in production — the org's owner must reach what answers its phone — so
+          the row says so instead of offering a switch the gateway would refuse. */}
+      <span className="ui-cell">
+        {member.role === "admin" ? (
+          <span className="ui-cell-faint">always</span>
+        ) : (
+          <Switch on={member.production} label={`${member.name} acts in production`} onChange={(on) => void act(() => onChange({ production: on }))} />
+        )}
+      </span>
       <span className="ui-cell-end">
         <Pill tone={TONE[member.status]}>{member.status}</Pill>
       </span>

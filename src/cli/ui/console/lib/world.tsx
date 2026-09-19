@@ -2,7 +2,7 @@
 
 import { createContext, useContext, type ReactNode } from "react";
 
-import type { World } from "./session-key";
+import type { World } from "./mode";
 
 /** The world on screen — the console's mode decides it (lib/mode.ts) — and the move to another org of the person's. */
 export interface Worlds {

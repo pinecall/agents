@@ -3,7 +3,7 @@
 // The gateway serves two pages and every door of both under `/v1`. Each holds ONE credential and
 // they are never the same one: the console's is a person's scoped key, minted for them and this
 // browser at login (console/lib/session-key.ts); the admin's is the BOX's ops key, which belongs
-// to no org. Neither is ever the org's key — that lives in `pinecall run`'s process and reaches a
+// to no org. Neither is ever the org's key — that lives in `pinecall start`'s process and reaches a
 // browser only as a one-use `?login=` code.
 /** Where a page is mounted, and the key it knocks with. */
 export interface Credentials {
@@ -11,6 +11,11 @@ export interface Credentials {
   key: string;
   /** Whose sandbox copy the doors answer for, when an admin opened a colleague's: their member id. */
   corner?: string | null;
+  /**
+   * The world the doors answer in: the gateway's console names production on every request. A
+   * person holds one key, and the gateway opens production for it while their row says so.
+   */
+  world?: "production" | "sandbox";
 }
 
 /** A door answered with something other than 200. `status` is the gateway's, `message` its detail. */
@@ -27,9 +32,10 @@ export class GatewayError extends Error {
 
 // A page with no key is the local console: `pinecall serve` signs what it forwards, so the page
 // sends no authorization at all rather than an empty one.
-/** The headers every request carries: the key, as a Bearer. This is the one line that spells it. */
+/** The headers every request carries: the key, as a Bearer, and the world. The one line that spells them. */
 export function headersFor(credentials: Credentials): Record<string, string> {
   const headers: Record<string, string> = credentials.key === "" ? {} : { authorization: `Bearer ${credentials.key}` };
+  if (credentials.world !== undefined) headers["pinecall-env"] = credentials.world;
   // The gateway resolves every door in that member's corner, and refuses a key that may not.
   if (credentials.corner) headers["pinecall-corner"] = credentials.corner;
   return headers;

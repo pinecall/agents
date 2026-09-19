@@ -11,7 +11,7 @@ export const ROLE_OPENS: Record<Member["role"], { who: string; opens: string }> 
   qa: { who: "Reads finished calls and the suites", opens: "calls · evals" },
   supervisor: { who: "Sits beside a live call: listens, whispers, takes it over", opens: "calls · evals · supervise · talk · memory" },
   manager: { who: "Runs the floor and the org's accounts, never the agent's declaration", opens: "calls · evals · supervise · talk · memory · numbers · keys · providers · usage · team" },
-  developer: { who: "Writes and runs the agent", opens: "app (in the sandbox only) · calls · talk · supervise · pipeline · knowledge · memory · evals" },
+  developer: { who: "Writes and runs the agent", opens: "app · calls · talk · supervise · pipeline · knowledge · memory · evals" },
   admin: { who: "The org's owner", opens: "every door" },
 };
 
@@ -21,7 +21,7 @@ const COLUMNS = "110px minmax(0,1fr) minmax(0,1.4fr)";
 export function Roles(): ReactNode {
   return (
     <Card>
-      <CardHead title="Roles" meta="a preset of what a person's keys open — changing one changes their next key, not a door" />
+      <CardHead title="Roles" meta="a preset of what a person's keys open — and where: the sandbox always, production when their switch is on (an admin's always is)" />
       <TableHead columns={COLUMNS} labels={["Role", "Who", "Opens"]} />
       {ORDER.map((role) => (
         <TableRow key={role} columns={COLUMNS}>

@@ -2,11 +2,12 @@
 
 import WebSocket from "ws";
 
-import type { CamelEvent } from "../../client/index.js";
-import { Pinecall } from "../../client/index.js";
+import type { CamelEvent, Pinecall } from "../../client/index.js";
+import { signed } from "../../client/signed.js";
 
 import { mount } from "../../runtime/connect.js";
 import { chatUrl } from "../chat.js";
+import { pinecallFor } from "../client-for.js";
 import { load, mountOptions } from "../load.js";
 import type { Door } from "../testing/gateway.js";
 import { goldensIn, type Golden } from "../testing/goldens.js";
@@ -20,11 +21,11 @@ const A_CALL_OPENS_WITHIN_MS = 20_000;
 
 // The console may be opened on any agent the gateway holds, but a written call needs the CLASS —
 // mounted in this process, as `pinecall chat` mounts it — and the class is the one in the
-// directory `pinecall run` was typed in.
+// directory `pinecall start` was typed in.
 const NOT_THIS_DIRECTORY = (asked: string, here: string | null): string =>
   here === null
-    ? `no agent class in this directory: run \`pinecall run\` where ${asked}'s agent.tsx is`
-    : `this process runs in ${here}'s directory: to chat with ${asked}, run \`pinecall run\` there`;
+    ? `no agent class in this directory: run \`pinecall start\` where ${asked}'s agent.tsx is`
+    : `this process runs in ${here}'s directory: to chat with ${asked}, run \`pinecall start\` there`;
 
 const NO_CALL = "the gateway took the socket but wrote no entry: nothing to read";
 const NOT_OPEN = (call: string): string => `${call} is not a chat this console opened`;
@@ -74,7 +75,7 @@ export interface Lines {
 }
 
 /**
- * One `Chatting` for the life of a `pinecall run`. The class is mounted here once, on the first
+ * One `Chatting` for the life of a `pinecall start`. The class is mounted here once, on the first
  * call the page opens, exactly as `pinecall chat` mounts it — so a breakpoint in a @tool is
  * reachable from the terminal that typed `ui` — and every turn typed in the browser goes down that
  * same socket. The page reads the call off the log like any other; nothing here keeps a transcript.
@@ -164,7 +165,7 @@ export function linesFromThisProcess(door: Door, out: NodeJS.WritableStream, fil
   let mounting: Promise<{ pc: Pinecall; url: string }> | undefined;
   const mounted = async (opening?: Record<string, unknown> | undefined): Promise<{ pc: Pinecall; url: string }> => {
     const loaded = await load(file);
-    const pc = new Pinecall({ url: door.url, apiKey: door.apiKey });
+    const pc = pinecallFor(door);
     const app = mount(loaded.ctor, {
       ...mountOptions(loaded, pc),
       takesUnclaimed: false,
@@ -172,7 +173,7 @@ export function linesFromThisProcess(door: Door, out: NodeJS.WritableStream, fil
     });
     await pc.connect();
     // The app's id exists only after the register the connect awaited, and naming it is what sends
-    // the call to THIS process rather than to whichever `pinecall run` registered last.
+    // the call to THIS process rather than to whichever `pinecall start` registered last.
     return { pc, url: chatUrl(door.url, app.slug, app.agent.app) };
   };
   return {
@@ -184,7 +185,7 @@ export function linesFromThisProcess(door: Door, out: NodeJS.WritableStream, fil
       const { url } = its ?? (await (mounting ??= mounted()));
       const address = new URL(url);
       if (contact !== undefined) address.searchParams.set("contact", contact);
-      const line = await aLine(address.toString(), door.apiKey, out);
+      const line = await aLine(address.toString(), door, out);
       if (its === undefined) return line;
       const end = line.end;
       return { ...line, end: () => { end(); its.pc.close(); } };
@@ -200,8 +201,8 @@ export function linesFromThisProcess(door: Door, out: NodeJS.WritableStream, fil
 // One chat socket, answered as soon as the call has an id. Everything that comes back is printed
 // in the terminal that typed `ui`, the way `pinecall chat` prints it, and read by the page off the
 // log — so the two views of the call are one log and not two transcripts.
-async function aLine(url: string, apiKey: string, out: NodeJS.WritableStream): Promise<Line> {
-  const socket = new WebSocket(url, { headers: { authorization: `Bearer ${apiKey}` } });
+async function aLine(url: string, door: Door, out: NodeJS.WritableStream): Promise<Line> {
+  const socket = new WebSocket(url, { headers: signed(door.apiKey, door.world) });
   const line: Line = {
     call: "",
     say: (text: string) => socket.send(JSON.stringify({ text })),

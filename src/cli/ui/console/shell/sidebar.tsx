@@ -132,7 +132,7 @@ function Workspace(): ReactNode {
   }, [open]);
 
   const org = whose === null ? "" : orgOf(whose);
-  // Another org is another key: the gateway's console mints it, a machine's is its profile's (`pinecall use`).
+  // Another org is another key: the gateway's console mints it; on a machine it is another project folder (`pinecall link`).
   const canMove = MODE === "hosted" && orgs !== null && orgs.length > 1;
 
   const move = async (target: string): Promise<void> => {

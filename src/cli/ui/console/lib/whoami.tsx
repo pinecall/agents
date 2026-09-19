@@ -3,7 +3,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { z } from "zod";
 
-import { read } from "../../shared/api";
+import { GatewayError, read } from "../../shared/api";
+import { NoProduction } from "../screens/login/no-production";
 import { useCredentials } from "../../shared/credentials";
 
 // What `pinecall whoami` prints and the door answers: never the key itself, never its hash.
@@ -22,6 +23,8 @@ const WhoseSchema = z.object({
   operator: z.boolean().optional(),
   /** They are inside an org they are not a member of, as the box's operator. */
   visiting: z.boolean().optional(),
+  /** Whether this key may act in production: the person's switch (an admin always), or a production token. */
+  production: z.boolean(),
 });
 export type Whose = z.infer<typeof WhoseSchema>;
 
@@ -31,21 +34,28 @@ const Held = createContext<Whose | null>(null);
 export function WhoamiProvider({ children }: { children: ReactNode }): ReactNode {
   const credentials = useCredentials();
   const [whose, setWhose] = useState<Whose | null>(null);
+  const [kept, setKept] = useState<string | null>(null);
 
   useEffect(() => {
     let gone = false;
     setWhose(null);
+    setKept(null);
     read(credentials, "/v1/whoami").then(
       (answer) => {
         if (!gone) setWhose(WhoseSchema.parse(answer));
       },
-      () => undefined,
+      // 403 is the gateway keeping this person out of the world the page names — production, on
+      // the gateway's console. Every door would say the same, so the page says it once, instead.
+      (failed: unknown) => {
+        if (!gone && failed instanceof GatewayError && failed.status === 403) setKept(failed.message);
+      },
     );
     return () => {
       gone = true;
     };
   }, [credentials]);
 
+  if (kept !== null) return <NoProduction said={kept} />;
   return <Held value={whose}>{children}</Held>;
 }
 

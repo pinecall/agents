@@ -13,7 +13,7 @@ const TONE: Record<string, Tone> = { passed: "green", failed: "red", deferred: "
 /**
  * Ring 3 re-checks the call by code — the runtime rebuilds it from its log and answers four
  * verdicts, and nothing is re-run — and promote writes it down as a golden CANDIDATE in the
- * directory the agent's `pinecall run` stands in, for a person to edit before it counts.
+ * directory the agent's `pinecall start` stands in, for a person to edit before it counts.
  * `pinecall eval <call>` and `pinecall runs promote <call>`, over the same two doors.
  */
 export function Actions({ agent, call }: { agent: string; call: string }): ReactNode {

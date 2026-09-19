@@ -50,7 +50,7 @@ Print any of it with no gateway, no key and no network:
 
 ```bash
 pinecall prompt --state test/prompts/states.json    # one state, or several
-pinecall run --show-prompt                          # a fresh instance, then exit
+pinecall start --show-prompt                          # a fresh instance, then exit
 ```
 
 Both print every block under its header, in send order, and beneath them the stage the instance

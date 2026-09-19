@@ -1,4 +1,4 @@
-/** The `console` line `pinecall run` prints: where a person looks at what this process is running. */
+/** The `console` line `pinecall start` prints: where a person looks at what this process is running. */
 
 import { asked, Refused, type Door } from "./testing/gateway.js";
 
@@ -44,7 +44,7 @@ export function whyNoConsole(refused: unknown): string {
 // HOSTED, or NOWHERE.
 /** The line under `connected`: the console's URL, or the verb that opens one. */
 export async function consoleLine(door: Door, slug: string, where: string): Promise<string> {
-  if (where === NOWHERE) return "console  `pinecall serve` opens it on this machine (or `pinecall run --serve`)";
+  if (where === NOWHERE) return "console  `pinecall serve` opens it on this machine (or `pinecall start --serve`)";
   if (where !== HOSTED) return `console  ${localUrl(where, slug)}`;
   try {
     const minted = await asked<{ code: string }>(door, "/v1/login/codes", { method: "POST", body: {} });

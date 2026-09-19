@@ -1,4 +1,4 @@
-/* Keys: the issue form, the key shown once, and a row's name, scopes and revoke. */
+/* Tokens: the form that makes a server's token, the token shown once, and a row's revoke. */
 
 .keys-form {
   display: flex;

@@ -19,7 +19,7 @@ const LOSS_PERCENT = 0;
 
 /**
  * The form. It asks the process holding the agent, through the gateway: a simulation mounts the
- * class of the directory `pinecall run` runs in, so only that process can start one. The call is
+ * class of the directory `pinecall start` runs in, so only that process can start one. The call is
  * answered by its id and the page goes to it on the floor — the log is the transcript, and on a
  * spoken line the desk's Listen is the speakers `--listen` never had.
  */
@@ -167,7 +167,7 @@ export function SimulateForm({
 // The three answers the roster can give that are not "here are the callers", each in one sentence.
 function whyNot(roster: Roster | null, agent: string): string | null {
   if (roster === null) return null;
-  if (roster.agent === null) return "No agent class in the directory the agent's `pinecall run` runs in, so nothing to simulate against.";
+  if (roster.agent === null) return "No agent class in the directory the agent's `pinecall start` runs in, so nothing to simulate against.";
   if (roster.agent !== agent) return `The process holding the agent runs in ${roster.agent}'s directory; a simulated caller is for that agent.`;
   if (roster.personas.length === 0) return "No personas in test/personas: one file per caller, default-exporting one.";
   return null;

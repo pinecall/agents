@@ -1,4 +1,4 @@
-/** What `pinecall run` prints while it holds the agents: the plain log, the JSON pipe, and the full-screen view. */
+/** What `pinecall start` prints while it holds the agents: the plain log, the JSON pipe, and the full-screen view. */
 
 import type { CamelEvent, Pinecall } from "../client/index.js";
 import { absorb, draw, screenFor, type Screen } from "./view.js";
@@ -16,7 +16,7 @@ export type Listen = (listener: (event: CamelEvent) => void) => () => void;
 
 
 // --events is the view for a program: one JSON line per entry, nothing else on stdout, so a
-// `pinecall run --events | jq` is a first-class way to watch a call.
+// `pinecall start --events | jq` is a first-class way to watch a call.
 export async function stream(pc: Pinecall, listen: Listen): Promise<number> {
   listen((event) => process.stdout.write(`${JSON.stringify(event)}\n`));
   await pc.connect();

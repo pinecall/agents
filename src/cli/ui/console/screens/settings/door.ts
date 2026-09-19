@@ -1,10 +1,8 @@
-/** The settings doors as the console reads them: the three corners, a set, the history, a rollback, a promote. */
+/** The settings doors as the console reads them: the three corners, a set, the history, a rollback. */
 
 import {
-  PromotedSchema,
   TuningAnswerSchema,
   TuningHistorySchema,
-  type Promoted,
   type TuningAnswer,
   type TuningBody,
   type TuningHistory,
@@ -43,13 +41,6 @@ export async function readHistory(credentials: Credentials, agent: string, team:
 /** One version back, as the next one. */
 export async function rollbackTo(credentials: Credentials, agent: string, version: number, team: boolean): Promise<TuningAnswer> {
   return TuningAnswerSchema.parse(await post(credentials, `${door(agent)}/rollback`, { version, team }));
-}
-
-// Only the first hop from here: the second runs the agent's goldens, which live beside the class
-// on the developer's disk and travel in the ask — `pinecall agent promote --to production`.
-/** Your corner's newest as the team's next version. */
-export async function promoteToTeam(credentials: Credentials, agent: string): Promise<Promoted> {
-  return PromotedSchema.parse(await post(credentials, `${door(agent)}/promote`, { to: "team", note: null }));
 }
 
 /** The fields the page draws, in reading order, under the names it draws them with. */

@@ -20,7 +20,7 @@ describe("the groups the CLI answers to", () => {
 
     expect(declared).not.toContain("phones");
 
-    for (const group of ["new", "g", "run", "chat", "prompt", "test", "simulate", "runs", "personas", "eval", "sessions", "knowledge", "memory", "login", "whoami", "keys", "tokens", "numbers", "agent", "lexicon", "supervise", "observe", "call", "costs", "deploy"]) {
+    for (const group of ["new", "g", "link", "start", "chat", "prompt", "test", "simulate", "runs", "personas", "eval", "sessions", "knowledge", "memory", "login", "whoami", "tokens", "numbers", "agent", "lexicon", "supervise", "observe", "call", "costs", "deploy"]) {
       expect(declared).toContain(group);
     }
   });
@@ -63,18 +63,18 @@ describe("the groups the CLI answers to", () => {
     const out = collected();
 
     expect(await main(["--help"], out.stream)).toBe(0);
-    expect(out.text()).toContain("run       the app and its doors");
+    expect(out.text()).toContain("start     the app and its doors");
     expect(out.text()).toContain("supervise");
   });
 
-  // The flags belong to the group, so `pinecall run --help` is where a person reads them — and
+  // The flags belong to the group, so `pinecall start --help` is where a person reads them — and
   // where the three page-serving flags the console replaced must not come back.
   it("prints a group's own help under its own name, and names no console flag", async () => {
     const out = collected();
 
-    expect(await main(["run", "--help"], out.stream)).toBe(0);
+    expect(await main(["start", "--help"], out.stream)).toBe(0);
 
-    expect(out.text()).toContain("pinecall run — the app and its doors");
+    expect(out.text()).toContain("pinecall start — the app and its doors");
     expect(out.text()).toContain("--show-prompt");
     expect(out.text()).not.toContain("--console");
     expect(out.text()).not.toContain("--open");

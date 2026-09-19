@@ -14,7 +14,7 @@ import "./chat.css";
 
 /**
  * The screen. It asks the process that holds the agent, never the gateway's model: a written call
- * is served by the class mounted where `pinecall run` was typed, exactly as `pinecall chat` serves
+ * is served by the class mounted where `pinecall start` was typed, exactly as `pinecall chat` serves
  * one — so a breakpoint in a @tool is reachable in that terminal. The call in the path is the call
  * being talked to, so a reload lands back in the same conversation.
  */
@@ -95,8 +95,8 @@ function Opening({ agent }: { agent: string }): ReactNode {
             {roster !== null && roster.agent !== agent && (
               <p className="chat-note">
                 {roster.agent === null
-                  ? "No agent class in the directory this agent's `pinecall run` runs in, so there is nothing to chat with. Run `pinecall run` where its agent.tsx is."
-                  : `The process holding the agent runs in ${roster.agent}'s directory: to chat with ${agent}, run \`pinecall run\` there.`}
+                  ? "No agent class in the directory this agent's `pinecall start` runs in, so there is nothing to chat with. Run `pinecall start` where its agent.tsx is."
+                  : `The process holding the agent runs in ${roster.agent}'s directory: to chat with ${agent}, run \`pinecall start\` there.`}
               </p>
             )}
             {roster !== null && roster.agent === agent && (

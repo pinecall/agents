@@ -23,7 +23,6 @@ export const SCOPE_OF: Record<string, string> = {
   "org-evals": "evals",
   "org-memory": "memory",
   numbers: "numbers",
-  keys: "keys",
   providers: "providers",
   team: "team",
   usage: "usage",
@@ -40,8 +39,8 @@ export function notOpened(screen: string): string {
   return `this key does not open ${SCOPE_OF[screen] ?? screen}`;
 }
 
-// Every scope a key may carry (runtime types/key.py). A person's key never holds `app` in production,
-// so a key with every other one is, as far as a person reading a list cares, everything.
+// Every scope a key may carry (runtime types/key.py). An operator's visit into an org holds every one
+// but `app` — the box looks and mends, and holds no agent — so to a person reading a list, everything.
 const EVERY_SCOPE = ["app", "calls", "evals", "keys", "knowledge", "memory", "numbers", "pipeline", "providers", "supervise", "talk", "team", "usage", "words"];
 
 /** What a key may do, as one short line: "everything", or its scopes. */

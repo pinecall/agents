@@ -4,6 +4,7 @@ import { apply, decodeEntry, eventOf, initialState, type Entry, type State } fro
 import { agentLogUrl, callLogUrl } from "./endpoints.js";
 import { PinecallError } from "./frames.js";
 import { camelEvent, type CamelEvent } from "./listeners.js";
+import { signed, type World } from "./signed.js";
 
 /** Whose log: one call's, or an agent's own. */
 export type LogTarget = { call: string; agent?: never } | { agent: string; call?: never };
@@ -12,6 +13,8 @@ export type LogTarget = { call: string; agent?: never } | { agent: string; call?
 export interface ReadOptions {
   url: string;
   apiKey: string;
+  /** The world the log is read in; none is the sandbox. */
+  env?: World;
   after?: number;
   signal?: AbortSignal;
 }
@@ -130,7 +133,7 @@ async function read(target: LogTarget, options: ReadOptions, accept: string): Pr
   if (after > 0) {
     url.searchParams.set("after", String(after));
   }
-  const headers: Record<string, string> = { accept, authorization: `Bearer ${options.apiKey}` };
+  const headers: Record<string, string> = { accept, ...signed(options.apiKey, options.env) };
   if (after > 0) {
     headers["last-event-id"] = String(after);
   }

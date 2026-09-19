@@ -13,12 +13,12 @@ The same page is served in two places, and it is a different product in each:
 |---|---|---|
 | looks at | production, and only production | the sandbox: the reader's own corner |
 | who uses it | whoever runs the org: the owner, a supervisor, qa | whoever writes the agent |
-| signing in | email and password — and *Continue with Google* when the box's operator wired it, *Continue with SSO* when the org did; a key kept by the browser | none: the sidecar signs what the page asks, the page holds no key, and there is no sign out |
+| signing in | email and password — and *Continue with Google* when the box's operator wired it, *Continue with SSO* when the org did; the person's one key, kept by the browser, and `pinecall-env: production` on every request — a person whose production switch is off gets *No production access* | none: the sidecar signs what the page asks, the page holds no key, and there is no sign out |
 | sidebar ▸ Gateway (local: *Sandbox*) | Home `/`, Overview `/overview`, Live, Sessions, Evals, Memory, Usage | Home, Overview, Live, Sessions, Evals, Memory |
-| sidebar ▸ Settings | Numbers, Keys, Providers, Team, Lexicon | Phone testing, Lexicon |
+| sidebar ▸ Settings | Numbers, Tokens, Providers, Team, Lexicon | Phone testing, Lexicon |
 | sidebar ▸ Box — a person the box made an **operator**, and nobody else | Organizations, Fleet, Routes, Box usage, Box settings | — |
 | outside the sidebar | `/cli`, `/invitations/<token>` | — |
-| an agent's tabs | Talk, Chat, Calls, Sessions, Settings (read, roll back), Pipeline, Knowledge, Memory, Evals (scored calls, drift), Widget | the same, plus **Dev chat**, Settings that *sets*, Evals ▸ runs and *Run all* |
+| an agent's tabs | Talk, Chat, Calls, Sessions, Settings (production's corner: set, history, roll back), Pipeline, Knowledge, Memory, Evals (scored calls, drift), Widget | the same, plus **Dev chat**, Settings over your corner or the team's, Evals ▸ runs and *Run all* |
 | copies | one: the org's, *deployed on the box* | the reader's; a key with `team` opens a teammate's |
 
 Which is which is a `<meta name="pinecall-console" content="local">` the sidecar puts in the page
@@ -41,13 +41,13 @@ switcher and the ⌘K box are the tab's and die with it.
 | URL | screen |
 |---|---|
 | `/` | Home — how today is going |
-| `/overview` | Overview — the agents held, the numbers, keys and vendors behind them |
+| `/overview` | Overview — the agents held, the numbers, tokens and vendors behind them |
 | `/live[/:call][?agent=]` | Live — the floor's calls, one watched, the desk |
 | `/sessions` · `/sessions/:call` | Sessions — every agent's calls; one read whole |
 | `/evals` | Evals — every agent's last suite and its judged calls, org-wide |
 | `/usage[?tab=days\|agents\|calls]` | Usage (hosted) |
 | `/numbers[?tab=numbers\|outbound\|carrier]` | Numbers (hosted) · `/phone` Phone testing (local) |
-| `/keys` · `/providers` · `/team[?tab=people\|roles\|sso]` | Keys, Providers, Team (hosted) |
+| `/tokens` · `/providers` · `/team[?tab=people\|roles\|sso]` | Tokens (every key), Providers, Team (hosted) |
 | `/box/orgs` · `/box/orgs/:org[?tab=overview\|members\|keys\|limits\|providers]` | the box's organizations, and one of them (hosted, an operator) |
 | `/box/fleet` · `/box/routes` · `/box/usage` · `/box/settings[?tab=signin\|email\|brand]` | Fleet, Routes, Box usage, Box settings (hosted, an operator) |
 | `/a/:agent/talk` | Talk |
@@ -55,33 +55,33 @@ switcher and the ⌘K box are the tab's and die with it.
 | `/a/:agent/dev-chat[/:call]` | Dev chat (local) |
 | `/a/:agent/calls[/:call]` | Calls — the inbox; a call in the path opens the thread holding it |
 | `/a/:agent/sessions[/:call]` | the agent's sessions; one read whole (deep-linkable to a line: `#seq-93`) |
-| `/a/:agent/settings` | Settings — the three corners (yours, the team's, production's), the whole set as a form with the version it was read at, the history with roll back, promote yours to the team; on the gateway's page production is read and rolled back, never set: `GET`/`PUT /v1/agents/{slug}/settings`, `…/history`, `…/rollback`, `…/promote` |
-| `/lexicon` | Lexicon — the org's words, said and heard, whole and versioned, promoted with no goldens: `GET`/`PUT /v1/lexicon`, `…/promote`. A `words` key (supervisor, manager) opens it |
+| `/a/:agent/settings` | Settings — the three corners (yours, the team's, production's), the whole set as a form with the version it was read at, the history with roll back; the gateway's page sets production's corner (while the person acts in production), the local one yours or, ticked, the team's. No promote: `GET`/`PUT /v1/agents/{slug}/settings`, `…/history`, `…/rollback` |
+| `/lexicon` | Lexicon — the org's words, said and heard, whole and versioned; the gateway's page sets production's words, the local one yours or the team's: `GET`/`PUT /v1/lexicon`. A `words` key (supervisor, manager) opens it |
 | `/a/:agent/pipeline` · `knowledge` · `memory` · `widget` | one tab each; Pipeline reads and points at Settings |
 | `/a/:agent/evals?view=runs\|calls\|drift&run=<id>` | Evals |
 | `/a/:agent/widget/preview?name=&company=&tagline=&phone=&accent=&greeting=` | a blank page with nothing but the widget on it, outside the shell |
-| `/cli?c=<word>` | hosted: the card a person opens from `pinecall login` to sign that terminal in |
+| `/cli?c=<word>` | hosted: the card a person opens from `pinecall login` (or `pinecall link`) to sign that terminal in |
 | `/invitations/<token>` | with no key: the card where an invited — or reset — person chooses a password |
-| `/?login=<code>` · `/?refused=<sentence>` | hosted: the one-use code a production `pinecall run`, a sign-up or a provider hands the browser, spent for a key and taken out of the address; and the sentence a provider that turned somebody away sends them back with, shown on the sign-in card |
+| `/?login=<code>` · `/?refused=<sentence>` | hosted: the one-use code a production `pinecall start`, a sign-up or a provider hands the browser, spent for a key and taken out of the address; and the sentence a provider that turned somebody away sends them back with, shown on the sign-in card |
 
 A path nobody routes lands on `/`. A slug the gateway does not list for this org and world draws no
 agent screens: *No agent called <slug> is held here*, and then — hosted — that nothing by that name
 is deployed and a copy of one's own is on `pinecall serve`, or — local — that no copy of the
-reader's is running, and `pinecall run` starts one.
+reader's is running, and `pinecall start` starts one.
 
 **The sidebar** (`shell/sidebar.tsx`, 244px, folds to 62px of icons; folded by itself under 720px):
 
 - **the workspace**: the org's word (`whoami.slug`, else its id) on a tile with its first letter, and
   *N agents*. Hosted, for a person of two orgs or more, it opens *Your organizations* — each with the
   person's role, the current one marked *here* — and picking one mints their key there (`POST
-  /v1/login/org`), replaces every key the browser held and reopens the console at `/`;
+  /v1/login/org`), replaces the one key the browser held and reopens the console at `/`;
 - **Search ⌘K** — the palette, below;
 - **Agents**: one row per slug the gateway holds (one per slug however many copies — `lib/corners.ts`),
   opening its Talk; a green icon and a `live` badge while any call of it is up. None: *none held here*;
 - **Gateway** (local: **Sandbox**) and **Settings**: the table's rows, each drawn only when the key's
   scopes open it (`lib/scopes.ts`: Talk, Chat, Dev chat and Widget need `talk`; Overview, Live, Calls
-  and both Sessions `calls`; both Evals `evals`; the rest their own name; Home and Phone testing are
-  ungated). Badges: Overview the agents held · Live `N live` · Sessions the corner's total
+  and both Sessions `calls`; both Evals `evals`; Settings and Lexicon `words`; the rest their own
+  name; Home, Phone testing and Tokens are ungated). Badges: Overview the agents held · Live `N live` · Sessions the corner's total
   (`insights.sessions_total`, else the rows the floor read, `200+` at the door's cap);
 - **Box** — hosted, and only once `GET /v1/ops/whoami` has answered that this person runs the box
   (`lib/operator.ts`; a `401` there is the answer *no*, never an error): the five box screens;
@@ -90,7 +90,7 @@ reader's is running, and `pinecall run` starts one.
 
 **The top bar** (`shell/top.tsx`, 54px): `<org> /` or `<agent> /`, then the page's title (*Phone
 numbers* for Numbers, *Session* one level under Sessions, *Sign in a terminal* at `/cli`); on the
-right **the switcher** and — hosted only — **Sign out**, which forgets every key.
+right **the switcher** and — hosted only — **Sign out**, which forgets the key.
 
 **The switcher** (`shell/switcher.tsx`) is the one answer to *what am I looking at*. Its trigger: a
 dot and a pill in the world's colour (green `production`, amber `sandbox`), the agent or *choose an
@@ -145,14 +145,13 @@ When a screen has nothing to show it says so **in a sentence, never a spinner**.
 Data reaches it through the gateway's doors and one stream shape. What needs the agent's
 **directory** — its goldens, personas, knowledge folder, memory goldens, a chat with the class — is
 asked of the gateway too, at `POST /v1/agents/{slug}/dev/{family}/{verb}`, and the gateway relays it
-to the `pinecall run` holding the agent (the runtime's `docs/protocol/dev-verbs.md`). Gateway doors:
+to the `pinecall start` holding the agent (the runtime's `docs/protocol/dev-verbs.md`). Gateway doors:
 
 | door | who reads it |
 |---|---|
 | `POST /v1/login` · `POST /v1/login/orgs {email,password}` · `POST /v1/invitations/{token}` · `GET /.well-known/pinecall` | the sign-in card and its workspaces, the password card and its rule, whether the box signs in with Google |
 | `GET /v1/login/google` (a browser is sent there) · `POST /v1/login/sso/discover` · `GET /v1/login/sso?org=` | *Continue with Google*, *Continue with SSO* |
 | `GET /v1/login/orgs` · `POST /v1/login/org` | the workspace menu, the switcher, the role in the sidebar's foot (hosted) |
-| `POST /v1/login/env` | the boot, once: a sandbox key left in the browser becomes the same person's production one |
 | `GET /v1/whoami` | the person, the scopes every screen is gated by |
 | `GET /v1/agents` · `GET /v1/sessions` · `GET /v1/events` (SSE) · `GET /v1/insights[?day=]` | the shared org: sidebar, Home, Overview, Live, Sessions, ⌘K |
 | `GET /v1/org/judging` · `PUT /v1/org/judging {on}` | Home's setup step |
@@ -166,21 +165,21 @@ to the `pinecall run` holding the agent (the runtime's `docs/protocol/dev-verbs.
 | `GET /v1/evals/runs?agent=&limit=200` | Evals |
 | `GET /v1/agents/{slug}/pipeline` · `PUT …/pipeline/overrides` | Pipeline |
 | `GET`·`PUT …/pipeline/hold-audio` · `…/hold-audio/audio` · `PUT …/hold-audio/played` | Pipeline ▸ Hold melody |
-| `GET /v1/knowledge` · `DELETE /v1/knowledge/{base}` | Knowledge (push and golden go through `pinecall run`) |
+| `GET /v1/knowledge` · `DELETE /v1/knowledge/{base}` | Knowledge (push and golden go through `pinecall start`) |
 | `GET /v1/agents/{slug}/memory` · `DELETE /v1/memory/facts/{id}` · `GET/DELETE /v1/contacts/{contact}/memory` | Memory |
 | `GET/PUT /v1/agents/{slug}/widget` · `GET /widget/pinecall-widget.js` | Widget |
 | `GET /v1/numbers` · `POST /v1/numbers[/buy]?dry_run=` · `DELETE /v1/numbers/{number}` · `GET /v1/numbers/available` · `GET/PUT/DELETE /v1/carrier` | Numbers, Overview, Home's setup, the Widget's Phone field |
 | `GET /v1/carrier/outbound` · `POST /v1/carrier/outbound?dry_run=` · `POST /v1/agents/{slug}/dial {to, from?}` | Numbers ▸ Outbound calls (and its test call), *Call back* and *Call a number* in Calls |
 | `GET /v1/line/numbers` | Phone testing (local) |
-| `GET/POST /v1/keys`, `POST /v1/keys/{fingerprint}/revoke` | Keys, Overview |
+| `GET/POST /v1/keys`, `POST /v1/keys/{fingerprint}/revoke` | Tokens, Overview |
 | `GET /v1/providers` · `GET/PUT/DELETE /v1/provider-keys[/{vendor}]` | Providers, Overview |
-| `GET/POST /v1/members`, `PATCH /v1/members/{id}`, `DELETE /v1/members/{id}`, `POST /v1/members/{id}/reset` | Team, Home's setup |
+| `GET/POST /v1/members` (with `production`), `PATCH /v1/members/{id}`, `DELETE /v1/members/{id}`, `POST /v1/members/{id}/reset` | Team, Home's setup |
 | `GET/PUT/DELETE /v1/org/sso` | Team ▸ Single sign-on |
 | `GET /v1/usage` | Usage |
 | `GET/POST /v1/login/pairings/{code}` | the `/cli` card |
 | `GET /v1/ops/whoami`, and the operator's doors under `/v1/ops/…` (orgs, their quotas, dialling, keys, members, vendors and sso; the fleet and its cordon; routes; usage; the box's sign-in, mail and brand) | whether the person runs the box, and the five Box screens |
 
-The directory's verbs, through `pinecall run`: `chat` (roster, start, say, end) · `personas` + `simulate` ·
+The directory's verbs, through `pinecall start`: `chat` (roster, start, say, end) · `personas` + `simulate` ·
 `goldens` + the suite run · `knowledge` (roster, push, eval) · `memory` (roster, recall eval, extraction) ·
 `candidates` + `promote` · `drift` · `reproductions`.
 
@@ -273,12 +272,12 @@ need a look, *everything else handled*.
 
 ## 2b. Overview — `/overview`
 
-Which agents this gateway is holding right now. **Issue a key** in the head (hosted, a key that
-opens `keys`) goes to Keys.
+Which agents this gateway is holding right now. **New server token** in the head (hosted, a key that
+opens `app`) goes to Tokens.
 
 - **Four numbers**, each only for a key that may read it: *Agents up* `N of M` (M counts the slugs
   held and the agents a number routes to); *Numbers ringing* `N · F free` (what the carrier owns and
-  this org has not imported) — else *Calls live*; *Active keys* `N · R revoked` — else *Calls
+  this org has not imported) — else *Calls live*; *Active tokens* `N · R revoked` — else *Calls
   today*; *Providers ready* `N of M`.
 - **Agents** — *watching* while the floor's stream is live, else the connection's word. Per row: a
   lettered tile and the slug; `1 call live` / `N calls live` in green, or `idle · last call <ago>`
@@ -287,10 +286,11 @@ opens `keys`) goes to Keys.
   held over the agent's judged calls today, as a percent: green from 90, amber from 70, red under —
   `—` when nothing was judged or the gateway does not count. A row opens Talk. A key the gateway
   answers with more than its own corner gets chips: *everything* · *mine* · *the team's*.
-  Empty, local: *Nothing of yours is running. `pinecall run` in a project puts its agents here.*;
-  hosted: *Nothing is deployed here yet…*; a filter that leaves nothing: *Nothing here is mine*.
-- **Keys in use** (four, live ones first): label, `a machine` or the holder's name, what it may do
-  (`everything`, or the scopes; `sandbox` for a sandbox key), `active` / `revoked`. **Manage** → Keys.
+  Empty, local: *Nothing of yours is running. `pinecall start` in a project puts its agents here.*;
+  hosted: *Nothing is deployed here yet: production is held by a process on a box, on a machine key.*; a filter that leaves nothing: *Nothing here is mine*.
+- **Tokens in use** (four, live ones first): label, then whose — `<name> · their own` for a person's,
+  `the org's · <world> · made by <name>` for a server's — `active` / `revoked`. **Manage** → Tokens.
+  Empty: *No token has been made yet.*
 - **Providers** — *N ready · M need a key*; four ready vendors, the org's own first, then the box's
   defaults: `decides · hears · speaks`, *the default* when the box names it for that job, and `ready`
   (the org brought its key) or `box key`. **Bring one** → Providers.
@@ -342,7 +342,7 @@ nothing: *No call here matches.*
 synthetic caller — `pinecall simulate` with the same defaults. Persona (one file per caller in
 `test/personas`, its goal shown), turns (1–30, default 6), `voice` (a real line), `judge at
 hang-up`; on a spoken line, `noisy line` with noise in dB under (0–60, default 15) and packets lost
-% (0–100, default 0). The call opens on `/live/:call`. Needs the `pinecall run` holding the agent,
+% (0–100, default 0). The call opens on `/live/:call`. Needs the `pinecall start` holding the agent,
 in its directory: without a class there the form says so, and a process in another agent's
 directory is named.
 
@@ -538,7 +538,7 @@ breakpoint in a `@tool` is reachable in the terminal serving it.
 - **A line you send is on screen at once**, pending, until the log's `turn.user` confirms it; a
   refusal takes it back and puts the words in the box again, with the gateway's sentence. Three dots
   stand in the agent's column while it thinks.
-- The Inspector beside it. Needs the `pinecall run` holding the agent, in its directory.
+- The Inspector beside it. Needs the `pinecall start` holding the agent, in its directory.
 
 ## 7. Pipeline — `/a/:agent/pipeline`
 
@@ -684,16 +684,22 @@ answered.
 
 **Phone testing** — `/phone` (local): *Call the number your customers call, from your own mobile,
 and your copy answers.* The commands (`pinecall line from +1XXXXXXXXXX` once per machine; `pinecall
-run --serve`, `pinecall line forget` while you work); **The numbers to call** off `GET
+start --serve`, `pinecall line forget` while you work); **The numbers to call** off `GET
 /v1/line/numbers`, each `→` its agent with one pill — green *your copy answers <your phone>* · amber
 *production answers: say which phone is yours* · gray *production answers: you are not running it*;
 and **What a call from your phone reaches right now**, in a sentence.
 
-**Keys** — `/keys`: **Issue one for a machine** — a label and a world; *It will hold the app socket
-and nothing else, and name nobody.* The key comes back **once**, in a card with Copy, and is kept by
-nothing. The table: Name · Env · Who holds it (`a machine` when nobody) · May do (`everything`, or
-the scopes) · Status (`active` green, `revoked` gray, the name dimmed); **Revoke** on a live row,
-pressed twice. Empty: *No key of this org yet: the first one is what a deploy runs on.*
+**Tokens** — `/tokens`, open to every key: *Your own keys — one per device, what `pinecall link`
+writes into a project — and the tokens this org's servers run on. A server's token is the org's: it
+opens one world, and it stays when the person who made it leaves.* **New server token** (a key that
+opens `app`) — a label (`maravilla web`) and a world, `production` disabled for a person whose
+production switch is off (*Production's is made by somebody your org lets act in production.*), else
+*It holds the agent in that world and pushes its knowledge base in a release — nothing else.* The
+token comes back **once**, as `PINECALL_KEY=pc_live_…` (`pc_test_…` in the sandbox) in a card with
+Copy — *Copy it now and put it in your server's secrets* — and is kept by nothing. The table: Name ·
+World · Whose (`the org's · made by <name>`, or `<name> · their own` for a person's key) · Last used
+(`never`) · Status (`active` green, `revoked` gray, the name dimmed); **Revoke** on a live row,
+pressed twice. Empty: *No token yet. A server's is made above; yours is made by `pinecall link`.*
 
 **Providers** — `/providers`: **Bring one** — a vendor and *the key, sent once* (`type=password`,
 emptied the moment it left; nothing reads a key back). Chips *All N · LLM n · STT n · TTS n*. Per
@@ -705,10 +711,12 @@ its kinds, and `your key` · `ready` · the standing in gray (`no key · no plug
 in.* **Three tabs**, the one showing in the address (`?tab=`): **People · Roles · Single sign-on**.
 
 - **People**: **Invite someone** — Email, Name, Role (`qa · supervisor · manager · admin ·
-  developer`), Agents (*every agent* when empty), and a pointer to the Roles tab; the answer's link
+  developer`), Agents (*every agent* when empty), **Production** (a switch, *acts in production*;
+  `always` for an admin), and a pointer to the Roles tab; the answer's link
   is shown **once**, in a card with Copy (*<name> is invited* — *copy it now: the table keeps the
   fingerprint, and it is never shown again*). The table: Name · Email · Role and Agents (each edited
-  in place on a click) · Status (`active` green · `invited` amber · `disabled` gray) and the moves —
+  in place on a click) · Production (a switch per person, `PATCH {production}`; `always` for an
+  admin, never a switch the gateway would refuse) · Status (`active` green · `invited` amber · `disabled` gray) and the moves —
   **Resend invite** on an invited one (the same invitation again: a fresh one-use link, no second
   seat), **Reset password** and **Disable** on an active member, **Bring back** on a disabled one,
   and **Remove** on any (*Out of the org for good: every key revoked, the seat freed*; it asks
@@ -718,7 +726,8 @@ in.* **Three tabs**, the one showing in the address (`?tab=`): **People · Roles
   spends every older link of theirs. Empty: *Nobody is a member yet: the org's machine key alone
   opens its doors. Invite the first person.*
 - **Roles** — Role · Who · Opens, one row per role off one constant (`team/roles.tsx`): *a preset of
-  what a person's keys open — changing one changes their next key, not a door*.
+  what a person's keys open — and where: the sandbox always, production when their switch is on (an
+  admin's always is)*.
 - **Single sign-on** (`GET /v1/org/sso`; not drawn without the door, and a `503` is the gateway's
   sentence about its vault): unset, a form — Issuer URL, Client ID, *Client secret, sent once*,
   Allowed domains, *Role for people who arrive new* (`nobody: invite first` among them), the switch
@@ -816,13 +825,19 @@ foot, and on the right half an illustration of the inbox — drawn, not data.
   that address.* The provider sends the person back to `/?login=<code>`, the one-use code this
   page already spends — no key is ever in a URL. It signs in to production;
   a refusal is the gateway's one sentence for every wrong thing. A `?login=<code>` that a production
-  `pinecall run` printed skips the card. The key is kept by the **browser** (`lib/session-key.ts`),
-  so a second tab is the same person; signing out forgets every key.
+  `pinecall start` printed skips the card. The person's **one** key is kept by the **browser**
+  (`lib/session-key.ts`, `localStorage`), so a second tab is the same person; signing out forgets it.
+  The world is not the key's: every request names `pinecall-env: production` (`shared/api.ts:headersFor`).
 - **Choose your password** — `/invitations/<token>`: the link an invitation or a reset is. Password
   (the box's own minimum, read off `/.well-known/pinecall`) and again; **Join**. It knows the token
   and nothing else about the person.
-- **This machine is not signed in** (local, the sidecar's key refused): `pinecall login`, then
-  `pinecall serve`. There is no form: the page holds no key to fix.
+- **No production access** (hosted, `screens/login/no-production.tsx`): the gateway refused this
+  person's key in production — their switch is off. The gateway's sentence (`<name> has no production
+  access: an admin gives it in Team`), **Sign in as somebody else**, and at the foot *Your sandbox is on
+  your machine: `pinecall serve` in your project's folder.*
+- **This project is not linked** (local, the sidecar's key refused — the project's `.env` holds a
+  revoked key, or none): *Link the project again, in its folder, then start it once more:*
+  `pinecall link`, then `pinecall serve`. There is no form: the page holds no key to fix.
 - **`/cli?c=<word>`** (hosted, signed in): *Sign this terminal in?* — a terminal calling itself
   <device> asked to be signed in as you — **Yes, that is my terminal**; then *Your terminal is
   signed in*. No word: *No terminal is asking*; a dead one: *That link is no good*. What the
@@ -834,7 +849,7 @@ foot, and on the right half an illustration of the inbox — drawn, not data.
 - **A number moved between worlds** — `PUT /v1/numbers/{number}/env` (`pinecall numbers move`).
 - **The agent's own declaration** — `GET /v1/agents/{slug}/config`: tools, stages, state fields, events. Only the visibility half is read today (the state pane). Whether the model may end the call itself — the class's `hangup` field, livekit's `end_call` tool — is drawn nowhere in the console; a call it ended reads `agent_hung_up` like any other end reason.
 - **Fleet and callbacks** — `GET /v1/fleet/standing`, `GET/POST /v1/callbacks`, events `fleet.full` and `callback.requested`.
-- **`GET /v1/calls/{call}/state`**, `GET /v1/evals/runs/{id}`, `POST /v1/evals/run`, `PUT /v1/knowledge/{base}` and the two goldens' own doors: the console goes through the log, the runs list and `pinecall run` instead.
+- **`GET /v1/calls/{call}/state`**, `GET /v1/evals/runs/{id}`, `POST /v1/evals/run`, `PUT /v1/knowledge/{base}` and the two goldens' own doors: the console goes through the log, the runs list and `pinecall start` instead.
 
 ## 11. What the console must keep true
 

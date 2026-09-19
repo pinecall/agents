@@ -21,7 +21,7 @@ function callerOf(contact: string): string {
 /**
  * The screen. The facts half is the gateway's doors — every caller's facts where the gateway lists
  * them, one contact read and forgotten where it does not — and the goldens half is the holding
- * process's own, because both goldens are files of the directory `pinecall run` runs in:
+ * process's own, because both goldens are files of the directory `pinecall start` runs in:
  * `memory/golden.json` for what recall ranks, `test/memory` for what a hang-up makes of a call.
  */
 export function Memory(): ReactNode {
@@ -225,8 +225,8 @@ function Goldens({ agent }: { agent: string }): ReactNode {
         <CardHead title="The goldens of this directory" />
         <Empty>
           {here.agent === null
-            ? "No agent class in the directory the agent's `pinecall run` runs in, so its goldens are not here."
-            : `The process holding the agent runs in ${here.agent}'s directory: to run ${agent}'s memory goldens, run \`pinecall run\` there.`}
+            ? "No agent class in the directory the agent's `pinecall start` runs in, so its goldens are not here."
+            : `The process holding the agent runs in ${here.agent}'s directory: to run ${agent}'s memory goldens, run \`pinecall start\` there.`}
         </Empty>
       </Card>
     );

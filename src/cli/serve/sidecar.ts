@@ -15,7 +15,7 @@ export const NOT_BUILT = "the console is not built: run scripts/build once, then
 // 4100–4104 has said something about their machine, and is told which flag answers it.
 const TRIES = 5;
 
-// A sidecar answers this at once or is not one: the probe must never hold `pinecall run` back.
+// A sidecar answers this at once or is not one: the probe must never hold `pinecall start` back.
 const PROBE_MS = 400;
 
 /** A sidecar in hand: where it is, whether this process opened it, and how to let go of it. */

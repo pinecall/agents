@@ -1,4 +1,4 @@
-/** The ways a browser gets a key of its own: a code `pinecall run` printed, an invitation accepted, a password, or the other world. */
+/** The ways a browser gets a key of its own: a code `pinecall start` printed, an invitation accepted, or a password. */
 
 import { z } from "zod";
 
@@ -22,7 +22,7 @@ export type Signed = z.infer<typeof SignedSchema>;
 // knows which device it was.
 const THIS_DEVICE = "console";
 
-/** Spend a one-use code from `?login=`: the key `pinecall run`'s process stood for, minted anew for this tab. */
+/** Spend a one-use code from `?login=`: the key `pinecall start`'s process stood for, minted anew for this tab. */
 export async function loginWithCode(base: string, code: string): Promise<Signed> {
   return login(base, { code, device: THIS_DEVICE });
 }
@@ -30,7 +30,7 @@ export async function loginWithCode(base: string, code: string): Promise<Signed>
 /** A person's own login: their email and password, and the org when they belong to several. */
 export async function loginWithPassword(
   base: string,
-  who: { org?: string; email: string; password: string; env?: "production" | "sandbox" },
+  who: { org?: string; email: string; password: string },
 ): Promise<Signed> {
   return login(base, { ...who, org: who.org === undefined || who.org === "" ? null : who.org, device: THIS_DEVICE });
 }
@@ -57,17 +57,9 @@ export async function orgsOf(credentials: Credentials): Promise<OrgOf[]> {
   return OrgsOfSchema.parse(await read(credentials, "/v1/login/orgs")).orgs;
 }
 
-/** The same person, another of their orgs: a key minted for them there, in this key's world. */
+/** The same person, another of their orgs: a key minted for them there. */
 export async function loginToOrg(credentials: Credentials, org: string): Promise<Signed> {
   return SignedSchema.parse(await post(credentials, "/v1/login/org", { org }));
-}
-
-/**
- * The same person, the other world: their key mints a sibling with the same scopes in the world
- * named. A machine key is refused there in a sentence — an org's own key opens one world.
- */
-export async function loginToWorld(credentials: Credentials, env: Signed["env"]): Promise<Signed> {
-  return SignedSchema.parse(await post(credentials, "/v1/login/env", { env }));
 }
 
 /**

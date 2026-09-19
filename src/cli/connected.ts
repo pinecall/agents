@@ -1,4 +1,4 @@
-/** The one line `pinecall run` prints when the socket is up: who registered, where, and as whom. */
+/** The one line `pinecall start` prints when the socket is up: who registered, where, and as whom. */
 
 import type { RouteInput } from "../client/index.js";
 
@@ -10,13 +10,13 @@ export interface Connected {
   /** Whose org took it, and which of the two worlds. Absent when the gateway would not say. */
   org?: string;
   env?: string;
-  /** Which profile's key opened the door. Said because it is the thing that decides the two
-   * above, and because it used to be decided by whatever was exported in the shell. */
+  /** Where the key that opened the door was read — the environment, or the project's .env. Said
+   * because it decides the two above, and because it used to be whatever the shell exported. */
   source?: string;
 }
 
 /**
- * The one line `pinecall run` prints when the socket is up.
+ * The one line `pinecall start` prints when the socket is up.
  *
  * It used to say the gateway and nothing else, and that cost an afternoon: a key exported in the
  * shell wins over the one `pinecall login` just kept, so an agent could register into another org

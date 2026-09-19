@@ -148,7 +148,7 @@ export function Evals(): ReactNode {
           <Empty>
             {roster !== null && roster.agent !== agent
               ? roster.agent === null
-                ? "No agent class in the directory the agent's `pinecall run` runs in, so no goldens to read."
+                ? "No agent class in the directory the agent's `pinecall start` runs in, so no goldens to read."
                 : `The process holding the agent runs in ${roster.agent}'s directory; its goldens are that agent's.`
               : away !== null && runs.runs.length === 0
                 ? "The goldens are files beside the class, read by the process holding the agent — and no run has been stored yet to list them from."

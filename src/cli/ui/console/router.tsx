@@ -17,7 +17,7 @@ import { RoomChat } from "./screens/talk";
 import { Evals } from "./screens/evals";
 import { FloorLive, FloorSessions } from "./screens/floor";
 import { Home } from "./screens/home";
-import { Keys } from "./screens/keys";
+import { Tokens } from "./screens/tokens";
 import { Lexicon } from "./screens/lexicon";
 import { Providers } from "./screens/providers";
 import { Knowledge } from "./screens/knowledge";
@@ -45,7 +45,7 @@ const ORG: Record<string, ReactNode> = {
   "org-memory": <OrgMemory />,
   numbers: <Numbers />,
   phone: <PhoneTesting />,
-  keys: <Keys />,
+  tokens: <Tokens />,
   providers: <Providers />,
   team: <Team />,
   usage: <Usage />,

@@ -193,6 +193,13 @@ approval.
 
 ## What CI runs, and what the nightly runs
 
+**The goldens are the gate before production, and CI is where they run.** Nothing between the
+sandbox and production checks the agent at the gateway — there is no promote: a change to the class
+reaches production by a deploy, and a tenant's pipeline runs `pinecall test` (and the retrieval
+goldens) before it, on a sandbox server token from the console's Tokens screen kept in the CI's
+secrets as `PINECALL_KEY`. A red run stops the deploy. [production.md](production.md) is the rest.
+What this repository's own CI runs:
+
 - **CI** (`.github/workflows/ci.yml`): `scripts/check` — build, lint, test — on every push. Ring
   0 only: no key, no model, no money. Both retrieval goldens belong here too when the gateway is
   reachable: `pinecall knowledge eval` and `pinecall memory eval` cost one embedding per question

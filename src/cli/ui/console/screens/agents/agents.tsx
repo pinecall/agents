@@ -9,7 +9,7 @@ import { CORNERS, meIn, somebodyElses, through, whoseCorner, type Corners } from
 import { ago, prettyNumber, startedOn, today } from "../../lib/format";
 import { has, MODE, ORG_SCREENS } from "../../lib/mode";
 import { useOrg } from "../../lib/org";
-import { opens, scopesLine } from "../../lib/scopes";
+import { opens } from "../../lib/scopes";
 import { useScopes, useWhoami } from "../../lib/whoami";
 import {
   Avatar,
@@ -33,7 +33,7 @@ import {
   Tag,
   tintAt,
 } from "../../ui";
-import { readKeys, type Listed } from "../keys/door";
+import { readTokens, type Listed } from "../tokens/door";
 import { readAvailable, readNumbers, type Answering } from "../numbers/door";
 import { readCatalogue, readVendors } from "../providers/door";
 import "./agents.css";
@@ -55,7 +55,7 @@ function useAccounts(): Accounts {
   const [accounts, setAccounts] = useState<Accounts>({ numbers: null, free: null, keys: null, catalogue: null, brought: [] });
   const may = (key: string): boolean => has(ORG_SCREENS, key) && scopes !== null && opens(scopes, key);
   const numbers = may("numbers");
-  const keys = may("keys");
+  const keys = has(ORG_SCREENS, "tokens");
   const providers = may("providers");
 
   useEffect(() => {
@@ -64,7 +64,7 @@ function useAccounts(): Accounts {
       const [routes, available, listed, catalogue, brought] = await Promise.all([
         numbers ? readNumbers(credentials).catch(() => null) : Promise.resolve(null),
         numbers ? readAvailable(credentials).catch(() => null) : Promise.resolve(null),
-        keys ? readKeys(credentials).catch(() => null) : Promise.resolve(null),
+        keys ? readTokens(credentials).catch(() => null) : Promise.resolve(null),
         providers ? readCatalogue(credentials).catch(() => null) : Promise.resolve(null),
         providers ? readVendors(credentials).catch(() => []) : Promise.resolve([]),
       ]);
@@ -103,7 +103,7 @@ export function Agents(): ReactNode {
     (accounts.numbers ?? []).filter((one) => one.route.agent === slug && one.route.number !== null).map((one) => prettyNumber(one.route.number));
   const activeKeys = accounts.keys?.filter((key) => key.revoked_at === null) ?? [];
   const ready = accounts.catalogue?.providers.filter((one) => one.standing === READY) ?? [];
-  const canIssue = MODE === "hosted" && scopes !== null && opens(scopes, "keys");
+  const canIssue = MODE === "hosted" && scopes !== null && scopes.includes("app");
 
   return (
     <Page>
@@ -112,8 +112,8 @@ export function Agents(): ReactNode {
         lede="Which agents this gateway is holding right now — the list changes the moment a socket connects."
         actions={
           canIssue ? (
-            <ButtonLink to="/keys" size="base">
-              Issue a key
+            <ButtonLink to="/tokens" size="base">
+              New server token
             </ButtonLink>
           ) : undefined
         }
@@ -127,7 +127,7 @@ export function Agents(): ReactNode {
           <Stat label="Calls live" value={live.length} />
         )}
         {accounts.keys !== null ? (
-          <Stat label="Active keys" value={activeKeys.length} of={`· ${accounts.keys.length - activeKeys.length} revoked`} />
+          <Stat label="Active tokens" value={activeKeys.length} of={`· ${accounts.keys.length - activeKeys.length} revoked`} />
         ) : (
           <Stat label="Calls today" value={ofToday.length} />
         )}
@@ -157,7 +157,7 @@ export function Agents(): ReactNode {
             {corners === "everything" ? (
               MODE === "local" ? (
                 <>
-                  Nothing of yours is running. <span className="ui-fixed">pinecall run</span> in a project puts its agents here.
+                  Nothing of yours is running. <span className="ui-fixed">pinecall start</span> in a project puts its agents here.
                 </>
               ) : (
                 <>Nothing is deployed here yet: production is held by a process on a box, on a machine key.</>
@@ -210,7 +210,7 @@ export function Agents(): ReactNode {
 
       {(accounts.keys !== null || accounts.catalogue !== null) && (
         <div className="agents-split">
-          {accounts.keys !== null && <KeysInUse keys={accounts.keys} />}
+          {accounts.keys !== null && <TokensInUse tokens={accounts.keys} />}
           {accounts.catalogue !== null && <ProvidersInUse catalogue={accounts.catalogue} brought={accounts.brought} />}
         </div>
       )}
@@ -218,18 +218,18 @@ export function Agents(): ReactNode {
   );
 }
 
-function KeysInUse({ keys }: { keys: Listed[] }): ReactNode {
-  const shown = [...keys].sort((a, b) => Number(a.revoked_at !== null) - Number(b.revoked_at !== null)).slice(0, 4);
+function TokensInUse({ tokens }: { tokens: Listed[] }): ReactNode {
+  const shown = [...tokens].sort((a, b) => Number(a.revoked_at !== null) - Number(b.revoked_at !== null)).slice(0, 4);
   return (
     <Card>
-      <CardHead title="Keys in use" action={<CardAction to="/keys">Manage</CardAction>} />
+      <CardHead title="Tokens in use" action={<CardAction to="/tokens">Manage</CardAction>} />
       <div className="ui-card-list">
-        {shown.length === 0 && <div className="agents-none">No key has been issued yet.</div>}
+        {shown.length === 0 && <div className="agents-none">No token has been made yet.</div>}
         {shown.map((key) => (
           <Item
             key={key.fingerprint}
             name={key.label ?? key.fingerprint}
-            sub={`${key.name ?? (key.subject === null ? "a machine" : key.subject)} · ${key.env === "sandbox" ? "sandbox" : scopesLine(key.scopes)}`}
+            sub={key.kind === "person" ? `${key.name ?? "a person"} · their own` : `the org's · ${key.env ?? ""}${key.created_by === null ? "" : ` · made by ${key.created_by}`}`}
             end={key.revoked_at === null ? <Pill tone="green">active</Pill> : <Pill tone="muted">revoked</Pill>}
           />
         ))}

@@ -154,7 +154,7 @@ export function Switcher({ agent }: { agent: string }): ReactNode {
               <div className="switch-empty">
                 {MODE === "local" ? (
                   <>
-                    Nothing is running here. <span className="ui-fixed">pinecall run</span> in a project puts its agents on this list.
+                    Nothing is running here. <span className="ui-fixed">pinecall start</span> in a project puts its agents on this list.
                   </>
                 ) : (
                   <>Nothing is deployed here yet: production is held by a process on a box, on a machine key.</>
