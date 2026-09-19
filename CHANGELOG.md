@@ -6,6 +6,13 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Added
+- **What is running, and a stop.** `pinecall agent list` prints every process holding the org's
+  agents in the world asked — the agents, whose corner, the machine and address, the SDK, since
+  when — and `pinecall agent stop <app>` closes one: the process prints `stopped by <name>` and
+  exits instead of dialling back. The console's Overview gains the same list, with a Stop per row.
+  The SDK sends the machine's name at `agent.register` and hears a stop on `pc.onStopped`.
+
 ## 0.5.0 — One key a person, a project linked to its org, `pinecall start`, and nothing promoted
 
 ### Added

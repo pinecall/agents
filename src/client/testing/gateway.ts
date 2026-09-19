@@ -94,6 +94,17 @@ export class FakeGateway {
     this.#sockets.clear();
   }
 
+  /**
+   * Stop every connected app the way a member of the org does (`POST /v1/apps/{app}/stop`): an
+   * `error` coded `stopped`, for no agent, and the socket closed after it.
+   */
+  stop(why: string): void {
+    for (const socket of this.#sockets) {
+      socket.send(JSON.stringify(this.#entry("", null, "error", { code: "stopped", message: why, recoverable: false })));
+      socket.close();
+    }
+  }
+
   /** Stop listening and hang up on everybody. */
   async close(): Promise<void> {
     this.cut();

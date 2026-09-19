@@ -287,7 +287,13 @@ opens `app`) goes to Tokens.
   `—` when nothing was judged or the gateway does not count. A row opens Talk. A key the gateway
   answers with more than its own corner gets chips: *everything* · *mine* · *the team's*.
   Empty, local: *Nothing of yours is running. `pinecall start` in a project puts its agents here.*;
-  hosted: *Nothing is deployed here yet: production is held by a process on a box, on a machine key.*; a filter that leaves nothing: *Nothing here is mine*.
+  hosted: *Nothing is running in production: `pinecall start --prod` on your server holds it, on a
+  server token.*; a filter that leaves nothing: *Nothing here is mine*.
+- **Processes** — one row an app socket (`GET /v1/apps`): the agents it holds, then
+  `<host> (<address>) · <sdk> · <whose> · connected <ago>`; read again whenever the agents list
+  changes. A key that may hold agents (`app`) gets **Stop** → **Stop it** on the row
+  (`POST /v1/apps/{app}/stop`): the app hears `stopped by <name>` and exits instead of dialling
+  back — a supervisor that restarts it starts it again. Empty: *No process is connected.*
 - **Tokens in use** (four, live ones first): label, then whose — `<name> · their own` for a person's,
   `the org's · <world> · made by <name>` for a server's — `active` / `revoked`. **Manage** → Tokens.
   Empty: *No token has been made yet.*

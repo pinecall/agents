@@ -1,7 +1,8 @@
 // The client: one socket, the agents on it, and a door to any log the key can read.
 
 import { createRequire } from "node:module";
-import type { Camel, CommandData, CommandType, Entry, EventType } from "@pinecall/protocol";
+import { hostname } from "node:os";
+import { eventOf, type Camel, type CommandData, type CommandType, type Entry, type EventType } from "@pinecall/protocol";
 import { Agent, type AgentGateway, type AgentOptions } from "./agent.js";
 import type { Call } from "./calls.js";
 import { Connection, type Backoff, type ConnectionOptions } from "./connection.js";
@@ -12,6 +13,10 @@ import type { World } from "./signed.js";
 
 // Two levels up from dist/client/, and from src/client/ under a loader: the package's own manifest.
 const { version } = createRequire(import.meta.url)("../../package.json") as { version: string };
+
+// The code of the `error` a member of the org sends by stopping this app (`POST /v1/apps/{app}/stop`):
+// the socket closes right after it, and the app stays closed — one that dialled back would stop nothing.
+const STOPPED = "stopped";
 
 /** Where the gateway is, who we are to it, and which world we hold our agents in. */
 export interface PinecallOptions {
@@ -40,6 +45,8 @@ export interface PinecallOptions {
 export class Pinecall implements AgentGateway {
   // `sdk` is the wire's field name for who is registering, so it is this object's too.
   readonly sdk = `pinecall/${version}`;
+  /** The machine this process runs on, as the gateway lists it beside the app. */
+  readonly host = hostname();
   /** The gateway this client talks to. */
   readonly url: string;
   /** The key it talks with. It travels in a header, never in a URL. */
@@ -50,6 +57,7 @@ export class Pinecall implements AgentGateway {
   readonly #listeners: Listeners<Call | null>;
   readonly #errors = new Set<(error: Error) => void>();
   readonly #connects = new Set<() => void>();
+  readonly #stops = new Set<(why: string) => void>();
   readonly #connection: Connection;
 
   constructor(options: PinecallOptions = {}) {
@@ -120,6 +128,17 @@ export class Pinecall implements AgentGateway {
     };
   }
 
+  /**
+   * Hear that a member of the org stopped this app. The socket is closed and stays closed, every
+   * agent's slug is free, and what the app does next — exit, most often — is the app's.
+   */
+  onStopped(listener: (why: string) => void): () => void {
+    this.#stops.add(listener);
+    return () => {
+      this.#stops.delete(listener);
+    };
+  }
+
   /** Hear what the client could not hand to anybody: a bad frame, a tool that threw, a lost socket. */
   onErrors(listener: (error: Error) => void): () => void {
     this.#errors.add(listener);
@@ -162,6 +181,10 @@ export class Pinecall implements AgentGateway {
   }
 
   #take(entry: Entry): void {
+    if (entry.type === "error" && entry.agent === "") {
+      const said = eventOf(entry);
+      if (said.type === "error" && said.data.code === STOPPED) return this.#stopped(said.data.message);
+    }
     const agent = this.#agents.get(entry.agent);
     if (agent === undefined) {
       // An entry for an agent this client never declared: the socket is shared, the app is not.
@@ -171,6 +194,22 @@ export class Pinecall implements AgentGateway {
       agent.take(entry);
     } catch (failed) {
       this.onError(asError(failed));
+    }
+  }
+
+  // Nobody listening is nobody who would ever learn why the app went quiet: it is said on the error door.
+  #stopped(why: string): void {
+    this.#connection.close();
+    if (this.#stops.size === 0) {
+      this.onError(new PinecallError(why));
+      return;
+    }
+    for (const listener of this.#stops) {
+      try {
+        listener(why);
+      } catch (failed) {
+        this.onError(asError(failed));
+      }
     }
   }
 

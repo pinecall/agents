@@ -1,4 +1,4 @@
-/** Overview: which agents this gateway holds, the numbers that ring them, the keys and vendors they run on. */
+/** Overview: which agents this gateway holds, the processes holding them, the numbers that ring them, the tokens and vendors they run on. */
 
 import type { HeldAgent } from "@pinecall/protocol";
 import { useEffect, useState, type ReactNode } from "react";
@@ -34,6 +34,7 @@ import {
   tintAt,
 } from "../../ui";
 import { readTokens, type Listed } from "../tokens/door";
+import { Processes } from "./processes";
 import { readAvailable, readNumbers, type Answering } from "../numbers/door";
 import { readCatalogue, readVendors } from "../providers/door";
 import "./agents.css";
@@ -160,7 +161,9 @@ export function Agents(): ReactNode {
                   Nothing of yours is running. <span className="ui-fixed">pinecall start</span> in a project puts its agents here.
                 </>
               ) : (
-                <>Nothing is deployed here yet: production is held by a process on a box, on a machine key.</>
+                <>
+                  Nothing is running in production: <span className="ui-fixed">pinecall start --prod</span> on your server holds it, on a server token.
+                </>
               )
             ) : (
               <>Nothing here is {corners}.</>
@@ -207,6 +210,8 @@ export function Agents(): ReactNode {
           </CardFoot>
         )}
       </Card>
+
+      <Processes held={held} stops={scopes !== null && scopes.includes("app")} />
 
       {(accounts.keys !== null || accounts.catalogue !== null) && (
         <div className="agents-split">

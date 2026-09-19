@@ -157,7 +157,9 @@ export function Switcher({ agent }: { agent: string }): ReactNode {
                     Nothing is running here. <span className="ui-fixed">pinecall start</span> in a project puts its agents on this list.
                   </>
                 ) : (
-                  <>Nothing is deployed here yet: production is held by a process on a box, on a machine key.</>
+                  <>
+                    Nothing is running in production: <span className="ui-fixed">pinecall start --prod</span> on your server holds it, on a server token.
+                  </>
                 )}
               </div>
             )}
