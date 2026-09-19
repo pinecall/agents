@@ -6,6 +6,8 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## 0.6.0 — What is running, where, and a stop it obeys
+
 ### Added
 - **What is running, and a stop.** `pinecall agent list` prints every process holding the org's
   agents in the world asked — the agents, whose corner, the machine and address, the SDK, since
