@@ -6,6 +6,8 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## 0.5.0 — One key a person, a project linked to its org, `pinecall start`, and nothing promoted
+
 ### Added
 - **`pinecall link`: a project's folder is linked to one org.** In the project's folder it signs
   the machine in through the browser if it is not, asks which of your orgs this is (`--org`
