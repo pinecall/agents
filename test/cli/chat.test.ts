@@ -18,7 +18,7 @@ describe("the caller socket chat opens", () => {
     );
   });
 
-  // The whole point of the verb: with a `pinecall run` running, the newest socket holding the
+  // The whole point of the verb: with a `pinecall start` running, the newest socket holding the
   // agent is that server's, so a chat that named nobody would run its tools over there.
   it("asks to be served by this process's own app socket when it has one", () => {
     expect(chatUrl("http://127.0.0.1:8080", "clinica-norte", "app_7c1e")).toBe(
@@ -100,7 +100,7 @@ describe("naming an agent, as against naming a file", () => {
 
 describe("`pinecall chat <agent>` mounts nothing", () => {
   // It is the caller's side alone, so the gateway hands the call to whoever is holding the slug —
-  // the other terminal's `pinecall run`, or a colleague's. No `app=`: naming this process would
+  // the other terminal's `pinecall start`, or a colleague's. No `app=`: naming this process would
   // ask a process that holds nothing to serve it.
   it("opens the chat socket at the slug with no app of its own", () => {
     expect(chatUrl("https://box.pinecall.io", "clinica-norte", undefined, "+34600123456")).toBe(

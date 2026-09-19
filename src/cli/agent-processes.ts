@@ -20,7 +20,7 @@ export async function listed(door: Door, out: NodeJS.WritableStream): Promise<nu
  * instead of dialling back. A supervisor that restarts whatever exits starts it again.
  */
 export async function stopped(door: Door, app: string | undefined, out: NodeJS.WritableStream, err: NodeJS.WritableStream): Promise<number> {
-  if (app === undefined) {
+  if (app === undefined || app === "") {
     err.write("usage: pinecall agent stop <app> — the app is the first column of `pinecall agent list`\n");
     return 2;
   }

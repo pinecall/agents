@@ -1,4 +1,4 @@
-// A gateway restarting under `pinecall run` is a blip: one line, a redial, and what the gateway
+// A gateway restarting under `pinecall start` is a blip: one line, a redial, and what the gateway
 // keeps only beside a live socket is said again. This pins the two pieces that decide it.
 
 import { describe, expect, it } from "vitest";

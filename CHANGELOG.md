@@ -6,6 +6,10 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Fixed
+- `pinecall agent stop ""` asks which app, as a bare `stop` does, instead of posting to
+  `/v1/apps//stop` and printing the gateway's 405.
+
 ## 0.6.0 — What is running, where, and a stop it obeys
 
 ### Added

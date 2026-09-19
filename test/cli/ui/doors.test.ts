@@ -24,7 +24,7 @@ describe("what a refusal becomes", () => {
   });
 });
 
-describe("the table by verb, as pinecall run answers the gateway", () => {
+describe("the table by verb, as pinecall start answers the gateway", () => {
   const chatting = {
     roster: async () => ({ agent: "clinica-norte", states: [] }),
     start: async (asked: unknown) => {
