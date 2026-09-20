@@ -4,7 +4,7 @@ All notable changes to `pinecall`, the package a tenant writes an agent in. The 
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version numbers and tags are the
 maintainer's call, so everything sits under Unreleased until one is cut.
 
-## [Unreleased]
+## 0.8.13 — A golden that asked the index the wrong question
 
 ### Fixed
 - **`docs eval` asks with the k a turn gets.** With no `--k` it asked at the gateway's own default
