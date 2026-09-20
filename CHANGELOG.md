@@ -4,6 +4,30 @@ All notable changes to `pinecall`, the package a tenant writes an agent in. The 
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version numbers and tags are the
 maintainer's call, so everything sits under Unreleased until one is cut.
 
+## 0.8.7 — What the doc audit found in the code
+
+### Fixed
+- **`this.call.today` reaches the class.** The bridge built the call world from the lifecycle
+  hook's shape, which has no such field, so the day the call opened — what a view and an agenda
+  have to count "today" and "el martes" from — was `undefined` in every mounted agent, and a class
+  that guarded it fell back to the machine's clock: a different day, in a different timezone, on a
+  box. `runtime/connect.ts` builds a `CallLine` now, and `test/runtime/connect.test.tsx` pins it.
+- **The Team screen's role table said what the runtime does not.** `supervisor`, `manager` and
+  `developer` all open `words` — the lexicon, the opening's words, what is remembered
+  (`types/member.py:ROLES`) — and the console's table omitted it for all three, so a supervisor
+  reading which doors their role opens was told the wrong set.
+
+### Changed
+- **The pages say what the tree does.** An audit of every page against the code: `docs/the-cli.md`
+  gained the flags it never named (`runs --json`, `memory policy` with `--agent` and `--note`,
+  `lexicon hear --note`, `sessions list`); `docs/writing-an-agent.md` gained the three refusals a
+  tenant hits at declaration (a tool name, `pii` naming a parameter that is not there, `stage` on a
+  class with no `stage` field), what `this.call` carries besides the room (`today`, `history`), and
+  the testing surface the package exports and no page named (`describe`, `runTool`, `snapshot`,
+  `diff`, `logOf`, `agent.on`, `static doc`, `mount`'s options) — and lost a claim about
+  `exactOptionalPropertyTypes`, which the tenant preset does not set; and
+  `docs/console-content-brief.md` was brought to the console that exists.
+
 ## 0.8.6 — A simulation says who it is playing
 
 ### Fixed

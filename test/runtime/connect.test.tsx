@@ -255,3 +255,16 @@ it("sends the language, and none of the environment, in the configure", async ()
   expect(config["language"]).toBe("es");
   for (const field of Object.keys(THE_WORLDS)) expect(config[field]).toBeUndefined();
 });
+
+// The day the call opened is the SDK call's, and the class reads it as `this.call.today`: an
+// agenda that resolves "el martes" counts from it. The bridge built the world from the hook's
+// shape, which has no such field, so every mounted agent saw `undefined` and fell back to the
+// machine's clock — which is a different day, in a different timezone, on a box.
+it("hands the class the day the call opened", async () => {
+  await connected();
+  started();
+  await settled();
+
+  const serving = mounted.instanceOf(CALL) as unknown as { call?: { today?: string } } | undefined;
+  expect(serving?.call?.today).toBe(new Date().toISOString().slice(0, 10));
+});

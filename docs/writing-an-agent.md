@@ -54,7 +54,8 @@ Two files carry the toolchain, and they are the only ceremony:
 
 ```jsonc
 // tsconfig.json — everything the framework needs told to the compiler comes from the preset
-{ "extends": "pinecall/tsconfig.tenant.json", "compilerOptions": { "noEmit": true, "types": ["node"] } }
+{ "extends": "pinecall/tsconfig.tenant.json", "compilerOptions": { "noEmit": true, "types": ["node"] },
+  "include": ["agents", "test"] }
 ```
 
 ```ts
@@ -140,8 +141,9 @@ knowing before they surprise you:
 
 - a **method** is not state, which is why a collaborator belongs in a method (`private agenda()`)
   and not in a getter: a getter ends up in the prompt and in a golden;
-- with `exactOptionalPropertyTypes`, a field a tool can empty again is declared
-  `patient?: Patient | undefined`.
+- a field a tool can empty again is declared `patient?: Patient` — and
+  `patient?: Patient | undefined` if you turn on `exactOptionalPropertyTypes`, which the tenant
+  preset does not and this framework's own build does.
 
 **Tools are the only writers.** A field assigned outside a tool and outside a lifecycle hook throws
 `UnauthoredWrite`. This is not a style rule: every change is recorded with the name of whoever
@@ -279,6 +281,13 @@ names and types become the JSON Schema the model fills.
 | `timeout: 8` | how long the platform waits for this method |
 | `params: z.object({…})` | an explicit schema, when the signature is not enough |
 
+Three of these are checked when the class is DECLARED or mounted, long before a call, and each
+refuses in a sentence that says what to write: a name that is not one word a model can call
+(`a tool name is one word a model can call, not …`); a `pii` naming a parameter the tool does not
+have (`tool X: pii names parameters the tool has; unknown: …`); and `stage` on a class with no
+`stage` field of its own (`tool X: stage names a value of this agent's own stage field, and C
+declares none; add \`stage: Stages<"…"> = "…"\` to the class, or ask when(state) instead`).
+
 A tool that throws is not a crash: the rejection becomes one `tool.result` carrying `error`, which
 the model reads and can act on. Throw a sentence a model can use (`NotOnTheTable(chosen, slots)`),
 not a stack trace.
@@ -350,6 +359,12 @@ this.call.invite("+34910000099", { kind: "sip" });
 this.call.send("cart", { total: 42 }, { to: identity });   // a payload to a browser in the room
 this.log("appointment.booked", booking);          // one named fact in the call's log
 ```
+
+Two more it carries, which a view and an agenda both want: `this.call.today` is the day this call
+opened, `YYYY-MM-DD`, and it is what "today" and "el martes" have to be counted from — never the
+machine's clock, which on a box is a different day in a different timezone. `this.call.history` is
+the conversation so far, `turns`, `last`, `length` and `summary`, for a tool that needs what was
+already said.
 
 A `render()` reads it too — `this.call.channel` is how the same class says two of these hours out
 loud and five of them in writing. It is only there while a call is being served: `pinecall prompt`
@@ -435,6 +450,21 @@ token): it runs the agent, binds no port and serves no page. What a person looks
 terminal, or a console — the sandbox's on their own machine (`pinecall serve`, which `--serve` opens
 beside the agent), and production's on the gateway. An app that would rather hold the agent in its
 own Node server mounts the class there instead: [production.md](production.md).
+
+And two flags of `agent set` the pipeline section above does not name — `--tts`, `--tts-model`,
+`--endpointing-ms`, `--min-interruption-words` — plus `pinecall docs drop <base>`, which takes a
+base out of the world altogether.
+
+**What the package hands a test**, beyond the class itself: `describe(Class, source)` gives a class
+its own source, so parameter types and docstrings survive a transpiler — without it the first tool
+spec built is refused for want of a docstring, and every ring-0 suite opens with it; `seal(new C())`
+is the instance a test drives; `runTool(agent, toolNamed(agent, "book"), args)` runs one tool the
+way the bridge would, `ToolFailed` is what it throws; `snapshot(agent)` is the state a golden
+carries, with `diff(before, after)` and `changes(agent)` over it; `logOf(agent)` and
+`onLog(agent, …)` are what the class wrote; `agent.on("state" | "event", …)` watches it in process;
+and `static doc` is the class's description for a build that strips comments. `mount` takes `slug`,
+`file`, `opening` and `takesUnclaimed` besides `pc` and `source` — `opening` is the seam
+`pinecall chat --state` opens a call in a declared state through.
 
 Next: [the-prompt.md](the-prompt.md) for the view, and [testing-an-agent.md](testing-an-agent.md)
 for the goldens.

@@ -6,7 +6,7 @@ import type { Agent as SdkAgent, AgentOptions, Call as SdkCall, Pinecall, Tool }
 import { Agent, onChange, onLog, recalled, seal, setCall, setLast } from "../agent/agent.js";
 import { eventsOf } from "../agent/accepts.js";
 import { visibilityOf } from "../agent/visibility.js";
-import { CallWorld, type Searching } from "../call/call.js";
+import { CallWorld, type CallLine, type Searching } from "../call/call.js";
 import { describe } from "../agent/docstrings.js";
 import { searchesKnowledge } from "../agent/searching.js";
 import { runHook, type Call as HookCall } from "../agent/lifecycle.js";
@@ -172,7 +172,7 @@ async function start(
 ): Promise<void> {
   const agent = seal(new ctor());
   if (last !== undefined) setLast(agent, last);
-  const world = new CallWorld(hookCall(call), (type, data) => send(type, call.id, data), searching);
+  const world = new CallWorld(callLine(call), (type, data) => send(type, call.id, data), searching);
   setCall(agent, world);
   const serving: Serving = { agent, ctor, call: world, warned: new Set<string>(), queue: Promise.resolve() };
   const link: Live = { agent, sent: { blocks: new Map() }, stop: [], serving };
@@ -251,6 +251,14 @@ function hookCall(call: SdkCall): HookCall {
   if (call.from !== null) hook.from = call.from;
   if (call.channel !== null) hook.channel = call.channel;
   return hook;
+}
+
+// What the CLASS holds is the hook's call and one thing more: the day this call opened, which the
+// wire carries and `onCall` has no field for. Built here because it was dropped here — the world
+// took `hookCall`'s shape, so `this.call.today` was undefined in every mounted agent and an agenda
+// asking for "today" silently fell back to the machine's clock.
+function callLine(call: SdkCall): CallLine {
+  return { ...hookCall(call), today: call.today };
 }
 
 // call.log carries an object; a tool that logged a number still deserves a line, so a value that

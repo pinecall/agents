@@ -527,6 +527,7 @@ will not have its agent say, and the latencies it holds a call to.
 pinecall runs list [--limit n] | show <id> | diff <a> <b>
 pinecall runs promote <call-id> [--name x] [--out test/candidates] [--from-seq n]
 pinecall runs drift --agent <slug> [--window 7d] [--baseline 30d] [--threshold 10]
+                … any of them with --json: what the gateway answered, for a pipe
 ```
 
 ```console
@@ -550,7 +551,7 @@ verdicts `call.score` already carries.
 ## `sessions`
 
 ```
-pinecall sessions [call] [--agent <slug>] [--limit <n>] [--json]
+pinecall sessions [list] [call] [--agent <slug>] [--limit <n>] [--json]
 ```
 
 ```console
@@ -686,7 +687,7 @@ too long to read whole — are [`pinecall docs`](#docs), attached to the same se
 ```
 pinecall lexicon [--json]
 pinecall lexicon add <word> --say '…' [--team] [--note '…']
-pinecall lexicon hear <word> [<word> …] [--team]
+pinecall lexicon hear <word> [<word> …] [--team] [--note '…']
 pinecall lexicon rm <word> [<word> …] [--team]
 pinecall lexicon history [--team]
                                         … and any of them with --prod, in production
@@ -700,7 +701,7 @@ said wrong forty times a day fixes it, without a developer and without a deploy 
 production, while their switch is on; the production console's Lexicon screen is the same edit.
 `history` and a word put back are the undo.
 
-`pinecall memory policy [--remember '…' …] [--forget '…' …] [--team] [--prod]` is the memory field of the
+`pinecall memory policy [--agent <slug>] [--remember '…' …] [--forget '…' …] [--team] [--note '…']` is the memory field of the
 same settings, on its own for the person whose job it is: what the agent keeps about a caller and
 what it never does.
 
@@ -987,6 +988,7 @@ golden is fixed and the index is the variable: never soften a question so a chan
 ```
 pinecall memory <contact>
 pinecall memory forget <contact>
+pinecall memory policy [--agent <slug>] [--remember '…' …] [--forget '…' …] [--team] [--note '…']
 pinecall memory eval [golden.json] [--k <n>] [--agent <name>] [--file agent.tsx]
 ```
 
