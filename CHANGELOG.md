@@ -6,6 +6,8 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## 0.8.4 — A corner that reads no base says so
+
 ### Fixed
 - **A corner that reads no base says so.** The gateway resolves an agent's settings knob by knob
   now, so a missing field means "not set here" and the corner below supplies it. Settings' Bases
