@@ -4,6 +4,14 @@ All notable changes to `pinecall`, the package a tenant writes an agent in. The 
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version numbers and tags are the
 maintainer's call, so everything sits under Unreleased until one is cut.
 
+## [Unreleased]
+
+### Fixed
+- **A `render()` can be about the turn it is answering.** The caller's turn reached the class's
+  `call.history`, but nothing asked for a new view when it did, so a render that read it was sent
+  one turn late — while the page has always said a view says what to do in THIS turn. The bridge
+  renders again when the turn lands, which is the window the platform's lookups already run in.
+
 ## 0.8.12 — An unknown flag, everywhere the same sentence
 
 ### Fixed

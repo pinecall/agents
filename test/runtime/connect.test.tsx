@@ -268,3 +268,27 @@ it("hands the class the day the call opened", async () => {
   const serving = mounted.instanceOf(CALL) as unknown as { call?: { today?: string } } | undefined;
   expect(serving?.call?.today).toBe(new Date().toISOString().slice(0, 10));
 });
+
+// The caller's turn is the fact a view is most often about, and the framework's own page says a
+// view says what to do in THIS turn. It could not: the turn reached the class's history, nothing
+// asked for a new view, and the render that read it was sent one turn late (2026-09-20).
+class AsksAboutTheTurn extends ClinicaNorte {
+  override render() {
+    const last = this.call.history.last;
+    return last?.who === "user" ? <p>They just said: {last.text}</p> : <p>Nobody has said anything yet.</p>;
+  }
+}
+
+it("renders again when the caller's turn lands, so a view can be about the turn it answers", async () => {
+  await connected(AsksAboutTheTurn);
+  started();
+  await settled();
+  const before = commands("prompt.set").length;
+
+  gateway.emit(SLUG, CALL, "turn.user", { text: "305 555 0101", speech_id: "s1", metrics: {} });
+  await settled();
+
+  const sent = commands("prompt.set").slice(before);
+  expect(sent.map((data) => data["name"])).toEqual(["view"]);
+  expect(String(sent[0]?.["text"])).toBe("They just said: 305 555 0101");
+});

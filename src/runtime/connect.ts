@@ -201,6 +201,13 @@ async function start(
         recalled(agent, wordsRecalled(event.data));
         sync(link, call);
       }
+      // And the caller's own turn, which is the fact a view is most often about — "they have just
+      // given you the number". It reaches the class here, off the log, like everything else, and
+      // without this the view a render() writes about the turn it is ANSWERING is only ever sent
+      // for the next one: the history had the turn and nothing asked for a new view (2026-09-20).
+      // The window is the gateway's own: it holds the request while this turn's lookups run
+      // (runtime's session/lookups.py), which is where the memory.ops above already land.
+      if (event.type === "turn.user") sync(link, call);
     }),
   );
 }

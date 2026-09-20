@@ -198,6 +198,21 @@ example paid for this distinction with real calls:
 The short rule: **the state says where the conversation is; the view says what to do about it in
 this turn.**
 
+### The turn the view is about
+
+A view is rendered again when the caller's turn lands, so `this.call.history.last` inside
+`render()` is **the turn being answered** and not the one before it:
+
+```tsx
+{this.call.history.last?.who === "user" && <p>Answer what they just asked, in one sentence.</p>}
+```
+
+It is the same point LiveKit gives an agent in `on_user_turn_completed` — after the words, before
+the model is asked — and the same window the platform's own lookups run in, so what the view says
+about the turn reaches the model that answers it. What is still the state's job is anything that
+has to SURVIVE the turn: the history is the conversation, and a field written by a tool is the
+decision.
+
 ## What it costs to get wrong
 
 `sync()` in the bridge renders after every state change and compares each block with what this
