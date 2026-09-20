@@ -7,10 +7,12 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
-- **Personas opens on the callers, not on a page about callers.** Where the screen used to
-  explain what a persona is, it now shows the org's: a table of every caller — what they want,
-  how many times they have been put on an agent, when the last run was and how it went — and a
-  row opens one. The explanation is one line, and the empty org is the only place it is needed.
+- **Personas opens on a standing, not on a page about callers.** Where the screen used to explain
+  what a persona is, it now reads like Overview: how many callers there are and how many have
+  never been called, how many runs between them, when the last one was — then **Latest runs**, the
+  newest simulations of the whole org whichever caller ran them, each row the session it was, and
+  **Never called**, which is the one thing on the screen somebody can act on. The explanation is
+  one line, and in full only where it is needed: an org with no callers yet.
 - **What a caller has actually done, beside the caller.** The Personas screen has a third pane:
   every simulation that persona has run, newest first — which agent answered, when, how many
   turns it took, how it ended, what the judges said, what it cost — and a row opens the session it
