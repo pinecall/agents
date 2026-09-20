@@ -1,8 +1,12 @@
 /** `pinecall supervise`: what a typed line means, and what a person at the desk is shown. */
 
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
+
 import { describe, expect, it } from "vitest";
 
-import { lineOf, moveOf, run } from "../../src/cli/supervise.js";
+import { ALREADY_ENDED, lineOf, moveOf, run } from "../../src/cli/supervise.js";
+import { pointingAt } from "./home.js";
 
 // A stream that keeps what was written, so a test reads the CLI's output as a string.
 function collected(): { stream: NodeJS.WritableStream; text(): string } {
@@ -76,4 +80,47 @@ describe("the verb itself", () => {
     expect(await run([], { err: err.stream, out: collected().stream })).toBe(2);
     expect(err.text()).toContain("usage: pinecall supervise <call>");
   });
+
+  // The desk used to open on anything: an id with a typo in it, or a call that ended hours ago,
+  // printed a prompt over an empty transcript and took moves nobody could land (2026-09-20).
+  it("refuses a desk on a call that has already ended, and says where to read it", async () => {
+    const gateway = await aGatewayWhereTheCall({ live: false, last_seq: 58 });
+    const err = collected();
+
+    const code = await run(["call_over"], { err: err.stream, out: collected().stream, env: gateway.env });
+
+    expect(code).toBe(2);
+    expect(err.text()).toContain(ALREADY_ENDED("call_over"));
+    await gateway.close();
+  });
+
+  it("refuses a desk on a call this gateway never wrote", async () => {
+    const gateway = await aGatewayWhereTheCall(null);
+    const err = collected();
+
+    await expect(run(["CA_typo"], { err: err.stream, out: collected().stream, env: gateway.env })).rejects.toThrow(
+      "no call CA_typo on this gateway",
+    );
+    await gateway.close();
+  });
 });
+
+/** A gateway whose `/state` door answers with that standing, or 404 when there is none. */
+async function aGatewayWhereTheCall(standing: { live: boolean; last_seq: number } | null): Promise<{
+  env: NodeJS.ProcessEnv;
+  close(): Promise<void>;
+}> {
+  const server = createServer((_request, response) => {
+    response.writeHead(standing === null ? 404 : 200, { "content-type": "application/json" });
+    response.end(JSON.stringify(standing ?? { detail: "no log for call" }));
+  });
+  await new Promise<void>((bound) => server.listen(0, "127.0.0.1", bound));
+  const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  return {
+    env: pointingAt(url, "pc_a_key"),
+    close: async () => {
+      server.closeAllConnections();
+      await new Promise<void>((closed) => server.close(() => closed()));
+    },
+  };
+}

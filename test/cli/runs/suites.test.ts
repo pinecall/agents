@@ -37,9 +37,26 @@ describe("what moved between two runs", () => {
     expect(movedBetween(aRun("a", [HELD]), aRun("b", [HELD]))).toEqual([]);
   });
 
-  it("says nothing about a golden the older run never had, rather than calling it a change", () => {
+  it("says nothing about a golden the older run never had and that held, rather than calling it a change", () => {
     const fresh: Cell = { ...HELD, golden: "nueva" };
 
     expect(movedBetween(aRun("a", [HELD]), aRun("b", [HELD, fresh]))).toEqual([]);
+  });
+
+  // `runs diff` said "nothing moved" over a run whose own `--json` listed failures: every cell of
+  // it was new, so nothing was compared and nothing was printed (production, 2026-09-20).
+  it("prints a broken measurement the older run never made, so no failure is silent", () => {
+    const fresh: Cell = { ...BROKEN, golden: "nueva" };
+
+    const moved = movedBetween(aRun("a", [HELD]), aRun("b", [HELD, fresh]));
+
+    expect(moved).toHaveLength(1);
+    expect(moved[0]).toContain("nueva  tools  not measured → broken");
+  });
+
+  it("names what the newer run stopped measuring, so a golden nobody ran is not read as a fix", () => {
+    const moved = movedBetween(aRun("a", [BROKEN]), aRun("b", []));
+
+    expect(moved).toEqual(["  reserva  tools  broken → not measured"]);
   });
 });

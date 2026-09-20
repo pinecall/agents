@@ -17,7 +17,7 @@ import { refusal } from "./whoami.js";
 
 const USAGE = `usage: pinecall memory <contact>
        pinecall memory forget <contact>
-       pinecall memory policy [--remember '…' …] [--forget '…' …] [--team] [--agent <slug>]
+       pinecall memory policy [--remember '…' …] [--forget '…' …] [--team] [--note '…'] [--agent <slug>]
        pinecall memory eval [golden.json] [--k <n>] [--agent <name>] [--file agent.tsx]`;
 
 // The door takes the whole golden and needs no contact: every question carries its own facts.

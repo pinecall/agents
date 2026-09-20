@@ -89,6 +89,30 @@ describe("the groups the CLI answers to", () => {
     }
   });
 
+  // `--prod` says which world ONE command runs in, and a verb that asks nobody anything has no
+  // world to name: `pinecall prompt --prod` took the flag and rendered the same offline prompt,
+  // which reads as production having been consulted (2026-09-20).
+  it("refuses --prod on a verb that reaches no gateway", async () => {
+    const err = collected();
+
+    const code = await main(["prompt", "--prod", "--state", "nothing.json"], collected().stream, err.stream);
+
+    expect(code).toBe(2);
+    expect(err.text()).toContain("prompt reaches no gateway, so --prod names nothing");
+  });
+
+  // Node's own sentence for a flag nobody wrote names `--` and positional arguments; a person
+  // wants the verb whose flag it was not, and the page that lists the flags it does take.
+  it("names the verb and its help when a flag is not one of that verb's", async () => {
+    const err = collected();
+
+    const code = await main(["whoami", "--json"], collected().stream, err.stream);
+
+    expect(code).toBe(2);
+    expect(err.text()).toContain("pinecall: no such flag for whoami: '--json'");
+    expect(err.text()).toContain("`pinecall whoami --help`");
+  });
+
   it("prints nothing but the line when a planned group runs", () => {
     const out = collected();
 

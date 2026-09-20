@@ -1,11 +1,11 @@
 /** `pinecall eval <call-id>`: ring 3 — one real call, re-evaluated by the runtime's code checks. */
 
-import { readFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
 
 import { signed } from "../client/signed.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
+import { readNamedJson } from "./named-file.js";
 import type { Door } from "./testing/gateway.js";
 
 /** One check's answer, as `POST /v1/evals/replay/{call}` writes it: three strings, no nesting. */
@@ -61,9 +61,12 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
   }
   const door = theDoor();
   if (door === undefined) return 2;
+  // The policy is read BEFORE the gateway is asked anything: a path with a typo in it is a
+  // command that cannot run (exit 2), not a measurement that did not hold (exit 1).
+  const policy = theCase(values.policy);
   let answer: Answer;
   try {
-    answer = await replayed(door, call, await theCase(values.policy));
+    answer = await replayed(door, call, policy);
   } catch (refused) {
     process.stderr.write(`${refused instanceof Error ? refused.message : String(refused)}\n`);
     return 1;
@@ -106,7 +109,7 @@ export function linesOf(answer: Answer): string[] {
 
 // The words and the budget are the business's, so they come out of a file the business keeps.
 // A generated `evals/policies` would be the same JSON; nothing here cares which wrote it.
-async function theCase(policy: string | undefined): Promise<Case> {
+function theCase(policy: string | undefined): Case {
   if (policy === undefined) return {};
-  return JSON.parse(await readFile(policy, "utf8")) as Case;
+  return readNamedJson<Case>("--policy", policy);
 }

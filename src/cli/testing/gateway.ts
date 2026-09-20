@@ -229,8 +229,33 @@ export class Refused extends Error {
     readonly status: number,
     readonly text: string,
   ) {
-    super(`the gateway answered ${status}: ${text}`);
+    super(`the gateway answered ${status}: ${saidIn(text)}`);
   }
+}
+
+/**
+ * The gateway's own sentence out of the body it arrived in. FastAPI puts a refusal under `detail`
+ * — `{"detail": "no persona called x in this org"}` — and a person should read that and not the
+ * JSON around it. A 422 is a LIST of what was wrong with the request, so it reads as the field
+ * and the rule: `limit: Input should be greater than or equal to 1`. Anything this cannot parse
+ * is printed exactly as it arrived, because a body nobody recognises is still evidence.
+ */
+export function saidIn(text: string): string {
+  try {
+    const said: unknown = (JSON.parse(text) as { detail?: unknown }).detail;
+    if (typeof said === "string") return said;
+    if (Array.isArray(said)) return said.map(oneComplaint).join("; ");
+    return text;
+  } catch {
+    return text;
+  }
+}
+
+// One line of a 422: which part of the request, and what was expected of it.
+function oneComplaint(said: unknown): string {
+  const { loc, msg } = said as { loc?: unknown[]; msg?: string };
+  const where = (loc ?? []).slice(1).join(".");
+  return where === "" ? (msg ?? "") : `${where}: ${msg ?? ""}`;
 }
 
 // One door, one fetch, one refusal: every verb that knocks here spells neither the header, the

@@ -40,6 +40,7 @@ export const group: Group = {
   --listen            the call on this machine's speakers while it happens; turns --voice on
   --background-noise  dB under the caller: a television behind them. Spoken runs only
   --packet-loss       percent of the caller's packets that never arrive. Spoken runs only
+  --agent <name>      which agent of a project of several plays the other half
   --file agent.tsx    which class to mount, when the directory holds more than one`,
   run,
 };

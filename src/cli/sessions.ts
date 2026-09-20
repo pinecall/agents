@@ -4,14 +4,16 @@ import { parseArgs } from "node:util";
 
 import type { Cost, SessionLine } from "@pinecall/protocol";
 
+import { CannotRun } from "./cannot-run.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { asked, type Door } from "./testing/gateway.js";
 import { agentOfThisDirectory, notASlug } from "./load.js";
 import { BROKEN, HELD } from "./testing/score.js";
+import { standingOf } from "./the-call.js";
 import { refusal } from "./whoami.js";
 
-const USAGE = "usage: pinecall sessions [call] [--agent <slug>] [--limit <n>] [--json]";
+const USAGE = "usage: pinecall sessions [list] [call] [--agent <slug>] [--limit <n>] [--json]";
 
 // The two entries a finished call ends with, and the only two this verb reads. Asking the log for
 // them by name is what keeps `show` one request on almost every call: the door filters at the sink.
@@ -64,6 +66,9 @@ export async function run(argv: string[], how: Running = {}): Promise<number> {
     out.write(`${lines.join("\n")}\n`);
     return 0;
   } catch (refused) {
+    // A call nobody wrote is a command that cannot run, and the dispatcher gives it the 2 that
+    // says so; everything else here is the gateway refusing what was asked, which is a 1.
+    if (refused instanceof CannotRun) throw refused;
     err.write(`${refusal(refused)}\n`);
     return 1;
   }
@@ -107,11 +112,17 @@ export function lineOf(one: SessionLine): string {
 // ── one call ────────────────────────────────────────────────────────────────────
 
 async function shown(door: Door, call: string, asJson: boolean): Promise<string[]> {
+  // Asked before the log is read: the events door answers an empty page for a call nobody ever
+  // opened, so a typed id used to print a summary of nothing and leave with a zero.
+  const standing = await standingOf(door, call);
   const ending = await theEndingOf(door, call);
   if (asJson) return [JSON.stringify(ending)];
   const summary = ending["call.summary"];
   const score = ending["call.score"];
   const lines = [call, ""];
+  // A call still running has written no summary and no score, and "not judged" is the wrong
+  // reason for that: nothing has been judged because nothing has ended.
+  if (standing.live) lines.push("  live      this call is still running — `pinecall supervise` is the desk for it", "");
   if (summary !== undefined) {
     lines.push(`  outcome   ${String(summary["outcome"] ?? "—")}`);
     lines.push(`  ended     ${String(summary["reason"] ?? "—")} · ${seconds(Number(summary["duration_s"] ?? 0))} · ${String(summary["turns"] ?? 0)} turns`);

@@ -45,6 +45,12 @@ export async function main(
     err.write(`pinecall: no such group: ${name}\n\n${usage()}`);
     return 2;
   }
+  // `--prod` on a verb that talks to nobody was taken and ignored, which reads as production
+  // having been asked for. A verb that reaches no gateway says so instead.
+  if (world !== undefined && group.offline === true) {
+    err.write(`pinecall: ${name} reaches no gateway, so --prod names nothing it could ask\n`);
+    return 2;
+  }
   // A group's flags are the group's own, so its help is too: the dispatcher only knows to ask.
   if (rest[0] === "--help" || rest[0] === "-h") {
     out.write(helpFor(name, group));
@@ -58,12 +64,12 @@ export async function main(
   try {
     return await inTheWorld(world, async () => await group.run(rest));
   } catch (failed) {
-    err.write(`pinecall: ${failed instanceof Error ? failed.message : String(failed)}\n`);
+    err.write(`pinecall: ${saidBy(failed, name)}\n`);
     // 2 is "this command cannot run": a name nobody wrote, a project of several agents with none
     // named, a golden with no such case. Retrying it changes nothing, and a script reads the
     // difference. Everything else is 1: something was measured and did not hold, or the gateway
     // refused what was asked.
-    return failed instanceof CannotRun ? 2 : 1;
+    return failed instanceof CannotRun || isAnUnknownFlag(failed) ? 2 : 1;
   }
 }
 
@@ -151,6 +157,21 @@ function isEntry(): boolean {
   } catch {
     return false;
   }
+}
+
+// What a thrown refusal SAYS. Node's own `parseArgs` throws for a flag nobody wrote, and its
+// sentence names `--` and positional arguments — a paragraph about node, where a person wants the
+// verb's own usage. Everything else says what it says.
+function saidBy(failed: unknown, verb: string): string {
+  const said = failed instanceof Error ? failed.message : String(failed);
+  if (!isAnUnknownFlag(failed)) return said;
+  const named = said.split(".")[0]!.replace("Unknown option", `no such flag for ${verb}:`);
+  return `${named} — \`pinecall ${verb} --help\``;
+}
+
+// Node's own code for it, so the reading and the exit code agree on what happened.
+function isAnUnknownFlag(failed: unknown): boolean {
+  return failed instanceof Error && (failed as NodeJS.ErrnoException).code === "ERR_PARSE_ARGS_UNKNOWN_OPTION";
 }
 
 // `pinecall runs list | head` closes the pipe after ten lines, and a write into a closed pipe is

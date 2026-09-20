@@ -13,6 +13,7 @@ const USAGE = [
   "usage: pinecall runs list [--limit n] | show <id> | diff <a> <b>",
   "       pinecall runs promote <call-id> [--name x] [--out test/candidates] [--from-seq n]",
   "       pinecall runs drift --agent <slug> [--window 7d] [--baseline 30d] [--threshold 10]",
+  "                … any of them with --json: what the gateway answered, for a pipe",
   "",
 ].join("\n");
 

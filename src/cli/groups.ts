@@ -5,6 +5,9 @@ export interface Group {
   purpose: string;
   /** What `pinecall <group> --help` prints under the purpose: the flags this group takes. */
   usage?: string;
+  /** True for a verb that reaches no gateway at all, so `--prod` would name a world nobody asks
+   * about: the dispatcher refuses the flag there rather than accepting it and doing nothing. */
+  offline?: true;
   run(argv: string[]): Promise<number> | number;
 }
 

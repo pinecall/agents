@@ -1,15 +1,15 @@
 /** `pinecall prompt [agent.tsx] --state file`: the exact prompt a state would produce, offline. */
 
-import { cannotRun } from "./cannot-run.js";
-import { readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
 import type { Snapshot } from "../agent/state.js";
 import { showPrompt } from "../views/render.js";
-import { showMachine } from "./machine.js";
+import { cannotRun } from "./cannot-run.js";
+import { AGENT_FLAG, oneHome } from "./home.js";
 import type { Group } from "./groups.js";
 import { instanceFor, load } from "./load.js";
-import { AGENT_FLAG, oneHome } from "./home.js";
+import { showMachine } from "./machine.js";
+import { readNamedJson } from "./named-file.js";
 
 /** One case of a goldens file: a state to start from, and what the caller then says. */
 interface Case {
@@ -18,6 +18,7 @@ interface Case {
 
 export const group: Group = {
   purpose: "the exact prompt a state would produce, offline",
+  offline: true,
   usage: `usage: pinecall prompt [agent.tsx] --state <file> [--case n] [--agent <name>]
 
   The three regions of the prompt as the model would receive them — the static prefix, the
@@ -66,7 +67,7 @@ export async function run(
  * to wrap it in brackets to see what it renders.
  */
 export function firstState(file: string, which: string | undefined): Snapshot {
-  const parsed = JSON.parse(readFileSync(file, "utf8")) as Case | Case[];
+  const parsed = readNamedJson<Case | Case[]>("--state", file);
   const cases = Array.isArray(parsed) ? parsed : [parsed];
   const index = which === undefined ? 0 : Number(which);
   const chosen = cases[index];

@@ -4,6 +4,38 @@ All notable changes to `pinecall`, the package a tenant writes an agent in. The 
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version numbers and tags are the
 maintainer's call, so everything sits under Unreleased until one is cut.
 
+## [Unreleased]
+
+### Fixed
+- **A call nobody wrote is refused by name.** `sessions show CA_typo` printed a summary of nothing
+  and `score not judged`, with exit 0, because the events door answers an empty page for a call
+  that was never opened; `supervise CA_typo` opened a desk over an empty transcript and took moves
+  that could not land. Both ask the one door that knows — `GET /v1/calls/{call}/state` — first. A
+  desk also refuses a call that has ENDED, naming `sessions show` as the way to read it, and
+  `sessions show` on a call still running says so rather than reporting it unjudged.
+- **`runs diff` no longer says "nothing moved" over a broken run.** It compared only the cells both
+  runs held, so a newer run whose goldens had all moved read as no change while its own `--json`
+  listed failures. A measurement the older run never made is printed when it is BROKEN
+  (`not measured → broken`, and the exit code is 1), and one the newer run stopped making is
+  printed too, so a golden nobody ran is not read as a fix.
+- **A flag a verb does not take is refused, with that verb's help.** `whoami --json` was accepted
+  and answered with the same two lines, and node's own sentence for an unknown option names `--`
+  and positional arguments. It reads `no such flag for whoami: '--json' — \`pinecall whoami --help\``
+  and exits 2.
+- **`--prod` is refused by a verb that reaches no gateway.** `prompt --prod` took the flag and
+  rendered the same offline prompt, which reads as production having been consulted.
+- **A file a flag named says what was wrong with it.** `eval --policy missing.json` and
+  `prompt --state missing.json` printed node's `ENOENT: no such file or directory, open …`, and a
+  file with a trailing comma printed `Unexpected token }` with no file in the sentence. Both name
+  the flag and the file now, and cannot-run is exit 2.
+- **The gateway's sentence, not the JSON it arrived in.** A refusal printed
+  `the gateway answered 404: {"detail":"no eval run …"}`; FastAPI's `detail` is read out of it, and
+  a 422 reads as the field and the rule it broke.
+
+### Changed
+- `simulate --help` lists `--agent`, `memory --help` lists `policy --note`, `runs --help` and its
+  page list `--json`, and `sessions --help` names the optional `list` the verb has always taken.
+
 ## 0.8.9 — A flag that does nothing, and a refusal nobody could read
 
 ### Fixed

@@ -1,8 +1,10 @@
 /** `pinecall whoami`: which gateway this terminal talks to, whose key it holds, and where it found it. */
 
+import { parseArgs } from "node:util";
+
 import { doorLine, theDoor } from "./env.js";
 import type { Group } from "./groups.js";
-import { asked, Refused, type Door } from "./testing/gateway.js";
+import { asked, type Door } from "./testing/gateway.js";
 
 // The door that answers who is knocking, written once: `login` proves a key at this same path,
 // through whoIs() below, so neither verb spells it.
@@ -37,11 +39,15 @@ export const group: Group = {
 
 /** Resolve the door, ask it who is knocking, and print the two lines. */
 export async function run(
-  _argv: string[],
+  argv: string[],
   out: NodeJS.WritableStream = process.stdout,
   err: NodeJS.WritableStream = process.stderr,
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<number> {
+  // This verb takes no flag at all, and a parser that reads none is how it says so: `whoami
+  // --json` was taken and answered with the same two lines, which reads as JSON having been
+  // refused rather than never offered (2026-09-20).
+  parseArgs({ args: argv, options: {} });
   const door = theDoor(env, err);
   if (door === undefined) return 2;
   let who: Who;
@@ -87,18 +93,5 @@ export function describing(who: Who): string {
  * "this door takes an API key" is the whole answer, and `{"detail": …}` around it is noise.
  */
 export function refusal(failed: unknown): string {
-  if (!(failed instanceof Refused)) return failed instanceof Error ? failed.message : String(failed);
-  const said = detailOf(failed.text);
-  return said === undefined ? failed.message : `the gateway answered ${failed.status}: ${said}`;
-}
-
-// FastAPI puts a refusal's sentence under `detail`; anything else is printed as it arrived.
-function detailOf(text: string): string | undefined {
-  try {
-    const body: unknown = JSON.parse(text);
-    const said = (body as { detail?: unknown }).detail;
-    return typeof said === "string" ? said : undefined;
-  } catch {
-    return undefined;
-  }
+  return failed instanceof Error ? failed.message : String(failed);
 }

@@ -9,6 +9,7 @@ import { Pinecall } from "../client/index.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { asked, type Door } from "./testing/gateway.js";
+import { standingOf } from "./the-call.js";
 import { refusal } from "./whoami.js";
 
 const USAGE = "usage: pinecall supervise <call>";
@@ -59,6 +60,14 @@ export async function run(argv: string[], how: Running = {}): Promise<number> {
   }
   const door = theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
+  // A desk is for a call that is happening. Opened on an id nobody wrote, or on one that ended
+  // hours ago, it printed a prompt over an empty transcript and waited for moves that could not
+  // land — and left with a zero (production, 2026-09-20).
+  const standing = await standingOf(door, call);
+  if (!standing.live) {
+    err.write(`${ALREADY_ENDED(call)}\n`);
+    return 2;
+  }
   out.write(`${call} · ${ON_THE_SPEAKERS}\n`);
   const pc = new Pinecall({ url: door.url, apiKey: door.apiKey });
   try {
@@ -68,6 +77,10 @@ export async function run(argv: string[], how: Running = {}): Promise<number> {
     return 1;
   }
 }
+
+/** A call that is over takes no move: what it was is `sessions show`, and the desk says so. */
+export const ALREADY_ENDED = (call: string): string =>
+  `${call} has ended, and a desk moves a call that is happening: \`pinecall sessions show ${call}\` reads it`;
 
 /**
  * The two halves at once: the log printing itself, and a keyboard sending verbs. Neither waits for

@@ -1,6 +1,6 @@
 /** The suites this gateway has run, read back: one line each, one whole, and what moved between two. */
 
-import { entriesOf, oneRun, theRuns, type Door, type EvalRun } from "../testing/gateway.js";
+import { entriesOf, oneRun, theRuns, type Cell, type Door, type EvalRun } from "../testing/gateway.js";
 import { mediansOf } from "../testing/latency.js";
 import { DECLARED, reportOf, type Latencies } from "../testing/matrix.js";
 import { reasonOf } from "../testing/score.js";
@@ -55,24 +55,53 @@ export async function diffed(
   const [was, now] = [await oneRun(door, before), await oneRun(door, after)];
   const moved = movedBetween(was, now);
   out.write(`${[`${before} → ${after}`, ...(moved.length > 0 ? moved : ["  nothing moved"])].join("\n")}\n`);
-  return moved.some((line) => line.includes("held → broken")) ? 1 : 0;
+  return moved.some((line) => line.includes(`→ ${BROKEN}`)) ? 1 : 0;
 }
 
-/** Every graph whose answer is not what it was, named as it moved. */
+/** What a measurement is called in a diff line, on either side of the arrow. */
+const HELD = "held";
+const BROKEN = "broken";
+const UNMEASURED = "not measured";
+
+/**
+ * Every graph whose answer is not what it was, named as it moved.
+ *
+ * A measurement the older run never made is not a regression — the goldens moved under it — but a
+ * BROKEN one is still the news: `runs diff` said "nothing moved" over a newer run whose own
+ * `--json` listed failures, because no cell of it matched a cell of the older run at all
+ * (production, 2026-09-20). A new measurement that HELD stays out: nothing went wrong, and a diff
+ * of two runs after a golden was added should not read as a page of changes.
+ */
 export function movedBetween(was: EvalRun, now: EvalRun): string[] {
   const lines: string[] = [];
   for (const cell of now.matrix?.runs ?? []) {
-    const before = was.matrix?.runs.find(
-      (one) => one.model === cell.model && one.golden === cell.golden,
-    );
+    const before = cellIn(was, cell.model, cell.golden);
     for (const score of cell.scores) {
       const older = before?.scores.find((one) => one.metric === score.metric);
-      if (older === undefined || older.passed === score.passed) continue;
-      const way = older.passed ? "held → broken" : "broken → held";
+      if (older === undefined) {
+        if (score.passed) continue;
+        lines.push(`  ${cell.golden}  ${score.metric}  ${UNMEASURED} → ${BROKEN}  ${reasonOf(score)}`);
+        continue;
+      }
+      if (older.passed === score.passed) continue;
+      const way = older.passed ? `${HELD} → ${BROKEN}` : `${BROKEN} → ${HELD}`;
       lines.push(`  ${cell.golden}  ${score.metric}  ${way}  ${reasonOf(score)}`);
     }
   }
+  // And what the newer run stopped measuring: a golden deleted or a model dropped is why a
+  // failure "went away", and a diff that hides it reads as a fix nobody made.
+  for (const cell of was.matrix?.runs ?? []) {
+    const after = cellIn(now, cell.model, cell.golden);
+    for (const score of cell.scores) {
+      if (after?.scores.some((one) => one.metric === score.metric) === true) continue;
+      lines.push(`  ${cell.golden}  ${score.metric}  ${score.passed ? HELD : BROKEN} → ${UNMEASURED}`);
+    }
+  }
   return lines;
+}
+
+function cellIn(run: EvalRun, model: string, golden: string): Cell | undefined {
+  return run.matrix?.runs.find((one) => one.model === model && one.golden === golden);
 }
 
 // One run on one line: the id first, because the next thing a person types is `runs show <id>`.

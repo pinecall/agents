@@ -52,7 +52,8 @@ path end to end, with every output under it.
 | [`whoami`](#whoami) | which gateway, which org, whether you act in production, and where the key came from | yes |
 
 `--prod` is no verb's and every verb's: anywhere on the line, it runs that one command in
-production ([below](#where-the-gateway-and-the-key-come-from)).
+production ([below](#where-the-gateway-and-the-key-come-from)) — and a verb that asks no gateway
+anything, `prompt`, refuses it instead of accepting a world it never visits.
 
 Declared and not written: `new`, `g`, `observe`, `costs`, `call`, `tokens`, `deploy`. Typing one prints `<verb> is not built yet: <what it is for>` and exits 0 — a person who types a verb deserves
 better than "unknown command". `src/cli/groups.ts` is the one place that says which half of the
@@ -373,6 +374,7 @@ pinecall prompt [agent.tsx] --state <file> [--case n] [--agent <name>]
 The exact prompt a state would produce, offline: **no gateway, no key, no call**. The three
 regions in the order the model receives them, then the stage and the tools that stage shows. The
 verb you run while writing a `render()`, and it answers in the time it takes to save the file.
+Because it asks nobody anything, `--prod` is refused here rather than taken and ignored.
 
 ```console
 $ pinecall prompt --state test/clinica-norte/goldens/identifica-al-paciente.json
@@ -537,7 +539,9 @@ run_5c6b559d6093  2026-09-11 11:56:49  clinica-norte     done     2/2
 ```
 
 `show` prints one run the way `test` printed it when it happened; `diff` says what moved between
-two, golden by golden. **`promote`** writes one real call down as a golden **candidate** in
+two, golden by golden — a measurement that HELD and is new to the later run is not a change and is
+left out, one that is BROKEN is printed (`not measured → broken`), and one the later run stopped
+making is printed too, so a golden nobody ran is never read as a fix. **`promote`** writes one real call down as a golden **candidate** in
 `test/candidates` — the state it was in, every caller turn from `--from-seq`, and an `expect`
 derived from what the judges answered — for a person to edit before it counts as a golden.
 **`drift`** counts each judge's held-rate over two windows of finished calls and exits 1 when one
@@ -566,7 +570,8 @@ clinica-norte · 3 calls
 With a call id: that call whole — what it was, how long, why it ended, what it cost, and the
 **score**, one line per judge with the question it answered and its own reasoning when it did not
 hold. The judging is ring 4's, at hang-up, in the gateway; this verb reads it back and runs
-nothing.
+nothing. A call still running says so instead of reporting itself unjudged, and an id this gateway
+has no log for is refused by name: it does not print a summary of nothing.
 
 ## `agent`
 
@@ -751,6 +756,9 @@ q           leave the desk; the call goes on
 Every move lands in the caller's own log as its own `supervisor.*` entry with a seq, so what a
 human did to a call is read the same way as what the agent did. The **audio** of a live call is
 the console's Live screen, which has a room; this is the transcript and the desk.
+
+A desk opens on a call that is **happening**: one that has ended, and an id this gateway has no
+log for, are refused before the prompt — what a finished call was is `pinecall sessions show`.
 
 ## `numbers`
 
