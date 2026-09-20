@@ -6,6 +6,15 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.8.16] — The panel beside the conversation, and a chunk that says where it came from
+
+### Fixed
+- **A `docs.sources` entry no longer throws in the client.** The gateway says which base a chunk
+  came from (`DocSource.base`, protocol 0.6.3) and the schema this package shipped against did not
+  have the field — and it is a strict object, so `eventOf` refused every retrieval entry: the
+  console crashed drawing a call, and the agent's own client threw once a turn for any world with
+  a base attached, which is the ordinary case. The dependency moves to `^0.6.3`.
+
 ### Added
 - **A pane beside every conversation, and `@view` for the agent's own panel in it.** Calls drew
   the threads and the conversation and nothing else, so the person reading a thread had no idea
