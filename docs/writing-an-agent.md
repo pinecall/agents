@@ -422,6 +422,64 @@ the only writers" is a rule about state. It is the one way to keep a helper fiel
 getter is derived, not scratch, and is always state; `static visibility` answers who may see a
 field and never whether it is one.
 
+## The panel beside a conversation: `@view`
+
+The console draws a pane beside every thread in **Calls**. Without a view it is what the console
+itself knows — how many conversations there have been with this person, what they came in by, how
+long the agent has spent on the line with them, what a reviewer should look at first. A class that
+declares a view has **its own panel drawn over that**, and that is where the business's data goes:
+the customer's file, their orders, the balance, the next appointment.
+
+```tsx
+// agents/maravilla/view.tsx
+import { Badge, Panel, Row, Rows, Stat, Table, type Who } from "pinecall/panels";
+import { crm } from "../../lib/crm";
+
+/** La ficha del cliente, al lado del hilo. */
+export default async function CustomerCard(who: Who) {
+  const client = await crm.find(who.contact);
+  if (client === undefined) return <Panel title="Sin ficha">No está en el CRM.</Panel>;
+  return (
+    <Panel title={client.name}>
+      <Rows>
+        <Row label="Alta">{client.since}</Row>
+        <Row label="Zona">{client.area}</Row>
+      </Rows>
+      <Stat label="Servicios" value={client.jobs.length} />
+      <Table columns={["fecha", "servicio", "importe"]} rows={client.jobs} />
+      <Badge tone={client.debt > 0 ? "warn" : "good"}>{client.debt > 0 ? "con saldo" : "al día"}</Badge>
+    </Panel>
+  );
+}
+```
+
+```ts
+// agents/maravilla/agent.tsx
+@view(CustomerCard)                 // named after the function: "Customer Card"
+@view(CustomerCard, "Cliente")      // or named outright, which is what a person reads over it
+export default class Maravilla extends Agent { … }
+```
+
+Three things are worth knowing, and each of them is why it is shaped this way:
+
+**The view runs in YOUR process, and it may be async.** `who` is the conversation — `{ agent,
+contact, call }` — and nothing else: the panel is read beside threads that ended weeks ago, when no
+instance of the class is serving anybody, so a view fetches what it shows rather than reading a
+live state. Your database, your CRM, your credentials, your process.
+
+**What crosses to the browser is a TREE, never code.** The tags are the same JSX as the prompt's,
+with a different destination: `render()` renders to text, a view renders to a closed list of nodes
+— panel, rows, row, stat, table, badge, text — which the console draws with its own parts, in the
+theme the person reading it chose. A panel written today matches the console a year from now, and
+nothing a tenant writes can reach the page's styling, its scripts or its key. The catalogue is
+`pinecall/panels` and it is a door of its own: a tag of it inside a `render()` is refused by name,
+because there it would silently become the bare text of its children.
+
+**The declaration is one word.** The gateway is told the panel's NAME when the class registers, so
+a console knows there is one before it asks; what it holds is asked for one conversation at a time,
+of the app that holds the agent. A view that throws is refused in its own words, in the pane, and
+the facts under it are still read.
+
 ## Long calls, and callers who come back
 
 - `this.collapse("Reservado el martes a las 16:00, confirmado.")` drops the change log and keeps

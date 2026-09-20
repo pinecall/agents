@@ -12,6 +12,7 @@ import { searchesKnowledge } from "../agent/searching.js";
 import { runHook, type Call as HookCall } from "../agent/lifecycle.js";
 import { snapshot, type LastCall, type Snapshot } from "../agent/state.js";
 import { toolNamed } from "../agent/tools.js";
+import { viewOf } from "../agent/view.js";
 import { PROMPT_BLOCKS } from "../views/layout.js";
 import { promptOf } from "../views/render.js";
 import { routesOf } from "./channels.js";
@@ -107,6 +108,10 @@ export function optionsFor(ctor: Ctor, tools: Tool[], instance: Agent = new ctor
   if (stateFields) options.stateFields = stateFields;
   const events = eventsOf(ctor);
   if (events.length > 0) options.events = events;
+  // Only the panel's NAME travels with the declaration: what it contains is read for one
+  // conversation at a time, by the view.render verb, in this process (cli/ui/viewing.ts).
+  const panel = viewOf(ctor);
+  if (panel !== undefined) options.view = { name: panel.name };
   return options;
 }
 

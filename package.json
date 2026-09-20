@@ -20,6 +20,11 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./panels": {
+      "types": "./src/views/panels.ts",
+      "import": "./src/views/panels.ts",
+      "default": "./src/views/panels.ts"
+    },
     "./client": {
       "types": "./src/client/index.ts",
       "import": "./src/client/index.ts",
@@ -52,7 +57,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@pinecall/protocol": "^0.6.2",
+    "@pinecall/protocol": "^0.6.3",
     "oxc-parser": "^0.148.0",
     "tsx": "^4.20.6",
     "ws": "^8.21.3",

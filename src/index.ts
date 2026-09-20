@@ -18,6 +18,7 @@ export * from "./agent/decorators.js";
 // Reading a stage back is the framework's and the CLI's business, so those readers stay inside.
 export type { Stages } from "./agent/stages.js";
 export * from "./agent/docstrings.js";
+export * from "./agent/view.js";
 export * from "./agent/lifecycle.js";
 export * from "./views/jsx-runtime.js";
 export * from "./views/components.js";
@@ -25,6 +26,9 @@ export * from "./views/components.js";
 // it by, and one thing with two names is one name too many.
 export { PROMPT_BLOCKS, type Block, type Blocks } from "./views/layout.js";
 export * from "./views/render.js";
+// The tree a view renders to. The TAGS are `pinecall/panels`, a door of their own: a view is
+// written in them and nothing else, and a prompt never imports one by accident.
+export { renderToNodes, said, type Panels, type Tone, type ViewNode } from "./views/nodes.js";
 export * from "./runtime/channels.js";
 // Not the whole module: `runTool` and its error are how a tenant runs one tool the way the bridge
 // would, which is what an agent's own ring-0 suite is written against. The rest of run-tool.ts —

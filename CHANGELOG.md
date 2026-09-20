@@ -7,6 +7,33 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **A pane beside every conversation, and `@view` for the agent's own panel in it.** Calls drew
+  the threads and the conversation and nothing else, so the person reading a thread had no idea
+  who they were reading about: whether this was the first call or the ninth, what the judges had
+  said over all of them, whether a supervisor had ever stepped in. The pane says all of that,
+  folded from the calls the screen already listed — it asks the gateway nothing and is there for
+  every agent.
+
+  Over it sits the agent's own panel, when the class declares one:
+
+  ```tsx
+  // agents/maravilla/view.tsx — the tags are `pinecall/panels`
+  export default async function CustomerCard(who: Who) {
+    const client = await crm.find(who.contact);
+    return <Panel title={client.name}><Stat label="Servicios" value={client.jobs.length} /></Panel>;
+  }
+  ```
+
+  ```ts
+  @view(CustomerCard, "Cliente")
+  export default class Maravilla extends Agent { … }
+  ```
+
+  The view runs in YOUR process — it may be async, and that is where a CRM is read — and what
+  crosses to the browser is a TREE of named nodes, never code: the same JSX as the prompt with a
+  different destination, drawn by the console with its own parts in the theme the reader chose. The
+  declaration is one word, so a console knows there is a panel before it asks; a class that
+  declares none is asked nothing at all. `docs/writing-an-agent.md`, `docs/the-console.md`.
 - **Settings ▸ Bases is the whole attachment, not half of it.** The row had the base and its chunk
   count; `mode` and `min_score` could only be set from a terminal, so a person editing bases on the
   console could not see — let alone change — who searches a base or what it keeps. Both are on the

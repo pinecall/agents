@@ -24,6 +24,7 @@ import { chattingFrom, linesFromThisProcess, type Chatting } from "./ui/chatting
 import { devHandler, ownVerbs } from "./ui/doors.js";
 import { driftingFrom } from "./ui/drifting.js";
 import { hereOf, knowingFrom } from "./ui/knowing.js";
+import { viewingFrom } from "./ui/viewing.js";
 import { promotingFrom } from "./ui/promoting.js";
 import { rememberingFrom, rememberingPiecesFor } from "./ui/remembering.js";
 import { reproducingFrom } from "./ui/reproducing.js";
@@ -187,6 +188,7 @@ export async function run(argv: string[]): Promise<number> {
               ? rememberingFrom(door, mounted.slug, rememberingPiecesFor(home, mounted.slug))
               : rememberingFrom(door, mounted.slug),
             promoting: promotingFrom(door, mounted.slug, process.stdout),
+            viewing: viewingFrom(one.ctor, mounted.slug),
             drifting: driftingFrom(door),
             reproducing: reproducingFrom(),
           }),

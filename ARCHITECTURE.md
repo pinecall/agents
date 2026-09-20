@@ -53,6 +53,7 @@ a directory earns its place there by having a line in that table (§13).
 | `stages.ts` | `Stages<"a"|"b">`, `StageOf<T>`, and `lowerStage` — `stage:` is sugar over `when(state)` |
 | `visibility.ts` | `@state` in its three spellings — bare, `{ pii: true }`, `{ visibility }` — which fields are the state (`declaredStateOf`) and who may see them (`visibilityOf`, plus `static visibility = {…}`) |
 | `accepts.ts` | `static events = {…}`: which outside facts this class takes, and from whom |
+| `view.ts` | `@view(Draw)` / `@view(Draw, "Cliente")`: the panel the class draws beside a conversation, and `viewOf`. `Who` is the conversation it is drawn about — `{ agent, contact, call }` |
 | `lifecycle.ts` | the hooks as a type (`onCall`, `onEnd`, `onMemory`, `onEvent`) and `runHook`, which authors their writes |
 
 ### `src/views/` — JSX that renders to text
@@ -65,6 +66,8 @@ a directory earns its place there by having a line in that table (§13).
 | `layout.ts` | the prompt as named blocks in two regions: `PROMPT_BLOCKS` (the four, in send order) and `layout` → `Blocks` |
 | `lang.ts` | the framework's own words — the standing rules and the protocols, `es` and `en`, chosen by the class's `language` |
 | `render.ts` | `promptOf()`, `headerFor()`, `showPrompt()` (what `--show-prompt` prints) |
+| `nodes.ts` | the OTHER destination of the same JSX: `renderToNodes` folds a tree of tags into `ViewNode[]` — a closed list of named nodes a console draws — for the panel beside a conversation |
+| `panels.ts` | the tags that panel is written in, `pinecall/panels`: `Panel`, `Rows`, `Row`, `Stat`, `Table`, `Badge`, `Text`. One of them inside a `render()` is refused by name |
 
 ### `src/call/` — the live call as a value
 
@@ -667,7 +670,8 @@ judge's drift.
   path mapping would hand `pinecall start` a second copy of the framework.
 - **Three doors out:** `pinecall` (the framework and `mount`), `pinecall/client` (the socket
   alone), `pinecall/tsconfig.tenant.json` (the compiler flags an agent needs, so a tenant writes
-  none) — plus `pinecall/views/jsx-runtime` for the JSX transform and `pinecall/client/testing`.
+  none) — plus `pinecall/views/jsx-runtime` for the JSX transform, `pinecall/panels` for the tags
+  a `@view` is written in, and `pinecall/client/testing`.
 - **Four tsconfigs:** `tsconfig.json` builds `dist/`; `tsconfig.lint.json` checks `src` and `test`;
   `tsconfig.console.json` checks the browser page against the DOM; `tsconfig.tenant.json` is the
   preset a tenant extends (it carries `experimentalDecorators`, because oxc implements only the
