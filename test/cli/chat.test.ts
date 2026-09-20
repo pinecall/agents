@@ -26,6 +26,15 @@ describe("the caller socket chat opens", () => {
     );
   });
 
+  // A simulation says WHO is being played, and the gateway writes it into `call.started`. Without
+  // it the call is a call nobody can attribute, and the caller's runs pane stays empty forever
+  // while the simulations go on happening (shipped that way until 0.8.6).
+  it("names the persona a written simulation is playing", () => {
+    expect(chatUrl("http://127.0.0.1:8080", "clinica-norte", "app_7c1e", undefined, "office manager")).toBe(
+      "ws://127.0.0.1:8080/v1/chat?agent=clinica-norte&app=app_7c1e&persona=office+manager",
+    );
+  });
+
   // A web caller is nobody until somebody says who they are, and `--as` is this terminal saying
   // it: memory files the call under that id. A phone number is what forces the encoding — a `+`
   // written raw into a query string arrives at the gateway as a space.

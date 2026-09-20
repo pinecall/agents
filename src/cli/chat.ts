@@ -119,7 +119,7 @@ export async function run(argv: string[]): Promise<number> {
 }
 
 /** The chat socket's address off the gateway's HTTP one: the scheme flips, the path is fixed. */
-export function chatUrl(base: string, agent: string, app?: string, contact?: string): string {
+export function chatUrl(base: string, agent: string, app?: string, contact?: string, persona?: string): string {
   const url = new URL(base);
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
   url.pathname = `${url.pathname.replace(/\/$/, "")}/v1/chat`;
@@ -132,6 +132,10 @@ export function chatUrl(base: string, agent: string, app?: string, contact?: str
   // declares `memory` can be made to remember somebody from here. It is encoded on the way out,
   // because a `+34600123456` written raw into a query string arrives at the gateway as a space.
   if (contact !== undefined) url.searchParams.set("contact", contact);
+  // Who is being PLAYED on this call, when a simulation opened it: the gateway writes the name
+  // into `call.started`, which is the only place the fact lives and what the Personas screen reads
+  // a caller's runs back from. A call without it is a call nobody can attribute afterwards.
+  if (persona !== undefined) url.searchParams.set("persona", persona);
   return url.toString();
 }
 

@@ -185,7 +185,7 @@ export async function aSimulation(persona: Persona, how: Simulation): Promise<Si
     await pc.connect();
     const call = how.voice
       ? await outLoud(door, mounted.slug, persona, how)
-      : await inWriting(chatUrl(url, mounted.slug, mounted.agent.app), door, persona, how);
+      : await inWriting(chatUrl(url, mounted.slug, mounted.agent.app, undefined, persona.name), door, persona, how);
     return { call, ...(await theEnding(door, call, how)) };
   } finally {
     pc.close();

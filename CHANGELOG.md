@@ -4,6 +4,16 @@ All notable changes to `pinecall`, the package a tenant writes an agent in. The 
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version numbers and tags are the
 maintainer's call, so everything sits under Unreleased until one is cut.
 
+## 0.8.6 — A simulation says who it is playing
+
+### Fixed
+- **A written simulation records its caller.** The gateway has carried `call.started.persona`
+  since protocol 0.6.2, and the Personas screen reads a caller's runs off it — but nothing put it
+  on the wire: `pinecall simulate` opened `WS /v1/chat` without saying who was being played, so
+  every written simulation was a call nobody could attribute and the runs pane stayed empty while
+  the simulations went on happening. `chatUrl` takes the name now, and `test/cli/chat.test.ts`
+  pins it.
+
 ## 0.8.5 — The org's callers, and a console that knows where you came from
 
 ### Added
