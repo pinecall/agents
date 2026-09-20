@@ -4,7 +4,7 @@ All notable changes to `pinecall`, the package a tenant writes an agent in. The 
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version numbers and tags are the
 maintainer's call, so everything sits under Unreleased until one is cut.
 
-## [Unreleased]
+## 0.8.10 — Verbs that answered about calls nobody wrote
 
 ### Fixed
 - **A call nobody wrote is refused by name.** `sessions show CA_typo` printed a summary of nothing
