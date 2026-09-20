@@ -225,10 +225,17 @@ look: the platform searches before every turn. (A tool that wants to search on i
 **What the push did.** Each file was cut at its headings, each chunk prefixed with its heading path
 (`tarifas.md › Tarifas › Revisión`), and embedded — **contextually**, one document at a time, so a
 chunk was embedded while the model saw its neighbours instead of alone. The vectors went into
-Postgres with an HNSW index beside a BM25 index in Spanish.
+Postgres with an HNSW index beside a BM25 index in Spanish. A file's **front matter** — the fenced
+`source:` / `title:` block a scraper or a static-site generator opens it with — is dropped and
+never becomes a chunk. What the push cannot do is tell a nav bar from a paragraph: a page of menus
+and footers scraped as a document will compete for the slots a turn has and answer nothing, so
+what goes in the folder is worth reading once.
 
 **What happens on a turn.** The platform runs a `search` while the caller is still speaking, four
-words in. The two indexes are asked in parallel, fused by reciprocal rank, and the best `k` chunks
+words in — and on no turn that could not be a query at all, one with no letter in it, which is a
+number being read out. (A score cannot make that call: it is read against the best chunk of the
+same query, so the top one is 1.0 whatever was asked, and `--min-score` cuts a tail and never a
+whole bad answer.) The two indexes are asked in parallel, fused by reciprocal rank, and the best `k` chunks
 come back. The caller waits **0 ms** at the end of their sentence on most turns, because the answer
 was already there — measured on a live call: five turns of six waited nothing, against 125–251 ms
 when the same lookup ran at turn end.
