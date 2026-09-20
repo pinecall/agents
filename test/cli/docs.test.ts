@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { markdownUnder, pushedLine, run, scoreLines } from "../../src/cli/docs.js";
+import { theKItIsReadWith, markdownUnder, pushedLine, run, scoreLines } from "../../src/cli/docs.js";
 import { pointingAt } from "./home.js";
 import { written } from "./said.js";
 
@@ -213,5 +213,35 @@ describe("a golden held against a base", () => {
       misses: [{ asks: "x", expects: "y", found: [] }],
     });
     expect(lines[1]).toContain("got nothing");
+  });
+});
+
+// A golden asks what a TURN gets, so it asks with the k this agent reads that base with. The
+// gateway's own default is eight, and a base attached with `--k 4` was being measured at eight:
+// `recall@8 0.92` printed for calls that were running at `recall@4 0.75` (production, 2026-09-20).
+describe("the k a golden is asked with", () => {
+  const attached = (bases: { base: string; k?: number }[]): unknown => ({
+    world: "sandbox",
+    yours: { version: 1, config: { bases } },
+    team: null,
+    production: null,
+  });
+
+  it("is the one the agent's own corner attached the base with", () => {
+    expect(theKItIsReadWith(attached([{ base: "maravilla", k: 4 }]) as never, "maravilla")).toBe(4);
+  });
+
+  it("falls back to the team's corner when this key set none of its own", () => {
+    const standing = { world: "sandbox", yours: null, team: { version: 3, config: { bases: [{ base: "clinica", k: 6 }] } }, production: null };
+    expect(theKItIsReadWith(standing as never, "clinica")).toBe(6);
+  });
+
+  it("is nobody's when the base is not attached, so the door answers with its own default", () => {
+    expect(theKItIsReadWith(attached([{ base: "otra", k: 4 }]) as never, "maravilla")).toBeUndefined();
+    expect(theKItIsReadWith(null, "maravilla")).toBeUndefined();
+  });
+
+  it("is nobody's when the attachment named none, which is the door's default too", () => {
+    expect(theKItIsReadWith(attached([{ base: "maravilla" }]) as never, "maravilla")).toBeUndefined();
   });
 });

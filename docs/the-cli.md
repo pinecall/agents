@@ -992,7 +992,10 @@ the same way, naming `pinecall docs push`.
 `eval` asks the base every question of a golden — `test/<name>/goldens/docs.json`, a JSON list of
 `{asks, expects}`, where `expects` is the heading path the answer should carry — and prints
 `recall@k` and `nDCG@10`, computed by code with **no model in the loop**, plus every question it
-missed and what came back instead. Exits 1 when anything missed, so CI can hold a base to it. A
+missed and what came back instead. **With no `--k` it asks with the k this agent reads that base
+with** — the attachment's, in this corner — because a golden asks what a turn gets: a base
+attached with `--k 4` measured at the door's default of eight answers a question nobody's calls
+are asking. Exits 1 when anything missed, so CI can hold a base to it. A
 golden is fixed and the index is the variable: never soften a question so a change can pass.
 
 ## `memory`

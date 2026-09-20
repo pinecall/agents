@@ -7,6 +7,11 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Fixed
+- **`docs eval` asks with the k a turn gets.** With no `--k` it asked at the gateway's own default
+  of eight while the agent read that base with the four its attachment names: `recall@8 0.92`
+  printed for calls that were running at `recall@4 0.75`. A golden asks what a turn gets, so it
+  asks with the attachment's k, in this corner; a `--base` nobody said this agent reads is still
+  the door's default, because there is no attachment to ask.
 - **A `render()` can be about the turn it is answering.** The caller's turn reached the class's
   `call.history`, but nothing asked for a new view when it did, so a render that read it was sent
   one turn late — while the page has always said a view says what to do in THIS turn. The bridge

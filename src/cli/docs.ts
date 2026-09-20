@@ -4,11 +4,12 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve, sep } from "node:path";
 import { parseArgs } from "node:util";
 
-import type { KnowledgeFile, KnowledgeList, KnowledgePushed, KnowledgeScore } from "@pinecall/protocol";
+import type { KnowledgeFile, KnowledgeList, KnowledgePushed, KnowledgeScore, TuningAnswer } from "@pinecall/protocol";
 
 import { slugOf } from "../runtime/connect.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
+import { readSettings } from "./agent-lines.js";
 import { attach, attached, attachingOf, detach } from "./docs-attach.js";
 import { agentOfThisDirectory, load, notASlug } from "./load.js";
 import { AGENT_FLAG, homeOf, homesFor, oneHome, type Home } from "./home.js";
@@ -206,9 +207,24 @@ async function evaluate(
     err.write(`${AN_EMPTY_GOLDEN(golden)}\n`);
     return 2;
   }
-  const score = await scoredOn(door, name, questions, k === undefined ? undefined : Number(k));
+  // Nobody named a k: ask at the one this agent reads that base with. A `--base` somebody typed
+  // belongs to an agent this verb was not told about, so that one is asked at the door's default.
+  const attachment = loaded === undefined ? null : await readSettings(door, slugOf(loaded.ctor)).catch(() => null);
+  const asked = k === undefined ? theKItIsReadWith(attachment, name) : Number(k);
+  const score = await scoredOn(door, name, questions, asked);
   out.write(`${scoreLines(score).join("\n")}\n`);
   return score.misses.length === 0 ? 0 : 1;
+}
+
+// A golden asks what a TURN gets, so the k it asks with is the k the agent reads that base with —
+// the attachment's, in this world and corner, not a constant. The gateway's own default is eight
+// and an agent that attached its base with `--k 4` was measured at eight: `recall@8 0.92` on a
+// base whose calls were running at `recall@4 0.75`, which is the figure a person was reading and
+// acting on (2026-09-20). A base this agent does not read is measured at the gateway's default,
+// because there is no attachment to ask.
+export function theKItIsReadWith(standing: TuningAnswer | null, base: string): number | undefined {
+  const corner = standing === null ? null : (standing.yours ?? standing.team);
+  return (corner?.config.bases ?? []).find((one) => one.base === base)?.k ?? undefined;
 }
 
 /** The folder, sent whole: the base is replaced and never merged. Both doors push through here. */

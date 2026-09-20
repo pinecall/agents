@@ -183,9 +183,9 @@ Naming a file alone accepts any chunk of it; naming a heading accepts that secti
 under it. Fifty to a hundred questions per base is the size that stops being noise.
 
 ```bash
-pinecall docs eval                             # test/<name>/goldens/docs.json against the base named after the agent
-pinecall docs eval --k 4                       # as many chunks as the attachment asks for
-pinecall docs eval questions.json --base clinica-norte
+pinecall docs eval                             # test/<name>/goldens/docs.json, asked with the k the agent reads that base with
+pinecall docs eval --k 1                       # tighter than a turn: is the right chunk FIRST?
+pinecall docs eval questions.json --base clinica-norte   # a base nobody said this agent reads: the door's own default
 ```
 
 ```
