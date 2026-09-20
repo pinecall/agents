@@ -19,6 +19,18 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   was. It reads `GET /v1/personas/{name}/runs` in the key's own corner, a screenful at a time,
   and a caller nobody has called yet says so and points at Simulations.
 
+### Fixed
+- **Back goes back.** A screen reached from several places — a session from Live, from Personas,
+  from Evals, from the palette — had one back link written into it, so it was wrong from
+  everywhere but one: "← Sessions" after arriving from Personas. The frame remembers the screen it
+  left (`lib/whence.tsx`), the detail page asks, and the link says where it actually goes —
+  "← Live", "← Personas" — falling back to its own list on a reload or a pasted URL. The same for
+  a knowledge base, which is opened from the org's Docs and from an agent's.
+- **The Chat screen stops scrolling twice.** The transcript's height was the viewport minus a
+  guess at everything above it (`100vh - 490px`), so a head of two lines pushed the window past
+  the bottom and the page grew a second scrollbar beside the transcript's. The window takes what
+  the page has left, and the lines inside it are the only thing that scrolls.
+
 ### Changed
 - **The simulate form reads as a list of options.** Three switches with their sentences beside
   them wrapped mid-word in a 340px pane — "Noisy / line" — and read as one grey smear. Each is a
