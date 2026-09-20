@@ -6,6 +6,18 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Added
+- **What a caller has actually done, beside the caller.** The Personas screen has a third pane:
+  every simulation that persona has run, newest first — which agent answered, when, how many
+  turns it took, how it ended, what the judges said, what it cost — and a row opens the session it
+  was. It reads `GET /v1/personas/{name}/runs` in the key's own corner, a screenful at a time,
+  and a caller nobody has called yet says so and points at Simulations.
+
+### Changed
+- **Whisper and Say are two boxes, not one behind a switch.** A supervisor on a live call should
+  never have to check which mode they are in before pressing Enter: one of the two is heard by
+  the customer. Each has its own line and its own button, and the caller's is the loud one.
+
 ### Fixed
 - **The desk knows a chat from a call.** A conversation with no room — the widget's chat,
   WhatsApp — opened the desk by taking a seat in a room that does not exist and asked the browser
