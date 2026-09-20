@@ -4,6 +4,16 @@ All notable changes to `pinecall`, the package a tenant writes an agent in. The 
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version numbers and tags are the
 maintainer's call, so everything sits under Unreleased until one is cut.
 
+## [Unreleased]
+
+### Added
+- **Settings ▸ Bases is the whole attachment, not half of it.** The row had the base and its chunk
+  count; `mode` and `min_score` could only be set from a terminal, so a person editing bases on the
+  console could not see — let alone change — who searches a base or what it keeps. Both are on the
+  row now, and a second attached base says out loud that several bases are ONE search: read
+  together and ranked against each other, the turn handed the most generous chunk count, each floor
+  read against the base that set it.
+
 ## 0.8.15 — The k lookup was on the branch a project never takes
 
 ### Fixed
