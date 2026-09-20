@@ -1,4 +1,4 @@
-// `pinecall personas`: whose callers the gateway is asked for, the sentence every refusal ends in,
+// `pinecall personas`: the one list the gateway is asked for, the sentence every refusal ends in,
 // what `--json` prints, and a migration that stops halfway saying exactly where it stopped.
 
 import { mkdtempSync, writeFileSync } from "node:fs";
@@ -37,7 +37,7 @@ interface Heard {
   body: unknown;
 }
 
-/** A gateway with the three persona doors, keeping one roster per agent, as the real one does. */
+/** A gateway with the three persona doors, keeping one roster for the org, as the real one does. */
 class FakeGateway {
   readonly heard: Heard[] = [];
   personas: (typeof APURADO)[] = [];
@@ -57,9 +57,9 @@ class FakeGateway {
     await new Promise<void>((closed) => this.#server.close(() => closed()));
   }
 
-  /** The agent every request named, so a test reads the slug the verb decided on. */
-  get agentsAsked(): string[] {
-    return [...new Set(this.heard.map((one) => decodeURIComponent(one.path.split("/")[3] ?? "")))];
+  /** Every path asked for, so a test reads that no agent was ever named in one. */
+  get pathsAsked(): string[] {
+    return [...new Set(this.heard.map((one) => one.path.split("?")[0] ?? ""))];
   }
 
   async #answer(request: IncomingMessage, response: ServerResponse): Promise<void> {
@@ -101,9 +101,10 @@ afterEach(async () => {
 });
 
 describe("whose callers", () => {
-  // The gateway files them under the agent's SLUG, which is the class's own name and not the
-  // folder's: `--agent sales` asked for the callers of "sales", and nobody has any.
-  it("resolves an agent of this project by its name, and asks for the class's slug", async () => {
+  // A caller is the ORG's: no agent in the path, and no class loaded to find a slug for one.
+  // `--agent` used to decide the path, so `personas --agent sales` asked for the callers of
+  // "sales" — a roster nobody had — while the console showed them under the class's slug.
+  it("asks for the org's one list, whatever agent is named", async () => {
     const was = process.cwd();
     process.chdir(BIDFIRE);
     try {
@@ -112,15 +113,13 @@ describe("whose callers", () => {
       process.chdir(was);
     }
 
-    expect(gateway.agentsAsked).toEqual(["bidfire-sales"]);
+    expect(gateway.pathsAsked).toEqual(["/v1/personas"]);
   });
 
-  // A terminal outside the project still reaches its org's agents: what is not a name here is a
-  // slug already, and no class is loaded to find that out.
-  it("sends a slug of the org as it was typed", async () => {
-    expect(await run(["list", "--agent", AGENT], { out: written().stream, env })).toBe(0);
+  it("asks for the same list from a terminal that names no agent at all", async () => {
+    expect(await run(["list"], { out: written().stream, env })).toBe(0);
 
-    expect(gateway.agentsAsked).toEqual([AGENT]);
+    expect(gateway.pathsAsked).toEqual(["/v1/personas"]);
   });
 });
 
@@ -142,18 +141,18 @@ describe("the verbs it answers to", () => {
     expect(err.text()).toContain("usage: pinecall personas");
   });
 
-  it("says the agent has none yet rather than printing an empty page", async () => {
+  it("says the org has none yet rather than printing an empty page", async () => {
     const out = written();
 
-    expect(await run(["--agent", AGENT], { out: out.stream, env })).toBe(0);
-    expect(out.text()).toContain("clinica-norte has no personas yet");
+    expect(await run([], { out: out.stream, env })).toBe(0);
+    expect(out.text()).toContain("this org has no personas yet");
   });
 
   it("writes one whole, and changes what is named on the one there", async () => {
     const out = written();
 
     expect(await run(["add", "apurado", "--goal", "cambiar la cita", "--style", "frases cortas", "--agent", AGENT], { out: out.stream, env })).toBe(0);
-    expect(out.text()).toBe("clinica-norte · apurado written · 1 persona(s)\n");
+    expect(out.text()).toBe("apurado written · 1 persona(s)\n");
 
     expect(await run(["edit", "apurado", "--style", "grita un poco", "--agent", AGENT], { out: written().stream, env })).toBe(0);
     expect(gateway.personas[0]).toMatchObject({ goal: "cambiar la cita", style: "grita un poco" });
@@ -170,7 +169,7 @@ describe("a caller nobody wrote", () => {
       const code = await run([...argv, "--agent", AGENT], { out: written().stream, err: err.stream, env });
 
       expect(code).toBe(2);
-      expect(err.text()).toContain("no persona called fantasma for clinica-norte");
+      expect(err.text()).toContain("no persona called fantasma");
     }
     expect(gateway.heard.filter((one) => one.method !== "GET")).toEqual([]);
   });
@@ -275,7 +274,7 @@ describe("the migration", () => {
 
     expect(code).toBe(0);
     expect(gateway.personas.map((one) => one.name)).toEqual(["apurado", "desconfiado"]);
-    expect(out.text()).toContain("clinica-norte · 2 persona(s) pushed");
+    expect(out.text()).toContain("2 persona(s) pushed");
   });
 
   it("says where it looked when the folder holds none, and sends nothing", async () => {

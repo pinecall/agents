@@ -126,7 +126,7 @@ a directory earns its place there by having a line in that table (§13).
 | `personas.ts` · `machine.ts` · `view.ts` | the agent's synthetic callers — listed, written, renamed, dropped and tried against the class here, all of them kept by the gateway beside the agent's settings (`push` is the one-time migration for a project that still has the files) — the state machine on one page, the terminal view as a pure function |
 | `login.ts` · `browser.ts` · `whoami.ts` · `secret.ts` | the browser dance that signs this machine in (a word asked for, a link opened, the key collected once — kept for `link` to mint from, never run on), how a URL is put in front of a person, which key a verb would use and whether it acts in production, and the one place a terminal is read |
 | `testing/` | what those verbs need: the gateway's eval doors, goldens off disk, latency, the matrix, the model a short name means, for `test --model` and for `agent set --llm` alike (`models.ts`), the progress screen, the score, the seeding check — which golden's state a starting call opens in — the voice door, the callers as the gateway keeps them (`personas.ts`) and the files a project pushed them from, read once (`caller.ts`) |
-| `ui/` | what `pinecall start` answers a console with, by the wire's verb (`doors.ts`, one module per verb family: a chat, a simulation, a suite, the docs and memory goldens, a promotion, drift, a reproduction) — and beside those node modules the three directories that are the BROWSER: `ui/shared/`, `ui/console/` and `ui/admin/`, never imported by anything here: the gateway serves all three, and `serve/` serves the console's build |
+| `ui/` | what `pinecall start` answers a console with, by the wire's verb (`doors.ts`, one module per verb family: a chat, a simulation, a suite, the docs and memory goldens, a promotion, drift, a reproduction) — and beside those node modules the two directories that are the BROWSER: `ui/shared/` and `ui/console/`, never imported by anything here: the gateway serves the page, and `serve/` serves the same build |
 
 Beside `src/`:
 
@@ -457,8 +457,7 @@ this CLI opens a port:
 |---|---|---|---|
 | `ui/console/` | the gateway's `/` — **hosted**, production | a PERSON's scoped key, minted at login | whoever runs the org |
 | `ui/console/` | `http://localhost:4100` — **local**, the sandbox | none: the sidecar signs what the page asks | whoever writes the agent |
-| `ui/admin/` | `/admin` | the BOX's ops key, typed in | the operator |
-| `ui/shared/` | — | the fetch (`api.ts`) and the credentials context — what BOTH pages import; `/.well-known/pinecall` (`the-floor.ts`), read by the console's password card; the theme (`theme.ts`: the system's light or dark, and a flip kept until the system changes), which both wear; and the frame and the `styles/` vocabulary, which since the console's redesign only the admin page wears | both · the admin |
+| `ui/shared/` | — | the fetch (`api.ts`) and the credentials context, which the page is built on; `/.well-known/pinecall` (`the-floor.ts`), read by the console's password card; and the theme (`theme.ts`: the system's light or dark, and a flip kept until the system changes) | the console |
 
 They are two programs and not two sections of one, because the ops key **belongs to no org** and
 must never reach a tab that holds a tenant's: two bundles, two storage names, and an import table
@@ -554,8 +553,8 @@ them; it goes when that protocol is published. The face is Inter, fetched from G
 `index.html` with a system fallback — the one request the page makes to anything but the gateway —
 and anything a machine wrote is the system's monospace. The icons are paths in `ui/icon.tsx`, so the
 page depends on no icon set. The logo is `public/pinecall-logo.png` (`pinecall-logo-dark.png`, its wordmark drawn light, in the
-dark theme), its mark `pinecall-mark.png` and the favicon cut from it. Neither `ui/shared/styles/`
-nor `frame.tsx` is the console's any more: they are the admin page's.
+dark theme), its mark `pinecall-mark.png` and the favicon cut from it. `ui/shared/styles/` and `frame.tsx` were the operator
+page's and went with it.
 
 Its own laws. Three are held by a test of their own: vite bundles every screen's stylesheet into
 one file, so **a class name is global** whatever directory it was written in
@@ -566,22 +565,19 @@ one file, so **a class name is global** whatever directory it was written in
 `shared/api.ts` is the only place a request to the gateway is built, and `lib/metrics.ts` the only
 file that names a metric — Sessions must print the same digits as `pinecall-runtime sessions show`.
 
-### The admin
+### The box, from inside the console
 
-The operator's page is served at `/admin`, and it is what the box's own key opens: orgs and their
-quotas, the keys of each, the people of each (**read only** — who works at a tenant is the
-tenant's to decide, and a box that could edit a member could put itself in somebody's org), the
-doors each answers at, the fleet with its cordons, and the metered rows folded off the log.
-
-The key is typed, never handed over: there is no `?login=` here and there never will be, because a
-code in a URL is how a browser is given a TENANT's key by the process holding it, and nothing
-hands out the box's. It is proved at `GET /v1/ops/whoami` before it is kept, exactly as
-`pinecall login` proves a tenant's at `/v1/whoami`, and kept in `sessionStorage` under a name of
-its own (`admin/lib/ops-key.ts`).
+There is no operator page. The box is operated from the console's **Box** group — Organizations
+and their quotas, the keys of each, the people of each (**read only**: who works at a tenant is
+the tenant's to decide, and a box that could edit a member could put itself in somebody's org),
+Routes, the Fleet with its cordons, Box usage folded off the log, and Box settings. It is drawn
+only for a person the box made an operator (`lib/operator.ts` asks `GET /v1/ops/whoami`), and it
+is that person's own key that opens `/v1/ops/*` — the box's ops key is never typed into a
+browser, and the second bundle that once asked for it is gone.
 
 **Nothing about a PLAN is on it.** What an org is charged, what it is owed, what it signed up to:
-none of that is the runtime's, and none of it is here. The page reads quotas — the mechanism — and
-the package that charges is what turns a plan into a row (the runtime's `extensions/`).
+none of that is the runtime's, and none of it is here. The screens read quotas — the mechanism —
+and the package that charges is what turns a plan into a row (the runtime's `extensions/`).
 
 ## 12. LiveKit: where it is, and where it is not
 

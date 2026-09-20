@@ -1,4 +1,4 @@
-/** The agent's callers, as the gateway keeps them: read, written and dropped over its own doors. */
+/** The org's callers, as the gateway keeps them: read, written and dropped over its own doors. */
 
 import { asked, type Door } from "./gateway.js";
 
@@ -29,28 +29,29 @@ export interface Written {
  * console's own door, and the simulation both of them start. Where a caller is written now that it
  * is not a file — the verb, and the screen that writes the same one.
  */
-export const NOBODY = (name: string, agent: string): string =>
-  `no persona called ${name} for ${agent}: \`pinecall personas add ${name} --goal '…' --style '…'\`, or the console's Personas`;
+export const NOBODY = (name: string): string =>
+  `no persona called ${name}: \`pinecall personas add ${name} --goal '…' --style '…'\`, or the console's Personas`;
 
-const door = (agent: string, name?: string): string =>
-  `/v1/agents/${encodeURIComponent(agent)}/personas${name === undefined ? "" : `/${encodeURIComponent(name)}`}`;
+// One list an org, and no agent in the path: a caller is a person on the phone, and who they are
+// does not depend on which of the org's agents picks up.
+const door = (name?: string): string => `/v1/personas${name === undefined ? "" : `/${encodeURIComponent(name)}`}`;
 
-/** Every caller written for this agent, by name. */
-export async function personasOf(gateway: Door, agent: string): Promise<Persona[]> {
-  return (await asked<{ personas: Persona[] }>(gateway, door(agent))).personas;
+/** Every caller this org wrote, by name. */
+export async function personasOf(gateway: Door): Promise<Persona[]> {
+  return (await asked<{ personas: Persona[] }>(gateway, door())).personas;
 }
 
 /** One caller by name, or undefined when nobody wrote them. */
-export async function personaNamed(gateway: Door, agent: string, name: string): Promise<Persona | undefined> {
-  return (await personasOf(gateway, agent)).find((one) => one.name === name);
+export async function personaNamed(gateway: Door, name: string): Promise<Persona | undefined> {
+  return (await personasOf(gateway)).find((one) => one.name === name);
 }
 
 /** The caller written whole — new, replaced, or renamed — and every caller after it. */
-export async function writePersona(gateway: Door, agent: string, name: string, written: Written): Promise<Persona[]> {
-  return (await asked<{ personas: Persona[] }>(gateway, door(agent, name), { method: "PUT", body: written })).personas;
+export async function writePersona(gateway: Door, name: string, written: Written): Promise<Persona[]> {
+  return (await asked<{ personas: Persona[] }>(gateway, door(name), { method: "PUT", body: written })).personas;
 }
 
 /** The caller dropped, and every caller after it. */
-export async function dropPersona(gateway: Door, agent: string, name: string): Promise<Persona[]> {
-  return (await asked<{ personas: Persona[] }>(gateway, door(agent, name), { method: "DELETE" })).personas;
+export async function dropPersona(gateway: Door, name: string): Promise<Persona[]> {
+  return (await asked<{ personas: Persona[] }>(gateway, door(name), { method: "DELETE" })).personas;
 }

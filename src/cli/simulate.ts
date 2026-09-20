@@ -106,9 +106,9 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
   const door = theDoor();
   if (door === undefined) return 2;
   const agent = await slugOfAgentFile(home.file);
-  const persona = await personaNamed(door, agent, values.persona);
+  const persona = await personaNamed(door, values.persona);
   if (persona === undefined) {
-    process.stderr.write(`${NOBODY(values.persona, agent)}\n`);
+    process.stderr.write(`${NOBODY(values.persona)}\n`);
     return 2;
   }
   const said = await aSimulation(persona, {

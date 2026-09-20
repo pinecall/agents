@@ -6,6 +6,21 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Fixed
+- **The desk knows a chat from a call.** A conversation with no room — the widget's chat,
+  WhatsApp — opened the desk by taking a seat in a room that does not exist and asked the browser
+  for a microphone to take it over. It does neither now: no ear, no seat, no microphone, and no
+  Transfer, which the gateway refuses on a thread anyway. The same Whisper · Say · Take · Hand
+  back · End, typed. What says which is the call's own state: `room` is null for a text session.
+
+### Removed
+- **The operator's page is gone.** `/admin` was a second bundle with a second credential — the
+  box's ops key, typed into a browser — doing a poorer version of what the console's **Box**
+  group already does: Organizations, Fleet, Routes, Box usage and Box settings, drawn for a
+  person the box made an operator and opened by that person's own key. One page, one build, one
+  credential. A box's first org is made where it always was, on the box:
+  `pinecall-runtime init --org … --email … --person …`.
+
 ## 0.8.4 — A corner that reads no base says so
 
 ### Fixed

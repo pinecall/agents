@@ -46,7 +46,6 @@ const MAY_IMPORT: Record<string, string[]> = {
   // The OPERATOR's page, a second program with a second bundle and a second credential: the ops
   // key belongs to no org and must never reach a tab holding a tenant's. It names no console
   // directory, which is what keeps the two apart.
-  "cli/ui/admin": ["cli/ui/shared", "react", "react-dom", "react-router", "vite", "@vitejs/plugin-react", "zod"],
   // The one file at the top of src/: the public surface, which may name anything it exports.
   "": ["agent", "call", "views", "runtime"],
 };

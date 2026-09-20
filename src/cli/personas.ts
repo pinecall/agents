@@ -55,8 +55,7 @@ const VERBS = ["list", "show", "add", "edit", "rm", "try", "push"] as const;
 // which is what the model playing them is told. `show` says so rather than printing an empty block.
 const NO_FACTS = "(no facts: this caller may state nothing about themselves)";
 
-const NONE_YET = (agent: string): string =>
-  `${agent} has no personas yet: \`pinecall personas add <name> --goal '…' --style '…'\`, or the console's Personas`;
+const NONE_YET = `this org has no personas yet: \`pinecall personas add <name> --goal '…' --style '…'\`, or the console's Personas`;
 
 const FACT_SHAPE = "a fact is what=said: --fact 'their phone=305 555 0101'";
 
@@ -104,44 +103,32 @@ export async function run(argv: string[], how: Setting = {}): Promise<number> {
   const door = theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
   let home: Home | undefined;
+  // The class is loaded only by the verbs that need one: a caller is the ORG's, so listing,
+  // writing and dropping name no agent at all. `--agent` is for `try`, which puts the caller on a
+  // class, and for `push`, which reads the files one project wrote under `test/<agent>/personas`.
   const here = async (): Promise<Home> => (home ??= await oneHome("personas", values.file, values.agent));
-  const agent = await theSlug(values.agent, here);
 
-  if (verb === "list") return await listed(door, agent, asJson, out);
-  if (verb === "push") return await pushed(door, agent, values.from ?? (await here()).personas, asJson, out, err);
+  if (verb === "list") return await listed(door, asJson, out);
+  if (verb === "push") return await pushed(door, values.from ?? (await here()).personas, asJson, out, err);
   if (name === undefined) {
     err.write(USAGE);
     return 2;
   }
-  if (verb === "show") return await shown(door, agent, name, asJson, out, err);
-  if (verb === "rm") return await dropped(door, agent, name, asJson, out, err);
-  if (verb === "try") return await tried(door, agent, name, await here(), out, err);
-  return await written(door, agent, name, verb === "add" ? "add" : "edit", values, asJson, out, err);
-}
-
-/**
- * Whose callers, as the gateway files them: under the agent's SLUG, which is the class's own.
- *
- * `--agent` is the project's name for an agent (`sales`) or a slug of the org (`bidfire-sales`),
- * and the verbs that load a class already read it both ways. A name that is a folder under
- * `agents/` here is resolved through its class — `personas --agent sales` asked for the callers of
- * "sales", which is nobody, while the console showed them under the slug. Anything else is a slug
- * already and travels as typed, so a terminal outside a project still reaches its org's agents.
- */
-async function theSlug(named: string | undefined, here: () => Promise<Home>): Promise<string> {
-  if (named !== undefined && !agentFilesOfTheProject().some((file) => homeOf(file).name === named)) return named;
-  return await slugOfAgentFile((await here()).file);
+  if (verb === "show") return await shown(door, name, asJson, out, err);
+  if (verb === "rm") return await dropped(door, name, asJson, out, err);
+  if (verb === "try") return await tried(door, name, await here(), out, err);
+  return await written(door, name, verb === "add" ? "add" : "edit", values, asJson, out, err);
 }
 
 /** One line per caller: the name a verb takes, how they talk, and the goal they pursue. */
-async function listed(door: Door, agent: string, asJson: boolean, out: NodeJS.WritableStream): Promise<number> {
-  const personas = await personasOf(door, agent);
+async function listed(door: Door, asJson: boolean, out: NodeJS.WritableStream): Promise<number> {
+  const personas = await personasOf(door);
   if (asJson) {
     out.write(`${JSON.stringify({ personas })}\n`);
     return 0;
   }
   if (personas.length === 0) {
-    out.write(`${NONE_YET(agent)}\n`);
+    out.write(`${NONE_YET}\n`);
     return 0;
   }
   out.write(`${personas.map(oneLine).join("\n")}\n`);
@@ -151,15 +138,14 @@ async function listed(door: Door, agent: string, asJson: boolean, out: NodeJS.Wr
 /** One caller whole: how they talk, and every fact about themselves they are allowed to state. */
 async function shown(
   door: Door,
-  agent: string,
   name: string,
   asJson: boolean,
   out: NodeJS.WritableStream,
   err: NodeJS.WritableStream,
 ): Promise<number> {
-  const persona = await personaNamed(door, agent, name);
+  const persona = await personaNamed(door, name);
   if (persona === undefined) {
-    err.write(`${NOBODY(name, agent)}\n`);
+    err.write(`${NOBODY(name)}\n`);
     return 2;
   }
   out.write(asJson ? `${JSON.stringify(persona)}\n` : `${linesOf(persona).join("\n")}\n`);
@@ -170,7 +156,6 @@ async function shown(
 // are one PUT, because the gateway keeps a caller whole and merging belongs on this side.
 async function written(
   door: Door,
-  agent: string,
   name: string,
   verb: "add" | "edit",
   values: { goal?: string; style?: string; about?: string; fact?: string[]; rename?: string },
@@ -178,13 +163,13 @@ async function written(
   out: NodeJS.WritableStream,
   err: NodeJS.WritableStream,
 ): Promise<number> {
-  const before = await personaNamed(door, agent, name);
+  const before = await personaNamed(door, name);
   if (verb === "edit" && before === undefined) {
-    err.write(`${NOBODY(name, agent)}\n`);
+    err.write(`${NOBODY(name)}\n`);
     return 2;
   }
   if (verb === "add" && before !== undefined) {
-    err.write(`${agent} has a persona called ${name} already: \`pinecall personas edit ${name}\`\n`);
+    err.write(`this org has a persona called ${name} already: \`pinecall personas edit ${name}\`\n`);
     return 2;
   }
   const writing = values.rename ?? name;
@@ -205,7 +190,7 @@ async function written(
     err.write(`${refused instanceof Error ? refused.message : String(refused)}\n`);
     return 2;
   }
-  const kept = await writePersona(door, agent, writing, {
+  const kept = await writePersona(door, writing, {
     goal,
     style,
     about: values.about ?? before?.about ?? "",
@@ -218,7 +203,7 @@ async function written(
     return 0;
   }
   const now = kept.find((one) => one.name === writing);
-  out.write(`${agent} · ${now?.name ?? name} ${verb === "add" ? "written" : "changed"} · ${kept.length} persona(s)\n`);
+  out.write(`${now?.name ?? name} ${verb === "add" ? "written" : "changed"} · ${kept.length} persona(s)\n`);
   return 0;
 }
 
@@ -226,18 +211,17 @@ async function written(
 // DELETE of a name it does not hold with its own JSON, which is no answer for a person.
 async function dropped(
   door: Door,
-  agent: string,
   name: string,
   asJson: boolean,
   out: NodeJS.WritableStream,
   err: NodeJS.WritableStream,
 ): Promise<number> {
-  if ((await personaNamed(door, agent, name)) === undefined) {
-    err.write(`${NOBODY(name, agent)}\n`);
+  if ((await personaNamed(door, name)) === undefined) {
+    err.write(`${NOBODY(name)}\n`);
     return 2;
   }
-  const kept = await dropPersona(door, agent, name);
-  out.write(asJson ? `${JSON.stringify({ personas: kept })}\n` : `${agent} · ${name} dropped · ${kept.length} persona(s)\n`);
+  const kept = await dropPersona(door, name);
+  out.write(asJson ? `${JSON.stringify({ personas: kept })}\n` : `${name} dropped · ${kept.length} persona(s)\n`);
   return 0;
 }
 
@@ -245,15 +229,14 @@ async function dropped(
 // only a call tells you how they land. It is `simulate` without the judge — one implementation.
 async function tried(
   door: Door,
-  agent: string,
   name: string,
   home: Home,
   out: NodeJS.WritableStream,
   err: NodeJS.WritableStream,
 ): Promise<number> {
-  const persona = await personaNamed(door, agent, name);
+  const persona = await personaNamed(door, name);
   if (persona === undefined) {
-    err.write(`${NOBODY(name, agent)}\n`);
+    err.write(`${NOBODY(name)}\n`);
     return 2;
   }
   const said = await aSimulation(persona, { door, agentFile: home.file, judge: false, voice: false, turns: TURNS, out });
@@ -268,7 +251,6 @@ async function tried(
  */
 async function pushed(
   door: Door,
-  agent: string,
   folder: string,
   asJson: boolean,
   out: NodeJS.WritableStream,
@@ -283,7 +265,7 @@ async function pushed(
   let kept: Persona[] = [];
   for (const persona of inFiles) {
     try {
-      kept = await writePersona(door, agent, persona.name, {
+      kept = await writePersona(door, persona.name, {
         goal: persona.goal,
         style: persona.style,
         about: "",
@@ -293,20 +275,20 @@ async function pushed(
     } catch (refused) {
       // Half a migration is the one thing this verb must never leave in silence: a second run has
       // to know which callers are already the gateway's and which are still only files.
-      err.write(`${halfWay(agent, landed, inFiles.map((one) => one.name).slice(landed.length), refused)}\n`);
+      err.write(`${halfWay(landed, inFiles.map((one) => one.name).slice(landed.length), refused)}\n`);
       return 2;
     }
     landed.push(persona.name);
     if (!asJson) out.write(`  ${persona.name}\n`);
   }
-  out.write(asJson ? `${JSON.stringify({ personas: kept })}\n` : `${agent} · ${landed.length} persona(s) pushed from ${folder}\n`);
+  out.write(asJson ? `${JSON.stringify({ personas: kept })}\n` : `${landed.length} persona(s) pushed from ${folder}\n`);
   return 0;
 }
 
 /** What a push that stopped says: what the gateway now holds, what it does not, and why it stopped. */
-function halfWay(agent: string, landed: string[], left: string[], refused: unknown): string {
+function halfWay(landed: string[], left: string[], refused: unknown): string {
   return [
-    `${agent} · ${left[0]} was refused: ${refused instanceof Error ? refused.message : String(refused)}`,
+    `${left[0]} was refused: ${refused instanceof Error ? refused.message : String(refused)}`,
     `  pushed: ${landed.length === 0 ? "nothing" : landed.join(", ")}`,
     `  still only files: ${left.join(", ")}`,
     "  nothing was undone and no file was touched: push again once it is fixed",

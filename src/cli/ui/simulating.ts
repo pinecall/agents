@@ -65,8 +65,8 @@ export function simulatingFrom(
         wanted.packet_loss === undefined ? undefined : String(wanted.packet_loss),
       );
       if (!wanted.voice && degraded !== undefined) throw new Refusal(422, ONLY_ON_A_LINE);
-      const persona = await personaNamed(door, wanted.agent, wanted.persona);
-      if (persona === undefined) throw new Refusal(404, NOBODY(wanted.persona, wanted.agent));
+      const persona = await personaNamed(door, wanted.persona);
+      if (persona === undefined) throw new Refusal(404, NOBODY(wanted.persona));
       return await opened(persona, wanted, degraded, door, out, pieces.simulate);
     },
   };
