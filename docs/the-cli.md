@@ -981,6 +981,12 @@ $ pinecall docs attached
 clinica-norte · read by clinica-norte
 ```
 
+**Several bases are one search, not several.** An agent that reads three collections has them
+searched together on every turn — one query, one ranking over all of them — so a collection with
+nothing to say about the question takes none of the turn's chunks. `--k` is how many chunks the
+turn is handed (the most generous of the attachments), and `--min-score` is read against the base
+that set it. The log's `docs.sources` names the base each chunk came from.
+
 The class reaches the base from inside a tool, and nowhere else: `await
 this.knowledge.search("horarios", { k: 3 })` asks the gateway for the best chunks of the bases the
 world attached, for these words ([writing-an-agent.md](writing-an-agent.md)). Which base is the

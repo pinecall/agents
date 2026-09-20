@@ -200,7 +200,9 @@ $ pinecall docs list · pinecall docs attached · pinecall docs detach clinica-n
 
 A push replaces the base whole. `attach` is one field of the agent's settings — `bases`, a new
 version — with how a turn reads it: `--k` chunks, `--mode retrieved` (the platform searches before
-the turn, the default) or `--mode tool` (the model decides when), `--min-score`. From inside the
+the turn, the default) or `--mode tool` (the model decides when), `--min-score`. An agent may read
+several, and then a turn searches **all of them at once** — one ranking over the lot, so a
+collection with nothing to say about the question takes none of the turn's chunks. From inside the
 class, a tool may search the attached bases itself:
 
 ```ts
