@@ -4,7 +4,7 @@ All notable changes to `pinecall`, the package a tenant writes an agent in. The 
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version numbers and tags are the
 maintainer's call, so everything sits under Unreleased until one is cut.
 
-## [Unreleased]
+## 0.8.11 — The audit of the verbs against their own page
 
 ### Fixed
 - **`pinecall sessions show <call>` is a command.** `show` was read as the call id, so it answered
