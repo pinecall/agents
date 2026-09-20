@@ -6,6 +6,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { theKItIsReadWith, markdownUnder, pushedLine, run, scoreLines } from "../../src/cli/docs.js";
@@ -25,6 +26,8 @@ interface Heard {
 class FakeGateway {
   readonly heard: Heard[] = [];
   bases: { base: string; chunks: number; pushed_at: number }[] = [];
+  settings: unknown = { world: "sandbox", yours: null, team: null, production: null };
+  score: unknown = { questions: 0, k: 8, recall_at_k: 0, ndcg_at_10: 0, model: "pplx", took_ms: 0, misses: [] };
   refuse: { status: number; detail: string } | undefined;
   #server!: Server;
   url = "";
@@ -48,6 +51,8 @@ class FakeGateway {
     this.heard.push(heard);
     if (request.headers.authorization !== `Bearer ${A_KEY}`) return this.#said(response, 401, { detail: "this door takes an API key" });
     if (this.refuse !== undefined) return this.#said(response, this.refuse.status, { detail: this.refuse.detail });
+    if (heard.path.endsWith("/settings")) return this.#said(response, 200, this.settings);
+    if (heard.path.includes("/eval")) return this.#said(response, 200, this.score);
     if (heard.method === "PUT") {
       const files = (heard.body as { files: unknown[] }).files;
       return this.#said(response, 200, { base: heard.path.split("/").at(-1), chunks: files.length * 3, took_ms: 812.4 });
@@ -243,5 +248,35 @@ describe("the k a golden is asked with", () => {
 
   it("is nobody's when the attachment named none, which is the door's default too", () => {
     expect(theKItIsReadWith(attached([{ base: "maravilla" }]) as never, "maravilla")).toBeUndefined();
+  });
+});
+
+// The path a project actually takes: `pinecall docs eval` in an agent's own directory walks the
+// project, loads the class and hands the base along — and it used to hand `file` and `base` both,
+// which is how the k lookup above was skipped in the only shape that happens. It asked at the
+// door's default of eight while the agent read its base with four (2026-09-20).
+describe("eval in a project, where the class is on disk", () => {
+  const CLINIC = fileURLToPath(new URL("./clinic", import.meta.url));
+  let was: string;
+
+  beforeEach(() => {
+    was = process.cwd();
+    process.chdir(CLINIC);
+    gateway.settings = {
+      world: "sandbox",
+      yours: null,
+      team: { version: 2, config: { bases: [{ base: "clinica-norte", k: 4 }] } },
+      production: null,
+    };
+    gateway.score = { questions: 1, k: 4, recall_at_k: 1, ndcg_at_10: 1, model: "pplx", took_ms: 12, misses: [] };
+  });
+
+  afterEach(() => process.chdir(was));
+
+  it("asks the golden with the k the agent's own corner attached the base with", async () => {
+    expect(await run(["eval"], { out: written().stream, err: written().stream, env })).toBe(0);
+
+    const asked = gateway.heard.find((heard) => heard.path.includes("/eval"));
+    expect((asked?.body as { k?: number }).k).toBe(4);
   });
 });

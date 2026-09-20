@@ -194,10 +194,15 @@ async function evaluate(
   agent: string | undefined,
   out: NodeJS.WritableStream,
   err: NodeJS.WritableStream,
+  // Whose attachment says the k, when nobody named one. Every caller knows the agent — one loads
+  // the class here, the other loaded it to walk a project — and this is that answer, said out
+  // loud rather than inferred from which arguments happen to be undefined.
+  readBy?: string,
 ): Promise<number> {
   const loaded = file === undefined || base === undefined ? await load(agent) : undefined;
   const golden = resolve(file ?? homeOf(loaded!.file).docsGolden);
   const name = base ?? slugOf(loaded!.ctor);
+  const reader = readBy ?? (loaded === undefined ? undefined : slugOf(loaded.ctor));
   if (!existsSync(golden)) {
     err.write(`${NO_GOLDEN(golden)}\n`);
     return 2;
@@ -207,9 +212,9 @@ async function evaluate(
     err.write(`${AN_EMPTY_GOLDEN(golden)}\n`);
     return 2;
   }
-  // Nobody named a k: ask at the one this agent reads that base with. A `--base` somebody typed
-  // belongs to an agent this verb was not told about, so that one is asked at the door's default.
-  const attachment = loaded === undefined ? null : await readSettings(door, slugOf(loaded.ctor)).catch(() => null);
+  // Nobody named a k: ask at the one this agent reads that base with. A base nobody says this
+  // agent reads — `--base` on somebody else's — is asked at the door's own default.
+  const attachment = reader === undefined ? null : await readSettings(door, reader).catch(() => null);
   const asked = k === undefined ? theKItIsReadWith(attachment, name) : Number(k);
   const score = await scoredOn(door, name, questions, asked);
   out.write(`${scoreLines(score).join("\n")}\n`);
@@ -304,5 +309,6 @@ async function evaluateHome(
   err: NodeJS.WritableStream,
 ): Promise<number> {
   const loaded = await load(home.file);
-  return await evaluate(door, home.docsGolden, slugOf(loaded.ctor), k, home.file, out, err);
+  const slug = slugOf(loaded.ctor);
+  return await evaluate(door, home.docsGolden, slug, k, home.file, out, err, slug);
 }

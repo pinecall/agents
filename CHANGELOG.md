@@ -4,6 +4,15 @@ All notable changes to `pinecall`, the package a tenant writes an agent in. The 
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version numbers and tags are the
 maintainer's call, so everything sits under Unreleased until one is cut.
 
+## [Unreleased]
+
+### Fixed
+- **`docs eval` in a project asks with the attachment's k too.** 0.8.13 taught the verb to ask with
+  the k the agent reads its base with, and taught it on the branch a project never takes: walking
+  the project hands the golden AND the base along, and the lookup was skipped exactly where every
+  real run goes. Both callers now say which agent's attachment answers, instead of inferring it
+  from which arguments happen to be undefined — and a test runs the verb in a project on disk.
+
 ## 0.8.14 — Five copies of one write, and the one that erased a corner
 
 ### Fixed
