@@ -70,6 +70,14 @@ const NAME_SHAPE = (name: string): string =>
 
 // `try` holds a live call and prints its turns as they land: there is no answer to print instead,
 // so the flag is refused rather than quietly ignored.
+// `--agent` and `--file` name the CLASS, and only two of these verbs have one to name. On the
+// other five they were parsed and dropped, so `personas list --agent whoever` answered the whole
+// org's roster with exit 0 — a flag that looks like it filtered and never did. Refused by name,
+// with where it does belong.
+const NOT_THIS_VERB = (verb: string, flag: string) =>
+  `${flag} is for \`personas try\` and \`personas push\`, the two that need the class: ` +
+  `\`personas ${verb}\` names no agent, because a caller is the org's`;
+
 const NOT_JSON = "try prints a call as it happens, not an answer the gateway gave: drop --json";
 
 export async function run(argv: string[], how: Setting = {}): Promise<number> {
@@ -110,6 +118,19 @@ export async function run(argv: string[], how: Setting = {}): Promise<number> {
   // class, and for `push`, which reads the files one project wrote under `test/<agent>/personas`.
   const here = async (): Promise<Home> => (home ??= await oneHome("personas", values.file, values.agent));
 
+  // The shape of the command first: a verb that takes a name and was given none is a usage line.
+  if (name === undefined && verb !== "list" && verb !== "push") {
+    err.write(USAGE);
+    return 2;
+  }
+  // Then a flag that belongs to another verb. `--agent` and `--file` name the CLASS, and only
+  // `try` and `push` have one to name; on the rest they were parsed and dropped, so
+  // `personas list --agent whoever` answered the whole org's roster with exit 0.
+  const named = values.agent !== undefined ? "--agent" : values.file !== undefined ? "--file" : null;
+  if (named !== null && verb !== "try" && verb !== "push") {
+    err.write(`${NOT_THIS_VERB(verb, named)}\n`);
+    return 2;
+  }
   if (verb === "list") return await listed(door, asJson, out);
   if (verb === "push") return await pushed(door, values.from ?? (await here()).personas, asJson, out, err);
   if (name === undefined) {

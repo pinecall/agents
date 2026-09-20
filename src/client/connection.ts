@@ -46,6 +46,10 @@ const DEFAULT_PING_MS = 30_000;
  * up in an access log. A wrong key is closed with 1008 and no body, so a socket that never opens
  * is retried like any other: the gateway will not say more the second time either.
  */
+// What the gateway closes a socket with when the key is real and may not open that door: not a
+// blip to retry, a decision to report. RFC 6455's policy violation.
+const POLICY_VIOLATION = 1008;
+
 export class Connection {
   #socket: WebSocket | null = null;
   #reconnect: NodeJS.Timeout | null = null;
@@ -114,7 +118,7 @@ export class Connection {
       this.#failed = failed;
       this.handlers.onError(failed);
     });
-    socket.on("close", (code: number) => this.#onClose(code));
+    socket.on("close", (code: number, reason: Buffer) => this.#onClose(code, reason.toString()));
   }
 
   async #onOpen(): Promise<void> {
@@ -145,16 +149,29 @@ export class Connection {
     }
   }
 
-  #onClose(code: number): void {
+  #onClose(code: number, reason: string): void {
     this.#stopTimers();
     this.#socket = null;
     if (this.#closed) {
       return;
     }
+    // The gateway says WHY in the close frame's reason — `this key does not open app: it opens
+    // calls · evals` — and the app printed `closed with 1008`, a number, for a refusal a person
+    // could act on in a second (production, 2026-09-20). A close with no reason keeps the code,
+    // because that is all there is.
+    const why = new PinecallError(`the gateway refused the socket: ${this.#failed?.message ?? (reason || `closed with ${code}`)}`);
     // The first connection failing is the app's to hear: a wrong key, a host nobody is on. Every
     // close after one that worked is a blip, and a blip is answered with a retry, not a rejection.
     if (this.#opened !== null) {
-      this.#opened(new PinecallError(`the gateway refused the socket: ${this.#failed?.message ?? `closed with ${code}`}`));
+      this.#opened(why);
+      return;
+    }
+    // Except a REFUSAL, which 1008 is: a key whose scopes do not open this door will not open it
+    // on the third try either. Retrying that for ever is a process that says nothing while nothing
+    // works — `pinecall start` with a key that cannot hold an agent did exactly that.
+    if (code === POLICY_VIOLATION) {
+      this.#closed = true;
+      this.handlers.onError(why);
       return;
     }
     this.#reconnect = setTimeout(() => this.#dial(), this.#waitMs());

@@ -1,9 +1,12 @@
 // The dispatcher: every group of the design is declared, and the ones not written yet say so.
 
+import { fileURLToPath } from "node:url";
+
 import { describe, expect, it } from "vitest";
 
 import { PLANNED, notBuiltYet, plannedGroup } from "../../src/cli/groups.js";
 import { groupNames, main, usage } from "../../src/cli/index.js";
+import { written } from "./said.js";
 
 // A stream that keeps what was written, so a test reads the CLI's output as a string.
 function collected(): { stream: NodeJS.WritableStream; text(): string } {
@@ -94,3 +97,4 @@ describe("the groups the CLI answers to", () => {
     expect(out.text()).toBe("deploy is not built yet: put this app on a box and keep it there\n");
   });
 });
+

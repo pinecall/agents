@@ -4,6 +4,27 @@ All notable changes to `pinecall`, the package a tenant writes an agent in. The 
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version numbers and tags are the
 maintainer's call, so everything sits under Unreleased until one is cut.
 
+## 0.8.9 — A flag that does nothing, and a refusal nobody could read
+
+### Fixed
+- **`--agent` is refused where it does nothing.** `personas list|show|add|edit|rm` parsed it and
+  dropped it, so `personas list --agent whoever` answered the whole org's roster with exit 0 — a
+  flag that looks like a filter and never was. It names the CLASS, and only `try` and `push` have
+  one to name; the other five say so and exit 2.
+- **A refused socket carries the gateway's sentence.** `pinecall simulate` with a key that does
+  not open `app` printed `the gateway refused the socket: closed with 1008` — a number, for a
+  refusal a person could act on in a second. The close frame's reason is the gateway's own
+  sentence and it is what the app prints now. A 1008 also stops the retry loop: a key whose scopes
+  do not open a door will not open it on the third try, and a client that retried for ever said
+  nothing while nothing worked.
+- **A listing piped into `head` exits quietly.** `pinecall runs list | head` closed the pipe and
+  node printed an EPIPE stack over what a person was reading. A reader that stopped reading is not
+  an error.
+- **Exit 2 means the command cannot run, wherever the refusal was thrown.** A project of several
+  agents with none named, a golden with no such case, a file that holds no agent class — all came
+  back as 1 through the dispatcher's generic catch, so the page's own table could not be relied
+  on. `CannotRun` is read once, at the door.
+
 ## 0.8.8 — What a screen says when it is refused
 
 ### Fixed

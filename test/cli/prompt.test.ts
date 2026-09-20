@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import { docOf } from "../../src/agent/tools.js";
 import { showPrompt } from "../../src/views/render.js";
 import { instanceFor, load } from "../../src/cli/load.js";
+import { main } from "../../src/cli/index.js";
 import { firstState, run } from "../../src/cli/prompt.js";
 
 const AGENT = fileURLToPath(new URL("./clinic/agents/clinica-norte/agent.tsx", import.meta.url));
@@ -81,6 +82,19 @@ describe("the prompt a state would produce", () => {
 
     // Case 1 has a patient and one slot: the view takes the identified branch.
     expect(out.text()).toContain("Ofrece 1 horas");
+  });
+
+  // The exit code is read by scripts and the page says what each means: 1 is a measurement that
+  // did not hold or a gateway that refused, 2 is this command cannot run as typed. A refusal
+  // thrown deep — a golden with no such case, a project of several agents with none named — came
+  // back as 1 through the dispatcher's generic catch, so the table could not be relied on.
+  it("exits 2 for a case the golden does not have, not 1", async () => {
+    const err = collected();
+
+    const code = await main(["prompt", AGENT, "--state", GOLDENS, "--case", "99"], collected().stream, err.stream);
+
+    expect(code).toBe(2);
+    expect(err.text()).toContain("has no case 99");
   });
 
   it("asks for the state file rather than guessing one", async () => {

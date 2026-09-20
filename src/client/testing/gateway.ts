@@ -10,6 +10,9 @@ import { LOOPBACK } from "./loopback.js";
 // The gateway answers a key nothing knows during the handshake, so the upgrade never happens.
 const FORBIDDEN = 403;
 
+// What the gateway closes a socket with when the key is real and may not open that door.
+const POLICY_VIOLATION = 1008;
+
 /** What a fake gateway answers to, and what it hands back. */
 export interface FakeGatewayOptions {
   /** The only key it accepts. Anything else is closed with 1008 and no body, like the real door. */
@@ -17,6 +20,9 @@ export interface FakeGatewayOptions {
   /** Slugs this gateway refuses to register at all: the real one refuses a door another agent
    * already answers, or a slug another fleet is holding. */
   taken?: string[];
+  /** Close every socket that opens, 1008, with this sentence in the close frame's reason — what
+   * the real door does to a key whose scopes do not open it. */
+  refusesWith?: string;
 }
 
 /** One command the fake gateway received, as it arrived. */
@@ -84,7 +90,13 @@ export class FakeGateway {
     await new Promise<void>((resolve) => http.listen(0, LOOPBACK, resolve));
     const address = http.address();
     gateway.#port = typeof address === "object" && address !== null ? address.port : 0;
-    server.on("connection", (socket) => gateway.#accept(socket));
+    server.on("connection", (socket) => {
+      if (options.refusesWith !== undefined) {
+        socket.close(POLICY_VIOLATION, options.refusesWith);
+        return;
+      }
+      gateway.#accept(socket);
+    });
     return gateway;
   }
 

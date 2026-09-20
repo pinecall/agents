@@ -1,5 +1,6 @@
 /** `pinecall prompt [agent.tsx] --state file`: the exact prompt a state would produce, offline. */
 
+import { cannotRun } from "./cannot-run.js";
 import { readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
@@ -69,6 +70,6 @@ export function firstState(file: string, which: string | undefined): Snapshot {
   const cases = Array.isArray(parsed) ? parsed : [parsed];
   const index = which === undefined ? 0 : Number(which);
   const chosen = cases[index];
-  if (chosen === undefined) throw new Error(`${file} has no case ${index}`);
+  if (chosen === undefined) throw cannotRun(`${file} has no case ${index}`);
   return chosen.state ?? {};
 }

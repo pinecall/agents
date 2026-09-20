@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /** `pinecall <group> [args]`: the tenant's CLI. One module per group, one purpose line each. */
 
+import { CannotRun } from "./cannot-run.js";
 import { realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
@@ -58,7 +59,11 @@ export async function main(
     return await inTheWorld(world, async () => await group.run(rest));
   } catch (failed) {
     err.write(`pinecall: ${failed instanceof Error ? failed.message : String(failed)}\n`);
-    return 1;
+    // 2 is "this command cannot run": a name nobody wrote, a project of several agents with none
+    // named, a golden with no such case. Retrying it changes nothing, and a script reads the
+    // difference. Everything else is 1: something was measured and did not hold, or the gateway
+    // refused what was asked.
+    return failed instanceof CannotRun ? 2 : 1;
   }
 }
 
@@ -148,7 +153,20 @@ function isEntry(): boolean {
   }
 }
 
+// `pinecall runs list | head` closes the pipe after ten lines, and a write into a closed pipe is
+// an EPIPE — which node, with nobody listening, prints as a stack trace over the output a person
+// was reading. A reader that stopped reading is not an error: the verb is done, and the exit code
+// says so. Every other error on stdout is still thrown.
+function quietWhenThePipeCloses(stream: NodeJS.WriteStream): void {
+  stream.on("error", (failed: NodeJS.ErrnoException) => {
+    if (failed.code !== "EPIPE") throw failed;
+    process.exit(0);
+  });
+}
+
 // Only when this file is the process, so a test may import main() without the process exiting.
 if (isEntry()) {
+  quietWhenThePipeCloses(process.stdout);
+  quietWhenThePipeCloses(process.stderr);
   process.exitCode = await main(process.argv.slice(2));
 }

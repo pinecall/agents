@@ -103,12 +103,13 @@ afterEach(async () => {
 describe("whose callers", () => {
   // A caller is the ORG's: no agent in the path, and no class loaded to find a slug for one.
   // `--agent` used to decide the path, so `personas --agent sales` asked for the callers of
-  // "sales" — a roster nobody had — while the console showed them under the class's slug.
-  it("asks for the org's one list, whatever agent is named", async () => {
+  // "sales" — a roster nobody had — while the console showed them under the class's slug. It
+  // names no path now, and no verb that lists or writes takes it at all.
+  it("asks for the org's one list from a project that holds several agents", async () => {
     const was = process.cwd();
     process.chdir(BIDFIRE);
     try {
-      expect(await run(["list", "--agent", "sales"], { out: written().stream, env })).toBe(0);
+      expect(await run(["list"], { out: written().stream, env })).toBe(0);
     } finally {
       process.chdir(was);
     }
@@ -151,10 +152,10 @@ describe("the verbs it answers to", () => {
   it("writes one whole, and changes what is named on the one there", async () => {
     const out = written();
 
-    expect(await run(["add", "apurado", "--goal", "cambiar la cita", "--style", "frases cortas", "--agent", AGENT], { out: out.stream, env })).toBe(0);
+    expect(await run(["add", "apurado", "--goal", "cambiar la cita", "--style", "frases cortas"], { out: out.stream, env })).toBe(0);
     expect(out.text()).toBe("apurado written · 1 persona(s)\n");
 
-    expect(await run(["edit", "apurado", "--style", "grita un poco", "--agent", AGENT], { out: written().stream, env })).toBe(0);
+    expect(await run(["edit", "apurado", "--style", "grita un poco"], { out: written().stream, env })).toBe(0);
     expect(gateway.personas[0]).toMatchObject({ goal: "cambiar la cita", style: "grita un poco" });
   });
 });
@@ -166,7 +167,7 @@ describe("a caller nobody wrote", () => {
     for (const argv of [["show", "fantasma"], ["rm", "fantasma"], ["edit", "fantasma", "--goal", "x"]]) {
       const err = written();
 
-      const code = await run([...argv, "--agent", AGENT], { out: written().stream, err: err.stream, env });
+      const code = await run([...argv], { out: written().stream, err: err.stream, env });
 
       expect(code).toBe(2);
       expect(err.text()).toContain("no persona called fantasma");
@@ -177,7 +178,7 @@ describe("a caller nobody wrote", () => {
   it("is added under a name the gateway would refuse, and the name never travels", async () => {
     const err = written();
 
-    const code = await run(["add", "Price Shopper", "--goal", "un precio", "--style", "seco", "--agent", AGENT], {
+    const code = await run(["add", "Price Shopper", "--goal", "un precio", "--style", "seco"], {
       out: written().stream,
       err: err.stream,
       env,
@@ -193,7 +194,7 @@ describe("a caller nobody wrote", () => {
     gateway.personas = [APURADO];
     const err = written();
 
-    const code = await run(["edit", "apurado", "--rename", "EL-APURADO", "--agent", AGENT], { out: written().stream, err: err.stream, env });
+    const code = await run(["edit", "apurado", "--rename", "EL-APURADO"], { out: written().stream, err: err.stream, env });
 
     expect(code).toBe(2);
     expect(err.text()).toContain("EL-APURADO is no name for a caller");
@@ -203,7 +204,7 @@ describe("a caller nobody wrote", () => {
     gateway.personas = [APURADO];
     const err = written();
 
-    const code = await run(["add", "apurado", "--goal", "otra cosa", "--style", "seco", "--agent", AGENT], { out: written().stream, err: err.stream, env });
+    const code = await run(["add", "apurado", "--goal", "otra cosa", "--style", "seco"], { out: written().stream, err: err.stream, env });
 
     expect(code).toBe(2);
     expect(err.text()).toContain("pinecall personas edit apurado");
@@ -212,7 +213,7 @@ describe("a caller nobody wrote", () => {
   it("is written with no goal and no style, which is not a caller at all", async () => {
     const err = written();
 
-    const code = await run(["add", "seco", "--goal", "un precio", "--agent", AGENT], { out: written().stream, err: err.stream, env });
+    const code = await run(["add", "seco", "--goal", "un precio"], { out: written().stream, err: err.stream, env });
 
     expect(code).toBe(2);
     expect(err.text()).toContain("a persona needs --goal and --style");
@@ -224,22 +225,22 @@ describe("--json", () => {
     gateway.personas = [APURADO];
 
     const shown = written();
-    expect(await run(["show", "apurado", "--agent", AGENT, "--json"], { out: shown.stream, env })).toBe(0);
+    expect(await run(["show", "apurado", "--json"], { out: shown.stream, env })).toBe(0);
     expect(JSON.parse(shown.text())).toMatchObject({ name: "apurado", goal: "cambiar la cita al martes" });
 
     const listed = written();
-    expect(await run(["list", "--agent", AGENT, "--json"], { out: listed.stream, env })).toBe(0);
+    expect(await run(["list", "--json"], { out: listed.stream, env })).toBe(0);
     expect(JSON.parse(listed.text())).toEqual({ personas: [APURADO] });
 
     const dropped = written();
-    expect(await run(["rm", "apurado", "--agent", AGENT, "--json"], { out: dropped.stream, env })).toBe(0);
+    expect(await run(["rm", "apurado", "--json"], { out: dropped.stream, env })).toBe(0);
     expect(JSON.parse(dropped.text())).toEqual({ personas: [] });
   });
 
   it("answers the roster after a write, and nothing else", async () => {
     const out = written();
 
-    expect(await run(["add", "apurado", "--goal", "la cita", "--style", "seco", "--agent", AGENT, "--json"], { out: out.stream, env })).toBe(0);
+    expect(await run(["add", "apurado", "--goal", "la cita", "--style", "seco", "--json"], { out: out.stream, env })).toBe(0);
 
     expect(JSON.parse(out.text())).toMatchObject({ personas: [{ name: "apurado", goal: "la cita" }] });
   });
@@ -303,5 +304,27 @@ describe("the migration", () => {
     expect(err.text()).toContain("pushed: apurado");
     expect(err.text()).toContain("still only files: desconfiado, resignado");
     expect(gateway.personas.map((one) => one.name)).toEqual(["apurado"]);
+  });
+});
+
+// `--agent` and `--file` name the CLASS, and only `try` and `push` have one to name. They used to
+// be parsed and dropped on the other five, so `personas list --agent whoever` answered the whole
+// org's roster with exit 0: a flag that looks like a filter and is not one (production, 2026-09-20).
+describe("a flag that names the class", () => {
+  it("is refused by a verb that has no class to name, before the gateway is asked", async () => {
+    for (const argv of [
+      ["list", "--agent", AGENT],
+      ["show", "apurado", "--agent", AGENT],
+      ["rm", "apurado", "--file", "agent.tsx"],
+      ["edit", "apurado", "--agent", AGENT, "--style", "seco"],
+    ]) {
+      const err = written();
+
+      expect(await run(argv, { out: written().stream, err: err.stream, env })).toBe(2);
+      expect(err.text()).toContain("the two that need the class");
+      expect(err.text()).toContain("a caller is the org's");
+    }
+
+    expect(gateway.heard).toEqual([]);
   });
 });

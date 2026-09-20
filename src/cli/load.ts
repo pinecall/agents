@@ -1,5 +1,6 @@
 /** Loading a tenant's agent file from the CLI: the TypeScript loader, the class, and its own source. */
 
+import { cannotRun } from "./cannot-run.js";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -47,11 +48,11 @@ export async function useTypeScript(): Promise<void> {
  */
 export async function load(file?: string): Promise<Loaded> {
   const path = file === undefined ? theAgentHere() : resolve(file);
-  if (!existsSync(path)) throw new Error(`no agent at ${path}`);
+  if (!existsSync(path)) throw cannotRun(`no agent at ${path}`);
   await useTypeScript();
   const module_ = (await import(pathToFileURL(path).href)) as { default?: unknown };
   const ctor = module_.default;
-  if (typeof ctor !== "function") throw new Error(`${path} has no default-exported Agent class`);
+  if (typeof ctor !== "function") throw cannotRun(`${path} has no default-exported Agent class`);
   const source = readFileSync(path, "utf8");
   describe(ctor, source, path);
   // A class still carrying a field of the world's — a voice, a model, an opening, a base — is
@@ -102,9 +103,9 @@ function theAgentHere(): string {
   if (project.length === 1) return project[0]!;
   if (project.length > 1) {
     const names = project.map((file) => `--agent ${basename(dirname(file))}`).join(" or ");
-    throw new Error(`this project has ${project.length} agents: name one with ${names}`);
+    throw cannotRun(`this project has ${project.length} agents: name one with ${names}`);
   }
-  throw new Error(`no agent here: looked for ${PROJECT_AGENTS}/<name>/${AGENT_FILES.join(" or ")} in ${process.cwd()}`);
+  throw cannotRun(`no agent here: looked for ${PROJECT_AGENTS}/<name>/${AGENT_FILES.join(" or ")} in ${process.cwd()}`);
 }
 
 // The slug of the agent this terminal is standing in, read the way `run` reads it, so no two verbs

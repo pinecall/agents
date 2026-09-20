@@ -1,5 +1,6 @@
 /** Where an agent's files are: one layout, every folder by the agent's name under the project's root. */
 
+import { cannotRun } from "./cannot-run.js";
 import { existsSync, statSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 
@@ -86,7 +87,7 @@ export async function homesFor(file?: string, agent?: string): Promise<Home[]> {
   for (const home of homes) {
     if ((await slugOfAgentFile(home.file)) === agent) return [home];
   }
-  throw new Error(`no agent ${agent} in this project: it has ${homes.map((home) => home.name).join(", ")}`);
+  throw cannotRun(`no agent ${agent} in this project: it has ${homes.map((home) => home.name).join(", ")}`);
 }
 
 /** The one agent a verb that holds a conversation acts on; a project of several must name it. */
@@ -94,7 +95,7 @@ export async function oneHome(verb: string, file?: string, agent?: string): Prom
   const homes = await homesFor(file, agent);
   if (homes.length > 1) {
     const names = homes.map((home) => `--agent ${home.name}`).join(" or ");
-    throw new Error(`${verb} talks to one agent and this project has ${homes.length}: add ${names}`);
+    throw cannotRun(`${verb} talks to one agent and this project has ${homes.length}: add ${names}`);
   }
   return homes[0]!;
 }

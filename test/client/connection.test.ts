@@ -124,3 +124,27 @@ describe("being stopped", () => {
     await vi.waitFor(() => expect(errors).toContain("stopped by Ana"));
   });
 });
+
+// The gateway says WHY in the close frame's reason, and the app printed `closed with 1008` — a
+// number, for a refusal a person could act on in a second. `pinecall simulate` with a key that
+// does not open `app` said exactly that in production, 2026-09-20. And a 1008 is a decision, not
+// a blip: a client that retried it for ever would say nothing while nothing worked.
+describe("a socket the gateway refuses", () => {
+  it("carries the gateway's own sentence, and is not retried", async () => {
+    const said = "this key does not open app: it opens calls · evals";
+    const refusing = await FakeGateway.start({ refusesWith: said });
+    const pc = new Pinecall({ url: refusing.url, apiKey: "pk_test_whatever", backoff: { firstMs: 10, capMs: 20 } });
+    const heard: string[] = [];
+    pc.onErrors((failed) => heard.push(failed.message));
+    try {
+      await pc.connect().catch((failed: unknown) => heard.push(failed instanceof Error ? failed.message : String(failed)));
+      await vi.waitFor(() => expect(heard.some((line) => line.includes(said))).toBe(true));
+      await new Promise((waited) => setTimeout(waited, 60));
+
+      expect(refusing.connections).toBe(0);
+    } finally {
+      pc.close();
+      await refusing.close();
+    }
+  });
+});
