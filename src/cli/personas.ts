@@ -16,17 +16,18 @@ const USAGE =
   "       pinecall personas add <name> --goal '…' --style '…' [--about '…'] [--fact 'what=said']…\n" +
   "       pinecall personas edit <name> [--goal '…'] [--style '…'] [--about '…'] [--fact 'what=said']… [--rename <name>]\n" +
   "       pinecall personas rm <name> · pinecall personas push [--from test/<agent>/personas]\n" +
-  "       … any of them with --agent <name|slug>, --file agent.tsx, --json, and --prod for production's\n";
+  "       … any of them with --json, and --prod for production's; try and push also take\n" +
+  "       --agent <name|slug> or --file agent.tsx, because those two need the class\n";
 
 export const group: Group = {
-  purpose: "the agent's synthetic callers: list, show, add, edit, rm, try — kept by the gateway",
+  purpose: "the org's synthetic callers: list, show, add, edit, rm, try — kept by the gateway",
   usage: `${USAGE}
   A persona is a caller a model plays: a goal, a style, and the facts they may state about
-  themselves. There is no script — every turn is improvised from those three. They are the
-  agent's, kept by the gateway beside its settings, so the console shows the same ones and a
-  change needs no deploy.
+  themselves. There is no script — every turn is improvised from those three. They are the ORG's,
+  kept by the gateway — one list, whichever agent picks up — so the console shows the same ones
+  and a change needs no deploy.
 
-  list             every caller of this agent, with the goal each one pursues
+  list             every caller this org wrote, with the goal each one pursues
   show <name>      that caller whole, facts and all
   add <name>       write one: --goal and --style are needed, --fact repeated for what they know
   edit <name>      change what is named and leave the rest; --rename moves it to another name
@@ -34,8 +35,9 @@ export const group: Group = {
   try <name>       one call against the class in this directory — simulate, without the judge
   push             the personas still in files, sent to the gateway once: the migration
 
-  --agent <name|slug>  whose callers: an agent of this project by its name, or a slug of the org
-  --file agent.tsx     which class names the agent, when the directory holds more than one
+  --agent <name|slug>  which agent try calls, and which project's files push sends: an agent of
+                       this project by its name. The other verbs name no agent at all
+  --file agent.tsx     which class, when the directory holds more than one. try and push only
   --json               what the gateway answered — the caller for show, the roster for the rest.
                        try prints a call as it happens and refuses the flag`,
   run,

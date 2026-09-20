@@ -36,16 +36,13 @@ const MAY_IMPORT: Record<string, string[]> = {
   // .tsx and never a build step, and `@livekit/rtc-node`, which is `pinecall simulate --listen` —
   // a room joined from this terminal so the call comes out of this machine's speakers.
   "cli": ["agent", "call", "views", "runtime", "client", "@pinecall/protocol", "ws", "tsx", "@livekit/rtc-node"],
-  // What both browser pages are: the fetch to the gateway, the credentials context, the theme, the
-  // frame, the way-in card's styles, and what the gateway says about itself before anybody holds a
-  // key. It names no page, so neither page can reach the other through it.
-  "cli/ui/shared": ["react", "react-router", "zod"],
-  // The TENANT's page. It must never reach the framework: none of it would run in a browser, and a
-  // build that pulled a TypeScript parser into the bundle is a build nobody would notice.
+  // What the page is made of below its screens: the fetch to the gateway, the credentials context,
+  // the theme, and what the gateway says about itself before anybody holds a key. It names no
+  // screen, so the plumbing cannot reach back up into the page.
+  "cli/ui/shared": ["react", "zod"],
+  // THE page. It must never reach the framework: none of it would run in a browser, and a build
+  // that pulled a TypeScript parser into the bundle is a build nobody would notice.
   "cli/ui/console": ["cli/ui/shared", "@pinecall/protocol", "react", "react-dom", "react-router", "livekit-client", "vite", "@vitejs/plugin-react", "zod"],
-  // The OPERATOR's page, a second program with a second bundle and a second credential: the ops
-  // key belongs to no org and must never reach a tab holding a tenant's. It names no console
-  // directory, which is what keeps the two apart.
   // The one file at the top of src/: the public surface, which may name anything it exports.
   "": ["agent", "call", "views", "runtime"],
 };

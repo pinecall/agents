@@ -123,7 +123,7 @@ Beside it:
 | | |
 |---|---|
 | `examples/` | `clinica-norte`: one tenant, written as a customer writes one |
-| `test/` | mirrors `src/`, plus the three that pin the shape: the tree, the imports, the surface |
+| `test/` | mirrors `src/`, plus the four that pin the shape: the tree, the imports, and the two public surfaces |
 
 ## The three doors out of this package
 

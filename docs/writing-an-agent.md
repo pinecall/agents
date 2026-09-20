@@ -29,7 +29,7 @@ tsconfig.json         { "extends": "pinecall/tsconfig.tenant.json" }
 ```
 
 **The synthetic callers are not in the repository either.** A persona — a goal, a way of speaking,
-the facts they may state — is the agent's, kept by the gateway: `pinecall personas`, or the
+the facts they may state — is the ORG's, kept by the gateway: `pinecall personas`, or the
 console's Personas screen. A project that still has `test/<name>/personas/` sends them once with
 `pinecall personas push` and deletes the folder.
 

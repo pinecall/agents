@@ -419,6 +419,12 @@ prompt` must not pay for a websocket client.
 | `memory` | `<contact>` · `forget <contact>`: one contact's facts, current first, and the right to be forgotten · `policy`: what is remembered and what never is · `eval [--k n]`: every question of `test/<name>/goldens/memory.json` asked of `recall`, each bringing its own facts, and the two figures a golden answers | yes |
 | `remember` | the extraction goldens in `test/<name>/memory/`: one written call each, one model call each, judged by code | yes |
 | `login` | a link printed and opened; the page signs this machine in and mints it a key of its own, proved at the gateway and kept in `~/.pinecall/session.json` (0600) for `link` to mint from — no verb runs on it | yes |
+| `sessions` | `list` and `show <call>`: the calls this org has taken, and one read whole off its log | yes |
+| `pipeline` | the three legs as the NEXT call would be built, read back. The six knobs are `agent set`'s | yes |
+| `numbers` | which number reaches which agent: listed, one imported off the carrier, one moved between the worlds, one let go | yes |
+| `supervise` | the six verbs at a live call from a terminal: whisper, say, takeover, release, transfer, end | yes |
+| `providers` | the vendor keys this org brought, added from stdin and taken back; the vendors read by name | yes |
+| `callbacks` | what an agent's tool asked a human to call back about, newest first | yes |
 | `whoami` | which gateway, which org, whether the key acts in production, and **where it came from** | yes |
 
 `groups.ts` also declares every verb the design names and this tree has not written — `new`, `g`,
@@ -447,11 +453,12 @@ profile switched in one terminal moved every other. `PINECALL_API_KEY` is never 
 file under `~/.pinecall/` is `session.json` (0700 directory, 0600 file): the machine's sign-in,
 which `link` mints from and no verb runs on.
 
-## 11. The two pages
+## 11. The page
 
-Two browser programs live under `src/cli/ui/`, each with its own bundle, its own router and its own
-credential. The gateway serves both; the console is also served by `pinecall serve`, the one place
-this CLI opens a port:
+ONE browser program lives under `src/cli/ui/`: the console, one bundle, served two ways. The
+gateway serves it at `/`, and `pinecall serve` serves the same bundle on a developer's machine —
+the one place this CLI opens a port. Which screens each has is one table (`lib/mode.ts`), not two
+programs:
 
 | | mounted at | the credential it holds | who |
 |---|---|---|---|
@@ -459,10 +466,11 @@ this CLI opens a port:
 | `ui/console/` | `http://localhost:4100` — **local**, the sandbox | none: the sidecar signs what the page asks | whoever writes the agent |
 | `ui/shared/` | — | the fetch (`api.ts`) and the credentials context, which the page is built on; `/.well-known/pinecall` (`the-floor.ts`), read by the console's password card; and the theme (`theme.ts`: the system's light or dark, and a flip kept until the system changes) | the console |
 
-They are two programs and not two sections of one, because the ops key **belongs to no org** and
-must never reach a tab that holds a tenant's: two bundles, two storage names, and an import table
-that lets neither page name the other (`test/the-imports.test.ts`). `ui/shared/` names neither, so
-nothing reaches one page through the other.
+There used to be a second program here — the operator's, at `/admin`, opened with the box's ops
+key typed into a browser. It is gone: a person the box made an operator opens the console's **Box**
+group with their own key, which is one page, one build and one credential. `ui/shared/` is the
+page's plumbing and names no screen, so nothing reaches a screen through it
+(`test/the-imports.test.ts`).
 
 ### The console
 
@@ -483,7 +491,7 @@ colleague's copy from local only (`pinecall-corner`, forwarded by the sidecar as
 What follows is the hosted page, where a key IS held. Everything about it is a containment decision:
 
 - **The org key never reaches the browser.** The page holds a PERSON's scoped key, minted for it
-  at login and kept by the browser (`lib/session-key.ts`, the one file that touches storage) —
+  at login and kept by the browser (`lib/session-key.ts`, the one file that touches the KEY; `lib/pane-widths.ts` and `shared/theme.ts` keep a width and a theme there too) —
   ONE key, not one per world: the page names production on every request (`pinecall-env`,
   `shared/api.ts:headersFor`), and a person whose production switch is off is shown *No
   production access* (`screens/login/no-production.tsx`) with the gateway's sentence. Signing out
@@ -504,7 +512,7 @@ What follows is the hosted page, where a key IS held. Everything about it is a c
   `test/cli/ui/console/the-console-never-makes-an-org.test.ts` pins that by reading the sources
   with the comments stripped. It is also why the runtime sends no CORS header: the one door this
   page opens with no key is `/v1/login`, on its own origin. `test/cli/ui/pages/the-key-is-never-in-the-page.test.ts` pins it:
-  one file PER PAGE reaches a browser's storage, and only `shared/api.ts` writes the
+  one file reaches a browser's storage for the key, and only `shared/api.ts` writes the
   `authorization` header. The sidecar's own test (`test/cli/serve/the-sidecar.test.ts`) pins the
   other half: the page it serves carries no key, and the key is spent only on a request that came
   from this machine's own page.
@@ -525,6 +533,7 @@ What follows is the hosted page, where a key IS held. Everything about it is a c
 | `floor/` + `live/` | `/live[/:call]`: the org's calls down the left (`floor/live.tsx`), one watched (`live/live.tsx`): the log's rows — a `memory.ops` and a `docs.sources` each one row — the `STATE · ROOM · PROMPT · METRICS` pane, and the supervisor's desk (`live/desk.tsx`: listen, whisper and say in a box each, take the line, transfer, end — and on a call with no room, no ear, no microphone and no transfer). `/sessions` is `floor/sessions.tsx` over the same `sessions/list.tsx` an agent's draws |
 | `calls/` | an agent's calls as an inbox: threads grouped by contact in the browser (`threads.ts`), their messages read from each call's log (`use-thread.ts`), and what the gateway keeps per contact — names, unread, a message into a WhatsApp thread — behind a probe (`inbox-door.ts`). `dial.tsx` is *Call back* and *Call a number*, drawn once the org's outbound trunk is ready. Nothing here simulates: that is the Simulations screen |
 | `personas/` · `simulations/` | `/personas[/:name]`: the ORG's callers down the left — one list, no agent to pick first — before one is chosen their standing (`personas/overview.tsx`): how many callers and how many never called, the runs between them, and the org's newest runs merged from each caller's own page — the one chosen read in the middle, written and dropped over the gateway's own doors (`personas/door.ts`, `GET /v1/personas`, `PUT`·`DELETE /v1/personas/{name}`), never through the directory, and beside it a third pane of what that caller has DONE (`personas/runs-side.tsx` over `GET /v1/personas/{name}/runs`, a screenful at a time), each row the session it was. `/simulations[/:call]`: the form (`simulations/simulate-form.tsx`) that puts one of them on the class the `pinecall start` in its directory holds (`simulate.start`), and the call heard live beside it |
+| `lexicon/` · `org-evals/` · `org-memory/` | the org's words — said and heard, versioned per corner — and the org-wide Evals and Memory, which are the agent's screens read across every agent at once |
 | `sessions/` | every call, searched by the gateway when its door can (`search.ts`: a `total` in the answer) and in the browser when it cannot; one read whole — facts, the recording, transcript, latency, score with a judge attached later (`POST /v1/evals/judge/{call}`), cost, and folded under Details the consent join, the prompt block by block and every entry in `seq` |
 | `talk/` · `chat/` | `talk/` is the agent's **Chat** tab (its path is still `talk`): one screen, two ways into the gateway's room — **Call**, this browser's microphone over WebRTC with the agent's voice back, or **Write**, a written session with no audio — and on a call the composer types into the same room (`use-room.ts` `open(mode)` and `write`). `chat/` is **Dev chat**, local only: a written call through the class in `pinecall start`'s directory. Both beside `talk/inspector.tsx`, the call's log as numbers, turns, tool calls and state |
 | `evals/` | the goldens and how the latest run left each, every run this agent's suites scored and the diff between two, what each finished call was sealed with, and the drift |
@@ -534,7 +543,7 @@ What follows is the hosted page, where a key IS held. Everything about it is a c
 | `memory/` · `widget/` | every current fact an agent's calls taught, one dropped (`GET /v1/agents/{slug}/memory`, `DELETE /v1/memory/facts/{id}`), or one contact read and forgotten; the tag, the look the gateway keeps per agent and world (`GET/PUT /v1/agents/{slug}/widget`), and the widget itself mounted as a preview |
 | `numbers/` · `tokens/` · `providers/` · `team/` · `usage/` | **numbers, whole**: the carrier — a Twilio account or a SIP peer — shown by kind and account and never a secret (`carrier.tsx`); the numbers, one let go; one added, imported or bought, **always the plan first** (`?dry_run=true`, the gateway's own steps in its words) and the same request again on confirm (`adding.tsx`); the outbound trunk set up the same way, with the operator's guards read-only (`outbound.tsx`); local's `phone.tsx` is Phone testing. Tokens (`/tokens`, open to every key): the person's own keys, and the org's server tokens — made for one world (production only by somebody with production access), shown once as `PINECALL_KEY=…`, listed with whose each is and when it was last used, revoked; the vendors and the keys the org brought; the people, invited or reset with a link shown once and changed in place, each person's Production switch (an admin's reads *always*; the invite form has one too), what each role opens (`roles.tsx`) and the org's single sign-on (`sso.tsx`); what the org consumed |
 | `login/` · `terminal/` | the way in: sign in, choose a password, *this machine is not signed in*; and `/cli`, the card that signs a terminal in |
-| the shell | `shell/shell.tsx` mounts `lib/org.tsx` — ONE read of the floor (`GET /v1/sessions`, `GET /v1/events`), the agents, the person's orgs and the day's insights, shared by every screen — around `sidebar.tsx` (the workspace and its org menu, the table's groups gated by the key's scopes off `GET /v1/whoami`, one row per slug — `lib/corners.ts`), `top.tsx` (where you are, the theme's sun or moon — `theme-button.tsx` — and sign out), `switcher.tsx` (the person, the org, the two environment chips that open the OTHER console, every copy and — for a `team` key in the sandbox — a colleague's opened, `lib/world.tsx`), `agent-head.tsx` (an agent's standing and its tabs) and `palette.tsx` (⌘K) |
+| the shell | `shell/shell.tsx` mounts `lib/org.tsx` — ONE read of the floor (`GET /v1/sessions`, `GET /v1/events`), the agents, the person's orgs and the day's insights, shared by every screen — around `sidebar.tsx` (the workspace and its org menu, the table's groups gated by the key's scopes off `GET /v1/whoami`, one row per slug — `lib/corners.ts`), `top.tsx` (where you are, the theme's sun or moon — `theme-button.tsx` — and sign out), `switcher.tsx` (the person, the org, the two environment chips that open the OTHER console, every copy and — for a `team` key in the sandbox — a colleague's opened, `lib/world.tsx`), `agent-head.tsx` (an agent's standing and its tabs), `palette.tsx` (⌘K) and `lib/whence.tsx` (`WhenceKeeper`: the path the reader left, so a screen reached from several places — a session, from Live or Personas or Evals — points back at the one they came from; `useWayBack(fallback)` names it with `screenAt()`, off the screens table, and falls back on a reload) |
 
 **What it looks like** is the redesign, taken literally: `ui/tokens.css` is the one file of the
 console allowed to hold a hex — the inks, the lines, the grounds, the accent `#5b3df5` and its steps,
@@ -547,14 +556,13 @@ pill) and `ui/*.tsx` its parts — `Page`, `Card`, `Stat`, `TableHead`/`TableRow
 `Segmented`, `Chips`, `Pill`, `Avatar`, `Icon` and the rest — imported as one from `ui/`; each
 screen's own stylesheet holds only what is that screen's, under its own prefix. `lib/format.ts` is
 how a duration, a sum of money, a moment and a phone number are written, UTC like the log.
-`lib/sessions-wire.ts` reads a session list with what a newer gateway adds to it (`score`, `flags`,
-`total`, `next`, all optional), because the published protocol's schemas are strict and predate
-them; it goes when that protocol is published. The face is Inter, fetched from Google Fonts by
+A session list is parsed with the protocol's own `SessionListSchema`, at the screen that reads it
+(`lib/use-floor.ts`, `lib/use-agent-sessions.ts`). The face is Inter, fetched from Google Fonts by
 `index.html` with a system fallback — the one request the page makes to anything but the gateway —
 and anything a machine wrote is the system's monospace. The icons are paths in `ui/icon.tsx`, so the
 page depends on no icon set. The logo is `public/pinecall-logo.png` (`pinecall-logo-dark.png`, its wordmark drawn light, in the
 dark theme), its mark `pinecall-mark.png` and the favicon cut from it. `ui/shared/styles/` and `frame.tsx` were the operator
-page's and went with it.
+page's and went with it — the console wears `ui/ui.css` over `ui/tokens.css` and nothing else.
 
 Its own laws. Three are held by a test of their own: vite bundles every screen's stylesheet into
 one file, so **a class name is global** whatever directory it was written in
@@ -581,8 +589,10 @@ and the package that charges is what turns a plan into a row (the runtime's `ext
 
 ## 12. LiveKit: where it is, and where it is not
 
-The runtime is built on livekit-agents. **This package is not.** The word `livekit` appears in
-exactly three files of `src/`, all of them inside the browser page:
+The runtime is built on livekit-agents. **This package is not.** `livekit-client`, the BROWSER
+package, appears in exactly three files of `src/`, all of them inside the page — and
+`@livekit/rtc-node` in two more, `cli/ear.ts` and `cli/listening.ts`, which are what puts
+`simulate --listen` on this machine's speakers:
 
 | file | why |
 |---|---|
@@ -606,10 +616,11 @@ line the test deletes.
 | `client/` | `@pinecall/protocol`, `ws` |
 | `agent/` | `call`, `views`, `@pinecall/protocol`, `oxc-parser`, `zod` |
 | `call/` | `agent`, `@pinecall/protocol` |
-| `views/` | `agent` |
+| `views/` | `agent`, `@pinecall/protocol` |
 | `runtime/` | `agent`, `call`, `views`, `client`, `@pinecall/protocol` |
-| `cli/` | `agent`, `call`, `views`, `runtime`, `client`, `@pinecall/protocol`, `ws` |
-| `cli/ui/console/` | `@pinecall/protocol`, `react`, `react-dom`, `react-router`, `livekit-client`, `vite`, `@vitejs/plugin-react`, `zod` |
+| `cli/` | `agent`, `call`, `views`, `runtime`, `client`, `@pinecall/protocol`, `ws`, `tsx`, `@livekit/rtc-node` |
+| `cli/ui/shared/` | `react`, `zod` |
+| `cli/ui/console/` | `cli/ui/shared`, `@pinecall/protocol`, `react`, `react-dom`, `react-router`, `livekit-client`, `vite`, `@vitejs/plugin-react`, `zod` |
 | `src/index.ts` | `agent`, `call`, `views`, `runtime` |
 
 `test/the-tree.test.ts`, over `src/`, `test/` and `examples/`: no `.ts` at the repo root, no file
@@ -633,7 +644,7 @@ nothing is published, a version range the day it is. `test/cli/runs/candidate.te
 `@pinecall/protocol/fixtures/call-log-golden.json`: the golden log folded here is the one Python
 folds there.
 
-## 15. The four rings, and where each of them runs
+## 15. The five rings, and where each of them runs
 
 | ring | what it asks | where it runs |
 |---|---|---|

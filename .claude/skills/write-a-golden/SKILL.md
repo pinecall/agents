@@ -74,8 +74,7 @@ latency each was answered with — read from each turn's own metrics entry, neve
 
 ## Personas — ring 2
 
-**A caller is the agent's, and the gateway keeps it** — beside the agent's settings, per org and
-per agent. Nothing of it is in the repository, so a new caller needs no deploy and the console's
+**A caller is the ORG's, and the gateway keeps it** — one list, whichever agent picks up. Nothing of it is in the repository, so a new caller needs no deploy and the console's
 Personas screen writes the same ones this verb does. A caller is a goal, a way of speaking, and
 the facts they may state about themselves; a model improvises every turn from those three — six
 turns by default, `--turns` to change it. A caller with no facts is not broken: they are somebody
@@ -88,6 +87,7 @@ pinecall personas add apurado --goal '…' --style '…' [--about '…'] --fact 
 pinecall personas edit apurado --style '…' [--rename <name>]
 pinecall personas rm apurado
 pinecall personas try apurado                # simulate against the class here, without the judge
+#   try and push are the only two that take --agent/--file: they need the class
 pinecall simulate --persona apurado --judge
 pinecall simulate --persona apurado --voice --background-noise 12 --packet-loss 2
 ```

@@ -68,8 +68,8 @@ happened and the doc is the bug.
   deletes.
 - `test/index.test.ts` and `test/client/index.test.ts` pin the two public surfaces by name —
   never a CLI module, never a bridge internal, never a test helper.
-- `package.json` exports point at `src/` and `publishConfig` swaps in `dist/`. Both examples
-  resolve `pinecall` through `node_modules` like a customer; nothing is aliased or path-mapped.
+- `package.json` exports point at `src/` and `publishConfig` swaps in `dist/`. The example
+  resolves `pinecall` through `node_modules` like a customer; nothing is aliased or path-mapped.
 - The golden call log comes from `@pinecall/protocol/fixtures`, so a log folded here is the one
   Python folds there.
 

@@ -33,7 +33,7 @@ export const group: Group = {
   style and its own facts — there is no script. This terminal holds the class and the transcript;
   the gateway holds the provider keys. The call lands in the log like any other.
 
-  --persona <name>    one of the agent's personas, by name: pinecall personas lists them
+  --persona <name>    one of the org's personas, by name: pinecall personas lists them
   --judge             read back the call.score the log seals on, and print every judge
   --turns n           how many turns the caller improvises before hanging up (default 6)
   --voice             a real line: a room, and the caller in a person's voice, not the agent's

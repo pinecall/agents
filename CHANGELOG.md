@@ -4,7 +4,7 @@ All notable changes to `pinecall`, the package a tenant writes an agent in. The 
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version numbers and tags are the
 maintainer's call, so everything sits under Unreleased until one is cut.
 
-## [Unreleased]
+## 0.8.5 — The org's callers, and a console that knows where you came from
 
 ### Added
 - **Personas opens on a standing, not on a page about callers.** Where the screen used to explain
@@ -19,6 +19,20 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   was. It reads `GET /v1/personas/{name}/runs` in the key's own corner, a screenful at a time,
   and a caller nobody has called yet says so and points at Simulations.
 
+
+### Changed
+- **A persona is the ORG's, in the console and in the CLI.** The screen lists every caller the org
+  wrote, with no agent to pick first — a caller is a person on the phone, not a field of an agent —
+  and reads them from `GET /v1/personas`. `personas list · show · add · edit · rm` name no agent
+  either; `--agent` and `--file` stay on `try` and `push`, the two that need the class.
+- **The simulate form reads as a list of options.** Three switches with their sentences beside
+  them wrapped mid-word in a 340px pane — "Noisy / line" — and read as one grey smear. Each is a
+  line of its own now, with what it does under its name, and Max turns says what it counts where
+  it is typed: the lines the CALLER says, which is what the cap has always been.
+- **Whisper and Say are two boxes, not one behind a switch.** A supervisor on a live call should
+  never have to check which mode they are in before pressing Enter: one of the two is heard by
+  the customer. Each has its own line and its own button, and the caller's is the loud one.
+
 ### Fixed
 - **Back goes back.** A screen reached from several places — a session from Live, from Personas,
   from Evals, from the palette — had one back link written into it, so it was wrong from
@@ -30,22 +44,15 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   guess at everything above it (`100vh - 490px`), so a head of two lines pushed the window past
   the bottom and the page grew a second scrollbar beside the transcript's. The window takes what
   the page has left, and the lines inside it are the only thing that scrolls.
-
-### Changed
-- **The simulate form reads as a list of options.** Three switches with their sentences beside
-  them wrapped mid-word in a 340px pane — "Noisy / line" — and read as one grey smear. Each is a
-  line of its own now, with what it does under its name, and Max turns says what it counts where
-  it is typed: the lines the CALLER says, which is what the cap has always been.
-- **Whisper and Say are two boxes, not one behind a switch.** A supervisor on a live call should
-  never have to check which mode they are in before pressing Enter: one of the two is heard by
-  the customer. Each has its own line and its own button, and the caller's is the loud one.
-
-### Fixed
 - **The desk knows a chat from a call.** A conversation with no room — the widget's chat,
   WhatsApp — opened the desk by taking a seat in a room that does not exist and asked the browser
   for a microphone to take it over. It does neither now: no ear, no seat, no microphone, and no
   Transfer, which the gateway refuses on a thread anyway. The same Whisper · Say · Take · Hand
   back · End, typed. What says which is the call's own state: `room` is null for a text session.
+
+- **A dead page's leftovers, swept.** `ui/shared/frame.tsx` and `ui/shared/styles/` — 1154 lines —
+  were the operator page's and outlived it; nothing imported them. The console wears `ui/ui.css`
+  over `ui/tokens.css`, and the stylesheet test now pins that as the shared vocabulary.
 
 ### Removed
 - **The operator's page is gone.** `/admin` was a second bundle with a second credential — the

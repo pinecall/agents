@@ -41,7 +41,7 @@ path end to end, with every output under it.
 | [`pipeline`](#pipeline) | what it hears, decides and speaks with, as the next call would be built | yes |
 | [`line`](#line) | which phone is yours, and whose terminal a call from anybody else's rings in | yes |
 | [`numbers`](#numbers) | which number reaches which agent, and the world it answers in | yes |
-| [`personas`](#personas) | the agent's synthetic callers, kept by the gateway: list, show, add, edit, rm, try, push | yes |
+| [`personas`](#personas) | the org's synthetic callers, kept by the gateway: list, show, add, edit, rm, try, push | yes |
 | [`docs`](#docs) | the documents the agent searches: push, list, drop, eval, attach, detach, attached | yes |
 | [`memory`](#memory) | what memory kept about a contact, forgetting it, and recall's golden | yes |
 | [`remember`](#remember) | the extraction goldens: what a hang-up makes of a call | yes |
@@ -151,11 +151,11 @@ or on the one `--agent <name>` names — by its folder's name (`sales`) or by it
 | `pinecall start` | every agent at once, **on one socket, in one process**; each line prefixed by the slug, one console URL each (`--serve` puts them all on one page). `--show-prompt` prints every agent's prompt under its slug |
 | `pinecall test` | each agent's goldens through its own class, one after another; the exit code is the worst. Paths and `--watch` are for one agent, so they need `--agent` |
 | `pinecall docs push` · `eval` | every agent that has `docs/<name>/` · `test/<name>/goldens/docs.json`; the rest are named and skipped |
-| `pinecall personas` | one agent's callers: `--agent <name>` when the project holds several |
+| `pinecall personas try` · `push` | the two that need the class: `--agent <name>` when the project holds several. The other persona verbs name no agent |
 | `pinecall chat` · `simulate` · `prompt` · `remember` · `memory eval` · `line` · `start --ui` | one agent: `--agent <name>` is required when there are several |
 
-A project of several with nobody named is refused with the names: `this project has 2 agents: name
-one with --agent dispatch or --agent sales`. A directory with no `agents/` at all is one somebody
+A project of several with nobody named is refused with the names: `chat talks to one agent and
+this project has 2: add --agent dispatch or --agent sales`. A directory with no `agents/` at all is one somebody
 typed the verb in by mistake, and the refusal says where it looked. A folder the verb reads and
 nobody has written yet is empty, not an error: an agent with no `goldens/` has no goldens, the
 console's roster says so, and `pinecall test` names the folder to write one in.
@@ -460,10 +460,11 @@ pinecall personas [list] | show <name> | try <name>
 pinecall personas add <name> --goal '…' --style '…' [--about '…'] [--fact 'what=said']…
 pinecall personas edit <name> [--goal '…'] [--style '…'] [--about '…'] [--fact 'what=said']… [--rename <name>]
 pinecall personas rm <name> · pinecall personas push [--from test/<agent>/personas]
-                … any of them with --agent <name|slug>, --file agent.tsx, --json, --prod in production
+                … any of them with --json, --prod in production; try and push also take
+                --agent <name|slug> or --file agent.tsx, because those two need the class
 ```
 
-**The callers are the agent's, kept by the gateway** beside its settings — the same cut the voice,
+**The callers are the ORG's, kept by the gateway** — one list, whichever agent picks up — the same cut the voice,
 the lexicon and what it knows by heart took. So the console shows the same ones this verb does, a
 caller written here needs no deploy, and a project holds none of them in its repository.
 
@@ -474,7 +475,7 @@ desconfiado   educado y receloso, responde con otra pregunta                  en
 
 $ pinecall personas add price-shopper --goal "get a price for a deep clean" \
     --style "blunt, impatient" --fact "their name=Tom Baker"
-clinica-norte · price-shopper written · 3 persona(s)
+price-shopper written · 3 persona(s)
 ```
 
 `add` writes one whole; `edit` changes what is named and leaves the rest, and `--rename` moves it
@@ -484,10 +485,10 @@ joined by hyphens, as `--persona` takes it — anything else is refused here, wi
 travels. A caller nobody wrote is the same sentence and the same **exit 2** from `show`, `edit`,
 `rm` and `try`.
 
-`--agent` is an agent of this project by its **name** (`sales`) or a **slug** of the org
-(`bidfire-sales`): a name is resolved through its class, because the gateway files the callers
-under the slug, and a terminal outside a project reaches its org's agents with a slug alone.
-`--file agent.tsx` names which class, when the directory holds more than one. `--json` prints what
+`--agent` and `--file` are for `try` and `push` alone, the two verbs that need the CLASS: `try`
+calls that agent as the caller, and `push` reads the files of that agent's project. `list`, `show`,
+`add`, `edit` and `rm` name no agent at all — a caller is the org's, and a terminal outside a
+project reaches them with its key alone. `--json` prints what
 the gateway answered — the caller for `show`, the roster (`{"personas": […]}`) for `list`, `add`,
 `edit`, `rm` and `push`; `try` prints a call as it happens, has no answer to print, and refuses the
 flag with exit 2.
@@ -722,8 +723,7 @@ clinica-norte · 9 calls
   transcription_delay 0.39s · end_of_turn_delay 0.41s · llm_node_ttft 0.86s · e2e_latency 2.36s
 ```
 
-The three legs as the **next** call would be built, with `← set` beside any knob the agent's
-settings set. It reads and nothing else: the six knobs are fields of the settings now, and
+The three legs as the **next** call would be built. It reads and nothing else: the six knobs are fields of the settings now, and
 `pinecall agent set` sets them with the rest — a model knob reads four ways there,
 `--llm anthropic/claude-haiku-4-5`, `--llm cartesia` (a vendor, its own model), `--llm
 claude-haiku-4-5` (a model, the vendor in use), and `--llm haiku` (a tier, expanded to the id its
@@ -805,8 +805,8 @@ for, plus `livekit` itself, which is LiveKit Inference and fronts most of them o
 project with no vendor key at all. `standing` is the one word for what each is still waiting for:
 `ready` is the only one that runs a call, `no plugin` and `no key` are the operator's to fix, and
 `its own` is a vendor whose credentials are a chain or a pair and never one key anybody could
-bring. Any of these names — or any of its aliases — is what `pipeline set --stt`, `--llm` and
-`--tts` take, and what an agent declares.
+bring. Any of these names — or any of its aliases — is what `agent set --stt`, `--llm` and
+`--tts` take: the six knobs are the agent's settings, and `pipeline` only reads them back.
 
 A key added here is this org's own account with that vendor, and every call of this org runs on it
 from the next one; every vendor nobody brought runs on the box's own key. `add` reads the key from
@@ -855,7 +855,7 @@ gateway is not `https://box.pinecall.io`; every other line of the file is left a
 ```console
 ~/clinica $ pinecall link --org clinica
 ▸ clinica · PINECALL_KEY written to .env
-.env is not in this folder's .gitignore: add it before a commit carries your key
+git would commit .env: add it to .gitignore before a commit carries your key
 ```
 
 The last line is said every time until the project's `.gitignore` names `.env`: a key committed is
@@ -1025,7 +1025,7 @@ ways of writing one fact are one fact.
 |---|---|
 | `0` | it did what it says |
 | `1` | the thing being measured did not hold: a golden broke, a check failed, a judge answered broken, a drift fell past the threshold — or the gateway refused, in its own words |
-| `2` | this command cannot run: no key, a flag that is not a flag, a persona nobody wrote, no browser for `ui` |
+| `2` | this command cannot run: no key, a flag that is not a flag, a persona nobody wrote, a verb that moved (`pipeline set` is `agent set` now) |
 
 A call **nobody judged** is not a pass: `simulate --judge` exits non-zero for it, because "nobody
 looked at this" must never open a gate.
@@ -1046,7 +1046,7 @@ code can call — over HTTP, in any language, with the same key.
 | `simulate --voice` · `test --voice` | `POST /v1/evals/voice`, `POST /v1/evals/caller` |
 | `test` · `runs` | `POST /v1/evals/run`, `GET /v1/evals/runs[/{id}]` |
 | `eval` | `POST /v1/evals/replay/{call}` |
-| `agent` | `GET`·`PUT /v1/agents/{slug}/settings`, `GET …/settings/history`, `GET …/settings/diff`, `POST …/settings/rollback`, `GET /v1/agents` for `list` |
+| `agent` | `GET`·`PUT /v1/agents/{slug}/settings`, `GET …/settings/history`, `GET …/settings/diff`, `POST …/settings/rollback`; `list` and `stop` are `GET /v1/apps` and `POST /v1/apps/{app}/stop` |
 | `agent knowledge` · `lexicon` · `memory policy` · `docs attach` · `detach` | `GET`·`PUT /v1/agents/{slug}/settings` · `GET`·`PUT /v1/lexicon`, `GET …/history` |
 | `pipeline` | `GET /v1/agents/{slug}/pipeline` |
 | `docs` | `PUT`·`GET`·`DELETE /v1/knowledge[/{base}]`, `POST /v1/knowledge/{base}/eval`, `GET /v1/knowledge/attached` |
@@ -1055,7 +1055,7 @@ code can call — over HTTP, in any language, with the same key.
 | `numbers` | `GET`·`POST /v1/numbers`, `PUT /v1/numbers/{number}/env`, `DELETE /v1/numbers/{number}` |
 | `providers` | `GET /v1/providers` · `PUT`·`DELETE`·`GET /v1/provider-keys[/{vendor}]` |
 | `callbacks` | `GET /v1/callbacks[?agent=&after=]` |
-| `personas` | `GET /v1/agents/{slug}/personas` · `PUT`·`DELETE …/{name}` — and `push` reads the project's remaining files before sending them |
+| `personas` | `GET /v1/personas` · `PUT`·`DELETE /v1/personas/{name}` — and `push` reads the project's remaining files before sending them |
 | `line` | `GET`·`POST`·`DELETE /v1/agents/{slug}/line`, `PUT`·`DELETE /v1/line/from` |
 | `serve` | every door the console asks, forwarded as the page sent it with the project's key: `GET /v1/whoami`, `/v1/agents`, the logs, `…/dev/*`, `GET /v1/line/numbers` |
 | `login` | `POST /v1/login/pairings`, `GET …/{code}/key` — then `GET /v1/whoami` to prove what it got |

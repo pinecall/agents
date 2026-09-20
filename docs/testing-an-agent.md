@@ -18,6 +18,14 @@ example's is `examples/clinica-norte/test/clinica-norte/`:
 
 ```ts
 // the class in the hand: call a tool, read the state
+import { describe as describeClass, seal } from "pinecall";
+
+// Once per suite: a transpiler strips comments and parameter types, so the class is handed its own
+// source. Without this line the first tool spec built refuses — `tool findPatient: without a
+// docstring no model can choose it` — and a `name: string` would reach the schema untyped.
+const SOURCE = readFileSync(fileURLToPath(new URL("../../agents/clinica-norte/agent.tsx", import.meta.url)), "utf8");
+describeClass(ClinicaNorte, SOURCE);
+
 const agent = seal(new ClinicaNorte());
 await agent.findPatient("Ana", "+34 600 000 001");
 expect(agent.stage).toBe("choose");
@@ -133,11 +141,11 @@ $ pinecall personas add apurado \
     --goal "cambiar la cita al martes por la tarde sin dar más datos de los justos" \
     --style "frases cortas, interrumpe, da el dato justo y pide la hora ya" \
     --fact "cómo se llama=Ana García" --fact "su teléfono=600 000 001"
-clinica-norte · apurado written · 4 persona(s)
+apurado written · 4 persona(s)
 ```
 
-**A caller is the agent's, kept by the gateway** — this verb, or the console's Personas screen —
-beside its settings, and read by name when a simulation asks for it. Nothing of them is in the
+**A caller is the ORG's, kept by the gateway** — this verb, or the console's Personas screen — one
+list whichever agent picks up, read by name when a simulation asks for it. Nothing of them is in the
 repository: a project that still has `test/<name>/personas/` sends those files once with
 `pinecall personas push`, which also carries the `state` a caller the business already knows opens
 its call in — and which stops at the first caller the gateway refuses, naming what landed and what
@@ -147,7 +155,7 @@ A caller's name is lower-case letters and digits joined by hyphens (`apurado`, `
 anything else is refused by the verb, with exit 2, before it travels.
 
 ```bash
-pinecall personas                           # one line each: the name, and the goal
+pinecall personas                           # one line each: the name, the manner, and the goal
 pinecall personas show apurado              # the whole caller
 pinecall personas add apurado --goal '…' --style '…' --fact 'su teléfono=600 000 001'
 pinecall personas try apurado               # simulate, without the judge

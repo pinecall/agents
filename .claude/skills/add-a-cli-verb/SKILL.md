@@ -15,8 +15,8 @@ Miss one and either the help lies or the test that pins the design's verb list g
 
 1. `src/cli/<verb>.ts` (or `src/cli/<verb>/index.ts` for a group with sub-verbs) —
    `export const group: Group = { purpose, usage?, run }`.
-2. `src/cli/index.ts` → the `BUILT` array, **in the order the help prints**: run and chat first,
-   because they are what a person types on the first day.
+2. `src/cli/index.ts` → the `BUILT` array, **in the order the help prints**: `link` and `start`
+   first, because they are what a person types on the first day.
 3. `src/cli/index.ts` → one line in `groupFor()`: `if (name === "x") return (await import("./x.js")).group;`
 4. `src/cli/index.ts` → one line in `usage()`, padded like its neighbours.
 5. `src/cli/groups.ts` → **delete** it from `PLANNED` in the same commit. A verb is in exactly one
@@ -28,8 +28,8 @@ Miss one and either the help lies or the test that pins the design's verb list g
   `groupFor()`: `pinecall prompt` must not pay for a websocket client, and a planned stub must
   pay for nothing at all.
 - **Never bind a port.** `test/cli/verbs.test.ts` greps every file under `src/cli/` for
-  `createServer` and `.listen(` and allows exactly one exception: `cli/ui/server.ts`. The app
-  opens one outbound socket and listens on nothing.
+  `createServer` and `.listen(` and allows exactly one exception: the `cli/serve/` directory, which
+  is the sandbox's console sidecar. The app opens one outbound socket and listens on nothing.
 - **Never read `PINECALL_KEY` or `PINECALL_URL` yourself, and never v1's `PINECALL_API_KEY` at
   all.** `theDoor()` from `cli/env.ts` is the one resolution — the environment, else the project's
   nearest `.env` — for every verb; with no key it prints `NO_KEY` and you return 2.
@@ -86,7 +86,7 @@ If the design declares it and you are not writing it, it belongs in `PLANNED` wi
 person gets instead: `"deploy": "put this app on a box and keep it there"` prints
 `deploy is not built yet: put this app on a box and keep it there` and exits 0. Never point a
 person at a verb that only prints that line — if an error message wants to say "go read the
-call", it names `pinecall-runtime sessions show <id>` or `pinecall serve`.
+call", it names `pinecall sessions show <id>` or `pinecall serve`.
 
 ## Verify
 

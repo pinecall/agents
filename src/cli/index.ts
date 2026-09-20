@@ -113,7 +113,7 @@ export function usage(): string {
     "  pipeline  what the agent hears, decides and speaks with, and the knobs over it",
     "  line      which phone is yours, and whose terminal anybody else's call rings in",
     "  numbers   list | import | move | drop the numbers the org answers at",
-    "  personas  list | show | add | edit | rm | try the agent's synthetic callers",
+    "  personas  list | show | add | edit | rm | try the org's synthetic callers",
     "  docs      the documents the agent searches: push | list | drop | eval | attach",
     "  memory    what memory kept about a contact, forget it, and hold recall to a golden",
     "  remember  the goldens memory.remember is held to: what a call teaches, and what it never keeps",
