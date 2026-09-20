@@ -4,7 +4,7 @@ All notable changes to `pinecall`, the package a tenant writes an agent in. The 
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version numbers and tags are the
 maintainer's call, so everything sits under Unreleased until one is cut.
 
-## [Unreleased]
+## 0.8.15 — The k lookup was on the branch a project never takes
 
 ### Fixed
 - **`docs eval` in a project asks with the attachment's k too.** 0.8.13 taught the verb to ask with
