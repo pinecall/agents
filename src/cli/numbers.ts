@@ -63,13 +63,12 @@ export async function run(argv: string[], how: Numbering = {}): Promise<number> 
   const door = theDoor(how.env ?? process.env, err);
   // 2, like every other verb with no key: this command cannot run, and retrying changes nothing.
   if (door === undefined) return 2;
+  // `list` takes no flag of its own, and a parser that reads none is how it says so: a word
+  // starting with `-` was taken and ignored, which reads as a filter that was applied. It is read
+  // OUTSIDE the catch below, so the flag lands as the dispatcher's own sentence and exit 2.
+  if (verb === "list") parseArgs({ args: argv.slice(1), options: {} });
   try {
-    // `list` takes no flag of its own, and a parser that reads none is how it says so: a word
-    // starting with `-` was taken and ignored, which reads as a filter that was applied.
-    if (verb === "list") {
-      parseArgs({ args: argv.slice(1), options: {} });
-      return await list(door, out);
-    }
+    if (verb === "list") return await list(door, out);
     if (verb === "import") return await brought(argv.slice(1), door, out, err);
     if (verb === "move") return await moved(argv.slice(1), door, out, err);
     if (verb === "drop") return await dropped(argv[1], door, out, err);

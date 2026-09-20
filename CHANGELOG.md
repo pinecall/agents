@@ -4,6 +4,13 @@ All notable changes to `pinecall`, the package a tenant writes an agent in. The 
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version numbers and tags are the
 maintainer's call, so everything sits under Unreleased until one is cut.
 
+## [Unreleased]
+
+### Fixed
+- **`numbers list --bogus` reads as every other verb's unknown flag.** The parser sat inside the
+  verb's own catch, so node's `Unknown option '--bogus'` was printed raw with exit 1 instead of
+  `no such flag for numbers: '--bogus' — \`pinecall numbers --help\`` with exit 2.
+
 ## 0.8.11 — The audit of the verbs against their own page
 
 ### Fixed

@@ -4,6 +4,7 @@
 import { describe, expect, it } from "vitest";
 
 import { group, aLine, run } from "../../src/cli/numbers.js";
+import { pointingAt } from "./home.js";
 import { written } from "./said.js";
 
 const A_NUMBER = "+34910000000";
@@ -39,6 +40,14 @@ describe("the verb's shape", () => {
 
   // 2 is what every other verb answers with no key — this command cannot run, and a script reads
   // the difference. `numbers` answered 1, which is "something was measured and did not hold".
+  // The flag has to leave this verb unhandled: the dispatcher is what turns node's "Unknown
+  // option '--bogus'" into `no such flag for numbers: '--bogus'` and exit 2 (cli/index.ts).
+  it("lets a flag it does not take reach the dispatcher, which names the verb", async () => {
+    await expect(run(["list", "--bogus"], { env: pointingAt("http://127.0.0.1:1", "pc_a_key") })).rejects.toThrow(
+      "Unknown option '--bogus'",
+    );
+  });
+
   it("says this folder is linked to no org rather than knocking at a default one", async () => {
     const err = written();
 
