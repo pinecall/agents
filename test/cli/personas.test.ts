@@ -9,7 +9,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { run } from "../../src/cli/personas.js";
+import { asATable, run } from "../../src/cli/personas.js";
 import { pointingAt } from "./home.js";
 import { written } from "./said.js";
 
@@ -326,5 +326,20 @@ describe("a flag that names the class", () => {
     }
 
     expect(gateway.heard).toEqual([]);
+  });
+});
+
+// The columns were 12 and 46 wide whatever was in them, so `office-manager` (14 characters) slid
+// its own row two to the right and the roster stopped lining up (production, 2026-09-20).
+describe("the roster as a table", () => {
+  it("is as wide as the widest name and the widest style, and never narrower", () => {
+    const rows = asATable([
+      { name: "homeowner", style: "friendly", goal: "a quote", about: "", facts: {} },
+      { name: "office-manager", style: "direct, asks about insurance", goal: "a weekly clean", about: "", facts: {} },
+    ] as never);
+
+    const goals = rows.map((row) => row.indexOf("a quote") === -1 ? row.indexOf("a weekly clean") : row.indexOf("a quote"));
+    expect(goals[0]).toBe(goals[1]);
+    expect(rows[0]).toContain("homeowner       friendly");
   });
 });

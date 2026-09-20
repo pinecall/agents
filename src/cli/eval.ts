@@ -6,7 +6,7 @@ import { signed } from "../client/signed.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { readNamedJson } from "./named-file.js";
-import type { Door } from "./testing/gateway.js";
+import { Refused, type Door } from "./testing/gateway.js";
 
 /** One check's answer, as `POST /v1/evals/replay/{call}` writes it: three strings, no nesting. */
 export interface Verdict {
@@ -87,7 +87,9 @@ export async function replayed(door: Door, call: string, said: Case): Promise<An
     body: JSON.stringify(said),
   });
   const body = await answered.text();
-  if (!answered.ok) throw new Error(`the gateway answered ${answered.status}: ${body}`);
+  // The one refusal every verb throws, so the gateway's own sentence is read out of the body
+  // instead of the body being printed at a person: `{"detail":"no log for call …"}` was.
+  if (!answered.ok) throw new Refused(answered.status, body);
   return JSON.parse(body) as Answer;
 }
 

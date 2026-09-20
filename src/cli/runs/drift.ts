@@ -70,9 +70,14 @@ export interface Asked {
  * The verb: read the agent's calls, split them into the two windows, count the verdicts the log
  * already carries, and fail when a judge fell further than the threshold allows.
  */
-export async function drifted(door: Door, asked: Asked, out: NodeJS.WritableStream): Promise<number> {
+export async function drifted(
+  door: Door,
+  asked: Asked,
+  out: NodeJS.WritableStream,
+  asJson = false,
+): Promise<number> {
   const drift = await theDrift(door, asked);
-  out.write(`${linesOf(asked, drift).join("\n")}\n`);
+  out.write(asJson ? `${JSON.stringify(drift)}\n` : `${linesOf(asked, drift).join("\n")}\n`);
   return drift.worst !== null && drift.worst < -Math.abs(asked.threshold) ? 1 : 0;
 }
 

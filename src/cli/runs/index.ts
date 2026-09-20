@@ -55,16 +55,16 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
   const asJson = values.json === true;
   if (verb === "list") return await listed(door, Number(values.limit ?? DEFAULT_LIMIT), asJson, out);
   if (verb === "show" && rest[0] !== undefined) return await shown(door, rest[0], asJson, out);
-  if (verb === "diff" && rest[1] !== undefined) return await diffed(door, rest[0]!, rest[1], out);
+  if (verb === "diff" && rest[1] !== undefined) return await diffed(door, rest[0]!, rest[1], asJson, out);
   if (verb === "promote" && rest[0] !== undefined) {
     const wanted = {
       out: values.out ?? CANDIDATES,
       fromSeq: seqOf(values["from-seq"]),
       ...(values.name === undefined ? {} : { name: values.name }),
     };
-    return await promoted(door, rest[0], wanted, out);
+    return await promoted(door, rest[0], wanted, out, process.stderr, asJson);
   }
-  if (verb === "drift") return await theDrift(door, values, out);
+  if (verb === "drift") return await theDrift(door, values, out, asJson);
   process.stderr.write(USAGE);
   return 2;
 }
@@ -74,6 +74,7 @@ async function theDrift(
   door: Door,
   values: { agent?: string; window?: string; baseline?: string; threshold?: string; limit?: string },
   out: NodeJS.WritableStream,
+  asJson: boolean,
 ): Promise<number> {
   if (values.agent === undefined) {
     process.stderr.write(`pinecall runs drift needs the agent it watches: --agent <slug>\n`);
@@ -98,7 +99,7 @@ async function theDrift(
     limit: Number(values.limit ?? A_WINDOW_OF_CALLS),
     now: Date.now() / 1000,
   };
-  return await drifted(door, asked, out);
+  return await drifted(door, asked, out, asJson);
 }
 
 // Seq 0 is before the call said anything, so a promote with no cut starts at the very beginning —

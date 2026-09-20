@@ -40,6 +40,7 @@ export async function promoted(
   wanted: Promotion,
   out: NodeJS.WritableStream,
   err: NodeJS.WritableStream = process.stderr,
+  asJson = false,
 ): Promise<number> {
   let written: Written;
   try {
@@ -48,7 +49,7 @@ export async function promoted(
     err.write(`${refused instanceof Error ? refused.message : String(refused)}\n`);
     return 1;
   }
-  out.write(`${linesOf(written, wanted.fromSeq).join("\n")}\n`);
+  out.write(asJson ? `${JSON.stringify(written)}\n` : `${linesOf(written, wanted.fromSeq).join("\n")}\n`);
   return 0;
 }
 

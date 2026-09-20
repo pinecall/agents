@@ -37,10 +37,12 @@ describe("the verb's shape", () => {
     expect(group.usage).toContain("cost nothing");
   });
 
+  // 2 is what every other verb answers with no key — this command cannot run, and a script reads
+  // the difference. `numbers` answered 1, which is "something was measured and did not hold".
   it("says this folder is linked to no org rather than knocking at a default one", async () => {
     const err = written();
 
-    expect(await run(["move", A_NUMBER], { err: err.stream, env: {} })).toBe(1);
+    expect(await run(["move", A_NUMBER], { err: err.stream, env: {} })).toBe(2);
     expect(err.text()).toContain("`pinecall link`");
   });
 });

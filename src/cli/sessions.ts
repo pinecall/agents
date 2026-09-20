@@ -13,7 +13,13 @@ import { BROKEN, HELD } from "./testing/score.js";
 import { standingOf } from "./the-call.js";
 import { refusal } from "./whoami.js";
 
-const USAGE = "usage: pinecall sessions [list] [call] [--agent <slug>] [--limit <n>] [--json]";
+const USAGE = "usage: pinecall sessions [list|show] [call] [--agent <slug>] [--limit <n>] [--json]";
+
+// `list` and `show` are both optional words: what this verb does is decided by whether a call id
+// was typed, not by a sub-verb. They are taken because a person types them and because the tree
+// itself does — `supervise`'s refusal says "`pinecall sessions show <call>` reads it", and
+// `sessions show <call>` read `show` as the call id and answered "no call show on this gateway".
+const NOT_A_CALL: readonly string[] = ["list", "show"];
 
 // The two entries a finished call ends with, and the only two this verb reads. Asking the log for
 // them by name is what keeps `show` one request on almost every call: the door filters at the sink.
@@ -59,7 +65,7 @@ export async function run(argv: string[], how: Running = {}): Promise<number> {
   });
   const door = theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
-  const call = positionals.find((word) => word !== "list");
+  const call = positionals.find((word) => !NOT_A_CALL.includes(word));
   try {
     const lines = call === undefined ? await listed(door, values, err) : await shown(door, call, values.json === true);
     if (lines === null) return 2;

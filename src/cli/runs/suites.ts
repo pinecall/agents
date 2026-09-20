@@ -50,12 +50,18 @@ export async function diffed(
   door: Door,
   before: string,
   after: string,
+  asJson: boolean,
   out: NodeJS.WritableStream,
 ): Promise<number> {
   const [was, now] = [await oneRun(door, before), await oneRun(door, after)];
   const moved = movedBetween(was, now);
+  const broke = moved.some((line) => line.includes(`→ ${BROKEN}`));
+  if (asJson) {
+    out.write(`${JSON.stringify({ before, after, moved: moved.map((line) => line.trim()) })}\n`);
+    return broke ? 1 : 0;
+  }
   out.write(`${[`${before} → ${after}`, ...(moved.length > 0 ? moved : ["  nothing moved"])].join("\n")}\n`);
-  return moved.some((line) => line.includes(`→ ${BROKEN}`)) ? 1 : 0;
+  return broke ? 1 : 0;
 }
 
 /** What a measurement is called in a diff line, on either side of the arrow. */

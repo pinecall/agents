@@ -1,9 +1,12 @@
 // `pinecall runs diff`: what moved between two runs, and why an empty diff is the good news.
 
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
+
 import { describe, expect, it } from "vitest";
 
-import { movedBetween } from "../../../src/cli/runs/suites.js";
-import type { Cell, EvalRun, Score } from "../../../src/cli/testing/gateway.js";
+import { diffed, movedBetween } from "../../../src/cli/runs/suites.js";
+import type { Cell, Door, EvalRun, Score } from "../../../src/cli/testing/gateway.js";
 
 function score(metric: string, passed: boolean): Score {
   return { metric, score: passed ? 1 : 0, passed, reason: "the tool ran", criteria: "Every tool ran.", judge_calls: 0 };
@@ -58,5 +61,33 @@ describe("what moved between two runs", () => {
     const moved = movedBetween(aRun("a", [BROKEN]), aRun("b", []));
 
     expect(moved).toEqual(["  reserva  tools  broken → not measured"]);
+  });
+});
+
+// `runs --help` and the page both say "any of them with --json"; `diff` parsed the flag and
+// printed the same two lines at a pipe (production, 2026-09-20).
+describe("--json on a diff", () => {
+  it("answers the moved lines as data, and still exits 1 on a regression", async () => {
+    const runs: Record<string, EvalRun> = { a: aRun("a", [HELD]), b: aRun("b", [BROKEN]) };
+    const server = createServer((request, response) => {
+      const id = (request.url ?? "").split("/").at(-1) ?? "";
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify(runs[id]));
+    });
+    await new Promise<void>((bound) => server.listen(0, "127.0.0.1", bound));
+    const door = { url: `http://127.0.0.1:${(server.address() as AddressInfo).port}`, apiKey: "pc_a_key" } as Door;
+    const written: string[] = [];
+    const out = { write: (chunk: string) => written.push(chunk) } as unknown as NodeJS.WritableStream;
+
+    const code = await diffed(door, "a", "b", true, out);
+
+    expect(code).toBe(1);
+    expect(JSON.parse(written.join(""))).toEqual({
+      before: "a",
+      after: "b",
+      moved: ["reserva  tools  held → broken  the tool ran"],
+    });
+    server.closeAllConnections();
+    await new Promise<void>((closed) => server.close(() => closed()));
   });
 });

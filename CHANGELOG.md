@@ -4,6 +4,25 @@ All notable changes to `pinecall`, the package a tenant writes an agent in. The 
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version numbers and tags are the
 maintainer's call, so everything sits under Unreleased until one is cut.
 
+## [Unreleased]
+
+### Fixed
+- **`pinecall sessions show <call>` is a command.** `show` was read as the call id, so it answered
+  `no call show on this gateway` — and `supervise`'s own refusal told people to type it. `list` and
+  `show` are both optional words; what the verb does is decided by whether a call id was typed.
+- **`runs diff`, `promote` and `drift` answer `--json`.** All three parsed the flag and printed the
+  same lines at a pipe, which their help and their page have always promised they would not.
+- **`numbers` exits 2 with no key**, like every other verb — it exited 1, which means "something
+  was measured and did not hold" — and `numbers list` refuses a flag it does not take.
+- **`eval` prints the gateway's sentence**, not `{"detail": …}` around it.
+- **The persona roster lines up again.** Its two columns were a fixed 12 and 46 characters, so a
+  name longer than that pushed its own row right; they are as wide as what is in them.
+
+### Changed
+- The page said every connecting verb opens by printing which gateway it went to; two do
+  (`whoami`, `callbacks`), and it now says so. `runs drift`'s 200-call ceiling, the door
+  `sessions <call>` and `supervise` ask first, and `--turns`' default are on the page too.
+
 ## 0.8.10 — Verbs that answered about calls nobody wrote
 
 ### Fixed

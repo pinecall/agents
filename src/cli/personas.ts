@@ -154,7 +154,7 @@ async function listed(door: Door, asJson: boolean, out: NodeJS.WritableStream): 
     out.write(`${NONE_YET}\n`);
     return 0;
   }
-  out.write(`${personas.map(oneLine).join("\n")}\n`);
+  out.write(`${asATable(personas).join("\n")}\n`);
   return 0;
 }
 
@@ -340,6 +340,11 @@ function linesOf(persona: Persona): string[] {
   ];
 }
 
-function oneLine(persona: Persona): string {
-  return `${persona.name.padEnd(12)}  ${persona.style.padEnd(46)}  ${persona.goal}`;
+// The columns are as wide as what is IN them. They used to be 12 and 46, so `office-manager`
+// (14) pushed its own row two characters right and the table stopped being a table — the same
+// mistake `pinecall agent` had and fixed by measuring (cli/agent-lines.ts).
+export function asATable(personas: Persona[]): string[] {
+  const name = Math.max(...personas.map((one) => one.name.length));
+  const style = Math.max(...personas.map((one) => one.style.length));
+  return personas.map((one) => `${one.name.padEnd(name)}  ${one.style.padEnd(style)}  ${one.goal}`);
 }

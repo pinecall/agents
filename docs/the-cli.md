@@ -100,11 +100,12 @@ Tokens screen, and put in the server's secrets as `PINECALL_KEY`. It needs no `-
 the world it was made for — and nothing on a server logs in. [production.md](production.md) is
 that path.
 
-Every verb that connects opens by printing where it went: `gateway <url> · key from <the
-environment | .env> · production (--prod)`, the last part only when `--prod` was typed. With no
-key anywhere it is refused: ``no PINECALL_KEY here: `pinecall link` in the project's folder writes
-it to .env (a server keeps it in its secrets)``. **`pinecall whoami` is the first thing to run when
-a door refuses you and will not say why.**
+`whoami` and `callbacks` open by printing where they went: `gateway <url> · key from <the
+environment | .env> · production (--prod)`, the last part only when `--prod` was typed. The rest
+get on with the answer. With no key anywhere every one of them is refused: ``no PINECALL_KEY
+here: `pinecall link` in the project's folder writes it to .env (a server keeps it in its
+secrets)``, and the exit code is 2. **`pinecall whoami` is the first thing to run when a door
+refuses you and will not say why.**
 
 ## `~/.pinecall/`
 
@@ -312,8 +313,9 @@ in `~/.pinecall/session.json`) and re-sent by every `pinecall start` when it sta
 it beside its live table and not in a row, because it is only meaningful next to a socket: a
 developer running nothing has no corner for a call to land in. `forget` undoes it. `claim`,
 `release` and the bare `line` are about one agent: at a project's root with several, name it with
-`--agent`. A number that is not in E.164 form is refused with the shape in the sentence, and an org's own
-key is refused outright: it names nobody, so there is no *their own agent* to reach.
+`--agent`. The **gateway** refuses a number that is not in E.164 form, with the shape in the
+sentence, and refuses an org's own key outright: it names nobody, so there is no *their own agent*
+to reach. Nothing is checked in the terminal first — what you see is what the gateway answered.
 
 **And for a call from a number nobody said was theirs** — a customer, a colleague's phone — there
 is the **line**:
@@ -422,7 +424,7 @@ at that many dB under them, and `--packet-loss` drops that share of their packet
 ## `simulate`
 
 ```
-pinecall simulate --persona <name> [--judge] [--turns n] [--voice] [--listen]
+pinecall simulate --persona <name> [--judge] [--turns n (6)] [--voice] [--listen]
                   [--background-noise dB] [--packet-loss percent] [--agent <name>] [--file agent.tsx]
 ```
 
@@ -472,8 +474,8 @@ caller written here needs no deploy, and a project holds none of them in its rep
 
 ```console
 $ pinecall personas
-apurado       frases cortas, interrumpe, da el dato justo y pide la hora ya   cambiar la cita al martes…
-desconfiado   educado y receloso, responde con otra pregunta                  enterarse del precio…
+apurado       frases cortas, interrumpe, da el dato justo y pide la hora ya  cambiar la cita al martes
+desconfiado   educado y receloso, responde con otra pregunta                 enterarse del precio de una corona
 
 $ pinecall personas add price-shopper --goal "get a price for a deep clean" \
     --style "blunt, impatient" --fact "their name=Tom Baker"
@@ -538,7 +540,8 @@ run_8a8870b59bc1  2026-09-11 12:47:23  clinica-norte     done     1/1
 run_5c6b559d6093  2026-09-11 11:56:49  clinica-norte     done     2/2
 ```
 
-`show` prints one run the way `test` printed it when it happened; `diff` says what moved between
+`show` prints one run the way `test` printed its matrix when it happened — without the first
+line, which carries the run id and belongs to a run that is still happening; `diff` says what moved between
 two, golden by golden — a measurement that HELD and is new to the later run is not a change and is
 left out, one that is BROKEN is printed (`not measured → broken`), and one the later run stopped
 making is printed too, so a golden nobody ran is never read as a fix. **`promote`** writes one real call down as a golden **candidate** in
@@ -546,7 +549,8 @@ making is printed too, so a golden nobody ran is never read as a fix. **`promote
 derived from what the judges answered — for a person to edit before it counts as a golden.
 **`drift`** counts each judge's held-rate over two windows of finished calls and exits 1 when one
 fell further than `--threshold` points: nothing is judged again, a held-rate is a count of the
-verdicts `call.score` already carries.
+verdicts `call.score` already carries. It reads the agent's newest **200** calls, which is the
+sessions door's own ceiling, so a window wider than that is counted over those 200.
 
 ---
 
@@ -555,7 +559,7 @@ verdicts `call.score` already carries.
 ## `sessions`
 
 ```
-pinecall sessions [list] [call] [--agent <slug>] [--limit <n>] [--json]
+pinecall sessions [list|show] [call] [--agent <slug>] [--limit <n>] [--json]
 ```
 
 ```console
@@ -567,9 +571,9 @@ clinica-norte · 3 calls
   call_29d7c7b6cdd643de9c659984a0125c8c  web inbound          3s  caller_hung_up    €0.0205  Perfecto. El jueves tenemos…
 ```
 
-With a call id: that call whole — what it was, how long, why it ended, what it cost, and the
-**score**, one line per judge with the question it answered and its own reasoning when it did not
-hold. The judging is ring 4's, at hang-up, in the gateway; this verb reads it back and runs
+With a call id (`sessions <call>`, or `sessions show <call>` — `list` and `show` are both optional
+words): that call's **outcome**, how long it ran and why it ended, what it cost, and the **score**,
+one line per judge with the question it answered and its own reasoning when it did not hold. The judging is ring 4's, at hang-up, in the gateway; this verb reads it back and runs
 nothing. A call still running says so instead of reporting itself unjudged, and an id this gateway
 has no log for is refused by name: it does not print a summary of nothing.
 
@@ -919,11 +923,11 @@ neither printed nor sent anywhere else.
 ```console
 $ pinecall whoami
 gateway https://box.pinecall.io · key from .env
-org clinica · key k_4f2a… · sandbox · ana-macbook · production: yes
+org clinica · key k_4f2a1d9c66b30e17 · sandbox · ana-macbook · production: yes
 
 $ pinecall whoami --prod
 gateway https://box.pinecall.io · key from .env · production (--prod)
-org clinica · key k_4f2a… · production · ana-macbook · production: yes
+org clinica · key k_4f2a1d9c66b30e17 · production · ana-macbook · production: yes
 ```
 
 ---
@@ -1051,10 +1055,12 @@ code can call — over HTTP, in any language, with the same key.
 | `start`, once connected | `POST /v1/login/codes` (the console's URL, in production), `PUT /v1/line/from` (the kept phone, on every connect in the sandbox), `GET /v1/agents/{slug}/line` (for an agent that declares a number) |
 | `chat` | `WS /v1/chat?agent=&app=&contact=` |
 | `start --events` · `sessions` · `supervise` | `GET /v1/calls/{call}/events` (SSE), `GET /v1/agents/{slug}/sessions` |
+| `sessions <call>` · `supervise` | `GET /v1/calls/{call}/state` — asked FIRST, because it is the one door that 404s for a call this gateway has no log of |
 | `supervise` | `POST /v1/calls/{call}/verbs` — with the **org key**: a desk that only reads and types needs no seat. A seat (`POST …/supervise`) is for audio, and that is the console's |
 | `simulate --listen` | `POST /v1/calls/{call}/listen`, then the LiveKit room |
 | `simulate --voice` · `test --voice` | `POST /v1/evals/voice`, `POST /v1/evals/caller` |
 | `test` · `runs` | `POST /v1/evals/run`, `GET /v1/evals/runs[/{id}]` |
+| `runs drift` | `GET /v1/agents/{slug}/sessions` — a held-rate is counted off the verdicts the calls already carry, so it asks the sessions door and no evals door at all |
 | `eval` | `POST /v1/evals/replay/{call}` |
 | `agent` | `GET`·`PUT /v1/agents/{slug}/settings`, `GET …/settings/history`, `GET …/settings/diff`, `POST …/settings/rollback`; `list` and `stop` are `GET /v1/apps` and `POST /v1/apps/{app}/stop` |
 | `agent knowledge` · `lexicon` · `memory policy` · `docs attach` · `detach` | `GET`·`PUT /v1/agents/{slug}/settings` · `GET`·`PUT /v1/lexicon`, `GET …/history` |
