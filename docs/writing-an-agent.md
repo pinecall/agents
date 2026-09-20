@@ -432,7 +432,8 @@ the customer's file, their orders, the balance, the next appointment.
 
 ```tsx
 // agents/maravilla/view.tsx
-import { Badge, Panel, Row, Rows, Stat, Table, type Who } from "pinecall/panels";
+import { type Who } from "pinecall";
+import { Badge, Panel, Row, Rows, Stat, Table } from "pinecall/panels";
 import { crm } from "../../lib/crm";
 
 /** La ficha del cliente, al lado del hilo. */
