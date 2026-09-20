@@ -6,6 +6,8 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## 0.8.3 — Personas of their own, one Chat, and a CLI that refuses in words
+
 ### Changed
 - **Talk and Chat are one tab, called Chat.** The agent had two tabs for the same room — the
   microphone, or writing. Now one screen offers both ways in: **Call** (the microphone, over
