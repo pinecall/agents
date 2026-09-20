@@ -4,6 +4,19 @@ All notable changes to `pinecall`, the package a tenant writes an agent in. The 
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version numbers and tags are the
 maintainer's call, so everything sits under Unreleased until one is cut.
 
+## 0.8.8 — What a screen says when it is refused
+
+### Fixed
+- **A refused read is said once, and never becomes a spinner.** Settings and Lexicon printed the
+  gateway's refusal twice — once where the screen would have been, once at the foot — and Settings
+  then cleared it on its next effect pass and sat on "Asking the gateway…" for ever, because the
+  promise that had failed was long settled. The foot is for a refused WRITE; a refusal is cleared
+  by a read that succeeds, not by the next attempt starting.
+- **The class name stopped leaking onto the screen.** Pipeline drew `GatewayError: this key does
+  not open pipeline: …` — `String(error)` is the class in front of the sentence. `saidBy` is one
+  function now, beside the error it unwraps (`shared/api.ts`), and a screen prints the gateway's
+  words alone.
+
 ## 0.8.7 — What the doc audit found in the code
 
 ### Fixed
