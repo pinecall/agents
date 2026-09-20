@@ -6,6 +6,15 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.8.17] — `pinecall/panels` is reachable
+
+### Fixed
+- **`import … from "pinecall/panels"` failed on 0.8.16.** The panel catalogue shipped inside the
+  tarball, and the subpath that reaches it was added to `exports` — which is what this checkout
+  resolves — and not to `publishConfig.exports`, which is what npm serves. So `@view` landed with
+  its door bricked up for everybody who installs the package. A test now holds the two maps to the
+  same subpaths, and it fails when one of them drifts.
+
 ## [0.8.16] — The panel beside the conversation, and a chunk that says where it came from
 
 ### Fixed
