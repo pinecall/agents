@@ -15,8 +15,9 @@ gateway's. The whole picture is `docs/testing-an-agent.md`.
 - **Never soften a golden to make it green.** A golden two models disagree about is the reason
   there are two models; the answer is a fix in the class or the view. The nightly writes the
   divergence into its summary rather than failing on it, precisely so nobody is tempted.
-- **Never run `pinecall test --voice`.** It is ring 2 and is not built; the flag says so instead
-  of running ring 1 and calling it voice. Spoken checks are `pinecall simulate --voice`.
+- **Never run a spoken ring by accident.** `pinecall test --voice` and `pinecall simulate --voice`
+  are ring 2: a real line, a worker beside the gateway, real money. They are asked for on purpose,
+  never added to a loop that was running ring 1.
 - **Never assume a golden failed because the model is bad.** Read the prompt first —
   `pinecall prompt --state <the golden's state>` costs nothing and answers half of them.
 - **Never keep a promoted call unread.** `pinecall runs promote` writes provenance
@@ -73,28 +74,34 @@ latency each was answered with — read from each turn's own metrics entry, neve
 
 ## Personas — ring 2
 
-```ts
-export default {
-  goal: "cambiar la cita al martes por la tarde sin dar más datos de los justos",
-  style: "frases cortas, interrumpe, da el dato justo y pide la hora ya",
-  facts: { "cómo se llama": "Ana García", "su teléfono": "600 000 001" },
-  state: { stage: "choose", patient: { … } },
-};
-```
-
-A model improvises them turn by turn — six turns by default, `--turns` to change it. A caller with
-no `facts` is not broken: they are somebody who will invent nothing, and that is a case.
+**A caller is the agent's, and the gateway keeps it** — beside the agent's settings, per org and
+per agent. Nothing of it is in the repository, so a new caller needs no deploy and the console's
+Personas screen writes the same ones this verb does. A caller is a goal, a way of speaking, and
+the facts they may state about themselves; a model improvises every turn from those three — six
+turns by default, `--turns` to change it. A caller with no facts is not broken: they are somebody
+who will invent nothing, and that is a case.
 
 ```bash
-pinecall personas list · show <name> · try <name>
+pinecall personas                            # one line each: the name, the style, the goal
+pinecall personas show apurado
+pinecall personas add apurado --goal '…' --style '…' [--about '…'] --fact 'su teléfono=600 000 001'
+pinecall personas edit apurado --style '…' [--rename <name>]
+pinecall personas rm apurado
+pinecall personas try apurado                # simulate against the class here, without the judge
 pinecall simulate --persona apurado --judge
 pinecall simulate --persona apurado --voice --background-noise 12 --packet-loss 2
 ```
 
+`pinecall personas push [--from test/<agent>/personas]` is the **migration, run once per project**:
+the callers a project still keeps as files are sent up, each evaluated as it loads. The files are
+yours to delete afterwards; the verb never touches them. A project written today has no
+`personas/` folder at all.
+
 `--judge` waits for the log to **seal** on `call.score` and prints what each judge said and what
 the asking cost. A call that never seals says so and names how to read it; it does not print a
-verdict nobody wrote. `--background-noise` and `--packet-loss` are properties of audio and are
-refused without `--voice`.
+verdict nobody wrote. `--voice` is a real line: the caller is read out in an ElevenLabs voice the
+agent does not have, in the agent's language, and waits for the greeting before its first line.
+`--background-noise` and `--packet-loss` are properties of audio and are refused without it.
 
 ## The three states of a judged call
 

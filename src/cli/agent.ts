@@ -14,6 +14,7 @@ import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { agentOfThisDirectory, notASlug } from "./load.js";
 import { asked, type Door } from "./testing/gateway.js";
+import { SHORT_NAMES, theModelNamed } from "./testing/models.js";
 import { refusal } from "./whoami.js";
 
 const USAGE = [
@@ -40,8 +41,10 @@ export const group: Group = {
   does not hear it. --team writes the org's own corner instead, which every corner falls back to.
   --prod writes production's, if your org lets you act there. The whole set travels with the version it was read at, so two people
   saving at once never write over each other: the second is told where the corner is now. A model
-  knob reads three ways — \`--llm anthropic/claude-haiku-4-5\`, \`--llm cartesia\` (a vendor, its own
-  model), \`--llm claude-haiku-4-5\` (a model, the vendor in use). --greeting sets the words said as
+  knob reads four ways — \`--llm anthropic/claude-haiku-4-5\`, \`--llm cartesia\` (a vendor, its own
+  model), \`--llm claude-haiku-4-5\` (a model, the vendor in use), and \`--llm haiku\` (a tier, which
+  is expanded here to the id its provider answers to, as \`pinecall test --model\` expands it). A
+  name that means no model at all is refused rather than written. --greeting sets the words said as
   the call opens; --reply what the model reads before it finds its own. --remember and --forget
   replace those lists whole. A field nobody names is left as it stands.
 
@@ -64,6 +67,14 @@ export const group: Group = {
   dialling back, so its agents are free — though a supervisor (systemd, pm2) starts it again.`,
   run,
 };
+
+// A short name is a tier, not a model: `--llm haiku` was stored as written and the gateway read a
+// bare name as the vendor in use, so the corner held `anthropic/haiku` — a 404 at the provider,
+// and no call said so. It is expanded HERE, through the one table `pinecall test --model` reads,
+// and a name that means no model at all never reaches the corner.
+const NOT_A_MODEL = (said: string): string =>
+  `--llm ${said} names no model: vendor/model, a vendor alone, a model alone, ` +
+  `or one of ${Object.keys(SHORT_NAMES).join(" · ")}`;
 
 /** What the verb can be told besides the argv: where to print, and which environment. Tests only. */
 export interface Setting {
@@ -101,6 +112,11 @@ export async function run(argv: string[], how: Setting = {}): Promise<number> {
   const out = how.out ?? process.stdout;
   const err = how.err ?? process.stderr;
   const { values, positionals } = parseArgs({ args: argv, allowPositionals: true, options: OPTIONS });
+  const llm = values.llm === undefined ? undefined : theModelNamed(values.llm);
+  if (values.llm !== undefined && llm === undefined) {
+    err.write(`${NOT_A_MODEL(values.llm)}\n`);
+    return 2;
+  }
   const door = theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
   const [verb, ...rest] = positionals;
@@ -118,7 +134,9 @@ export async function run(argv: string[], how: Setting = {}): Promise<number> {
       return 2;
     }
     if (verb === undefined) return said(agent, await readSettings(door, agent), values.json === true, out);
-    if (verb === "set") return said(agent, await set(door, agent, values), values.json === true, out);
+    if (verb === "set") {
+      return said(agent, await set(door, agent, { ...values, ...(llm === undefined ? {} : { llm }) }), values.json === true, out);
+    }
     if (verb === "clear") return said(agent, await clear(door, agent, rest, values.team === true), values.json === true, out);
     if (verb === "history" || verb === "diff" || verb === "rollback") {
       return await versionsRun(door, agent, verb, rest, values, out, err);

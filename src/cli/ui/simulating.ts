@@ -1,7 +1,7 @@
-/** The console's own door to a simulated caller: this directory's personas, and one call started from the page. */
+/** The console's own door to a simulated caller: one call started against the class this directory holds. */
 
 import { aSimulation, degradedBy, ONLY_ON_A_LINE, TURNS } from "../simulate.js";
-import { NO_PERSONAS, personasIn, type Persona } from "../testing/caller.js";
+import { NOBODY, personaNamed, type Persona } from "../testing/personas.js";
 import type { Door } from "../testing/gateway.js";
 import type { Home } from "../home.js";
 import { aFlag, anObject, aNumber, aString, maybeNumber } from "./asked.js";
@@ -24,19 +24,6 @@ export interface Wanted {
 // class, and the terminal that typed `ui`, for as long as the model keeps talking.
 const MOST_TURNS = 30;
 
-/** A persona as the page lists it: enough to pick one, and nothing the model is told. */
-export interface Listed {
-  name: string;
-  goal: string;
-  style: string;
-}
-
-/** What the door answers: the class this console can simulate against, and its callers. */
-export interface Roster {
-  agent: string | null;
-  personas: Listed[];
-}
-
 // The console may be opened on any agent the gateway holds, but a simulation needs the CLASS —
 // mounted in this process, as `pinecall simulate` mounts it — and the class is the one in the
 // directory `pinecall start` was typed in. Another agent's page gets the sentence, not a call.
@@ -49,34 +36,27 @@ const NO_CALL = "the simulation ended before a call opened";
 
 /** What the server needs from the simulation, and nothing of how it prints. */
 export interface Simulating {
-  roster(): Promise<Roster>;
   start(wanted: unknown): Promise<{ call: string }>;
 }
 
 /** The pieces a simulation is built from, named so a test can hand in its own. */
 export interface Pieces {
-  personas: () => Promise<Persona[]>;
   simulate: typeof aSimulation;
 }
 
 /**
  * One `Simulating` for the life of a `pinecall start`: the door it was opened with, the class of the
  * directory it runs in, and where the simulation's own lines go — the terminal that typed `ui`,
- * exactly as `pinecall simulate` prints them. The call itself is watched from the page, off the
- * log, like any other call; nothing here keeps a second transcript.
+ * exactly as `pinecall simulate` prints them. The caller itself is the gateway's, read by name the
+ * moment the page asks for the call; the call is watched from the page, off the log, like any other.
  */
 export function simulatingFrom(
   door: Door,
   agent: string | null,
   out: NodeJS.WritableStream,
-  pieces: Pieces = { personas: () => personasIn(), simulate: aSimulation },
+  pieces: Pieces = { simulate: aSimulation },
 ): Simulating {
   return {
-    async roster(): Promise<Roster> {
-      const personas = await pieces.personas();
-      return { agent, personas: personas.map(({ name, goal, style }) => ({ name, goal, style })) };
-    },
-
     async start(asked: unknown): Promise<{ call: string }> {
       const wanted = parsed(asked);
       if (wanted.agent !== agent) throw new Refusal(409, NOT_THIS_DIRECTORY(wanted.agent, agent));
@@ -85,10 +65,8 @@ export function simulatingFrom(
         wanted.packet_loss === undefined ? undefined : String(wanted.packet_loss),
       );
       if (!wanted.voice && degraded !== undefined) throw new Refusal(422, ONLY_ON_A_LINE);
-      const persona = (await pieces.personas()).find((one) => one.name === wanted.persona);
-      if (persona === undefined) {
-        throw new Refusal(404, `no persona called ${wanted.persona}: ${NO_PERSONAS}`);
-      }
+      const persona = await personaNamed(door, wanted.agent, wanted.persona);
+      if (persona === undefined) throw new Refusal(404, NOBODY(wanted.persona, wanted.agent));
       return await opened(persona, wanted, degraded, door, out, pieces.simulate);
     },
   };
@@ -147,10 +125,7 @@ function parsed(asked: unknown): Wanted {
   };
 }
 
-/** The pieces for one agent of a project: its personas, and simulations of its own class. */
+/** The pieces for one agent of a project: simulations of its own class. */
 export function simulatingPiecesFor(home: Home): Pieces {
-  return {
-    personas: () => personasIn(home.personas),
-    simulate: (persona, how) => aSimulation(persona, { ...how, agentFile: home.file }),
-  };
+  return { simulate: (persona, how) => aSimulation(persona, { ...how, agentFile: home.file }) };
 }

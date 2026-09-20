@@ -3,8 +3,7 @@
 import { existsSync, statSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 
-import { slugOf } from "../runtime/connect.js";
-import { agentFilesOfTheProject, load } from "./load.js";
+import { agentFilesOfTheProject, load, slugOfAgentFile } from "./load.js";
 
 /**
  * Everything a verb reads beside the class, in the one layout a project has:
@@ -15,10 +14,13 @@ import { agentFilesOfTheProject, load } from "./load.js";
  *     test/<name>/agent.test.ts   ring 0
  *     test/<name>/goldens/        ring 1 (the conversations), and beside them the retrieval
  *                                 golden `docs.json` and the recall golden `memory.json`
- *     test/<name>/personas/       ring 2, the synthetic callers
  *     test/<name>/memory/         the extraction cases, one written call each
  *
- * What the agent knows by heart is not in the repository at all: it is its settings' `knowledge`
+ * Neither the synthetic callers nor what the agent knows by heart are in the repository: the
+ * callers are the gateway's (`pinecall personas`), read by name, and `personas` below is only
+ * where `pinecall personas push` looks for the files a project wrote before that.
+ *
+ * What the agent knows by heart is its settings' `knowledge`
  * (the console's Knowledge textarea, `pinecall agent knowledge edit`). One agent or five, the
  * layout is the same, and a verb never computes a path of its own: it asks for the agent's home.
  */
@@ -82,7 +84,7 @@ export async function homesFor(file?: string, agent?: string): Promise<Home[]> {
   const byName = homes.find((home) => home.name === agent);
   if (byName !== undefined) return [byName];
   for (const home of homes) {
-    if (slugOf((await load(home.file)).ctor) === agent) return [home];
+    if ((await slugOfAgentFile(home.file)) === agent) return [home];
   }
   throw new Error(`no agent ${agent} in this project: it has ${homes.map((home) => home.name).join(", ")}`);
 }

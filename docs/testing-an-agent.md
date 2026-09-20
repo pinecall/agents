@@ -127,22 +127,29 @@ run builds its requests in the worker and the file says so in place of the list.
 A persona is a caller, not a script: a goal, a way of speaking, and the facts they know about
 themselves. A model improvises them turn by turn.
 
-```ts
-/** El que llama desde la calle, con prisa. */
-export default {
-  goal: "cambiar la cita al martes por la tarde sin dar más datos de los justos",
-  style: "frases cortas, interrumpe, da el dato justo y pide la hora ya",
-  facts: { "cómo se llama": "Ana García", "su teléfono": "600 000 001" },
-  state: { stage: "choose", patient: { … } },   // where their call opens
-};
+```console
+$ pinecall personas add apurado \
+    --about "El que llama desde la calle, con prisa" \
+    --goal "cambiar la cita al martes por la tarde sin dar más datos de los justos" \
+    --style "frases cortas, interrumpe, da el dato justo y pide la hora ya" \
+    --fact "cómo se llama=Ana García" --fact "su teléfono=600 000 001"
+clinica-norte · apurado written · 4 persona(s)
 ```
 
-One file per caller in `test/<name>/personas/`. `personas list` prints every agent's; `show`, `try`
-and `simulate` take `--agent` when the project holds more than one.
+**A caller is the agent's, kept by the gateway** — this verb, or the console's Personas screen —
+beside its settings, and read by name when a simulation asks for it. Nothing of them is in the
+repository: a project that still has `test/<name>/personas/` sends those files once with
+`pinecall personas push`, which also carries the `state` a caller the business already knows opens
+its call in — and which stops at the first caller the gateway refuses, naming what landed and what
+is still only a file, rather than leaving half a migration in silence.
+
+A caller's name is lower-case letters and digits joined by hyphens (`apurado`, `price-shopper`):
+anything else is refused by the verb, with exit 2, before it travels.
 
 ```bash
-pinecall personas list                      # one line each: the name, and the goal
+pinecall personas                           # one line each: the name, and the goal
 pinecall personas show apurado              # the whole caller
+pinecall personas add apurado --goal '…' --style '…' --fact 'su teléfono=600 000 001'
 pinecall personas try apurado               # simulate, without the judge
 pinecall simulate --persona apurado --judge # …and the call.score at hang-up
 pinecall simulate --persona apurado --voice --background-noise 12 --packet-loss 2

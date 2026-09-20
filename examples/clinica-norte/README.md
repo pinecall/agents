@@ -15,7 +15,7 @@ test/clinica-norte/
   agent.test.ts       la clase como software
   goldens/            las conversaciones que `pinecall test` ejecuta; docs.json y memory.json,
                       los goldens del retrieval y de la memoria
-  personas/           quienes llaman en `pinecall simulate`
+  personas/           la semilla de quienes llaman: `pinecall personas push` las sube al gateway
   memory/             los casos de extracción de `pinecall remember`
 ```
 
@@ -59,10 +59,14 @@ Lo que la recepción se sabe de memoria — horarios, precios, qué necesita aut
 en la consola, Settings ▸ Knowledge (o `pinecall agent knowledge edit`), y el modelo lo lee entero
 en cada llamada. La voz, el modelo y el saludo, en la misma pantalla, o `pinecall agent set`.
 
-Los goldens viven en `test/clinica-norte/goldens/`: uno por fichero, `{state, input, expect}`. Las
-personas viven en `test/clinica-norte/personas/`: un fichero por quien llama, con su objetivo, su
-forma de hablar y los datos que sabe de sí misma — nunca un guion: un modelo la improvisa turno a
-turno. `pinecall personas list` las enumera y `pinecall personas show apurado` la abre entera.
+Los goldens viven en `test/clinica-norte/goldens/`: uno por fichero, `{state, input, expect}`.
+
+Las personas son del agente y las guarda el gateway, junto a sus settings: su objetivo, su forma de
+hablar y los datos que saben de sí mismas — nunca un guion: un modelo las improvisa turno a turno.
+`pinecall personas` las enumera, `pinecall personas show apurado` abre una y `pinecall personas add`
+escribe otra; la pantalla Personas de la consola escribe las mismas. Los ficheros de
+`test/clinica-norte/personas/` son la semilla de este ejemplo: `pinecall personas push` los sube una
+vez, y a partir de ahí se editan donde vive el resto del mundo del agente.
 
 El paciente `Ana García`, teléfono `+34 600 000 001`, tiene ficha; cualquier hora de las 13:00 la
 agenda la rechaza, así que el camino del "ese hueco acaba de ocuparse" se ve sin trucar nada.

@@ -1,6 +1,6 @@
 # Docs
 
-How to build an agent with this package. Eight pages, in the order a person meets them: the first
+How to build an agent with this package. Nine pages, in the order a person meets them: the first
 is a walk from an empty directory to an agent that answers from your documents and remembers who
 called, and the rest are the reference it points at.
 
@@ -13,10 +13,11 @@ called, and the rest are the reference it points at.
 | [testing-memory-and-knowledge.md](testing-memory-and-knowledge.md) | the goldens that are not about one call: what the agent remembers, what it recalls, whether the index answers, and why a call has no retrieval score |
 | [the-cli.md](the-cli.md) | every verb — `link`, `start`, `serve` and the rest: what it takes, what it prints, where its key comes from, and which gateway doors it knocks at |
 | [worlds-and-teams.md](worlds-and-teams.md) | from the invitation to the rollback: one key per person, the production switch, the sandbox and production, where each is watched, testing by phone, a team walked through |
+| [the-console.md](the-console.md) | the console, screen by screen — both of them: the mode that IS the world, the org's floor, an agent's tabs, the box's screens, and the way in |
 | [production.md](production.md) | running the agent on your own server: the server's token, inside your Node app or as its own process, the documents pushed in the release step, changes with `--prod` |
 
-Beside them, [console-content-brief.md](console-content-brief.md) is the console screen by screen —
-both of them, the gateway's and the local one: what each says, and the door every value comes from.
+Beside them, [console-content-brief.md](console-content-brief.md) is the same console at length —
+every value, and the door it comes from — which is the working note the page above is drawn from.
 
 What the package IS, file by file, is [../ARCHITECTURE.md](../ARCHITECTURE.md). The example in
 `../examples/` is the same material as working code, and it is what CI and the nightly run.

@@ -23,11 +23,15 @@ test/clinica-norte/
   agent.test.ts       the class as software: ring 0, no network and no model
   goldens/            one file per conversation: { state, input, expect } — and beside them
                       docs.json, the retrieval golden, and memory.json, the recall golden
-  personas/           one file per synthetic caller: a goal, a way of speaking, the facts they know
   memory/             the extraction cases `pinecall remember` runs: one written call each
   prompts/            the states `pinecall prompt` is checked against
 tsconfig.json         { "extends": "pinecall/tsconfig.tenant.json" }
 ```
+
+**The synthetic callers are not in the repository either.** A persona — a goal, a way of speaking,
+the facts they may state — is the agent's, kept by the gateway: `pinecall personas`, or the
+console's Personas screen. A project that still has `test/<name>/personas/` sends them once with
+`pinecall personas push` and deletes the folder.
 
 **What the agent knows by heart is not in the repository.** Hours, prices, what needs an
 authorisation: that is the business, and the business describes itself — in the console's Settings
@@ -415,7 +419,8 @@ pinecall docs attach clinica-norte --k 4      # the agent reads it, in your corn
 pinecall agent knowledge edit      # what it knows by heart, in $EDITOR
 pinecall start                     # the app registered and answering: the process you deploy
 pinecall start --serve             # the same, and your console on http://localhost:4100:
-                                   # talk, chat, calls, sessions, evals, docs, memory, widget
+                                   # chat (call or write), dev chat, calls, sessions, settings,
+                                   # pipeline, docs, memory, evals, widget
 ```
 
 `pinecall start` is the same process in the sandbox and in production (`--prod`, on a server's

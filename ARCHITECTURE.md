@@ -113,7 +113,7 @@ a directory earns its place there by having a line in that table (§13).
 | `client-for.ts` | the SDK client a verb holds: the door's gateway, its key, and the world the command named |
 | `connected.ts` | the one line `start` prints when the socket is up: who registered, whose org took it, which world, and where the key came from |
 | `load.ts` | a tenant's class loaded with tsx and handed its own source: the file named, else the one `agents/<name>/agent.tsx` (or `.ts`) of the project this terminal stands in — a project of several is told to name one with `--agent`. `instanceFor` is one instance with a line to answer on, for the pages that print a prompt |
-| `home.ts` | **the one layout**, and an agent's *home* in it: `agents/<name>/agent.ts` (with whatever only that class uses beside it), `lib/` for what agents share, `docs/<name>/` for the documents the agent searches, `test/<name>/agent.test.ts`, `test/<name>/goldens/` (the conversations, and beside them `docs.json` and `memory.json`, the retrieval and recall goldens), `test/<name>/personas/`, `test/<name>/memory/`. No verb computes a path of its own; `--agent` resolves here. What the agent knows by heart is in no folder: it is a setting |
+| `home.ts` | **the one layout**, and an agent's *home* in it: `agents/<name>/agent.ts` (with whatever only that class uses beside it), `lib/` for what agents share, `docs/<name>/` for the documents the agent searches, `test/<name>/agent.test.ts`, `test/<name>/goldens/` (the conversations, and beside them `docs.json` and `memory.json`, the retrieval and recall goldens), `test/<name>/memory/`. No verb computes a path of its own; `--agent` resolves here. What the agent knows by heart is in no folder: it is a setting |
 | `serve.ts` · `serve/` | `pinecall serve`, the sandbox's console on this machine. `serve/server.ts` is `LocalConsole`: the built page and `/v1/*` forwarded to the gateway with the project's key, on the loopback, refusing a foreign `Host` or `Origin`, marking the page `local`. `serve/sidecar.ts` is one per machine: open it, or find the one already up for this gateway and org (`/.pinecall/serve`). **The only code under `cli/` that binds a port** (`test/cli/verbs.test.ts` pins it) |
 | `start-console.ts` · `start-screens.ts` | the `console` line `start` prints — the sidecar's URL or the verb that opens one in the sandbox, the gateway's link with a one-use code in production — and the three ways `start` shows a log: plain, `--ui`, `--events` |
 | `start.ts` · `chat.ts` · `prompt.ts` | the app, the app in this terminal — or a written call at an agent somebody else is holding, named by slug — and the prompt offline |
@@ -123,9 +123,9 @@ a directory earns its place there by having a line in that table (§13).
 | `docs.ts` · `docs-attach.ts` · `memory.ts` · `remember.ts` | **the documents the agent searches** — `docs/<name>/` pushed whole under a name, listed, dropped — and `attach`/`detach`/`attached`: which bases an agent reads, which is one field of its settings (`bases`) written as the next version · one contact's facts, the right to be forgotten, and `memory policy` · the extraction goldens. `docs eval` and `memory eval` each hold a golden: `recall@k` and `nDCG@10`, computed in the gateway by code with no model, exit 1 on a miss |
 | `numbers.ts` | which number reaches which agent: the org's doors listed, one imported off its carrier, one MOVED between the worlds — an org buys one number, so that move is what makes a staging run cost nothing — one let go |
 | `providers.ts` | the provider keys this org brought of its own: one added from stdin, one taken back, the vendors read by name — never a value |
-| `personas.ts` · `machine.ts` · `view.ts` | the synthetic callers, the state machine on one page, the terminal view as a pure function |
+| `personas.ts` · `machine.ts` · `view.ts` | the agent's synthetic callers — listed, written, renamed, dropped and tried against the class here, all of them kept by the gateway beside the agent's settings (`push` is the one-time migration for a project that still has the files) — the state machine on one page, the terminal view as a pure function |
 | `login.ts` · `browser.ts` · `whoami.ts` · `secret.ts` | the browser dance that signs this machine in (a word asked for, a link opened, the key collected once — kept for `link` to mint from, never run on), how a URL is put in front of a person, which key a verb would use and whether it acts in production, and the one place a terminal is read |
-| `testing/` | what those verbs need: the gateway's eval doors, goldens off disk, latency, the matrix, the model `--model` names (`models.ts`), the progress screen, the score, the seeding check — which golden's state a starting call opens in — the voice door |
+| `testing/` | what those verbs need: the gateway's eval doors, goldens off disk, latency, the matrix, the model a short name means, for `test --model` and for `agent set --llm` alike (`models.ts`), the progress screen, the score, the seeding check — which golden's state a starting call opens in — the voice door, the callers as the gateway keeps them (`personas.ts`) and the files a project pushed them from, read once (`caller.ts`) |
 | `ui/` | what `pinecall start` answers a console with, by the wire's verb (`doors.ts`, one module per verb family: a chat, a simulation, a suite, the docs and memory goldens, a promotion, drift, a reproduction) — and beside those node modules the three directories that are the BROWSER: `ui/shared/`, `ui/console/` and `ui/admin/`, never imported by anything here: the gateway serves all three, and `serve/` serves the console's build |
 
 Beside `src/`:
@@ -412,7 +412,7 @@ prompt` must not pay for a websocket client.
 | `simulate` | a model plays one persona, live; `--judge` prints the `call.score` | yes |
 | `eval` | ring 3: one real call re-evaluated by the runtime's code checks | yes |
 | `runs` | `list · show · diff · promote · drift` — what this gateway ran, and what moved | yes |
-| `personas` | `list · show · try` the synthetic callers in `test/personas` | for `try` |
+| `personas` | `list · show · add · edit · rm · try · push` the agent's synthetic callers, kept by the gateway | yes |
 | `agent` | the settings, three corners side by side · `set` · `clear` · `knowledge [edit]` — what the agent knows by heart, printed or opened in `$EDITOR` · `history` · `diff` · `rollback` · `pull` · `push` · `list` · `stop` | yes |
 | `lexicon` | the org's words — said and heard — versioned per corner | yes |
 | `docs` | `push [dir] [--base <name>]` · `list` · `drop <base>`: the folder of `*.md` under `docs/<name>/` sent whole to `PUT /v1/knowledge/{base}` · `eval`: `test/<name>/goldens/docs.json` asked of the base · `attach <base> [--k n] [--mode …] [--min-score x]` · `detach` · `attached`: which bases the agent reads, one field of its settings | yes |
@@ -422,7 +422,7 @@ prompt` must not pay for a websocket client.
 | `whoami` | which gateway, which org, whether the key acts in production, and **where it came from** | yes |
 
 `groups.ts` also declares every verb the design names and this tree has not written — `new`, `g`,
-`observe`, `costs`, `call`, `tokens`, `agents`, `deploy`. Typing one prints what it *will* be and exits 0. A verb leaves that table in the commit
+`observe`, `costs`, `call`, `tokens`, `deploy`. Typing one prints what it *will* be and exits 0. A verb leaves that table in the commit
 that writes it.
 
 **Where the key comes from** (`cli/env.ts`, the one place that decides it, for every verb):
@@ -469,11 +469,14 @@ nothing reaches one page through the other.
 
 **One bundle, two consoles.** The sidecar marks the page it serves (`<meta name="pinecall-console"
 content="local">`); a page nobody marked is the gateway's. `lib/mode.ts` reads that once and holds
-the ONE table of screens — path, name, sidebar group, icon, and the modes that have each: the sidebar draws it and the router routes it,
+the tables of screens — the org's (`ORG_SCREENS`), the box's (`BOX_SCREENS`, each row an operator's) and an agent's tabs
+(`AGENT_SCREENS`), each row a path, a name, a sidebar group, an icon and the modes that have it: the sidebar draws them and the router routes them,
 so a screen a console does not have is neither linked nor reachable, and no screen asks which mode
 it is in to decide whether it exists (`test/cli/ui/console/each-console-has-its-own-screens.test.ts`).
-Both open on Home (`/`) and have Overview (`/overview`), Live and Sessions. Both have Evals, Memory and Docs — every base of the world and who searches it. Hosted looks at production and runs the org — Usage, Numbers, Tokens, Providers, Team — and edits production's Settings and Lexicon directly. Local looks at
-the reader's corner of the sandbox and is the workshop — Chat, Evals ▸ runs, Phone testing — with no
+Both open on Home (`/`) and have Overview (`/overview`), Live and Sessions, then Personas and
+Simulations — the agent's synthetic callers, and the one place a call is simulated from — and
+Evals, Memory and Docs, every base of the world and who searches it. Hosted looks at production and runs the org — Usage, Numbers, Tokens, Providers, Team — and edits production's Settings and Lexicon directly. Local looks at
+the reader's corner of the sandbox and is the workshop — Dev chat, Evals ▸ runs, Phone testing — with no
 login, no sign out and no key in the page: `headersFor` sends no `authorization` when the key is
 empty, and a refused sidecar key shows one card — *this project is not linked* — naming `pinecall link`, then `pinecall serve`. An admin opens a
 colleague's copy from local only (`pinecall-corner`, forwarded by the sidecar as the page set it).
@@ -509,9 +512,10 @@ What follows is the hosted page, where a key IS held. Everything about it is a c
 - **Nothing rides a URL.** The log stream is `fetch` reading `text/event-stream` by hand
   (`lib/stream.ts`, `SseParser`), with the key on the header and `Last-Event-ID` sent by the
   reader on a reconnect; the recording is fetched with the header and played from an object URL.
-- **What only the agent's directory can answer** — the class for a written call, the personas, the
-  goldens, the docs folder — the page asks the gateway, and the gateway asks the `pinecall
-  start` standing there (`lib/dev.ts`; the runtime's `docs/protocol/dev-verbs.md`).
+- **What only the agent's directory can answer** — the class for a written call or a simulation,
+  the goldens, the docs folder — the page asks the gateway, and the gateway asks the `pinecall
+  start` standing there (`lib/dev.ts`; the runtime's `docs/protocol/dev-verbs.md`). The callers
+  are not among them: they are the gateway's own, read and written over its doors.
 - **The page may not import the framework** (§13). None of it would run in a browser, and a build
   that pulled a TypeScript parser into the bundle is a build nobody would notice.
 
@@ -520,13 +524,14 @@ What follows is the hosted page, where a key IS held. Everything about it is a c
 | `home/` | `/`: today at a glance — the gateway's count (`GET /v1/insights`, `lib/insights.ts`) or, from a gateway without it, a fold of the floor's rows; the calls that need a look (the rows' `flags`, else end reasons and the first scores read); who is on the floor; the channels; and the setup steps, judging among them (`setup.tsx`, `GET/PUT /v1/org/judging`) |
 | `agents/` | `/overview`: which agents this gateway holds, the numbers routed to each, today's calls and the share of judges that held, and the keys and vendors behind them — each read only by a key that opens it |
 | `floor/` + `live/` | `/live[/:call]`: the org's calls down the left (`floor/live.tsx`), one watched (`live/live.tsx`): the log's rows — a `memory.ops` and a `docs.sources` each one row — the `STATE · ROOM · PROMPT · METRICS` pane, and the supervisor's desk (`live/desk.tsx`: listen, whisper, say, take the line, transfer, end). `/sessions` is `floor/sessions.tsx` over the same `sessions/list.tsx` an agent's draws |
-| `calls/` | an agent's calls as an inbox: threads grouped by contact in the browser (`threads.ts`), their messages read from each call's log (`use-thread.ts`), and what the gateway keeps per contact — names, unread, a message into a WhatsApp thread — behind a probe (`inbox-door.ts`). `dial.tsx` is *Call back* and *Call a number*, drawn once the org's outbound trunk is ready. `simulate-form.tsx` is the synthetic caller, Live's too |
+| `calls/` | an agent's calls as an inbox: threads grouped by contact in the browser (`threads.ts`), their messages read from each call's log (`use-thread.ts`), and what the gateway keeps per contact — names, unread, a message into a WhatsApp thread — behind a probe (`inbox-door.ts`). `dial.tsx` is *Call back* and *Call a number*, drawn once the org's outbound trunk is ready. Nothing here simulates: that is the Simulations screen |
+| `personas/` · `simulations/` | `/personas[/:name]`: the agent's callers down the left and the one chosen read beside them, written and dropped over the gateway's own doors (`personas/door.ts`, `GET`·`PUT`·`DELETE /v1/agents/{slug}/personas[/{name}]`), never through the directory. `/simulations[/:call]`: the form (`simulations/simulate-form.tsx`) that puts one of them on the class the `pinecall start` in its directory holds (`simulate.start`), and the call heard live beside it |
 | `sessions/` | every call, searched by the gateway when its door can (`search.ts`: a `total` in the answer) and in the browser when it cannot; one read whole — facts, the recording, transcript, latency, score with a judge attached later (`POST /v1/evals/judge/{call}`), cost, and folded under Details the consent join, the prompt block by block and every entry in `seq` |
-| `talk/` · `chat/` | a person reaches the agent with this browser's microphone and, in the same call, in writing (`use-room.ts` `write`, LiveKit's `lk.chat`), or — local — in writing through the class in `pinecall start`'s directory; both beside `talk/inspector.tsx`, the call's log as numbers, turns, tool calls and state |
+| `talk/` · `chat/` | `talk/` is the agent's **Chat** tab (its path is still `talk`): one screen, two ways into the gateway's room — **Call**, this browser's microphone over WebRTC with the agent's voice back, or **Write**, a written session with no audio — and on a call the composer types into the same room (`use-room.ts` `open(mode)` and `write`). `chat/` is **Dev chat**, local only: a written call through the class in `pinecall start`'s directory. Both beside `talk/inspector.tsx`, the call's log as numbers, turns, tool calls and state |
 | `evals/` | the goldens and how the latest run left each, every run this agent's suites scored and the diff between two, what each finished call was sealed with, and the drift |
 | `pipeline/` | the three providers of a voice turn, the anatomy of a turn as bars, and the overrides an operator may change between two calls |
-| `settings/` | the agent's settings, the three corners: the whole set as one form (`form.tsx`) — the vendors and models, the opening, the cut of a turn, what is remembered, **Knowledge** (what the agent knows by heart, a Markdown textarea every key that opens the tab may write, a `words` key included) and **Bases** (which bases it searches, a `pipeline` key) — saved over the version it was read at; the history with a roll back (`history.tsx`) |
-| `docs/` · `org-docs/` | an agent's Docs tab: the directory's folder pushed and its golden run through `pinecall start`, every base the org pushed in this world, and **Attached bases** — which this agent reads, off its settings (`attached.tsx`); and the org's Docs screen: every base, its chunks, its embedder, when it was pushed and which agents read it (`GET /v1/knowledge`, `GET /v1/knowledge/attached`) |
+| `settings/` | the agent's settings as **one tab a section** (`form.tsx`: STT, LLM, Voice, Conversation, Memory, Knowledge, Bases — the tab in `?section=`), each choice picked from values that actually run; **Knowledge** is what the agent knows by heart, a Markdown textarea every key that opens the tab may write, a `words` key included, and **Bases** which it searches, a `pipeline` key. Saved over the version it was read at. Beside the form, a pane a person drags (`settings.now`): what is set now, a corner at a time (`now.tsx` — yours, the team's, production's in the sandbox; production alone on the gateway's page) and the history with a roll back (`history.tsx`) |
+| `docs/` · `org-docs/` | an agent's Docs tab: the directory's folder pushed and its golden run through `pinecall start`, every base the org pushed in this world, and **Attached bases** — which this agent reads, off its settings (`attached.tsx`); and the org's Docs screen: every base, its chunks, its embedder, when it was pushed and which agents read it (`GET /v1/knowledge`, `GET /v1/knowledge/attached`), a base opened onto its files and **New base** (`new-base.tsx`) begun here from a name and its first documents — there is no empty base, so the form asks for both at once — with no project to push |
 | `memory/` · `widget/` | every current fact an agent's calls taught, one dropped (`GET /v1/agents/{slug}/memory`, `DELETE /v1/memory/facts/{id}`), or one contact read and forgotten; the tag, the look the gateway keeps per agent and world (`GET/PUT /v1/agents/{slug}/widget`), and the widget itself mounted as a preview |
 | `numbers/` · `tokens/` · `providers/` · `team/` · `usage/` | **numbers, whole**: the carrier — a Twilio account or a SIP peer — shown by kind and account and never a secret (`carrier.tsx`); the numbers, one let go; one added, imported or bought, **always the plan first** (`?dry_run=true`, the gateway's own steps in its words) and the same request again on confirm (`adding.tsx`); the outbound trunk set up the same way, with the operator's guards read-only (`outbound.tsx`); local's `phone.tsx` is Phone testing. Tokens (`/tokens`, open to every key): the person's own keys, and the org's server tokens — made for one world (production only by somebody with production access), shown once as `PINECALL_KEY=…`, listed with whose each is and when it was last used, revoked; the vendors and the keys the org brought; the people, invited or reset with a link shown once and changed in place, each person's Production switch (an admin's reads *always*; the invite form has one too), what each role opens (`roles.tsx`) and the org's single sign-on (`sso.tsx`); what the org consumed |
 | `login/` · `terminal/` | the way in: sign in, choose a password, *this machine is not signed in*; and `/cli`, the card that signs a terminal in |
@@ -585,7 +590,7 @@ exactly three files of `src/`, all of them inside the browser page:
 
 | file | why |
 |---|---|
-| `cli/ui/console/screens/talk/use-room.ts` | the Talk screen joins the room with the browser's microphone: `Room`, `RoomEvent`, `Track`, `TextStreamReader` |
+| `cli/ui/console/screens/talk/use-room.ts` | the Chat screen joins the room — with the browser's microphone on a call, for its text alone when it is written: `Room`, `RoomEvent`, `Track`, `TextStreamReader` |
 | `cli/ui/console/lib/use-listen.ts` | a supervisor's ear: a hidden, silent seat in the room |
 | `cli/ui/console/lib/use-supervise.ts` | a supervisor's hands: the microphone that takes the line |
 
@@ -638,7 +643,7 @@ folds there.
 |---|---|---|
 | 0 | does the class behave? | `vitest`, in the tenant's own repo. No network, no key, no model — `pinecall/client/testing` gives it a gateway that is not there |
 | 1 | does the agent hold its goldens? | `pinecall test`: the class mounted **in this terminal's process**, the conversations driven and judged by the gateway (the judges, the keys and the log are its) |
-| 2 | does it hold on a real line? | `pinecall simulate --voice`: a model plays a persona in a room. `pinecall test --voice` says plainly that it is not built |
+| 2 | does it hold on a real line? | `pinecall simulate --voice`: a model plays a persona in a room, read out in an ElevenLabs voice the agent does not have, in the agent's language, and waiting for the greeting before it says anything. `pinecall test --voice` sends the same goldens spoken, to `POST /v1/evals/run` with `voice: true` |
 | 3 | what does one real call score? | `pinecall eval <call-id>`: one call re-evaluated by the runtime's code checks |
 | 4 | what did every call score? | `call.score`, written by the runtime at hang-up with nobody watching; read here by `runs drift`, `runs promote` and the console's Evals screen |
 

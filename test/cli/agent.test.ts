@@ -155,6 +155,41 @@ describe("setting", () => {
     });
   });
 
+  // `--llm haiku` is a tier, not a model: it was stored as typed, the gateway read a bare name as
+  // the vendor in use, and the corner held `anthropic/haiku` — which no provider answers to, and
+  // no call said so. The short names expand here, through the table `pinecall test --model` reads.
+  it("expands a short model name to the id its provider answers to", async () => {
+    await run(["set", "--agent", AGENT, "--llm", "haiku"], { out: written().stream, env: environment() });
+
+    expect((gateway.written as { config: Record<string, unknown> }).config["llm"]).toBe("anthropic/claude-haiku-4-5-20251001");
+  });
+
+  it("expands the model half of a vendor/model, and leaves a vendor alone and a model alone as typed", async () => {
+    for (const [typed, stored] of [
+      ["anthropic/opus", "anthropic/claude-opus-5"],
+      ["openai/gpt-5", "openai/gpt-5"],
+      ["cartesia", "cartesia"],
+      ["claude-haiku-4-5", "claude-haiku-4-5"],
+    ]) {
+      await run(["set", "--agent", AGENT, "--llm", typed!], { out: written().stream, env: environment() });
+
+      expect((gateway.written as { config: Record<string, unknown> }).config["llm"]).toBe(stored);
+    }
+  });
+
+  it("refuses a name that means no model at all, naming what one is, and writes nothing", async () => {
+    for (const said of ["", "openai/", "/haiku"]) {
+      const err = written();
+
+      const code = await run(["set", "--agent", AGENT, "--llm", said], { out: written().stream, err: err.stream, env: environment() });
+
+      expect(code).toBe(2);
+      expect(err.text()).toContain("names no model");
+      expect(err.text()).toContain("haiku · sonnet · opus");
+    }
+    expect(gateway.heard).toEqual([]);
+  });
+
   it("writes the team's corner with --team, over the team's own row", async () => {
     await run(["set", "--agent", AGENT, "--team", "--greeting", "Buenas."], { out: written().stream, env: environment() });
 

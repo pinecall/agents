@@ -84,7 +84,7 @@ one.
 
 A tenant that installed `pinecall` from npm has it on the PATH and writes `pinecall start`. One
 layout, one agent or five: the class in `agents/<name>/agent.tsx`, what it searches in
-`docs/<name>/`, its goldens, personas and memory cases under `test/<name>/`, and one `pinecall
+`docs/<name>/`, its goldens and memory cases under `test/<name>/`, and one `pinecall
 start` at the root holds them all — [docs/the-cli.md](docs/the-cli.md#the-project). The class is
 the contract — doors, language, state, tools, `render()` — and what it runs on is the world's:
 voice, model, opening, what it knows by heart and which base it searches are settings, per world

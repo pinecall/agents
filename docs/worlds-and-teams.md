@@ -51,7 +51,7 @@ still held by the person whose key registered it.
 |---|---|---|
 | the agent | the org's: one holder, the server's token | **yours**: one per person. CI's, on a token naming nobody, is the org's own, and a person holding none falls back to it |
 | `pinecall start` | `--prod`: the server's token, or a person with the switch | yours |
-| web and chat (`pinecall chat`, the console's talk) | the org's agent | your own |
+| web and chat (`pinecall chat`, the console's **Chat** tab — Call or Write) | the org's agent | your own |
 | a phone or WhatsApp number | the org's. A call from a developer's [own phone](#which-phone-is-yours) reaches that developer's sandbox copy while they hold the agent; every other caller reaches production | **optional, and the org's, shared**: a call lands in the corner of whoever's phone dialled it, else on [the line](#the-line) |
 | settings and the lexicon | one corner, written with `--prod` or from the gateway's console; history and rollback | yours, and the team's with `--team` |
 | where it is watched | the gateway's console, signed in to | `pinecall serve`, on your machine: `http://localhost:4100` |

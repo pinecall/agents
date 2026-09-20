@@ -32,8 +32,8 @@ export function aCallId(): string {
 
 /**
  * One spoken call, held in the runtime because everything it needs is there — the LiveKit pair
- * that signs the caller's seat, the provider key the persona is played with, and the box's own
- * speech tool. This side mints the id and watches the log; nothing here opens an audio device.
+ * that signs the caller's seat, the provider key the persona is played with, and the vendor that
+ * gives it a voice. This side mints the id and watches the log; nothing here opens an audio device.
  */
 export async function aVoiceCall(
   door: Door,

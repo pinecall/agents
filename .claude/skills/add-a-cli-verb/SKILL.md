@@ -73,7 +73,12 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
   the output as a string instead of driving a terminal.
 - **`--json` is for a pipe**: when it is on, print nothing but the JSON.
 - A group with sub-verbs (`runs`, `personas`) reads `positionals[0]` as the sub-verb and prints
-  its own `USAGE` on anything else.
+  its own `USAGE` on anything else — **before** it loads a class or knocks at a gateway: a word
+  the group does not answer to must cost nothing but the usage and a 2.
+- **The environment is a parameter too** (`how.env ?? process.env`, as `agent`, `docs` and
+  `personas` take it), or no test can point the verb at a gateway of its own.
+- **A flag that means nothing on a sub-verb is refused there**, with the sentence saying which
+  verb prints what: `--json` on a verb that holds a live call is not a flag that is ignored.
 
 ## Naming a verb that does not exist yet
 

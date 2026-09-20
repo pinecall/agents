@@ -1,17 +1,17 @@
-/** A synthetic caller: who is on the phone, what they want, and the words they use to get it. */
+/** The personas a project still keeps as files: read once, by `pinecall personas push`, and never again. */
 
-import { readdir } from "node:fs/promises";
+import { readdir, stat } from "node:fs/promises";
 import { basename, extname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { useTypeScript } from "../load.js";
 
 /**
- * One persona, written by the tenant in `test/personas/<name>.ts` and default-exported.
+ * One persona as a project wrote it: `test/<agent>/personas/<name>.ts`, default-exporting an object.
  *
- * A persona is not a script: `goal` and `style` are what the model playing the caller is told it
- * is, and `facts` is everything that caller knows about themselves and may state. The model
- * improvises every turn from those three — see docs/decisions/simulate.md.
+ * A caller is the gateway's now (`pinecall personas`, the console's Personas), beside the agent's
+ * settings — the same cut the voice and the lexicon took. These files are what a project wrote
+ * before that, and this module exists to send them there once: `pinecall personas push`.
  */
 export interface Persona {
   name: string;
@@ -25,31 +25,19 @@ export interface Persona {
   state?: Record<string, unknown>;
 }
 
-/** Where the tenant's personas live: one file per caller, beside the goldens they are run with. */
-export const PERSONAS = "test/personas";
-
-/** What to say when there are none: the directory, and that a persona is one file in it. */
-export const NO_PERSONAS = `no personas at ${PERSONAS}: one file per caller, default-exporting one`;
-
 /** Every persona in that directory, in the order `ls` prints them. */
-export async function personasIn(folder: string = PERSONAS): Promise<Persona[]> {
+export async function personasIn(folder: string): Promise<Persona[]> {
   const names = await readdir(resolve(folder)).catch(() => []);
   const files = names.filter((name) => extname(name) === ".ts").sort();
   return await Promise.all(files.map((name) => personaOf(join(resolve(folder), name))));
 }
 
-/** One persona by the name of its file, or undefined when nobody wrote that caller. */
-export async function personaNamed(
-  wanted: string,
-  folder: string = PERSONAS,
-): Promise<Persona | undefined> {
-  return (await personasIn(folder)).find((persona) => persona.name === wanted);
-}
-
 /** One file's persona. The file's own name is the caller's, so a directory listing is the roster. */
 async function personaOf(file: string): Promise<Persona> {
   await useTypeScript();
-  const module_ = (await import(pathToFileURL(file).href)) as { default?: unknown };
+  // Keyed by when the file last changed, so a push after an edit reads the edit and not the copy
+  // this process imported before.
+  const module_ = (await import(`${pathToFileURL(file).href}?v=${(await stat(file)).mtimeMs}`)) as { default?: unknown };
   const written = module_.default;
   if (typeof written !== "object" || written === null) {
     throw new Error(`${file} has no default-exported persona`);

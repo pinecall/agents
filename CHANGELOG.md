@@ -6,6 +6,64 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Changed
+- **Talk and Chat are one tab, called Chat.** The agent had two tabs for the same room — the
+  microphone, or writing. Now one screen offers both ways in: **Call** (the microphone, over
+  WebRTC, and the agent answers out loud) or **Write** (text, no audio), with the conversation as
+  the page's tall window, the call's own controls in its head, and the Inspector beside it as
+  before. Its path stays `/a/<slug>/talk`, so links made before still land.
+- **Settings keeps what is set in a pane of its own.** The corner-by-corner table left the page for
+  a pane at its right, of the Inspector's kind: full height, its own scroll, dragged wider, one
+  corner at a time (yours, the team's, production's) with the history under it.
+- **Lexicon is two tabs.** *Pronunciation* — how the voice says a word, as a table of written and
+  said — and *Recognition* — the words the ears must expect, as chips — each with what it does to a
+  call in one line, over a switch saying which copy is being edited, and a save bar that says when
+  there is something unsaved.
+- **Docs creates a base.** **New base** on the org's Docs screen: a name, and the first documents
+  picked off the disk or written there; the base is begun with them, as the gateway begins one.
+- **Sessions is grouped by day.** *On a call now*, *Today*, *Yesterday*, then each date with how
+  many sessions it holds; the time column says it is UTC.
+- **A persona is the agent's, not the project's.** The synthetic callers left
+  `test/<agent>/personas/*.ts` for the gateway, beside the agent's settings: `pinecall personas`
+  (list · show · add · edit · rm · try) writes them, the console's Personas screen writes the same
+  ones — in production as in the sandbox — and `pinecall simulate --persona` reads them from there.
+  `pinecall personas push` sends a project's remaining files up once, evaluating each so a caller
+  whose state came from `lib/` lands as the value it produced; the folder is then yours to delete.
+  The dev verb `simulate.roster` is gone with them, and the class in the directory is still what a
+  simulation is put on.
+
+### Added
+- **Personas, a screen of their own, above Simulations.** An agent's callers down the left, the
+  one chosen read beside them — what they want, how they talk, what they know — with **Use in a
+  simulation**, **Edit** and **Delete**, and **New persona**. Each field says what it does to the
+  call. The page reads and writes the gateway's own doors (`GET`·`PUT`·`DELETE
+  /v1/agents/{slug}/personas[/{name}]`), the same callers `pinecall personas` reads, so it works
+  in production as in the sandbox and needs no `pinecall start` in a directory. Simulations'
+  Persona field links to it (**Manage**).
+
+### Fixed
+- **A simulated caller no longer talks over the agent's greeting.** The first line waits for the
+  opening to be said (runtime).
+- **`pinecall agent set --llm haiku` no longer stores a model nobody answers to.** A short name —
+  `haiku`, `sonnet`, `opus` — is expanded to the id its provider takes, through the same table
+  `pinecall test --model` reads, instead of being written as typed and read by the gateway as
+  `anthropic/haiku`; a word that names no model at all is refused with exit 2 and never written.
+- **`pinecall personas` says what happened, and leaves with the right code.** `--agent` may be an
+  agent of this project by its name and is resolved to the slug the gateway files its callers
+  under; `rm`, `show`, `edit` and `try` on a caller nobody wrote all end in the same sentence and
+  exit 2, as does a name the gateway's rule refuses (lower-case letters and digits joined by
+  hyphens); `--json` and `--file` are documented and honoured by every verb that prints what the
+  gateway answered — `try`, which prints a call as it happens, refuses `--json`; a `push` that is
+  refused halfway names what landed and what is still only a file and exits 2; and a verb nobody
+  wrote prints the usage without loading the agent's class.
+- **The console no longer loses work without saying so.** Lexicon asks before a corner switch
+  throws away unsaved words instead of dropping them silently; Settings' *What is set now* follows
+  the corner the form is on; Docs' **New base** names the files that did land when an upload stops
+  halfway, and says when nothing was made under the name; **Delete** on a persona sends one
+  `DELETE` however often it is pressed; Simulations keeps the chosen agent in `?agent=`, so a
+  reload lands on the same one; and the fields of Lexicon, Docs, Sessions, Settings, Simulations,
+  Personas and Chat each have a name a screen reader can say.
+
 ## 0.8.2 — The console in the dark
 
 ### Added

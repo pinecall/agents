@@ -1,17 +1,33 @@
-// The console's simulation door: which class it is for, what it refuses, and when it answers.
+// The console's simulation door: which class it is for, whose caller it plays, what it refuses.
 
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { Simulated, Simulation } from "../../../src/cli/simulate.js";
-import type { Persona } from "../../../src/cli/testing/caller.js";
+import type { Persona } from "../../../src/cli/testing/personas.js";
 import { Refusal } from "../../../src/cli/ui/refusal.js";
 import { simulatingFrom } from "../../../src/cli/ui/simulating.js";
 
 const DOOR = { url: "http://127.0.0.1:1", apiKey: "pk_never_sent_anywhere" };
-const APURADO: Persona = { name: "apurado", goal: "cambiar la cita hoy", style: "rápido, corta frases" };
+const APURADO: Persona = {
+  name: "apurado",
+  about: "",
+  goal: "cambiar la cita hoy",
+  style: "rápido, corta frases",
+  facts: { "su teléfono": "600000001" },
+  state: {},
+  author: "Ana",
+  set_at: 1,
+};
 
 function quiet(): NodeJS.WritableStream {
   return { write: () => true } as unknown as NodeJS.WritableStream;
+}
+
+/** The gateway answering its personas door with these callers, which is where they live now. */
+function holding(personas: Persona[]): void {
+  vi.stubGlobal("fetch", async (url: string) =>
+    url.includes("/personas") ? new Response(JSON.stringify({ personas }), { status: 200 }) : new Response("{}", { status: 200 }),
+  );
 }
 
 /** A simulation that opens a call at once and then hangs up, remembering how it was asked. */
@@ -27,23 +43,13 @@ function opensACall(): { asked: Simulation[]; simulate: (p: Persona, how: Simula
   };
 }
 
-describe("the roster", () => {
-  it("names the class of this directory and lists every persona without its facts", async () => {
-    const door = simulatingFrom(DOOR, "clinica-norte", quiet(), {
-      personas: async () => [{ ...APURADO, facts: { phone: "600000001" } }],
-      simulate: async () => undefined,
-    });
-    expect(await door.roster()).toEqual({
-      agent: "clinica-norte",
-      personas: [{ name: "apurado", goal: APURADO.goal, style: APURADO.style }],
-    });
-  });
-});
+afterEach(() => vi.unstubAllGlobals());
 
 describe("starting one", () => {
-  it("answers the call id the moment the simulation names it, with the terminal's own defaults", async () => {
+  it("plays the caller the gateway holds under that name, with the terminal's own defaults", async () => {
+    holding([APURADO]);
     const opening = opensACall();
-    const door = simulatingFrom(DOOR, "clinica-norte", quiet(), { personas: async () => [APURADO], simulate: opening.simulate });
+    const door = simulatingFrom(DOOR, "clinica-norte", quiet(), { simulate: opening.simulate });
 
     const started = await door.start({ agent: "clinica-norte", persona: "apurado" });
 
@@ -53,61 +59,63 @@ describe("starting one", () => {
   });
 
   it("spoils the line the way the flags do: dB under the caller, and percent as a share", async () => {
+    holding([APURADO]);
     const opening = opensACall();
-    const door = simulatingFrom(DOOR, "clinica-norte", quiet(), { personas: async () => [APURADO], simulate: opening.simulate });
+    const door = simulatingFrom(DOOR, "clinica-norte", quiet(), { simulate: opening.simulate });
 
     await door.start({ agent: "clinica-norte", persona: "apurado", voice: true, background_noise: 12, packet_loss: 2 });
 
     expect(opening.asked[0]?.degraded).toEqual({ interferer_db: 12, packet_loss: 0.02 });
   });
 
-  it("refuses a spoiled line on a written call, as the terminal does", async () => {
-    const door = simulatingFrom(DOOR, "clinica-norte", quiet(), { personas: async () => [APURADO], simulate: async () => undefined });
-    await expect(door.start({ agent: "clinica-norte", persona: "apurado", packet_loss: 2 })).rejects.toMatchObject({
-      status: 422,
-    });
+  it("refuses a spoiled line on a written call, in the words the flag is refused with", async () => {
+    holding([APURADO]);
+    const door = simulatingFrom(DOOR, "clinica-norte", quiet(), { simulate: async () => undefined });
+
+    await expect(door.start({ agent: "clinica-norte", persona: "apurado", packet_loss: 2 })).rejects.toBeInstanceOf(Refusal);
   });
 
-  it("refuses another agent: the class mounted here is this directory's", async () => {
-    const door = simulatingFrom(DOOR, "clinica-norte", quiet(), { personas: async () => [APURADO], simulate: async () => undefined });
-    await expect(door.start({ agent: "tienda-sur", persona: "apurado" })).rejects.toBeInstanceOf(Refusal);
-    await expect(door.start({ agent: "tienda-sur", persona: "apurado" })).rejects.toMatchObject({ status: 409 });
+  it("refuses an agent this process does not hold, naming the directory it does", async () => {
+    holding([APURADO]);
+    const door = simulatingFrom(DOOR, "clinica-norte", quiet(), { simulate: async () => undefined });
+
+    await expect(door.start({ agent: "dental-sur", persona: "apurado" })).rejects.toMatchObject({ status: 409 });
   });
 
-  it("refuses a persona nobody wrote, naming where one would be", async () => {
-    const door = simulatingFrom(DOOR, "clinica-norte", quiet(), { personas: async () => [APURADO], simulate: async () => undefined });
-    await expect(door.start({ agent: "clinica-norte", persona: "tranquilo" })).rejects.toMatchObject({
-      status: 404,
-      message: expect.stringContaining("test/personas") as string,
-    });
+  it("refuses a caller nobody wrote, and says where one is written", async () => {
+    holding([]);
+    const door = simulatingFrom(DOOR, "clinica-norte", quiet(), { simulate: async () => undefined });
+
+    const refused = door.start({ agent: "clinica-norte", persona: "apurado" });
+
+    await expect(refused).rejects.toMatchObject({ status: 404 });
+    await expect(refused).rejects.toThrow(/personas add/);
   });
 
-  it("refuses a body that is not what the page sends", async () => {
-    const door = simulatingFrom(DOOR, "clinica-norte", quiet(), { personas: async () => [APURADO], simulate: async () => undefined });
-    await expect(door.start({ persona: 3 })).rejects.toMatchObject({ status: 422 });
+  it("refuses a body that names no persona", async () => {
+    const door = simulatingFrom(DOOR, "clinica-norte", quiet(), { simulate: async () => undefined });
+
+    await expect(door.start({ agent: "clinica-norte" })).rejects.toMatchObject({ status: 422 });
   });
 
   it("refuses when the simulation ends without ever opening a call", async () => {
-    const door = simulatingFrom(DOOR, "clinica-norte", quiet(), {
-      personas: async () => [APURADO],
-      simulate: async () => undefined,
-    });
+    holding([APURADO]);
+    const door = simulatingFrom(DOOR, "clinica-norte", quiet(), { simulate: async () => undefined });
+
     await expect(door.start({ agent: "clinica-norte", persona: "apurado" })).rejects.toMatchObject({ status: 502 });
   });
 
   it("carries a simulation's own failure as the refusal, and prints it where the terminal would", async () => {
+    holding([APURADO]);
     const written: string[] = [];
     const out = { write: (chunk: string) => written.push(chunk) } as unknown as NodeJS.WritableStream;
     const door = simulatingFrom(DOOR, "clinica-norte", out, {
-      personas: async () => [APURADO],
       simulate: async () => {
-        throw new Error("no app holds clinica-norte");
+        throw new Error("the gateway answered 503: no worker");
       },
     });
-    await expect(door.start({ agent: "clinica-norte", persona: "apurado" })).rejects.toMatchObject({
-      status: 502,
-      message: "no app holds clinica-norte",
-    });
-    expect(written.join("")).toContain("no app holds clinica-norte");
+
+    await expect(door.start({ agent: "clinica-norte", persona: "apurado" })).rejects.toMatchObject({ status: 502 });
+    expect(written.join("")).toContain("no worker");
   });
 });

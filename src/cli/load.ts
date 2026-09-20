@@ -122,10 +122,17 @@ export function notASlug(said: string | undefined): string | undefined {
   return `an agent is named by its slug, not a file: \`--file ${said}\` names the class to load.`;
 }
 
+/**
+ * The slug the gateway files an agent under, read off the class that declares it — never the name
+ * of the folder it sits in, which is the project's word for it and nobody else's.
+ */
+export async function slugOfAgentFile(file?: string): Promise<string> {
+  return slugOf((await load(file)).ctor);
+}
+
 export async function agentOfThisDirectory(): Promise<string | null> {
   try {
-    const loaded = await load();
-    return slugOf(loaded.ctor);
+    return await slugOfAgentFile();
   } catch {
     return null;
   }

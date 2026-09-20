@@ -35,7 +35,7 @@ facts memory already holds about that caller, and what must come of it. One file
 
 | field | means |
 |---|---|
-| `said` | the call as it happened, `["caller" \| "agent", "…"]` per turn. Both speakers: this is a conversation already held, handed to the hang-up's one model call |
+| `said` | the call as it happened, `["caller" | "agent", "…"]` per turn. Both speakers: this is a conversation already held, handed to the hang-up's one model call |
 | `holds` | what memory already holds about this caller. They are shown to the model with ids, and nothing is written to or read from the memory table |
 | `plants` | sentences somebody tried to get into memory. Planting one IS the assertion: admission must refuse every one of them |
 | `channel` | `phone` (the default), `web` or `whatsapp`, as the model is told it |

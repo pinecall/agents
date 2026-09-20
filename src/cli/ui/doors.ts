@@ -38,7 +38,6 @@ export function ownVerbs(own: Own): Verbs {
   const verbs: Verbs = {};
   const { simulating, testing, chatting, knowing, remembering, promoting, drifting, reproducing } = own;
   if (simulating !== undefined) {
-    verbs["simulate.roster"] = () => simulating.roster();
     verbs["simulate.start"] = (asked) => simulating.start(asked);
   }
   if (testing !== undefined) {

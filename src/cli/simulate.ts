@@ -13,14 +13,14 @@ import { pinecallFor } from "./client-for.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { anEarIn, type Ear } from "./listening.js";
-import { load, mountOptions } from "./load.js";
+import { load, mountOptions, slugOfAgentFile } from "./load.js";
 import { AGENT_FLAG, oneHome } from "./home.js";
-import { NO_PERSONAS, personaNamed, type Persona } from "./testing/caller.js";
+import { NOBODY, personaNamed, type Persona } from "./testing/personas.js";
 import { type Door, entriesOf, type Entry, type Persona as Calling, type Spoken, theNextLine } from "./testing/gateway.js";
 import { latencyLine, mediansOf } from "./testing/latency.js";
 import { linesOfScore } from "./testing/score.js";
 import { aCallId, aVoiceCall, DEGRADED, type Degraded, watching } from "./testing/voice.js";
-import { lineFor, metricsLine } from "./view.js";
+import { after, Heard, SETTLE_MS } from "./testing/heard.js";
 
 const USAGE =
   "usage: pinecall simulate --persona <name> [--judge] [--turns n] [--voice] [--listen]\n" +
@@ -33,7 +33,7 @@ export const group: Group = {
   style and its own facts — there is no script. This terminal holds the class and the transcript;
   the gateway holds the provider keys. The call lands in the log like any other.
 
-  --persona <name>    a file of test/personas, by its name
+  --persona <name>    one of the agent's personas, by name: pinecall personas lists them
   --judge             read back the call.score the log seals on, and print every judge
   --turns n           how many turns the caller improvises before hanging up (default 6)
   --voice             a real line: a room, and the caller in a person's voice, not the agent's
@@ -57,15 +57,6 @@ export const ONLY_ON_A_LINE = "--background-noise and --packet-loss are about au
  * examples are written against, and long enough for a booking to reach its confirmation.
  */
 export const TURNS = 6;
-
-// How long a written call is left quiet before the caller says the next thing. The app answers
-// `call.started` with a render and a tool may run after the reply, so a turn is over when nothing
-// has been written for a moment — the same silence the gateway's own runner waits for.
-const SETTLE_MS = 400;
-
-// And how long one turn may take before the simulation gives up on it. A tenant's tool that awaits
-// something for ever must not leave a person watching a prompt that never returns.
-const A_TURN_MAY_TAKE_MS = 30_000;
 
 // The log seals on `call.score`, which is written after the caller has gone — so it is read back
 // rather than heard, and this is how long the judges are given before the terminal gives up.
@@ -112,12 +103,16 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
     return 2;
   }
   const home = await oneHome("simulate", values.file, values.agent);
-  const persona = await personaNamed(values.persona, home.personas);
+  const door = theDoor();
+  if (door === undefined) return 2;
+  const agent = await slugOfAgentFile(home.file);
+  const persona = await personaNamed(door, agent, values.persona);
   if (persona === undefined) {
-    process.stderr.write(`no persona called ${values.persona} at ${home.personas}: ${NO_PERSONAS}\n`);
+    process.stderr.write(`${NOBODY(values.persona, agent)}\n`);
     return 2;
   }
   const said = await aSimulation(persona, {
+    door,
     agentFile: home.file,
     judge: values.judge === true,
     voice,
@@ -326,62 +321,6 @@ async function sealing(door: Door, call: string): Promise<CallScore | undefined>
   return sealed === undefined ? undefined : (sealed.data as unknown as CallScore);
 }
 
-// The call's log as this terminal hears it: printed as it lands, and quiet when the app has
-// finished reacting. Everything the simulation knows about where the call is, it knows from here —
-// including the transcript the caller model is handed, which is the log's own turns and not a
-// second copy this process kept.
-class Heard {
-  call: string | undefined;
-  agentTurns = 0;
-  readonly said: Spoken[] = [];
-  private last = Date.now();
-
-  constructor(
-    private readonly out: NodeJS.WritableStream,
-    private readonly opened?: ((call: string) => void) | undefined,
-  ) {}
-
-  /** One entry: remembered, and printed when it is a line of the conversation rather than wiring. */
-  absorb(entry: Entry): void {
-    this.last = Date.now();
-    if (typeof entry.call === "string" && this.call === undefined) {
-      this.call = entry.call;
-      this.opened?.(entry.call);
-    }
-    if (entry.type === "turn.agent") this.agentTurns += 1;
-    if (entry.type === "turn.user" || entry.type === "turn.agent") {
-      this.said.push({
-        who: entry.type === "turn.agent" ? "agent" : "caller",
-        said: String(entry.data["text"] ?? ""),
-      });
-    }
-    // Both sides are printed off the log and never off what this process sent: on a spoken call
-    // the caller's own turn is what the STT heard, which is the line that matters.
-    const line = lineFor(entry as unknown as CamelEvent);
-    if (line === null) return;
-    const metrics = entry.type === "turn.agent"
-      ? `  ${metricsLine(entry.data["metrics"] as Record<string, unknown> | undefined)}`
-      : "";
-    this.out.write(`${line.mark} ${line.text}${metrics}\n`);
-  }
-
-  /** Waits until the agent has spoken again, and then until the app has finished reacting. */
-  async answered(said: number): Promise<void> {
-    const deadline = Date.now() + A_TURN_MAY_TAKE_MS;
-    while (this.agentTurns === said && Date.now() < deadline) await after(SETTLE_MS / 4);
-    await this.quiet();
-  }
-
-  /** Waits until nothing has been written for a moment: the app has answered and re-rendered. */
-  async quiet(): Promise<void> {
-    const deadline = Date.now() + A_TURN_MAY_TAKE_MS;
-    while (Date.now() - this.last < SETTLE_MS && Date.now() < deadline) await after(SETTLE_MS / 4);
-  }
-}
-
-function after(ms: number): Promise<void> {
-  return new Promise((wake) => setTimeout(wake, ms));
-}
 
 function once(socket: WebSocket, event: string): Promise<void> {
   return new Promise((done, failed) => {
