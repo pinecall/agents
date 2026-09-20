@@ -4,7 +4,7 @@ import { parseArgs } from "node:util";
 
 import type { TuningAnswer } from "@pinecall/protocol";
 
-import { readSettings, settingsPath } from "./agent-lines.js";
+import { readSettings, theCornerToWrite } from "./agent-lines.js";
 import { theDoor } from "./env.js";
 import { agentOfThisDirectory, notASlug } from "./load.js";
 import { asked } from "./testing/gateway.js";
@@ -50,16 +50,19 @@ export async function policy(argv: string[], how: Keeping = {}): Promise<number>
   try {
     const standing = await readSettings(door, agent);
     if (values.remember === undefined && values.forget === undefined) return said(agent, standing, out);
-    const row = values.team === true ? standing.team : standing.yours;
-    const kept = row?.config.memory ?? undefined;
-    const memory = {
-      remember: values.remember ?? kept?.remember ?? [],
-      forget: values.forget ?? kept?.forget ?? [],
-    };
-    const answer = await asked<TuningAnswer>(door, settingsPath(agent), {
-      method: "PUT",
-      body: { config: { ...(row?.config ?? {}), memory }, if_version: row?.version ?? null, note: values.note ?? null, team: values.team === true },
-    });
+    // The policy is ONE field of the corner, so it is written the way every other field is
+    // (agent-lines.ts): the whole set, on the row the gateway will write, with this one changed.
+    const corner = await theCornerToWrite(door, agent, values.team === true);
+    const answer = await corner.write(
+      (config) => ({
+        ...config,
+        memory: {
+          remember: values.remember ?? config.memory?.remember ?? [],
+          forget: values.forget ?? config.memory?.forget ?? [],
+        },
+      }),
+      values.note ?? null,
+    );
     return said(agent, answer, out);
   } catch (refused) {
     err.write(`${refusal(refused)}\n`);

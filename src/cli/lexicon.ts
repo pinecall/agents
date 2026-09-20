@@ -4,6 +4,7 @@ import { parseArgs } from "node:util";
 
 import type { LexiconAnswer, LexiconBody, LexiconHistory, LexiconRow } from "@pinecall/protocol";
 
+import { theCornerRead, theCornerWritten } from "./agent-lines.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { dayAndTime } from "./docs.js";
@@ -104,10 +105,15 @@ function bodyOf(words: Words): LexiconBody {
 // Read the corner's own row, change it, and send it whole with the version it was read at.
 async function changed(door: Door, team: boolean, note: string | undefined, change: (words: Words) => Words): Promise<LexiconAnswer> {
   const standing = await asked<LexiconAnswer>(door, LEXICON);
-  const row = team ? standing.team : (standing.yours ?? standing.team);
+  // The row AND the version come from the one corner this write lands on. They used to be read
+  // apart — the words off the corner, the version off `yours` — so a key that holds no corner of
+  // its own (a server's token, a CI key, a person in production) sent the team's words with no
+  // version at all, and the door has nothing to refuse: two people saving at once, and the second
+  // one wins silently instead of being told where the corner is now (2026-09-20).
+  const row = theCornerWritten(standing, team);
   return await asked<LexiconAnswer>(door, LEXICON, {
     method: "PUT",
-    body: { lexicon: bodyOf(change(wordsOf(row?.lexicon))), if_version: team ? (standing.team?.version ?? null) : (standing.yours?.version ?? null), note: note ?? null, team },
+    body: { lexicon: bodyOf(change(wordsOf(row?.lexicon))), if_version: row?.version ?? null, note: note ?? null, team },
   });
 }
 
@@ -132,7 +138,7 @@ function said(answer: LexiconAnswer, asJson: boolean, out: NodeJS.WritableStream
 
 /** The page: what the corner reads, then which version each corner is at. */
 export function linesOf(answer: LexiconAnswer): string[] {
-  const read = answer.yours ?? answer.team;
+  const read = theCornerRead(answer);
   const lines = [`lexicon · ${answer.world}${answer.yours === null ? "" : " · your corner"}`];
   if (read === null) lines.push("  nothing set: every agent says its own words");
   else {

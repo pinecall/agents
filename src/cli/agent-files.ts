@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 
 import type { TuningAnswer, TuningBody } from "@pinecall/protocol";
 
-import { readSettings, settingsPath } from "./agent-lines.js";
+import { readSettings, settingsPath, theCornerWritten } from "./agent-lines.js";
 import type { Typed } from "./agent.js";
 import { asked, type Door } from "./testing/gateway.js";
 
@@ -35,7 +35,7 @@ export async function filesRun(
 // key pulls the org's own, which is what a CI job keeps in the repository.
 async function pull(door: Door, agent: string, team: boolean, out: NodeJS.WritableStream, err: NodeJS.WritableStream): Promise<number> {
   const answer = await readSettings(door, agent);
-  const row = team ? answer.team : (answer.yours ?? answer.team);
+  const row = theCornerWritten(answer, team);
   if (row === null) {
     err.write(`nothing set for ${agent} in ${team ? "the team's" : "your"} corner of ${answer.world}\n`);
     return 1;
@@ -57,7 +57,7 @@ async function push(door: Door, agent: string, file: string | undefined, team: b
     method: "PUT",
     body: { config, if_version: null, note: `pushed from ${file}`, team },
   });
-  const row = team ? answer.team : (answer.yours ?? answer.team);
+  const row = theCornerWritten(answer, team);
   out.write(`${agent} · ${answer.world} · ${team ? "the team's corner" : "your corner"} v${row?.version ?? "?"} from ${file}\n`);
   return 0;
 }

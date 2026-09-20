@@ -4,6 +4,26 @@ All notable changes to `pinecall`, the package a tenant writes an agent in. The 
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version numbers and tags are the
 maintainer's call, so everything sits under Unreleased until one is cut.
 
+## [Unreleased]
+
+### Fixed
+- **One `memory policy` erased the rest of the corner.** The voice, the stt, the llm, the greeting,
+  the hangup and the attached base went out of a corner in one version, silently. The door takes
+  the WHOLE set with the version it was read at, and this verb built the body on `yours` — null
+  for every key that holds no corner of its own, which is a server's token, a CI key and anybody
+  acting in production. `agent set` was fixed for this on 2026-09-19; the lesson had not travelled.
+- **The lexicon sent the words of one corner and the version of another.** Same cause, other half:
+  a key with no corner of its own wrote the team's words with `if_version: null`, so the door had
+  nothing to refuse and the second of two people saving at once won in silence.
+
+### Changed
+- **One definition of a settings write.** Five verbs — `agent set`, `agent clear`, `agent
+  knowledge edit`, `docs attach|detach`, `memory policy` — each spelled out "read the corner, put
+  one field in, send the whole set with its version", and the one that got it wrong is what this
+  release is about. They all go through `theCornerToWrite` now, which is the only place that picks
+  the corner and the version, and `theCornerRead`/`theCornerWritten` are the only two answers to
+  "which corner" in the CLI — the lexicon's door included.
+
 ## 0.8.13 — A golden that asked the index the wrong question
 
 ### Fixed

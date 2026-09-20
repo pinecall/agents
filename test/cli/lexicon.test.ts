@@ -93,3 +93,15 @@ describe("the org's words", () => {
     expect((gateway.bodies.at(-1) as { lexicon: unknown }).lexicon).toEqual({ said: [], heard: [] });
   });
 });
+
+// The words were read off the corner this write lands on and the VERSION off `yours`, which is
+// null for every key that holds no corner of its own — a server's token, a CI key, a supervisor
+// acting in production. So the write carried the team's words with no version at all, and a door
+// with nothing to check lets the second of two people saving at once win in silence (2026-09-20).
+it("sends the version of the very corner it read the words from, with no corner of its own", async () => {
+  await run(["add", "HUD", "--say", "H U D"], { out: written().stream, env: pointingAt(gateway.url, A_KEY) });
+
+  const sent = gateway.bodies.at(-1) as { if_version: number | null; lexicon: { said: { word: string }[] } };
+  expect(sent.if_version).toBe(9);
+  expect(sent.lexicon.said.map((one) => one.word)).toEqual(["GSA", "HUD"]);
+});

@@ -2,7 +2,7 @@
 
 import type { DocsConfig, KnowledgeUses, TuningAnswer } from "@pinecall/protocol";
 
-import { readSettings, settingsPath, theCornerCalled, theCornerWritten } from "./agent-lines.js";
+import { readSettings, theCornerCalled, theCornerToWrite, theCornerWritten } from "./agent-lines.js";
 import { asked, type Door } from "./testing/gateway.js";
 
 /** How the base is attached: how a turn reads it, how many chunks, and under what score. */
@@ -24,38 +24,32 @@ export const NOT_ATTACHED = (agent: string, base: string): string => `${base} is
 // back and sent again with the version it was read at, the base added or taken out of the list.
 /** The base attached to the agent in this corner, as the next version; a base already there is replaced. */
 export async function attach(door: Door, agent: string, base: string, how: Attaching, team: boolean, out: NodeJS.WritableStream): Promise<number> {
-  const standing = await readSettings(door, agent);
-  const row = theCornerWritten(standing, team);
-  const kept = (row?.config.bases ?? []).filter((one) => one.base !== base);
   const docs: DocsConfig = { base };
   if (how.k !== undefined) docs.k = how.k;
   if (how.mode !== undefined) docs.mode = how.mode;
   if (how.minScore !== undefined) docs.min_score = how.minScore;
-  const answer = await asked<TuningAnswer>(door, settingsPath(agent), {
-    method: "PUT",
-    body: { config: { ...(row?.config ?? {}), bases: [...kept, docs] }, if_version: row?.version ?? null, note: `attached ${base}`, team },
-  });
+  const corner = await theCornerToWrite(door, agent, team);
+  const answer = await corner.write(
+    (config) => ({ ...config, bases: [...(config.bases ?? []).filter((one) => one.base !== base), docs] }),
+    `attached ${base}`,
+  );
   out.write(`${ATTACHED(agent, base, answer, team)}\n`);
   return 0;
 }
 
 /** The base taken out of the agent's list in this corner, as the next version. */
 export async function detach(door: Door, agent: string, base: string, team: boolean, out: NodeJS.WritableStream, err: NodeJS.WritableStream): Promise<number> {
-  const standing = await readSettings(door, agent);
-  const row = theCornerWritten(standing, team);
-  const bases = row?.config.bases ?? [];
-  if (!bases.some((one) => one.base === base)) {
+  const corner = await theCornerToWrite(door, agent, team);
+  if (!(corner.row?.config.bases ?? []).some((one) => one.base === base)) {
     err.write(`${NOT_ATTACHED(agent, base)}\n`);
     return 1;
   }
-  const left = bases.filter((one) => one.base !== base);
   // Detaching the last one leaves an empty list, not a missing field: this corner reads no base.
   // Dropping the key would say "nothing set here", and the agent would read the team's bases.
-  const config = { ...row!.config, bases: left };
-  const answer = await asked<TuningAnswer>(door, settingsPath(agent), {
-    method: "PUT",
-    body: { config, if_version: row!.version, note: `detached ${base}`, team },
-  });
+  const answer = await corner.write(
+    (config) => ({ ...config, bases: (config.bases ?? []).filter((one) => one.base !== base) }),
+    `detached ${base}`,
+  );
   out.write(`${DETACHED(agent, base, answer, team)}\n`);
   return 0;
 }

@@ -23,6 +23,7 @@ class FakeGateway {
   readonly heard: { method: string; path: string; body: unknown }[] = [];
   facts: unknown[] = [];
   score: unknown;
+  settings: unknown = { world: "sandbox", yours: null, team: null, production: null };
   #server!: Server;
   url = "";
 
@@ -43,6 +44,11 @@ class FakeGateway {
     const text = Buffer.concat(chunks).toString("utf8");
     this.heard.push({ method: request.method ?? "", path: request.url ?? "", body: text === "" ? null : JSON.parse(text) });
     response.writeHead(200, { "content-type": "application/json" });
+    // The settings door, for the one verb here that writes a corner of them: the policy.
+    if ((request.url ?? "").endsWith("/settings")) {
+      response.end(JSON.stringify(this.settings));
+      return;
+    }
     if (request.method === "POST") {
       response.end(JSON.stringify(this.score));
       return;
@@ -61,6 +67,7 @@ let env: NodeJS.ProcessEnv;
 beforeEach(async () => {
   gateway.heard.length = 0;
   gateway.facts = [];
+  gateway.settings = { world: "sandbox", yours: null, team: null, production: null };
   await gateway.open();
   env = pointingAt(gateway.url, A_KEY);
 });
@@ -194,5 +201,34 @@ describe("a golden held against recall", () => {
     });
     expect(lines[0]).toBe("memory · m · 1 questions · recall@6 0.50 · nDCG@10 0.61 · 1 ms");
     expect(lines[1]).toBe("  missed: x → wanted uno, dos, got nothing");
+  });
+});
+
+// One `memory policy` took the voice, the stt, the llm, the greeting, the hangup and the attached
+// base out of a corner, in one version (a real corner on the box, 2026-09-20). The policy is ONE
+// field of the settings, and the whole set travels with a write: a body built on an empty row
+// erases every field it does not carry. `agent set` learned this on 2026-09-19; the corner a
+// write lands on is not always the one this key holds — a server's token, a CI key and a person
+// acting in production all hold none, and the gateway writes the org's own.
+describe("the policy is one field of a corner", () => {
+  const THE_TEAMS = {
+    world: "sandbox",
+    yours: null,
+    team: { version: 7, config: { voice: "carolina", llm: "anthropic/claude-haiku-4-5", bases: [{ base: "maravilla", k: 4 }] } },
+    production: null,
+  };
+
+  it("keeps every other field when the key holds no corner of its own", async () => {
+    gateway.settings = THE_TEAMS;
+
+    await run(["policy", "--agent", "maravilla", "--remember", "what they want cleaned"], { out: written().stream, err: written().stream, env });
+
+    const wrote = gateway.heard.find((heard) => heard.method === "PUT");
+    const config = (wrote?.body as { config: Record<string, unknown> }).config;
+    expect(config["voice"]).toBe("carolina");
+    expect(config["llm"]).toBe("anthropic/claude-haiku-4-5");
+    expect(config["bases"]).toEqual([{ base: "maravilla", k: 4 }]);
+    expect(config["memory"]).toEqual({ remember: ["what they want cleaned"], forget: [] });
+    expect((wrote?.body as { if_version: number }).if_version).toBe(7);
   });
 });

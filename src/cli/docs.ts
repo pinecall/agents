@@ -9,7 +9,7 @@ import type { KnowledgeFile, KnowledgeList, KnowledgePushed, KnowledgeScore, Tun
 import { slugOf } from "../runtime/connect.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
-import { readSettings } from "./agent-lines.js";
+import { readSettings, theCornerRead } from "./agent-lines.js";
 import { attach, attached, attachingOf, detach } from "./docs-attach.js";
 import { agentOfThisDirectory, load, notASlug } from "./load.js";
 import { AGENT_FLAG, homeOf, homesFor, oneHome, type Home } from "./home.js";
@@ -223,7 +223,7 @@ async function evaluate(
 // acting on (2026-09-20). A base this agent does not read is measured at the gateway's default,
 // because there is no attachment to ask.
 export function theKItIsReadWith(standing: TuningAnswer | null, base: string): number | undefined {
-  const corner = standing === null ? null : (standing.yours ?? standing.team);
+  const corner = standing === null ? null : theCornerRead(standing);
   return (corner?.config.bases ?? []).find((one) => one.base === base)?.k ?? undefined;
 }
 

@@ -4,7 +4,7 @@ import { parseArgs } from "node:util";
 
 import type { TuningAnswer, TuningBody } from "@pinecall/protocol";
 
-import { FIELDS, linesOf, readSettings, settingsPath, theCornerWritten, WIRE, type Field } from "./agent-lines.js";
+import { FIELDS, linesOf, readSettings, theCornerToWrite, WIRE, type Field } from "./agent-lines.js";
 import { filesRun } from "./agent-files.js";
 import { knowledgeRun } from "./agent-knowledge.js";
 import { listed, stopped } from "./agent-processes.js";
@@ -159,26 +159,22 @@ export async function run(argv: string[], how: Setting = {}): Promise<number> {
 // not name is read back off the corner's own row and sent again: `set --llm x` must not quietly
 // take the voice out of the row. The corner written is yours, or the team's with --team.
 async function set(door: Door, agent: string, values: Typed): Promise<TuningAnswer> {
-  const standing = await readSettings(door, agent);
-  const row = theCornerWritten(standing, values.team === true);
-  const config: TuningBody = { ...(row?.config ?? {}), ...typed(values, row?.config ?? {}) };
-  return await asked<TuningAnswer>(door, settingsPath(agent), {
-    method: "PUT",
-    body: { config, if_version: row?.version ?? null, note: values.note ?? null, team: values.team === true },
-  });
+  const corner = await theCornerToWrite(door, agent, values.team === true);
+  return await corner.write((config) => ({ ...config, ...typed(values, config) }), values.note ?? null);
 }
 
 async function clear(door: Door, agent: string, named: string[], team: boolean): Promise<TuningAnswer> {
   const unknown = named.filter((name) => !(FIELDS as readonly string[]).includes(name));
   if (unknown.length > 0) throw new Error(`no field called ${unknown.join(", ")}: ${FIELDS.join(" · ")}`);
-  const standing = await readSettings(door, agent);
-  const row = theCornerWritten(standing, team);
-  const config: TuningBody = named.length === 0 ? {} : { ...(row?.config ?? {}) };
-  for (const name of named) delete config[WIRE[name as Field]];
-  return await asked<TuningAnswer>(door, settingsPath(agent), {
-    method: "PUT",
-    body: { config, if_version: row?.version ?? null, note: named.length === 0 ? "cleared" : `cleared ${named.join(", ")}`, team },
-  });
+  const corner = await theCornerToWrite(door, agent, team);
+  return await corner.write(
+    (standing) => {
+      const config: TuningBody = named.length === 0 ? {} : { ...standing };
+      for (const name of named) delete config[WIRE[name as Field]];
+      return config;
+    },
+    named.length === 0 ? "cleared" : `cleared ${named.join(", ")}`,
+  );
 }
 
 /** What this command line set, under the wire's names, over what the corner's row already says. */

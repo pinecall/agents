@@ -15,6 +15,7 @@ export async function readSettings(door: Door, agent: string): Promise<TuningAns
   return await asked<TuningAnswer>(door, settingsPath(agent));
 }
 
+// Which corner a write lands on — of the settings, of the lexicon, of anything kept in three.
 // The gateway writes the org's own corner when the request asks for it (`--team`) OR when the key
 // holds no corner of its own: a production token, a person acting in production, a CI key. A write
 // that read `yours` in that case would send the WHOLE set built on an EMPTY row and take the
@@ -22,8 +23,51 @@ export async function readSettings(door: Door, agent: string): Promise<TuningAns
 // silently (2026-09-19, the simulated team on the box). The read has to name the same corner the
 // door will write, and `pull` already did: this is that line, once, for every verb that writes.
 /** The row a write lands on: the team's when asked for it or when this key has no corner. */
-export function theCornerWritten(standing: TuningAnswer, team: boolean): TuningRow | null {
+export function theCornerWritten<Row>(standing: { yours: Row | null; team: Row | null }, team: boolean): Row | null {
   return team ? standing.team : (standing.yours ?? standing.team);
+}
+
+/** What a write leaves the corner saying: the set as it stands, and what it should say next. */
+export type Change = (config: TuningBody) => TuningBody;
+
+/** A corner read once: its row as it stands, and the one way to write the next version of it. */
+export interface TheCorner {
+  /** The row the gateway will write over, or null when this corner has never been written. */
+  row: TuningRow | null;
+  /** The whole set, with this change made, as the next version. */
+  write(change: Change, note: string | null): Promise<TuningAnswer>;
+}
+
+/**
+ * Every verb that sets one field of an agent's settings writes through here, and that is the
+ * point: the door takes the WHOLE set with the version it was read at, so a body built on the
+ * wrong row erases every field it does not carry, silently, in one version.
+ *
+ * It went wrong twice, in two verbs, the same way: `agent set --voice` took the knowledge and the
+ * base out of a production corner (2026-09-19), and one `memory policy` took the voice, the stt,
+ * the llm, the greeting, the hangup and the attached base out of another (2026-09-20). Both read
+ * `yours`, and both were run by a key that holds no corner of its own — a server's token, a CI
+ * key, a person acting in production — where the gateway writes the ORG's corner and `yours` is
+ * null. There were five hand-written copies of this write; now there is one, and the corner and
+ * the version cannot be got wrong by a verb that only knows what it wants to change.
+ */
+export async function theCornerToWrite(door: Door, agent: string, team: boolean): Promise<TheCorner> {
+  const standing = await readSettings(door, agent);
+  const row = theCornerWritten(standing, team);
+  return {
+    row,
+    write: async (change: Change, note: string | null) =>
+      await asked<TuningAnswer>(door, settingsPath(agent), {
+        method: "PUT",
+        body: { config: change(row?.config ?? {}), if_version: row?.version ?? null, note, team },
+      }),
+  };
+}
+
+/** The corner this key READS: its own where it has one, the team's where it has not. Written the
+ * same way a write picks its corner, because they are the same question asked without `--team`. */
+export function theCornerRead<Row>(standing: { yours: Row | null; team: Row | null }): Row | null {
+  return theCornerWritten(standing, false);
 }
 
 /** What to call the corner a write lands on, so the line a person reads is the corner written. */
