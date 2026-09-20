@@ -6,6 +6,13 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Fixed
+- **A corner that reads no base says so.** The gateway resolves an agent's settings knob by knob
+  now, so a missing field means "not set here" and the corner below supplies it. Settings' Bases
+  section and `pinecall docs detach` both dropped the field when the last base went, which read
+  as "not set" and handed the agent the team's bases instead of detaching it. Both send an empty
+  list.
+
 ## 0.8.3 — Personas of their own, one Chat, and a CLI that refuses in words
 
 ### Changed

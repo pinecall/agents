@@ -48,9 +48,10 @@ export async function detach(door: Door, agent: string, base: string, team: bool
     err.write(`${NOT_ATTACHED(agent, base)}\n`);
     return 1;
   }
-  const { bases: _was, ...rest } = row!.config;
   const left = bases.filter((one) => one.base !== base);
-  const config = left.length === 0 ? rest : { ...rest, bases: left };
+  // Detaching the last one leaves an empty list, not a missing field: this corner reads no base.
+  // Dropping the key would say "nothing set here", and the agent would read the team's bases.
+  const config = { ...row!.config, bases: left };
   const answer = await asked<TuningAnswer>(door, settingsPath(agent), {
     method: "PUT",
     body: { config, if_version: row!.version, note: `detached ${base}`, team },

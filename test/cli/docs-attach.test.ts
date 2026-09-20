@@ -145,12 +145,14 @@ describe("attaching a base", () => {
 });
 
 describe("detaching a base", () => {
-  it("takes the base out of the team's list, and the field out when the list is empty", async () => {
+  it("takes the base out of the team's list, and leaves an empty list when it was the last one", async () => {
     const out = written();
 
     expect(await run(["detach", "clinica", "--agent", AGENT, "--team"], { out: out.stream, env })).toBe(0);
 
-    expect(gateway.written).toEqual({ config: { voice: "carolina" }, if_version: 11, note: "detached clinica", team: true });
+    // The empty list is the point: a corner that reads no base says so. Dropping the field would
+    // say nothing is set here, and the gateway would hand the agent the corner below's bases.
+    expect(gateway.written).toEqual({ config: { voice: "carolina", bases: [] }, if_version: 11, note: "detached clinica", team: true });
     expect(out.text()).toBe(`${AGENT} · clinica detached · the team's corner v12\n`);
   });
 

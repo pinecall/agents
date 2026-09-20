@@ -956,8 +956,10 @@ clinica-norte · 7 files · 41 chunks · 812 ms      # base · sent · became ·
 written as the next version of the corner — yours, the team's with `--team`, production's with
 `--prod` — with how a turn reads it: `--k` chunks, `--mode` (`retrieved`: the platform searches
 before the turn and hands the model what it found; `tool`: the model decides when to search),
-`--min-score`. A base attached twice is replaced, not doubled. `detach` takes it out; `attached`
-prints which agents read which base in the world asked.
+`--min-score`. A base attached twice is replaced, not doubled. `detach` takes it out, and taking
+the last one out leaves an empty list rather than no field at all: this corner reads no base, and
+the agent does not fall back to the team's. `attached` prints which agents read which base in the
+world asked.
 
 ```console
 $ pinecall docs attach clinica-norte --k 4
