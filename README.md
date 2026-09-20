@@ -9,19 +9,19 @@ export default class ClinicaNorte extends Agent {
   language = "es";
 
   stage: Stages<"identify" | "choose" | "book"> = "identify";
-  patient?: Patient;
-  slot?: Slot;
+  patient?: Patient | undefined;
+  slot?: Slot | undefined;
 
   /** Busca al paciente por nombre y teléfono. Pide los dos antes de llamarla. */
-  @tool({ stage: "identify" })
+  @tool({ stage: "identify", pii: ["name", "phone"] })
   async findPatient(name: string, phone: string): Promise<Patient | null> {
-    this.patient = await agenda.find(name, phone);
+    this.patient = await this.agenda().find(name, phone);
     if (this.patient) this.stage = "choose";
-    return this.patient;
+    return this.patient ?? null;
   }
 
   /** El prompt como función del estado: lo único que cambia entre dos turnos. */
-  render() {
+  override render() {
     return (
       <>
         {this.stage === "identify" && <p>Saluda y pide nombre y teléfono.</p>}

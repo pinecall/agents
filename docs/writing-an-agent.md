@@ -59,6 +59,8 @@ Two files carry the toolchain, and they are the only ceremony:
 
 ```ts
 // vitest.config.ts — vitest reads no tsconfig: its transform is oxc's, so the same two facts again
+import { defineConfig } from "vitest/config";
+
 export default defineConfig({
   oxc: {
     decorator: { legacy: true },
@@ -249,10 +251,15 @@ token. Without it the caller is a visitor and the agent remembers nothing of the
 ## Tools
 
 ```ts
-/** Horas libres de un día. Un día que nombre el paciente se consulta SIEMPRE. */
+/** Horas libres de un día, para una especialidad. Un día que nombre el paciente se consulta SIEMPRE. */
 @tool({ stage: ["choose", "book"], preview: 2 })
-async freeSlots(day: string): Promise<Slot[]> {
-  this.slots = await this.agenda().free(day);
+async freeSlots(day: string, specialty: string): Promise<Slot[]> {
+  // El día se resuelve a una FECHA aquí, no en la cabeza del modelo: «el martes» dicho un
+  // viernes es una fecha y sólo una, y una cita sin fecha no es una cita.
+  const date = dayNamed(day, this.today());
+  if (!date) throw new NotADay(day);
+  this.day = date;
+  this.slots = await this.agenda().free(date, specialty);
   this.stage = this.slots.length > 0 ? "book" : "choose";
   return this.slots;
 }
@@ -276,7 +283,7 @@ A tool that throws is not a crash: the rejection becomes one `tool.result` carry
 the model reads and can act on. Throw a sentence a model can use (`NotOnTheTable(chosen, slots)`),
 not a stack trace.
 
-**Ask the model for a word, not for a record.** `book(chosen: string)` and then resolving `chosen`
+**Ask the model for a word, not for a record.** `book(slot: string)` and then resolving that word
 against the slots on the table is the design a golden forced: asked for a whole `Slot`, a model
 invents `{day, time, doctor}` and the agenda receives a slot it never offered.
 
@@ -355,9 +362,9 @@ in the protocol, with a name.
 ## Hooks, and facts from outside
 
 ```ts
-override async onCall(call: Call) { this.patient = await agenda.byPhone(call.from ?? ""); }
+override async onCall(call: Call) { this.patient = await this.agenda().byPhone(call.from ?? ""); }
 override onEnd(call: Call) { … }
-override onMemory(ops: MemoryOp[], call: Call) { crm.apply(call.contact, ops); }
+override onMemory(ops: MemoryOp[], call: Call) { crmFor(this).apply(call.contact, ops); }
 ```
 
 Writes inside a hook are authored by the hook, which is why `onCall` may restore last week's
@@ -383,7 +390,7 @@ time, in the order the wire delivered them.
 @state({ pii: true }) patient?: Patient | undefined;         // sugar for visibility: "pii"
 @state({ visibility: "public" }) total = 0;
 // or, for a class that would rather write a map:
-static visibility = { patient: "pii", stage: "public" };
+static visibility = { patient: "pii", stage: "public" } as const;
 ```
 
 `tenant` is the default and the wire's own, so a field with no declaration sends none. `public` is

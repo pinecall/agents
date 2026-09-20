@@ -14,6 +14,10 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   and a caller nobody has called yet says so and points at Simulations.
 
 ### Changed
+- **The simulate form reads as a list of options.** Three switches with their sentences beside
+  them wrapped mid-word in a 340px pane — "Noisy / line" — and read as one grey smear. Each is a
+  line of its own now, with what it does under its name, and Max turns says what it counts where
+  it is typed: the lines the CALLER says, which is what the cap has always been.
 - **Whisper and Say are two boxes, not one behind a switch.** A supervisor on a live call should
   never have to check which mode they are in before pressing Enter: one of the two is heard by
   the customer. Each has its own line and its own button, and the caller's is the loud one.

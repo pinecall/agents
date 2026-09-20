@@ -379,12 +379,21 @@ control returns. It is the same bytes streamed and stored, and it is a public co
 **Ring 0** is your own unit test: no network, no key, no model.
 
 ```ts
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
 import { expect, test } from "vitest";
-import { runTool, toolNamed, promptOf } from "pinecall";
+import { describe as describeClass, runTool, seal, toolNamed, promptOf } from "pinecall";
 import ClinicaNorte from "../../agents/clinica-norte/agent.js";
 
+// El fuente de la clase, para que los tipos de los parámetros sobrevivan al transpilador: sin él,
+// `name: string` es un argumento sin tipo, el esquema no puede decir nada de él y `runTool` lo
+// rechaza antes de llamar a la herramienta.
+const SOURCE = readFileSync(fileURLToPath(new URL("../../agents/clinica-norte/agent.tsx", import.meta.url)), "utf8");
+describeClass(ClinicaNorte, SOURCE);
+
 test("una vez identificado, el prompt deja de pedir el nombre", async () => {
-  const clinica = new ClinicaNorte();
+  const clinica = seal(new ClinicaNorte());
   await runTool(clinica, toolNamed(clinica, "findPatient")!, { name: "Marta", phone: "600123456" });
   const dynamic = promptOf(clinica).blocks.find((block) => block.name === "view");
   expect(dynamic!.text).toContain("Hablas con Marta");

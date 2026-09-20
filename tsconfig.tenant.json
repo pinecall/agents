@@ -6,7 +6,7 @@
   // our own text runtime instead of React's. A tenant should not have to know either fact, so it
   // inherits both from here:
   //
-  //     { "extends": "pinecall/tsconfig.tenant.json", "include": ["agent.ts", "views"] }
+  //     { "extends": "pinecall/tsconfig.tenant.json", "include": ["agents", "test"] }
   //
   // Nothing here is about the framework's own build; that lives in tsconfig.json beside it.
   "compilerOptions": {

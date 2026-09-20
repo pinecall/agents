@@ -1,6 +1,6 @@
 # The prompt
 
-The prompt is `render(state)`. It is a list of **named blocks** in two regions, always in this
+The prompt is `render()`, and `this` is the state. It is a list of **named blocks** in two regions, always in this
 order, and the cut between the regions is where the cache is cut:
 
 ```
@@ -48,7 +48,7 @@ Because the class carries JSX, the file is **`agents/<name>/agent.tsx`**. Nothin
 Print any of it with no gateway, no key and no network:
 
 ```bash
-pinecall prompt --state test/prompts/states.json    # one state, or several
+pinecall prompt --state test/clinica-norte/prompts/states.json    # one state, or several
 pinecall start --show-prompt                          # a fresh instance, then exit
 ```
 

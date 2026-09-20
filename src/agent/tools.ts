@@ -28,7 +28,7 @@ export interface ToolOptions<T = unknown> {
    * compile error; with a `when` beside it, the tool is there where both hold.
    */
   stage?: StageOf<T> | StageOf<T>[];
-  /** The read-back the agent says before running, `{{slot.when}}` filled from state and args. */
+  /** The receipt the agent reads AFTER the tool ran, `{{result.when}}` filled from what it returned. */
   confirm?: string;
   /** How many rows of a list result the model sees; the field itself keeps them all. */
   preview?: number;
