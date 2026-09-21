@@ -6,6 +6,31 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Removed
+- **`pinecall start --serve` is gone.** The flag opened the sandbox's console beside the app;
+  `pinecall console` opens the box's, which is where that console lives now. `pinecall serve`
+  itself still runs — see Deprecated.
+
+### Deprecated
+- **`pinecall serve` is on its way out.** It is the same console on your own machine, for a box
+  that does not answer to a second name yet, and it is the only thing under `cli/` that binds a
+  port. It goes once every box serving a sandbox has that name.
+
+### Added
+- **`pinecall console [agent]` opens the box's console in a browser, signed in.** The sandbox's,
+  or production's with `--prod`. The key in the project's `.env` never travels: the gateway mints a
+  one-use code for it, five minutes and one use, and the page spends the code for a key of that
+  browser's own. `--no-open` prints the URL instead. `docs/the-cli.md`.
+
+### Changed
+- **The console reads its world off the page, not off who served it.** One bundle, two names: the
+  gateway marks the page it serves at the sandbox's, and the console's one table (`lib/mode.ts`)
+  keys every screen by the world instead of by the mode. Both consoles sign in the same way now,
+  both sign out, and the switcher's chip links to the other name — which the box itself names, so
+  a box with one name has one console and says so.
+- **`pinecall start` prints a console URL in both worlds**, each with its own one-use code: the
+  sandbox's at the box's second name, production's at its own.
+
 ## [0.8.17] — `pinecall/panels` is reachable
 
 ### Fixed

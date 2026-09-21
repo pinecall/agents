@@ -501,15 +501,15 @@ pinecall docs push                 # docs/<name>/ to the gateway, as the base na
 pinecall docs attach clinica-norte --k 4      # the agent reads it, in your corner
 pinecall agent knowledge edit      # what it knows by heart, in $EDITOR
 pinecall start                     # the app registered and answering: the process you deploy
-pinecall start --serve             # the same, and your console on http://localhost:4100:
+pinecall console                   # that console in a browser, signed in as this project's key
                                    # chat (call or write), dev chat, calls, sessions, settings,
                                    # pipeline, docs, memory, evals, widget
 ```
 
 `pinecall start` is the same process in the sandbox and in production (`--prod`, on a server's
 token): it runs the agent, binds no port and serves no page. What a person looks at is `--ui` in the
-terminal, or a console — the sandbox's on their own machine (`pinecall serve`, which `--serve` opens
-beside the agent), and production's on the gateway. An app that would rather hold the agent in its
+terminal, or a console — the sandbox's at the box's second name, which `pinecall console` opens
+signed in, and production's at the box's own. An app that would rather hold the agent in its
 own Node server mounts the class there instead: [production.md](production.md).
 
 And two flags of `agent set` the pipeline section above does not name — `--tts`, `--tts-model`,

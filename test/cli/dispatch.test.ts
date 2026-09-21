@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { PLANNED, notBuiltYet, plannedGroup } from "../../src/cli/groups.js";
-import { groupNames, main, usage } from "../../src/cli/index.js";
+import { builtNames, groupNames, main, usage } from "../../src/cli/index.js";
 import { written } from "./said.js";
 
 // A stream that keeps what was written, so a test reads the CLI's output as a string.
@@ -39,9 +39,12 @@ describe("the groups the CLI answers to", () => {
 
   // `talk` spawned the operator's Python worker once, was planned again as a microphone in the
   // terminal, and was a page of its own for an evening; it is the first screen of the console,
-  // which the GATEWAY serves at /a/<agent>/talk. Neither is a verb here, and `ui` left too.
-  it("holds no `console` verb and no `talk` of its own", () => {
+  // which the BOX serves at /a/<agent>/talk. It is no verb here. `console` is one since
+  // 2026-09-21, and it is built and not planned: it opens the box's page in a browser and holds
+  // nothing itself — what used to bind a port for it, `pinecall serve`, is gone.
+  it("holds a built `console` verb and no `talk` of its own", () => {
     expect(Object.keys(PLANNED)).not.toContain("console");
+    expect(builtNames()).toContain("console");
     expect(Object.keys(PLANNED)).not.toContain("talk");
     expect(groupNames()).not.toContain("talk");
   });

@@ -31,24 +31,21 @@ import { reproducingFrom } from "./ui/reproducing.js";
 import { simulatingFrom, simulatingPiecesFor } from "./ui/simulating.js";
 import { testingFrom, testingPiecesFor } from "./ui/testing.js";
 import { live, plain, stream, type Plain, type Watching } from "./start-screens.js";
-import { consoleLine, HOSTED, NOWHERE, whyNoConsole } from "./start-console.js";
-import { NoSidecar, openOrReuse, theOneUp, type Sidecar } from "./serve/sidecar.js";
+import { consoleLine, whyNoConsole } from "./start-console.js";
 
 export const group: Group = {
   purpose: "the app and its doors: the process you deploy",
-  usage: `usage: pinecall start [agent.tsx] [--agent <name>] [--prod] [--serve] [--ui] [--events] [--show-prompt]
+  usage: `usage: pinecall start [agent.tsx] [--agent <name>] [--prod] [--ui] [--events] [--show-prompt]
 
   With nothing after it: the agent registered on the gateway, one line per log entry on stdout,
-  no port bound and no page served. It answers the console for this directory — in the sandbox
-  that console is \`pinecall serve\`, on this machine; in production it is the gateway's own.
+  no port bound and no page served. It answers the console for this directory: the box's sandbox
+  console while it runs here, and production's console when it runs with --prod.
 
   At the root of a project of several agents — agents/<name>.tsx — every agent at once, on one
   socket, each line prefixed by its slug; --agent <name> (or its slug) runs one of them.
 
   --prod         production: the agent your org's customers reach. A server's token was made
                  for it; a person's key opens it while their org lets them act there
-  --serve        also serve the sandbox's console on http://localhost:4100, or point at the one
-                 already up: \`pinecall start\` and \`pinecall serve\` in one terminal
   --show-prompt  the prompt a fresh instance would produce, then exit. No key, no gateway
   --events       one JSON line per log entry instead of the lines, for a pipe
   --ui           the full-screen terminal view; keys: p pause · c clear · e events · s prompt · q quit`,
@@ -60,9 +57,8 @@ export const group: Group = {
  *
  * This is the verb that goes under pm2 and into a container, and it is the same process in
  * the sandbox and in production: it runs the agent, binds no port and serves no page. What a
- * person looks at is `--ui` in this terminal, or a console: the gateway's own for production, and
- * `pinecall serve` on this machine for the sandbox — which `--serve` opens beside this process.
- * See docs/decisions/tenant-cli.md.
+ * person looks at is `--ui` in this terminal, or one of the box's two consoles — `pinecall
+ * console` opens the one this process's world is in. See docs/decisions/tenant-cli.md.
  */
 export async function run(argv: string[]): Promise<number> {
   const { values, positionals } = parseArgs({
@@ -72,7 +68,6 @@ export async function run(argv: string[]): Promise<number> {
       "show-prompt": { type: "boolean", default: false },
       events: { type: "boolean", default: false },
       ui: { type: "boolean", default: false },
-      serve: { type: "boolean", default: false },
       ...AGENT_FLAG,
     },
   });
@@ -109,27 +104,6 @@ export async function run(argv: string[]): Promise<number> {
   } catch (failed) {
     process.stderr.write(`${cannotTell("start", failed)}\n`);
     return 2;
-  }
-  // The sandbox's console is this machine's: opened here when asked, else the one already up is
-  // named, else the line says which verb opens it. Production's is the gateway's own page.
-  let sidecar: Sidecar | undefined;
-  let local: string | undefined;
-  if (who.env === PRODUCTION) {
-    if (values.serve === true) {
-      process.stderr.write(`--serve is the sandbox's console, and this is ${PRODUCTION}: production is watched at ${door.url}\n`);
-      return 2;
-    }
-  } else if (values.serve === true) {
-    try {
-      sidecar = await openOrReuse(door, who);
-      local = sidecar.url;
-    } catch (failed) {
-      if (!(failed instanceof NoSidecar)) throw failed;
-      process.stderr.write(`${failed.message}\n`);
-      return 2;
-    }
-  } else {
-    local = await theOneUp(door, who);
   }
   const url = door.url;
   // One socket for every agent of the project: the gateway takes several slugs on one app socket,
@@ -216,7 +190,7 @@ export async function run(argv: string[]): Promise<number> {
           env: who.env,
           source: door.source,
         }),
-        after: () => onceUp(door, mounted, rings(mounted.options.routes), who.env === PRODUCTION ? HOSTED : (local ?? NOWHERE)),
+        after: () => onceUp(door, mounted, rings(mounted.options.routes), who.env),
       }));
       return await plain(pc, agents, url);
     }
@@ -237,15 +211,14 @@ export async function run(argv: string[]): Promise<number> {
   } finally {
     for (const chatting of chattings) await chatting.close();
     pc.close();
-    await sidecar?.close();
   }
 }
 
 // What is only true once the socket is up: the console's URL, and — when the agent answers at a
 // number — whose terminal that number rings in. Asked of the gateway, and neither worth failing
 // the run over: a gateway that refuses says so on its own line and the app runs on.
-async function onceUp(door: Door, mounted: Mounted, rings: boolean, where: string): Promise<string[]> {
-  const said = [await consoleLine(door, mounted.slug, where)];
+async function onceUp(door: Door, mounted: Mounted, rings: boolean, world: string): Promise<string[]> {
+  const said = [await consoleLine(door, mounted.slug, world)];
   if (rings) said.push(await lineLine(door, mounted.slug));
   return said;
 }

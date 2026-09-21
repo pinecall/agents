@@ -11,7 +11,7 @@ import { inTheWorld, withoutTheWorldFlag } from "./world.js";
 // The order this table is written is the order the help prints: link, start and chat first,
 // because they are what a person types on the first day, and the planned groups after, in the
 // design's order. start is rails server and chat is rails console — see docs/decisions/tenant-cli.md.
-const BUILT = ["link", "start", "serve", "chat", "prompt", "test", "simulate", "eval", "sessions", "runs", "agent", "lexicon", "pipeline", "line", "numbers", "personas", "docs", "memory", "remember", "supervise", "providers", "callbacks", "login", "whoami"] as const;
+const BUILT = ["link", "start", "console", "serve", "chat", "prompt", "test", "simulate", "eval", "sessions", "runs", "agent", "lexicon", "pipeline", "line", "numbers", "personas", "docs", "memory", "remember", "supervise", "providers", "callbacks", "login", "whoami"] as const;
 
 /** Everything `pinecall` answers to, built and planned alike, in the order help prints them. */
 export function groupNames(): string[] {
@@ -78,6 +78,7 @@ export async function main(
 export async function groupFor(name: string, out: NodeJS.WritableStream = process.stdout): Promise<Group | undefined> {
   if (name === "link") return (await import("./linking.js")).group;
   if (name === "start") return (await import("./start.js")).group;
+  if (name === "console") return (await import("./console.js")).group;
   if (name === "serve") return (await import("./serve.js")).group;
   if (name === "chat") return (await import("./chat.js")).group;
   if (name === "prompt") return (await import("./prompt.js")).group;
@@ -111,7 +112,8 @@ export function usage(): string {
     "",
     "  link      this project's folder to one of your orgs: your key, in its .env",
     "  start     the app and its doors: the process you deploy (--prod for production)",
-    "  serve     the sandbox's console on this machine: your copies, http://localhost:4100",
+    "  console   the box's console in a browser, signed in: the sandbox's, --prod for production",
+    "  serve     that same console on this machine instead, until your box has its second name",
     "  chat      the app in this terminal's own process, and a prompt against it",
     "  prompt    the exact prompt a state would produce, offline",
     "  test      ring 1: the goldens, through the app in this terminal's own process",

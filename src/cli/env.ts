@@ -9,6 +9,14 @@ import { theChosenWorld } from "./world.js";
 /** Pinecall's own cloud: where every verb goes when nothing names another gateway. */
 export const CLOUD_URL = "https://box.pinecall.io";
 
+/**
+ * The cloud's SANDBOX console: the same box under its second name, where a copy you are running
+ * is watched. A console is a page and not a door — every verb still knocks at CLOUD_URL — so this
+ * is only ever put in front of a person. A gateway that is not the cloud has a second name of its
+ * own, which its operator knows and this CLI does not guess (cli/start-console.ts).
+ */
+export const SANDBOX_URL = "https://sandbox.pinecall.io";
+
 /** The key a verb knocks with and the gateway it knocks at: the project's, as any app reads its own. */
 export const KEY_VARIABLE = "PINECALL_KEY";
 export const URL_VARIABLE = "PINECALL_URL";

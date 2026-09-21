@@ -11,7 +11,8 @@ import { PLANNED } from "../../src/cli/groups.js";
 import { Refused } from "../../src/cli/testing/gateway.js";
 import { connectedLine, doorsOf } from "../../src/cli/connected.js";
 import { run } from "../../src/cli/start.js";
-import { consoleUrl, whyNoConsole } from "../../src/cli/start-console.js";
+import { CLOUD_URL, SANDBOX_URL } from "../../src/cli/env.js";
+import { consoleFor, consoleUrl, whyNoConsole } from "../../src/cli/start-console.js";
 
 const GATEWAY = "https://box.pinecall.io";
 
@@ -80,14 +81,27 @@ describe("the line `pinecall start` prints when the socket is up", () => {
   });
 });
 
-describe("the console's URL `pinecall start` prints", () => {
-  // The gateway serves the console at /a/<agent>, and the browser signs in with a one-use code
-  // this process minted: the code rides the URL once, the key never does.
-  it("is the gateway's page for this agent, with the code, and never a key", () => {
+describe("the console's URL `pinecall start` and `pinecall console` print", () => {
+  // The box serves the console at /a/<agent> under each of its names, and the browser signs in
+  // with a one-use code this process minted: the code rides the URL once, the key never does.
+  it("is the console's page for this agent, with the code, and never a key", () => {
     expect(consoleUrl("https://box.pinecall.io/", "clinica-norte", "lc_abc")).toBe(
       "https://box.pinecall.io/a/clinica-norte?login=lc_abc",
     );
     expect(consoleUrl(GATEWAY, "tienda sur", "lc_a/b")).toBe("https://box.pinecall.io/a/tienda%20sur?login=lc_a%2Fb");
+  });
+
+  it("is the org's floor when no agent was named", () => {
+    expect(consoleUrl(SANDBOX_URL, undefined, "lc_abc")).toBe("https://sandbox.pinecall.io/?login=lc_abc");
+  });
+
+  // Production's console is the gateway itself; the sandbox's is the box's OTHER name, which this
+  // CLI knows for the cloud alone — a tenant's own box is named by its own operator.
+  it("names the sandbox's console for the cloud, and refuses to guess another box's", () => {
+    expect(consoleFor(CLOUD_URL, "production")).toBe(CLOUD_URL);
+    expect(consoleFor(CLOUD_URL, "sandbox")).toBe(SANDBOX_URL);
+    expect(consoleFor("https://box.acme.test/", "production")).toBe("https://box.acme.test");
+    expect(consoleFor("https://box.acme.test", "sandbox")).toBeUndefined();
   });
 
   it("says a gateway with no login-code door is an old one, and what to do about it", () => {
@@ -96,17 +110,21 @@ describe("the console's URL `pinecall start` prints", () => {
     const older = whyNoConsole(new Refused(404, "Not Found"));
     expect(older).toContain("older than this CLI");
     expect(older).toContain("Restart it");
-    // Anything else is the gateway's own answer, unembellished: the CLI is guessing at nothing.
-    expect(whyNoConsole(new Refused(403, "nope"))).toBe("the gateway answered 403");
+    // Anything else is the gateway's own sentence, which is what a person acts on: a server's
+    // token that cannot sign a browser in says so, where a bare status said nothing.
+    expect(whyNoConsole(new Refused(403, '{"detail":"a server\'s token names nobody"}'))).toBe(
+      "the gateway answered 403: a server's token names nobody",
+    );
     expect(whyNoConsole(new Error("connect ECONNREFUSED"))).toBe("connect ECONNREFUSED");
   });
 });
 
 describe("`pinecall start` opens no port", () => {
-  // The agent's process serves no UI: the one thing under the tenant's CLI that listens for a
-  // connection is the sandbox's console, `pinecall serve`, in src/cli/serve/ — and `start` reaches
-  // it only when `--serve` asks. A grep is the honest test of that — a suite cannot prove the
-  // absence of a socket, and this catches the file that would bring a second one in.
+  // The agent's process serves no UI. One directory under the tenant's CLI still listens for a
+  // connection — `cli/serve/`, the sandbox's console on a laptop — and it is TEMPORARY: the box
+  // serves that console at its second name since 2026-09-21, and the exception goes with the
+  // directory. A grep is the honest test of that — a suite cannot prove the absence of a socket,
+  // and this catches the file that would bring a second one in.
   it("has nothing under cli/ that binds one, but the sidecar", () => {
     const cli = fileURLToPath(new URL("../../src/cli/", import.meta.url));
     const sidecar = join(cli, "serve") + sep;
@@ -125,14 +143,22 @@ describe("`pinecall start` opens no port", () => {
 });
 
 // `serve` was this verb's first name and was taken from it on 2026-09-08, because it promised a
-// port and the agent listens on nothing. The word came back on 2026-09-17 for the thing that DOES
-// bind one: the sandbox's console on this machine. `start` (`run` until 2026-09-19) is the process
-// you deploy.
-describe("`serve` is the console, and `start` is the app", () => {
+// port and the agent listens on nothing. The word came back on 2026-09-17 for the thing that DID
+// bind one — the sandbox's console on this machine — and went for good on 2026-09-21, when the box
+// took that console under its own second name. What opens a console now opens a browser at the
+// box: `pinecall console`, which binds nothing either. `start` is the process you deploy.
+describe("`console` opens the page and `start` is the app", () => {
   it("declares both, each saying which it is", () => {
-    expect(groupNames()).toContain("serve");
+    expect(groupNames()).toContain("console");
     expect(usage()).toContain("start     the app and its doors: the process you deploy");
-    expect(usage()).toContain("serve     the sandbox's console on this machine");
+    expect(usage()).toContain("console   the box's console in a browser");
+  });
+
+  // TEMPORARY: `serve` is the same console on a laptop, for as long as a box may have no second
+  // name to serve it at. It goes with `cli/serve/`, and this line goes with it.
+  it("still declares `serve`, which puts that console on this machine", () => {
+    expect(groupNames()).toContain("serve");
+    expect(usage()).toContain("serve     that same console on this machine");
   });
 });
 
@@ -181,11 +207,10 @@ describe("every built verb has a help page", () => {
   });
 });
 
-// The console was a verb of this CLI for four days: served on 127.0.0.1 by `pinecall ui`, signing
-// every request with the org key. It is the gateway's page now (docs/decisions/console.md), so the
-// verb is gone, not deprecated: nothing was published and nobody had a bookmark.
+// `ui` bound 127.0.0.1 for four days and was deleted: the console is a page the box serves, not
+// something this CLI runs. `serve` does bind one still, and is the exception on its way out.
 describe("`ui` is not a verb of this CLI", () => {
-  it("is refused, and the usage names `start`, which prints where the console is", async () => {
+  it("is refused, and the usage names `console`, which opens the page", async () => {
     const out = collected();
     const err = collected();
 
@@ -194,6 +219,7 @@ describe("`ui` is not a verb of this CLI", () => {
     expect(code).toBe(2);
     expect(err.text()).toContain("no such group: ui");
     expect(groupNames()).not.toContain("ui");
+    expect(usage()).toContain("console   the box's console in a browser");
   });
 });
 
@@ -208,9 +234,9 @@ describe("no line of this CLI tells anybody to type a verb that is gone", () => 
 
     for (const file of sources(cli)) {
       for (const [n, line] of readFileSync(file, "utf8").split("\n").entries()) {
-        if (!line.includes("pinecall ui")) continue;
+        if (!/pinecall ui\b/.test(line)) continue;
         // The one honest mention: the sentence that says the verb is not one.
-        if (/not a verb|no such group|is gone/.test(line)) continue;
+        if (/not a verb|no such group|is gone|are gone/.test(line)) continue;
         guilty.push(`${file}:${n + 1}`);
       }
     }

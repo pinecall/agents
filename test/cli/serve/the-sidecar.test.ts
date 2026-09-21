@@ -79,6 +79,17 @@ describe("the page", () => {
     expect(page.body).not.toContain(KEY);
   });
 
+  // The other two marks are the BOX's, written into the page it serves at each of its names
+  // (the runtime's api/pages.py), and this sidecar writes the same two so one console reads one
+  // thing: the world it looks at, and where the gateway is — which is both the other console and
+  // the name a widget tag must load from, never this loopback.
+  it("marks the page the sandbox's, and names the gateway as the console elsewhere", async () => {
+    const page = await get("/");
+
+    expect(page.body).toContain('<meta name="pinecall-world" content="sandbox">');
+    expect(page.body).toContain(`<meta name="pinecall-elsewhere" content="${door.url}">`);
+  });
+
   it("serves a file of the console as that file", async () => {
     expect((await get("/app.js")).body).toBe("console.log(1)");
   });

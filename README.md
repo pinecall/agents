@@ -61,18 +61,18 @@ pnpm exec pinecall link            sign in through a browser, pick the org: your
 pnpm exec pinecall chat            the agent in this terminal, and a prompt against it
 pnpm exec pinecall prompt --state test/clinica-norte/prompts/states.json   the exact prompt a state produces
 pnpm exec pinecall start           the app: the process you deploy
-pnpm exec pinecall start --serve   the same, and its console on http://localhost:4100
-pnpm exec pinecall serve           that console alone: your sandbox, on this machine
+pnpm exec pinecall console         the sandbox's console, in a browser, signed in as this key
 pnpm exec pinecall docs push       docs/clinica-norte/ to the gateway, as the base the agent searches
 pnpm exec pinecall docs attach clinica-norte --k 4   the agent reads that base, in your corner
 pnpm exec pinecall agent knowledge edit              what it knows by heart, in $EDITOR, as a setting
 pnpm exec pinecall test            ring 1: the goldens, through the app in this process
 ```
 
-Two consoles, one per world. What you are running is in the sandbox and is watched on your own
-machine — `pinecall serve` forwards every request to the gateway with the project's key, so there
-is nothing to sign in to. Production is watched on the gateway's own page, which shows production
-and nothing else. [docs/the-cli.md](docs/the-cli.md#serve).
+Two consoles, one per world, and both are the box's own pages: it answers to two names, and the one
+you open decides which world you are looking at — `sandbox.pinecall.io` for what you are running,
+`box.pinecall.io` for production. `pinecall console` opens the first and `--prod` the second,
+signed in as this project's key without it ever leaving the terminal.
+[docs/the-cli.md](docs/the-cli.md#console).
 
 Every verb reads `PINECALL_KEY` (and `PINECALL_URL`, when the gateway is not the cloud) from the
 environment, else from the project's `.env`, which `pinecall link` wrote; each is the sandbox until

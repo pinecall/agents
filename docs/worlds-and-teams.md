@@ -35,11 +35,11 @@ corner, and neither of you takes the other's.
 **Each world is watched in its own place.** The gateway's console — the page you sign in to —
 shows production and only production: what is deployed, its calls, the org's numbers, tokens,
 people and usage; a person without production access who signs in there is shown **No production
-access** and where their sandbox is. The sandbox is watched on your own machine: `pinecall serve`
-puts the same console on `http://localhost:4100`, looking at your corner, with nothing to sign in
-to because the project's key signs what the page asks ([the-cli.md](the-cli.md#serve)). Sentry's
-split, if you know it: the hosted dashboard for production, a local sidecar for what you are
-building.
+access** and where their sandbox is. The sandbox is watched at the box's SECOND name —
+`sandbox.pinecall.io` on the cloud — which serves the same console looking at your corner;
+`pinecall console` opens it signed in, without the key leaving your terminal
+([the-cli.md](the-cli.md#console)). One box, two names, and a request that arrives at the
+sandbox's may not run in production, whoever asks.
 
 Yours to hold, not yours to hide: **an admin, and whoever runs the gateway, see every corner of
 the sandbox**. The agent listing answers a key that opens `team` with one row per corner and the
@@ -53,8 +53,8 @@ still held by the person whose key registered it.
 | `pinecall start` | `--prod`: the server's token, or a person with the switch | yours |
 | web and chat (`pinecall chat`, the console's **Chat** tab — Call or Write) | the org's agent | your own |
 | a phone or WhatsApp number | the org's. A call from a developer's [own phone](#which-phone-is-yours) reaches that developer's sandbox copy while they hold the agent; every other caller reaches production | **optional, and the org's, shared**: a call lands in the corner of whoever's phone dialled it, else on [the line](#the-line) |
-| settings and the lexicon | one corner, written with `--prod` or from the gateway's console; history and rollback | yours, and the team's with `--team` |
-| where it is watched | the gateway's console, signed in to | `pinecall serve`, on your machine: `http://localhost:4100` |
+| settings and the lexicon | one corner, written with `--prod` or from production's console; history and rollback | yours, and the team's with `--team` |
+| where it is watched | the box's own name, signed in to | the box's second name: `sandbox.pinecall.io`, signed in to as well (`pinecall console`) |
 | the calls a console lists | production's | the corner's own: a developer sees only their own sandbox calls, and an admin who opens a teammate's copy sees that copy's |
 | a contact's memory | production's facts | the sandbox's facts, apart |
 | what the agent knows by heart | production's Settings ▸ Knowledge, one corner | yours, and the team's with `--team` — `pinecall agent knowledge edit` |
@@ -88,7 +88,7 @@ The key is Ana's, one for this device, in the project's `.env` (which `.gitignor
 `.env` holds Bruno's. Neither is committed; neither is shared.
 
 **3. Work in the sandbox.** Everything in [tutorial.md](tutorial.md) happens here. Ana's `pinecall
-start --serve` holds `clinica-norte` in Ana's corner and Bruno's in Bruno's; each tries a voice with
+start` holds `clinica-norte` in Ana's corner and Bruno's in Bruno's; each tries a voice with
 `pinecall agent set --voice …` without the other hearing it. What they agree on goes to the org's
 own sandbox corner with `--team`, which every corner that set nothing reads.
 
@@ -222,14 +222,14 @@ the thing a full org cannot do.
 ## Two developers, one agent
 
 Ana and Bruno both run `clinica-norte`. Each `pinecall start` holds it in its own corner; each
-`pinecall chat` reaches its own; each `pinecall serve`, on its own machine, opens its own copy and
-lists its own calls. Ana's test call writes Ana's sandbox memory and nobody else's. What holds
+`pinecall chat` reaches its own; the sandbox's console, signed in as each of them, opens their own
+copy and lists their own calls. Ana's test call writes Ana's sandbox memory and nobody else's. What holds
 production is the server. Both count against the plan once, because a slug is one agent however
 many corners hold it.
 
-An admin's own console — their `pinecall serve` — lists every copy, Ana's and Bruno's, and opens
-a teammate's: every request the page makes then carries that member's corner (the
-`pinecall-corner` header, which the sidecar forwards as the page sent it), and the gateway answers
+An admin on the sandbox's console lists every copy, Ana's and Bruno's, and opens a teammate's:
+every request the page makes then carries that member's corner (the `pinecall-corner` header),
+and the gateway answers
 each door there, or refuses a key that may not. A developer's lists their own copy and the org's
 shared one, which is what they can open anyway. The gateway's console has no copies to list:
 production has one, the org's, deployed on the server.
@@ -301,10 +301,10 @@ permissions), never a fence of ours. The door and its guards: the runtime's
   own token, not on yours.
 - **`no PINECALL_KEY here`** — this folder, and none above it, has a `.env` with a key, and none is
   exported. `pinecall link` in the project's folder.
-- **The gateway's console says `no agent called … is held here`.** It shows production, and what
-  your laptop holds is in the sandbox: `pinecall serve`, and look at `http://localhost:4100`.
-- **The local console says *This project is not linked*.** The gateway refused the key in `.env` —
-  revoked, or you were removed. `pinecall link` again, then `pinecall serve`.
+- **Production's console says `no agent called … is held here`.** It shows production, and what
+  your laptop holds is in the sandbox: `pinecall console`, at the box's other name.
+- **A console refuses your key.** It was revoked, or you were removed. `pinecall link` again in the
+  project, then `pinecall console`.
 - **A verb answered for an org you did not expect.** The first line says where the key came from
   (`key from the environment` or `key from ../.env`): an exported `PINECALL_KEY` wins over the
   project's file, and a `.env` in a parent folder is found when the project has none.

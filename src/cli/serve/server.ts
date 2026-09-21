@@ -42,11 +42,19 @@ const TYPES: Record<string, string> = {
 // `pinecall-corner` is an admin opening a colleague's copy: the gateway judges it, not this server.
 const FORWARDED = ["content-type", "accept", "last-event-id", "range", "pinecall-corner"] as const;
 
-// What the page reads to know it is this one and not the gateway's: no login, no key, the sandbox.
-// And where the gateway is, for the one thing the page says about it: the widget's tag a site
-// pastes loads from there, never from this loopback.
-const marks = (gateway: string): string =>
-  `<meta name="pinecall-console" content="local"><meta name="pinecall-gateway" content="${gateway.replace(/"/g, "&quot;")}">`;
+// What the page reads to know what it is. `pinecall-world` and `pinecall-elsewhere` are what the
+// BOX writes into the page it serves at each of its names (the runtime's api/pages.py), and this
+// sidecar writes the same two so one console reads one thing: the sandbox, and the gateway — which
+// is where the other console is and the name a widget tag on a customer's site must load from,
+// never this loopback. `pinecall-console: local` is this server's alone: it says the page holds no
+// key because this process signs what it forwards.
+//
+// TEMPORARY, with the sidecar itself: the box serves the sandbox's console at its second name
+// since 2026-09-21, and `pinecall serve` goes the day the last laptop has moved to it.
+const marks = (gateway: string): string => {
+  const named = gateway.replace(/"/g, "&quot;");
+  return `<meta name="pinecall-console" content="local"><meta name="pinecall-world" content="sandbox"><meta name="pinecall-elsewhere" content="${named}">`;
+};
 
 /** What a sidecar answers at ABOUT: enough for another process to decide whether it is its own. */
 export interface About {

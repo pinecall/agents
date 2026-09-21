@@ -28,7 +28,8 @@ path end to end, with every output under it.
 |---|---|---|
 | [`link`](#link) | this project's folder to one of your orgs: your key, written to its `.env` | yes |
 | [`start`](#start) | the app registered and answering — **the process you deploy** | yes |
-| [`serve`](#serve) | the sandbox's console on this machine, `http://localhost:4100`: your copies, your calls | yes |
+| [`console`](#console) | the box's console in a browser, signed in: the sandbox's, `--prod` for production's | yes |
+| [`serve`](#serve) | that same console on this machine, `http://localhost:4100`, until your box answers to a second name | yes |
 | [`chat`](#chat) | the same app in this terminal, and a written caller against it | yes |
 | [`prompt`](#prompt) | the exact prompt a state would produce, offline | **no** |
 | [`test`](#test) | ring 1 (and ring 2 with `--voice`): the goldens through this process | yes |
@@ -150,7 +151,7 @@ or on the one `--agent <name>` names — by its folder's name (`sales`) or by it
 
 | at the root | does |
 |---|---|
-| `pinecall start` | every agent at once, **on one socket, in one process**; each line prefixed by the slug, one console URL each (`--serve` puts them all on one page). `--show-prompt` prints every agent's prompt under its slug |
+| `pinecall start` | every agent at once, **on one socket, in one process**; each line prefixed by the slug, one console URL each. `--show-prompt` prints every agent's prompt under its slug |
 | `pinecall test` | each agent's goldens through its own class, one after another; the exit code is the worst. Paths and `--watch` are for one agent, so they need `--agent` |
 | `pinecall docs push` · `eval` | every agent that has `docs/<name>/` · `test/<name>/goldens/docs.json`; the rest are named and skipped |
 | `pinecall personas try` · `push` | the two that need the class: `--agent <name>` when the project holds several. The other persona verbs name no agent |
@@ -170,7 +171,7 @@ class to find. `--file` is always a file.
 ## `start`
 
 ```
-pinecall start [agent.tsx] [--agent <name>] [--prod] [--serve] [--ui] [--events] [--show-prompt]
+pinecall start [agent.tsx] [--agent <name>] [--prod] [--ui] [--events] [--show-prompt]
 ```
 
 At a project's root with no file named, every `agents/<name>/agent.tsx` is held at once, on one
@@ -190,14 +191,13 @@ refusal is printed before anything registers. How a server runs it — under the
 inside your own Node app — is [production.md](production.md).
 
 It binds no port and serves no page. One line per log entry on stdout, and under the connected
-line where its console is — **and there are two consoles, one per world**. The sandbox is watched
-on your own machine: [`pinecall serve`](#serve) puts it on `http://localhost:4100`, `--serve` does
-that from this same terminal, and the line reads `console  http://localhost:4100/a/clinica-norte`
-— or names the verb, when none is up. Production is watched on the gateway's own page, which shows
-production and nothing else: there the line is `console  https://box.pinecall.io/a/clinica-norte?login=lc_…`,
-a one-use code that dies in five minutes, which the page spends for a key of its own and never sees
-this process's. Opening that console cold asks for an email, a password, and the org only when
-the person belongs to several.
+line where its console is — **and there are two consoles, one per world**, both served by the box
+under a name of its own. In the sandbox the line reads
+`console  https://sandbox.pinecall.io/a/clinica-norte?login=lc_…` and in production
+`console  https://box.pinecall.io/a/clinica-norte?login=lc_…`: a one-use code that dies in five
+minutes, which the page spends for a key of its own and never sees this process's. Opening a
+console without one asks for an email, a password, and the org only when the person belongs to
+several.
 
 In the sandbox, every time the socket comes up — the first connect and each reconnect, in every
 mode — `start` re-sends the phone `pinecall line from` kept for this gateway, whatever agents it
@@ -208,10 +208,10 @@ goes away is one line — `gateway  … — reconnecting`, then `gateway  back` 
 redial.
 
 ```console
-$ pinecall start --serve
+$ pinecall start
 gateway https://box.pinecall.io · key from .env
 clinica-norte · clinica · sandbox · connected to https://box.pinecall.io · key from .env · tools 4 · doors web
-console  http://localhost:4100/a/clinica-norte
+console  https://sandbox.pinecall.io/a/clinica-norte?login=lc_9f2   (opens within five minutes, once)
 line     rings in this terminal · also running: carla@clinica.test
 › Clínica Norte, buenos días. ¿En qué puedo ayudarle?
 ‹ Quería cambiar una cita
@@ -222,7 +222,6 @@ line     rings in this terminal · also running: carla@clinica.test
 | flag | |
 |---|---|
 | `--prod` | production's agent: a server's token, or a person's key while their switch is on |
-| `--serve` | also serve the sandbox's console on `http://localhost:4100`, or point at the one already up. Refused in production |
 | `--ui` | the full-screen terminal view. `p` pause · `c` clear · `e` events · `s` prompt · `q` quit |
 | `--events` | one JSON line per log entry instead of the lines, for a pipe |
 | `--show-prompt` | the prompt a fresh instance would produce, then exit. No key, no gateway |
@@ -235,49 +234,61 @@ THIS process over the socket it already holds (`dev.request` → `dev.answer`; t
 `docs/protocol/dev-verbs.md`). The lines those verbs print land here, as if you had typed them.
 A `pinecall start` in another agent's directory answers `simulate` with a sentence saying so.
 
+## `console`
+
+```
+pinecall console [agent] [--prod] [--no-open]
+```
+
+**The box's console, in a browser, signed in.** The box answers to two names and serves the same
+console at each: production's at its own name, and the **sandbox's** at the second
+(`sandbox.pinecall.io` on the cloud). This verb opens the one for the world this project's key is
+in — your copies of the agents, their calls as they happen, chat, evals and their suites, docs,
+memory, the widget and its preview, and how to reach your copy by phone — and `--prod` opens the
+other, if your org lets you act there.
+
+```console
+$ pinecall console
+console  https://sandbox.pinecall.io/?login=lc_9f2   (opens within five minutes, once)
+```
+
+**The key never travels.** The gateway mints a one-use code standing for it — five minutes, one
+use — and the page spends the code for a key of that browser's own, which is revoked on its own
+from Tokens. Name an agent (`pinecall console clinica-norte`) and it opens that agent's screens
+instead of the org's floor. A machine with no browser prints the URL, and `--no-open` says not to
+try. A server's token signs no browser in: it names no person, and the gateway says so.
+
+A person signs in to each name separately, because a browser keeps a key per origin — the chip in
+the top bar links to the other console, and the first visit there asks for a password.
+
+Which screens each console has is one table in the console's source
+(`src/cli/ui/console/lib/mode.ts`): running the org — numbers, tokens, providers, the team, usage —
+and the box's own screens are production's; **Dev chat**, running a suite and **Phone testing** are
+the sandbox's; Home, Overview, Live, Sessions, **Personas**, **Simulations**, Evals, Memory, Docs,
+Lexicon and every tab of an agent are both's. An admin opens a colleague's copy from the sandbox's
+console, never from production's, which has no corners
+([worlds-and-teams.md](worlds-and-teams.md)).
+
+**The sandbox's name answers no production.** A request that arrives there and asks for production
+is refused by the gateway in a sentence, whoever holds the key — the name is the boundary, not a
+label on a page.
+
 ## `serve`
 
 ```
 pinecall serve [--port <n>] [--no-open]
 ```
 
-**The sandbox's console, on your own machine.** The gateway's page shows production and only
-production — what customers reach, watched by the people who run it. What YOU are running is
-watched here: `http://localhost:4100`, the same console, looking at your corner of the sandbox —
-your copies of the agents, their calls as they happen, chat, evals and their suites, docs,
-memory, the widget and its preview, and how to reach your copy by phone. It mounts no agent:
-`start` does that, and `pinecall start --serve` does both in one terminal.
+**The same console, on this machine**, for a box that does not answer to a second name yet:
+`http://localhost:4100`, a sidecar that forwards every request to the gateway with the project's
+key on it. The key never reaches the browser, so the page has no login and no sign-out; only this
+machine's own page may ask, and a `Host` or an `Origin` that is not this loopback is answered `403`
+before the key is spent. One per machine: a second `serve` for the same gateway and org finds the
+first and says where it is.
 
-```console
-$ pinecall serve
-gateway  https://box.pinecall.io · key from .env
-console  http://localhost:4100   (your sandbox; Ctrl-C closes it)
-```
-
-It is a sidecar and keeps nothing: every request the page makes is forwarded to the gateway with
-the project's key on it. **The key never reaches the browser**, so the page has no login, no
-sign-out and no key in its storage. Only this machine's own page may ask: the port is bound to
-the loopback, and a request whose `Host` is not this loopback, or whose `Origin` is another page's,
-is answered `403` before the key is spent. When the gateway refuses the key — revoked, or never
-linked — the page says **This project is not linked** and the two commands: `pinecall link`, then
-`pinecall serve`.
-
-**One per machine.** A second `serve` — or a `start --serve` — for the same gateway and org finds
-the first and says where it is, so two projects share one page and `start` can be restarted under
-it without the console going away. A port held by anything else is stepped past (4101, …), and
-`--port` names one. `pinecall start` with no `--serve` still names a sidecar that is up.
-
-Which screens this console has and which the gateway's has is one table in the console's source
-(`src/cli/ui/console/lib/mode.ts`): running the org — numbers, tokens, providers, the team, usage —
-and the box's own screens are the gateway's; **Dev chat**, running a suite and **Phone testing**
-are this one's; Home, Overview, Live, Sessions, **Personas**, **Simulations**, Evals, Memory,
-Docs, Lexicon and every tab of an agent are both's. An admin opens a colleague's copy from here, never from the gateway's page
-([worlds-and-teams.md](worlds-and-teams.md)).
-
-It is the sandbox's and nothing else: a key that opens production — a production server's token —
-is refused in a sentence that says where production is watched. A machine with no browser prints
-the URL and `--no-open` says not to try. In a checkout the console has to be bundled first
-(`scripts/build`): until it is, the verb says so and exits 2.
+It is what [`console`](#console) replaces. **It goes the day the last box has its second name**, and
+nothing else here depends on it — `pinecall start` names the box's console whether it is running or
+not. In a checkout the page has to be bundled first (`scripts/build`).
 
 ## `line`
 
@@ -1082,7 +1093,7 @@ code can call — over HTTP, in any language, with the same key.
 | `callbacks` | `GET /v1/callbacks[?agent=&after=]` |
 | `personas` | `GET /v1/personas` · `PUT`·`DELETE /v1/personas/{name}` — and `push` reads the project's remaining files before sending them |
 | `line` | `GET`·`POST`·`DELETE /v1/agents/{slug}/line`, `PUT`·`DELETE /v1/line/from` |
-| `serve` | every door the console asks, forwarded as the page sent it with the project's key: `GET /v1/whoami`, `/v1/agents`, the logs, `…/dev/*`, `GET /v1/line/numbers` |
+| `console` | `POST /v1/login/codes` — the one-use code the browser spends for a key of its own. Every other door the console asks, it asks for itself |
 | `login` | `POST /v1/login/pairings`, `GET …/{code}/key` — then `GET /v1/whoami` to prove what it got |
 | `link` | what `login` knocks at when the machine is not signed in, then `GET /v1/login/orgs` for the person's orgs and `POST /v1/login/org` for the key in the one picked |
 | `whoami` | `GET /v1/whoami` |
