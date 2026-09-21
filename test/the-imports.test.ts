@@ -39,10 +39,8 @@ const MAY_IMPORT: Record<string, string[]> = {
   // What the page is made of below its screens: the fetch to the gateway, the credentials context,
   // the theme, and what the gateway says about itself before anybody holds a key. It names no
   // screen, so the plumbing cannot reach back up into the page.
-  "cli/ui/shared": ["react", "zod"],
   // THE page. It must never reach the framework: none of it would run in a browser, and a build
   // that pulled a TypeScript parser into the bundle is a build nobody would notice.
-  "cli/ui/console": ["cli/ui/shared", "@pinecall/protocol", "react", "react-dom", "react-router", "livekit-client", "vite", "@vitejs/plugin-react", "zod"],
   // The one file at the top of src/: the public surface, which may name anything it exports.
   "": ["agent", "call", "views", "runtime"],
 };

@@ -93,7 +93,7 @@ and versioned, never fields of the class.
 Working on the framework itself:
 
 ```
-pnpm test          the framework and the console, in two vitest projects, from the sources
+pnpm test          the framework and its CLI, from the sources
 pnpm lint          tsc over src and test, then over the console against the DOM
 scripts/build      what is published: dist/, and the console bundle inside it
 scripts/check      build, then lint, then test — what CI runs
@@ -116,7 +116,7 @@ file by file, is [ARCHITECTURE.md](ARCHITECTURE.md).
 | `call/` | the live call as a value: the room, the turns, the verbs. Reduced from entries |
 | `client/` | `pinecall/client` — the socket, and nothing above it. Knows only the wire |
 | `runtime/` | the bridge: what the class does, become what the wire sees |
-| `cli/` | `pinecall <verb>`, and under `cli/ui/console/` the console: built here, served by the gateway |
+| `cli/` | `pinecall <verb>`, and under `cli/ui/` what `start` answers a console with. The page itself is `../console` |
 
 Beside it:
 

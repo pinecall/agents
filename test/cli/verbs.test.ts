@@ -2,7 +2,7 @@
 // console is, and binds no port on this machine — the gateway serves the page.
 
 import { readdirSync, readFileSync } from "node:fs";
-import { join, sep } from "node:path";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
@@ -119,17 +119,15 @@ describe("the console's URL `pinecall start` and `pinecall console` print", () =
   });
 });
 
-describe("`pinecall start` opens no port", () => {
-  // The agent's process serves no UI. One directory under the tenant's CLI still listens for a
-  // connection — `cli/serve/`, the sandbox's console on a laptop — and it is TEMPORARY: the box
-  // serves that console at its second name since 2026-09-21, and the exception goes with the
-  // directory. A grep is the honest test of that — a suite cannot prove the absence of a socket,
-  // and this catches the file that would bring a second one in.
-  it("has nothing under cli/ that binds one, but the sidecar", () => {
+describe("the CLI opens no port at all", () => {
+  // Nothing under the tenant's CLI listens for a connection any more: the one thing that did was
+  // the sandbox's console sidecar (`pinecall serve`, `cli/serve/`), and the box serves that console
+  // itself now, at its second name. A grep is the honest test of that — a suite cannot prove the
+  // absence of a socket, and this catches the file that would bring one in.
+  it("has nothing under cli/ that binds one", () => {
     const cli = fileURLToPath(new URL("../../src/cli/", import.meta.url));
-    const sidecar = join(cli, "serve") + sep;
 
-    for (const file of sources(cli).filter((one) => !one.startsWith(sidecar))) {
+    for (const file of sources(cli)) {
       const source = readFileSync(file, "utf8");
       expect(`${file}: ${source.includes("createServer")}`).toBe(`${file}: false`);
       expect(`${file}: ${/\.listen\(/.test(source)}`).toBe(`${file}: false`);
@@ -154,11 +152,8 @@ describe("`console` opens the page and `start` is the app", () => {
     expect(usage()).toContain("console   the box's console in a browser");
   });
 
-  // TEMPORARY: `serve` is the same console on a laptop, for as long as a box may have no second
-  // name to serve it at. It goes with `cli/serve/`, and this line goes with it.
-  it("still declares `serve`, which puts that console on this machine", () => {
-    expect(groupNames()).toContain("serve");
-    expect(usage()).toContain("serve     that same console on this machine");
+  it("declares no `serve`: that console is the box's, at its second name", () => {
+    expect(groupNames()).not.toContain("serve");
   });
 });
 
@@ -207,18 +202,22 @@ describe("every built verb has a help page", () => {
   });
 });
 
-// `ui` bound 127.0.0.1 for four days and was deleted: the console is a page the box serves, not
-// something this CLI runs. `serve` does bind one still, and is the exception on its way out.
-describe("`ui` is not a verb of this CLI", () => {
-  it("is refused, and the usage names `console`, which opens the page", async () => {
-    const out = collected();
-    const err = collected();
+// Two names this CLI served a console under, and it serves none under now. `ui` bound 127.0.0.1
+// for four days; `serve` did the same for four more, signing every request with the org key. The
+// box serves both consoles itself, at its two names, and `pinecall console` only opens a browser
+// at one — so neither word is a verb, and neither is deprecated: they are gone.
+describe("`ui` and `serve` are not verbs of this CLI", () => {
+  it("are refused, and the usage names `console`, which opens the page", async () => {
+    for (const gone of ["ui", "serve"]) {
+      const out = collected();
+      const err = collected();
 
-    const code = await main(["ui"], out.stream, err.stream);
+      const code = await main([gone], out.stream, err.stream);
 
-    expect(code).toBe(2);
-    expect(err.text()).toContain("no such group: ui");
-    expect(groupNames()).not.toContain("ui");
+      expect(code).toBe(2);
+      expect(err.text()).toContain(`no such group: ${gone}`);
+      expect(groupNames()).not.toContain(gone);
+    }
     expect(usage()).toContain("console   the box's console in a browser");
   });
 });
@@ -228,13 +227,13 @@ describe("`ui` is not a verb of this CLI", () => {
 // simulation prints at the end, and the console's own Evals page, in a <code> a person reads on
 // screen. The usage table above is pinned by name; this pins the prose.
 describe("no line of this CLI tells anybody to type a verb that is gone", () => {
-  it("never says `pinecall ui`, except where it says it is gone", () => {
+  it("never says `pinecall ui` or `pinecall serve`, except where it says they are gone", () => {
     const cli = fileURLToPath(new URL("../../src/cli/", import.meta.url));
     const guilty: string[] = [];
 
     for (const file of sources(cli)) {
       for (const [n, line] of readFileSync(file, "utf8").split("\n").entries()) {
-        if (!/pinecall ui\b/.test(line)) continue;
+        if (!/pinecall (ui|serve)\b/.test(line)) continue;
         // The one honest mention: the sentence that says the verb is not one.
         if (/not a verb|no such group|is gone|are gone/.test(line)) continue;
         guilty.push(`${file}:${n + 1}`);

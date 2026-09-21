@@ -1,42 +1,25 @@
-// Two programs live in this repo, so the suite has two projects: the framework, which runs in node
-// against our own JSX-to-text runtime, and the console, which is a browser page and compiles its
-// JSX against React's. One config could not tell them apart — a console test that imports a screen
-// would silently be transformed by the wrong factory — so neither has to pretend to be the other.
+/** The suite: the framework, in node, against our own JSX-to-text runtime. */
+
 import { defineConfig } from "vitest/config";
 
+// One program lives in this repo now: the framework and its CLI. The console — a browser page
+// whose JSX compiles against React's — is a repo of its own (../console), and it took its two
+// directories of tests with it, which is why this config has no projects in it any more.
+//
+// Decorators: measured, not assumed — tsc, esbuild and tsx all take TC39 standard decorators and
+// vite's oxc transform does not, so the package is written against the legacy ones. The table and
+// the migration are in docs/decisions/agent.md.
+//
+// JSX: a view is a .tsx file whose factory is our own text runtime, reached by the specifier a
+// tenant writes — package.json's exports point at the sources, so nothing here is aliased and
+// there is no dist between the source and the test.
 export default defineConfig({
+  oxc: {
+    decorator: { legacy: true },
+    jsx: { runtime: "automatic", importSource: "pinecall/views" },
+  },
   test: {
-    projects: [
-      {
-        // The framework, alone: no gateway, no network, no build step between source and test.
-        //
-        // Decorators: measured, not assumed — tsc, esbuild and tsx all take TC39 standard
-        // decorators and vite's oxc transform does not, so the package is written against the
-        // legacy ones. The table and the migration are in docs/decisions/agent.md.
-        //
-        // JSX: a view is a .tsx file whose factory is our own text runtime, reached by the
-        // specifier a tenant writes — package.json's exports point at the sources, so nothing here
-        // is aliased and there is no dist between the source and the test.
-        oxc: {
-          decorator: { legacy: true },
-          jsx: { runtime: "automatic", importSource: "pinecall/views" },
-        },
-        test: {
-          name: "pinecall",
-          include: ["test/**/*.test.ts", "test/**/*.test.tsx"],
-          exclude: ["test/cli/ui/console/**", "test/cli/ui/pages/**"],
-        },
-      },
-      {
-        // The browser pages' tests run in node and read files: what they prove is an absence, not
-        // a rendering. Bernardo's rule stands — there are no UI suites here; `tsc` against the DOM
-        // and a clean build are the gates. `pages/` is what holds for both, `console/` is one
-        // page's own.
-        test: {
-          name: "pages",
-          include: ["test/cli/ui/console/**/*.test.ts", "test/cli/ui/pages/**/*.test.ts"],
-        },
-      },
-    ],
+    name: "pinecall",
+    include: ["test/**/*.test.ts", "test/**/*.test.tsx"],
   },
 });

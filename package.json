@@ -53,7 +53,7 @@
   ],
   "scripts": {
     "build": "scripts/build",
-    "lint": "tsc -p tsconfig.lint.json && tsc -p tsconfig.console.json",
+    "lint": "tsc -p tsconfig.lint.json",
     "test": "vitest run"
   },
   "dependencies": {
@@ -65,16 +65,8 @@
   },
   "devDependencies": {
     "@types/node": "^26.4.1",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.7",
     "@types/ws": "^8.18.1",
-    "@vitejs/plugin-react": "^6.1.1",
-    "livekit-client": "^2.22.3",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-router": "^8.3.1",
     "typescript": "7.0.2",
-    "vite": "^8.2.2",
     "vitest": "^5.0.0"
   },
   "packageManager": "pnpm@11.2.2",

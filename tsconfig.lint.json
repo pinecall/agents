@@ -6,6 +6,5 @@
     "rootDir": ".",
     "noEmit": true
   },
-  "include": ["src", "test"],
-  "exclude": ["src/cli/ui/shared", "src/cli/ui/console", "test/cli/ui/console", "test/cli/ui/pages"]
+  "include": ["src", "test"]
 }

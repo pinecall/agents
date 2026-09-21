@@ -458,140 +458,16 @@ which `link` mints from and no verb runs on.
 
 ## 11. The page
 
-ONE browser program lives under `src/cli/ui/`: the console, one bundle, served at each of the
-box's two names. The gateway serves it at `/` under both, and marks the page it serves at the
-sandbox's (the runtime's `api/pages.py`). Nothing under `cli/` opens a port. Which screens each
-console has is one table (`lib/mode.ts`), not two programs:
+**The console is a repository of its own**: `../console`, one browser program the gateway serves at
+each of the box's two names — production's at its own and the sandbox's at the second. It lived
+here while `pinecall serve` put it on a laptop; that verb is gone and so is the page. What it is,
+screen by screen, is `../console/docs/the-console.md`, and how it is built is that repo's
+`CLAUDE.md`.
 
-| | mounted at | the credential it holds | who |
-|---|---|---|---|
-| `ui/console/` | the box's own name (`box.pinecall.io`) — **production** | a PERSON's scoped key, minted at login | whoever runs the org |
-| `ui/console/` | the box's second name (`sandbox.pinecall.io`) — **the sandbox** | the same person's key, minted again for that origin | whoever writes the agent |
-| `ui/shared/` | — | the fetch (`api.ts`) and the credentials context, which the page is built on; `/.well-known/pinecall` (`the-floor.ts`), read by the console's password card; and the theme (`theme.ts`: the system's light or dark, and a flip kept until the system changes) | the console |
-
-There used to be a second program here — the operator's, at `/admin`, opened with the box's ops
-key typed into a browser. It is gone: a person the box made an operator opens the console's **Box**
-group with their own key, which is one page, one build and one credential. `ui/shared/` is the
-page's plumbing and names no screen, so nothing reaches a screen through it
-(`test/the-imports.test.ts`).
-
-### The console
-
-**One bundle, two consoles.** The gateway marks the page it serves at the sandbox's name (`<meta
-name="pinecall-world" content="sandbox">`, and `pinecall-elsewhere` with the other console's
-origin); a page nobody marked is production's, which is what a box of ONE name serves.
-`lib/mode.ts` reads that once and holds the tables of screens — the org's (`ORG_SCREENS`), the box's (`BOX_SCREENS`, each row an operator's) and an agent's tabs
-(`AGENT_SCREENS`), each row a path, a name, a sidebar group, an icon and the worlds that have it: the sidebar draws them and the router routes them,
-so a screen a console does not have is neither linked nor reachable, and no screen asks which world
-it is in to decide whether it exists (`test/cli/ui/console/each-console-has-its-own-screens.test.ts`).
-Both open on Home (`/`) and have Overview (`/overview`), Live and Sessions, then Personas and
-Simulations — the org's synthetic callers, and the one place a call is simulated from — and
-Evals, Memory and Docs, every base of the world and who searches it. Production's console runs the org — Usage, Numbers, Tokens, Providers, Team — and edits
-production's Settings and Lexicon directly. The sandbox's looks at the reader's corner and is the
-workshop — Dev chat, Evals ▸ runs, Phone testing. Both are the box's own pages and both sign in the
-same way; what a request runs in is the world its console names on every request, and the sandbox's
-name refuses production outright, whoever asks (the runtime's `auth/world.py`). An admin opens a
-colleague's copy on the sandbox's console alone (`pinecall-corner`), because production has no
-corners. A box that answers to one name has production's console and no other.
-
-Everything about the page is a containment decision:
-
-- **The org key never reaches the browser.** The page holds a PERSON's scoped key, minted for it
-  at login and kept by the browser (`lib/session-key.ts`, the one file that touches the KEY; `lib/pane-widths.ts` and `shared/theme.ts` keep a width and a theme there too) —
-  ONE key, not one per world: the page names production on every request (`pinecall-env`,
-  `shared/api.ts:headersFor`), and a person whose production switch is off is shown *No
-  production access* (`screens/login/no-production.tsx`) with the gateway's sentence. Signing out
-  (`shell/top.tsx`, `lib/leaving.tsx`) forgets the key. A production `pinecall start` mints a one-use code standing for its key and prints
-  `/a/<agent>?login=<code>`; the page spends it for a key of its own and takes it out of the
-  address bar before rendering (`main.tsx`, `lib/login.ts`). Cold, it asks for email and password, offers the workspaces those open once the password is typed
-  (`POST /v1/login/orgs`, which mints nothing; a free-text org on a gateway without the door), says who hands out a forgotten password's link (an admin, from Team), and signs in to production (`screens/login/`, every card in `way-in.tsx`'s frame). Opened from an invitation or a reset link — `/invitations/<token>`, the one an
-  admin's Team screen or the operator's `orgs invite` hands out — it shows the card where the
-  person chooses their password and takes their first key (`screens/login/accept.tsx`), and the
-  token leaves the address the moment it is spent. At `/cli?c=<code>` it is the card that signs a
-  TERMINAL in (`screens/terminal/`): `pinecall login` holds no key and the person at it has none
-  to paste, so the terminal prints that link and this page — which does hold a key — approves it.
-  What the approval mints is the terminal's own key, and it never travels through this page. **It signs a person IN and never makes an org**: this page ships
-  inside the runtime every self-hoster serves, so a registration form in it would be one flag away
-  from open registration on somebody else's box, and making an org is not what a control plane for
-  an existing org is for. `POST /v1/signup` is knocked at by an API caller alone — the CLI has no
-  `signup` verb since 0.4.0 — and never by this page —
-  `test/cli/ui/console/the-console-never-makes-an-org.test.ts` pins that by reading the sources
-  with the comments stripped. It is also why the runtime sends no CORS header: the one door this
-  page opens with no key is `/v1/login`, on its own origin. `test/cli/ui/pages/the-key-is-never-in-the-page.test.ts` pins it:
-  one file reaches a browser's storage for the key, and only `shared/api.ts` writes the
-  `authorization` header. The gateway's own suite pins the other half of where a key may go: the
-  page carries none, and a code is spent only on a request that came
-  from this machine's own page.
-- **Nothing rides a URL.** The log stream is `fetch` reading `text/event-stream` by hand
-  (`lib/stream.ts`, `SseParser`), with the key on the header and `Last-Event-ID` sent by the
-  reader on a reconnect; the recording is fetched with the header and played from an object URL.
-- **What only the agent's directory can answer** — the class for a written call or a simulation,
-  the goldens, the docs folder — the page asks the gateway, and the gateway asks the `pinecall
-  start` standing there (`lib/dev.ts`; the runtime's `docs/protocol/dev-verbs.md`). The callers
-  are not among them: they are the gateway's own, read and written over its doors.
-- **The page may not import the framework** (§13). None of it would run in a browser, and a build
-  that pulled a TypeScript parser into the bundle is a build nobody would notice.
-
-| screen | what it reads |
-|---|---|
-| `home/` | `/`: today at a glance — the gateway's count (`GET /v1/insights`, `lib/insights.ts`) or, from a gateway without it, a fold of the floor's rows; the calls that need a look (the rows' `flags`, else end reasons and the first scores read); who is on the floor; the channels; and the setup steps, judging among them (`setup.tsx`, `GET/PUT /v1/org/judging`) |
-| `agents/` | `/overview`: which agents this gateway holds, the numbers routed to each, today's calls and the share of judges that held, and the keys and vendors behind them — each read only by a key that opens it |
-| `floor/` + `live/` | `/live[/:call]`: the org's calls down the left (`floor/live.tsx`), one watched (`live/live.tsx`): the log's rows — a `memory.ops` and a `docs.sources` each one row — the `STATE · ROOM · PROMPT · METRICS` pane, and the supervisor's desk (`live/desk.tsx`: listen, whisper and say in a box each, take the line, transfer, end — and on a call with no room, no ear, no microphone and no transfer). `/sessions` is `floor/sessions.tsx` over the same `sessions/list.tsx` an agent's draws |
-| `calls/` | an agent's calls as an inbox: threads grouped by contact in the browser (`threads.ts`), their messages read from each call's log (`use-thread.ts`), and what the gateway keeps per contact — names, unread, a message into a WhatsApp thread — behind a probe (`inbox-door.ts`). `dial.tsx` is *Call back* and *Call a number*, drawn once the org's outbound trunk is ready. Nothing here simulates: that is the Simulations screen |
-| `personas/` · `simulations/` | `/personas[/:name]`: the ORG's callers down the left — one list, no agent to pick first — before one is chosen their standing (`personas/overview.tsx`): how many callers and how many never called, the runs between them, and the org's newest runs merged from each caller's own page — the one chosen read in the middle, written and dropped over the gateway's own doors (`personas/door.ts`, `GET /v1/personas`, `PUT`·`DELETE /v1/personas/{name}`), never through the directory, and beside it a third pane of what that caller has DONE (`personas/runs-side.tsx` over `GET /v1/personas/{name}/runs`, a screenful at a time), each row the session it was. `/simulations[/:call]`: the form (`simulations/simulate-form.tsx`) that puts one of them on the class the `pinecall start` in its directory holds (`simulate.start`), and the call heard live beside it |
-| `lexicon/` · `org-evals/` · `org-memory/` | the org's words — said and heard, versioned per corner — and the org-wide Evals and Memory, which are the agent's screens read across every agent at once |
-| `sessions/` | every call, searched by the gateway when its door can (`search.ts`: a `total` in the answer) and in the browser when it cannot; one read whole — facts, the recording, transcript, latency, score with a judge attached later (`POST /v1/evals/judge/{call}`), cost, and folded under Details the consent join, the prompt block by block and every entry in `seq` |
-| `talk/` · `chat/` | `talk/` is the agent's **Chat** tab (its path is still `talk`): one screen, two ways into the gateway's room — **Call**, this browser's microphone over WebRTC with the agent's voice back, or **Write**, a written session with no audio — and on a call the composer types into the same room (`use-room.ts` `open(mode)` and `write`). `chat/` is **Dev chat**, the sandbox's console only: a written call through the class in `pinecall start`'s directory, relayed by the gateway. Both beside `talk/inspector.tsx`, the call's log as numbers, turns, tool calls and state |
-| `evals/` | the goldens and how the latest run left each, every run this agent's suites scored and the diff between two, what each finished call was sealed with, and the drift |
-| `pipeline/` | the three providers of a voice turn, the anatomy of a turn as bars, and the overrides an operator may change between two calls |
-| `settings/` | the agent's settings as **one tab a section** (`form.tsx`: STT, LLM, Voice, Conversation, Memory, Knowledge, Bases — the tab in `?section=`), each choice picked from values that actually run; **Knowledge** is what the agent knows by heart, a Markdown textarea every key that opens the tab may write, a `words` key included, and **Bases** which it searches, a `pipeline` key. Saved over the version it was read at. Beside the form, a pane a person drags (`settings.now`): what is set now, a corner at a time (`now.tsx` — yours, the team's, production's in the sandbox; production alone on the gateway's page) and the history with a roll back (`history.tsx`) |
-| `docs/` · `org-docs/` | an agent's Docs tab: the directory's folder pushed and its golden run through `pinecall start`, every base the org pushed in this world, and **Attached bases** — which this agent reads, off its settings (`attached.tsx`); and the org's Docs screen: every base, its chunks, its embedder, when it was pushed and which agents read it (`GET /v1/knowledge`, `GET /v1/knowledge/attached`), a base opened onto its files and **New base** (`new-base.tsx`) begun here from a name and its first documents — there is no empty base, so the form asks for both at once — with no project to push |
-| `memory/` · `widget/` | every current fact an agent's calls taught, one dropped (`GET /v1/agents/{slug}/memory`, `DELETE /v1/memory/facts/{id}`), or one contact read and forgotten; the tag, the look the gateway keeps per agent and world (`GET/PUT /v1/agents/{slug}/widget`), and the widget itself mounted as a preview |
-| `numbers/` · `tokens/` · `providers/` · `team/` · `usage/` | **numbers, whole**: the carrier — a Twilio account or a SIP peer — shown by kind and account and never a secret (`carrier.tsx`); the numbers, one let go; one added, imported or bought, **always the plan first** (`?dry_run=true`, the gateway's own steps in its words) and the same request again on confirm (`adding.tsx`); the outbound trunk set up the same way, with the operator's guards read-only (`outbound.tsx`); the sandbox's `phone.tsx` is Phone testing. Tokens (`/tokens`, open to every key): the person's own keys, and the org's server tokens — made for one world (production only by somebody with production access), shown once as `PINECALL_KEY=…`, listed with whose each is and when it was last used, revoked; the vendors and the keys the org brought; the people, invited or reset with a link shown once and changed in place, each person's Production switch (an admin's reads *always*; the invite form has one too), what each role opens (`roles.tsx`) and the org's single sign-on (`sso.tsx`); what the org consumed |
-| `login/` · `terminal/` | the way in: sign in, choose a password, *this machine is not signed in*; and `/cli`, the card that signs a terminal in |
-| the shell | `shell/shell.tsx` mounts `lib/org.tsx` — ONE read of the floor (`GET /v1/sessions`, `GET /v1/events`), the agents, the person's orgs and the day's insights, shared by every screen — around `sidebar.tsx` (the workspace and its org menu, the table's groups gated by the key's scopes off `GET /v1/whoami`, one row per slug — `lib/corners.ts`), `top.tsx` (where you are, the theme's sun or moon — `theme-button.tsx` — and sign out), `switcher.tsx` (the person, the org, the two environment chips that open the OTHER console, every copy and — for a `team` key in the sandbox — a colleague's opened, `lib/world.tsx`), `agent-head.tsx` (an agent's standing and its tabs), `palette.tsx` (⌘K) and `lib/whence.tsx` (`WhenceKeeper`: the path the reader left, so a screen reached from several places — a session, from Live or Personas or Evals — points back at the one they came from; `useWayBack(fallback)` names it with `screenAt()`, off the screens table, and falls back on a reload) |
-
-**What it looks like** is the redesign, taken literally: `ui/tokens.css` is the one file of the
-console allowed to hold a hex — the inks, the lines, the grounds, the accent `#5b3df5` and its steps,
-the tints a pill wears, the shadows, the two faces. Every colour is a `light-dark(daylight, dark)` pair,
-so the page follows the system through `color-scheme` before any script runs, and `shared/theme.ts`
-stamps `data-theme` when a person flips it from the top bar; the flip is kept in the browser until the
-system's own theme changes. The widget's blank page is a customer's site and stays daylight in both.
-`ui/ui.css` is the vocabulary (the page, the card, the stat, the grid table, the controls, the
-pill) and `ui/*.tsx` its parts — `Page`, `Card`, `Stat`, `TableHead`/`TableRow`, `Button`, `Field`,
-`Segmented`, `Chips`, `Pill`, `Avatar`, `Icon` and the rest — imported as one from `ui/`; each
-screen's own stylesheet holds only what is that screen's, under its own prefix. `lib/format.ts` is
-how a duration, a sum of money, a moment and a phone number are written, UTC like the log.
-A session list is parsed with the protocol's own `SessionListSchema`, at the screen that reads it
-(`lib/use-floor.ts`, `lib/use-agent-sessions.ts`). The face is Inter, fetched from Google Fonts by
-`index.html` with a system fallback — the one request the page makes to anything but the gateway —
-and anything a machine wrote is the system's monospace. The icons are paths in `ui/icon.tsx`, so the
-page depends on no icon set. The logo is `public/pinecall-logo.png` (`pinecall-logo-dark.png`, its wordmark drawn light, in the
-dark theme), its mark `pinecall-mark.png` and the favicon cut from it. `ui/shared/styles/` and `frame.tsx` were the operator
-page's and went with it — the console wears `ui/ui.css` over `ui/tokens.css` and nothing else.
-
-Its own laws. Three are held by a test of their own: vite bundles every screen's stylesheet into
-one file, so **a class name is global** whatever directory it was written in
-(`one-stylesheet-one-class`); the desk sends **one** verb per gesture and one seat request
-(`the-desk-sends-one-verb`); a supervisor's six entries each read back as **one sentence**
-(`a-supervisor-reads-as-one-line`), and so do a lookup's two (`a-lookup-reads-as-one-line`, off
-`lib/lookups.ts`, which both timelines print from). Two more are conventions the reader enforces:
-`shared/api.ts` is the only place a request to the gateway is built, and `lib/metrics.ts` the only
-file that names a metric — Sessions must print the same digits as `pinecall-runtime sessions show`.
-
-### The box, from inside the console
-
-There is no operator page. The box is operated from the console's **Box** group — Organizations
-and their quotas, the keys of each, the people of each (**read only**: who works at a tenant is
-the tenant's to decide, and a box that could edit a member could put itself in somebody's org),
-Routes, the Fleet with its cordons, Box usage folded off the log, and Box settings. It is drawn
-only for a person the box made an operator (`lib/operator.ts` asks `GET /v1/ops/whoami`), and it
-is that person's own key that opens `/v1/ops/*` — the box's ops key is never typed into a
-browser, and the second bundle that once asked for it is gone.
-
-**Nothing about a PLAN is on it.** What an org is charged, what it is owed, what it signed up to:
-none of that is the runtime's, and none of it is here. The screens read quotas — the mechanism —
-and the package that charges is what turns a plan into a row (the runtime's `extensions/`).
+What stays in THIS repo is the other half of the console: `cli/ui/*.ts`, what `pinecall start`
+ANSWERS a console with when the gateway relays a dev verb to the process standing in the agent's
+directory (`cli/ui/doors.ts`, one module per verb family). Those are node modules, never a browser
+one — and the page never imports them either: it asks the gateway, and the gateway asks the app.
 
 ## 12. LiveKit: where it is, and where it is not
 
@@ -600,14 +476,9 @@ package, appears in exactly three files of `src/`, all of them inside the page �
 `@livekit/rtc-node` in two more, `cli/ear.ts` and `cli/listening.ts`, which are what puts
 `simulate --listen` on this machine's speakers:
 
-| file | why |
-|---|---|
-| `cli/ui/console/screens/talk/use-room.ts` | the Chat screen joins the room — with the browser's microphone on a call, for its text alone when it is written: `Room`, `RoomEvent`, `Track`, `TextStreamReader` |
-| `cli/ui/console/lib/use-listen.ts` | a supervisor's ear: a hidden, silent seat in the room |
-| `cli/ui/console/lib/use-supervise.ts` | a supervisor's hands: the microphone that takes the line |
-
-All three receive a **seat** minted through the CLI's own door — the page never holds a key and
-never talks to LiveKit's API, only to a room it was given a token for. Everything else in this
+The page's own three — the Chat screen's room, a supervisor's ear and their microphone — went to
+`../console` with it, and each receives a **seat** minted through a door of this CLI: a page never
+talks to LiveKit's API, only to a room it was given a token for. Everything else in this
 repository — the class, the views, the call, the bridge, the client, every verb — knows only the
 wire. A tenant never imports LiveKit, and the class does not know it exists: `call.room` is
 reduced from entries, and `room.invite` is a command, not an SDK call.
@@ -625,8 +496,6 @@ line the test deletes.
 | `views/` | `agent`, `@pinecall/protocol` |
 | `runtime/` | `agent`, `call`, `views`, `client`, `@pinecall/protocol` |
 | `cli/` | `agent`, `call`, `views`, `runtime`, `client`, `@pinecall/protocol`, `ws`, `tsx`, `@livekit/rtc-node` |
-| `cli/ui/shared/` | `react`, `zod` |
-| `cli/ui/console/` | `cli/ui/shared`, `@pinecall/protocol`, `react`, `react-dom`, `react-router`, `livekit-client`, `vite`, `@vitejs/plugin-react`, `zod` |
 | `src/index.ts` | `agent`, `call`, `views`, `runtime` |
 
 `test/the-tree.test.ts`, over `src/`, `test/` and `examples/`: no `.ts` at the repo root, no file
@@ -675,16 +544,16 @@ judge's drift.
   alone), `pinecall/tsconfig.tenant.json` (the compiler flags an agent needs, so a tenant writes
   none) — plus `pinecall/views/jsx-runtime` for the JSX transform, `pinecall/panels` for the tags
   a `@view` is written in, and `pinecall/client/testing`.
-- **Four tsconfigs:** `tsconfig.json` builds `dist/`; `tsconfig.lint.json` checks `src` and `test`;
-  `tsconfig.console.json` checks the browser page against the DOM; `tsconfig.tenant.json` is the
+- **Three tsconfigs:** `tsconfig.json` builds `dist/`; `tsconfig.lint.json` checks `src` and
+  `test`; `tsconfig.tenant.json` is the
   preset a tenant extends (it carries `experimentalDecorators`, because oxc implements only the
   legacy decorators today — the day it ships the TC39 ones the flag leaves the preset and no
   tenant file changes — and `jsx: react-jsx` with `jsxImportSource: pinecall/views`). Those two
   facts are what let one `agent.tsx` carry `@tool` methods and a JSX `render()` at once: tsc, oxc
   and tsx each take both from the preset, and a tenant adds nothing. The one thing `.tsx` costs is
   the angle-bracket cast — `<Slot>row` is JSX there, so a class that wants one writes `row as Slot`.
-- **The console is the one thing that must be built**: a browser reads no TypeScript, so
-  `scripts/build` runs `vite build` into `dist/cli/ui/console`. The runtime's `scripts/console`
-  copies that directory into the gateway as package data, and the gateway serves it at `/`.
+- **Nothing here is a browser program any more**: `scripts/build` is `tsc` into `dist/`, and the
+  page is built in `../console` by the runtime's `scripts/console`, which copies it into the
+  gateway as package data.
 - `scripts/check` is build → lint → test, in that order, for the package and for every workspace
   package; CI runs exactly that, with `pinecall/protocol` checked out beside it.

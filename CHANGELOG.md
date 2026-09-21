@@ -7,14 +7,13 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Removed
-- **`pinecall start --serve` is gone.** The flag opened the sandbox's console beside the app;
-  `pinecall console` opens the box's, which is where that console lives now. `pinecall serve`
-  itself still runs — see Deprecated.
-
-### Deprecated
-- **`pinecall serve` is on its way out.** It is the same console on your own machine, for a box
-  that does not answer to a second name yet, and it is the only thing under `cli/` that binds a
-  port. It goes once every box serving a sandbox has that name.
+- **`pinecall serve` and `pinecall start --serve` are gone.** The sandbox's console was a server on
+  your own machine, `http://localhost:4100`, signing every request with the project's key. The box
+  serves it now at a second name of its own (`sandbox.pinecall.io` on the cloud), so there is
+  nothing local to run and nothing under `cli/` that binds a port. `pinecall console` opens it.
+- **The console is a repository of its own** (`../console`), built into the gateway by the
+  runtime. This package no longer carries a browser program, which takes eight devDependencies,
+  a tsconfig and a vitest project out of it — nothing a tenant installs changes.
 
 ### Added
 - **`pinecall console [agent]` opens the box's console in a browser, signed in.** The sandbox's,

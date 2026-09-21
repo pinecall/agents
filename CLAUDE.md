@@ -10,8 +10,8 @@ traps in them are skills under `.claude/skills/`.
 
 ```bash
 pnpm install                     # the workspace, and the wire from the repo next door
-pnpm test                        # the framework and the console, two vitest projects — from the sources
-pnpm lint                        # tsc over src and test, then over the console against the DOM
+pnpm test                        # the framework and its CLI — from the sources
+pnpm lint                        # tsc over src and test
 pnpm -r test                     # the example, and the wire's own suite
 scripts/build                    # what is published: dist/, and the console bundle inside it
 scripts/check                    # build → lint → test, in that order — what CI runs
@@ -21,19 +21,17 @@ cd examples/clinica-norte && pnpm exec pinecall chat     # the agent in this ter
 cd examples/clinica-norte && pnpm exec pinecall prompt --state test/clinica-norte/prompts/states.json
 ```
 
-Nothing has to be built to lint or test: every package in the workspace exports its sources.
-`scripts/build` is for what gets published, and for the console — a browser reads no TypeScript,
-so a change under `src/cli/ui/console/` reaches a box only through it: the runtime's
-`scripts/console` bundles `dist/cli/ui/console` into the gateway, which serves it at both names.
+Nothing has to be built to lint or test: every package in the workspace exports its sources, and
+`scripts/build` is only what gets published. The console is not here: it is `../console`, a repo of
+its own that the runtime builds into the gateway.
 
 ## Structure
 
 - `src/` — six directories, kept apart by the import table in `test/the-imports.test.ts`
   - `agent/` the class · `views/` JSX→text · `call/` the live call as a value
   - `client/` `pinecall/client`: the socket, and nothing above it · `runtime/` the bridge
-  - `cli/` `pinecall <verb>`, and nothing under it binds a port; under `cli/ui/console/` the page,
-    one bundle the gateway serves at BOTH its names — production's console at its own and the
-    sandbox's at the second — which screens each has is `lib/mode.ts`, one table
+  - `cli/` `pinecall <verb>`, and nothing under it binds a port; `cli/ui/*.ts` is what `start`
+    ANSWERS a console with, by the wire's verb (`doors.ts`) — the page that asks is `../console`
 - `test/` mirrors `src/`; `the-tree`, `the-imports`, `index` and `client/index` are the tree's rules
 - `examples/` one tenant written the way a customer writes one — and what the nightly drives
 - `docs/` how to build an agent · `docs/decisions/` the maintainer's notebook, **git-ignored**:
@@ -63,9 +61,8 @@ happened and the doc is the bug.
 
 - No `.ts` at the repo root. No file over 400 lines. Every file opens with a line saying what it
   is. No two names in one directory one letter apart.
-- The import table is the architecture: `client/` knows only the wire and `ws`; `cli/ui/console/`
-  is a browser page and may never reach the framework; a line nobody uses is a line the test
-  deletes.
+- The import table is the architecture: `client/` knows only the wire and `ws`; a line nobody uses
+  is a line the test deletes.
 - `test/index.test.ts` and `test/client/index.test.ts` pin the two public surfaces by name —
   never a CLI module, never a bridge internal, never a test helper.
 - `package.json` exports point at `src/` and `publishConfig` swaps in `dist/`. The example
