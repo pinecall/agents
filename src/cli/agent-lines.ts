@@ -77,7 +77,7 @@ export function theCornerCalled(standing: TuningAnswer, team: boolean): string {
 }
 
 /** The fields on the page, in the order a person reads them, under the names a person types. */
-export const FIELDS = ["voice", "tts", "tts-model", "stt", "llm", "greeting", "hangup", "turn", "memory", "knowledge", "bases"] as const;
+export const FIELDS = ["voice", "tts", "tts-model", "stt", "llm", "greeting", "hangup", "turn", "memory", "record", "knowledge", "bases"] as const;
 export type Field = (typeof FIELDS)[number];
 
 /** The name a person types, as the wire spells it. */
@@ -91,6 +91,7 @@ export const WIRE: Record<Field, keyof TuningBody> = {
   hangup: "hangup",
   turn: "turn",
   memory: "memory",
+  record: "record",
   knowledge: "knowledge",
   bases: "bases",
 };
@@ -128,6 +129,12 @@ export function shown(config: TuningBody, field: Field): string | undefined {
     const memory = config.memory ?? undefined;
     if (memory === undefined) return undefined;
     return `remember ${memory.remember?.length ?? 0} · forget ${memory.forget?.length ?? 0}`;
+  }
+  // The one field whose FALSE is the thing worth reading: a corner that says nothing falls
+  // through to the one below, and a corner that says no keeps no audio at all.
+  if (field === "record") {
+    const records = config.record ?? undefined;
+    return records === undefined ? undefined : records ? "keeps the audio" : "keeps no audio";
   }
   if (field === "knowledge") {
     const text = config.knowledge ?? undefined;

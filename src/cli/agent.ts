@@ -21,11 +21,11 @@ const USAGE = [
   "usage: pinecall agent [--agent <slug>] [--json]",
   "       pinecall agent list · stop <app>",
   "       pinecall agent set [--voice x] [--tts x] [--tts-model x] [--stt x] [--llm x] [--greeting '…' | --reply '…']",
-  "                          [--hangup '…'] [--endpointing-ms n] [--min-interruption-words n]",
+  "                          [--hangup '…'] [--endpointing-ms n] [--min-interruption-words n] [--record on|off]",
   "                          [--eot-threshold 0.5-0.9] [--eager-eot-threshold 0.3-0.9]",
   "                          [--remember '…' …] [--forget '…' …] [--team] [--note '…']",
   "       pinecall agent knowledge [--team] · knowledge edit [--team] [--note '…']",
-  "       pinecall agent clear [voice|tts|tts-model|stt|llm|greeting|hangup|turn|memory|knowledge|bases …] [--team]",
+  "       pinecall agent clear [voice|tts|tts-model|stt|llm|greeting|hangup|turn|memory|record|knowledge|bases …] [--team]",
   "       pinecall agent history [--team] · diff [--against team|production] · rollback <version> [--team]",
   "       pinecall agent pull [--team] · push <file> [--team]",
 ].join("\n");
@@ -83,6 +83,15 @@ const NOT_A_MODEL = (said: string): string =>
 const NOT_A_CONFIDENCE = (flag: string, said: string): string =>
   `--${flag} ${said} is not a confidence: a number above 0 and no higher than 1`;
 
+// Whether the agent's calls keep their audio. Typed as `on|off` and not as a bare flag, because
+// `--record` alone could only ever turn it ON and the whole point of the knob is that an org may
+// say no. Anything else is answered here, before a door is opened.
+const NOT_ON_OR_OFF = (said: string): string => `--record ${said} is not on or off`;
+
+function switched(said: string | undefined): boolean | undefined {
+  return said === "on" ? true : said === "off" ? false : undefined;
+}
+
 function fraction(said: string | undefined): number | undefined {
   if (said === undefined) return undefined;
   const number = Number(said);
@@ -116,6 +125,7 @@ export const OPTIONS = {
   "eot-threshold": { type: "string" },
   "eager-eot-threshold": { type: "string" },
   "min-interruption-words": { type: "string" },
+  record: { type: "string" },
   remember: { type: "string", multiple: true },
   forget: { type: "string", multiple: true },
   against: { type: "string" },
@@ -140,6 +150,10 @@ export async function run(argv: string[], how: Setting = {}): Promise<number> {
       err.write(`${NOT_A_CONFIDENCE(flag, said)}\n`);
       return 2;
     }
+  }
+  if (values.record !== undefined && switched(values.record) === undefined) {
+    err.write(`${NOT_ON_OR_OFF(values.record)}\n`);
+    return 2;
   }
   const door = theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
@@ -224,6 +238,8 @@ export function typed(values: Typed, standing: TuningBody): Partial<TuningBody> 
     if (sure !== undefined) wanted.turn.eot_threshold = sure;
     if (eager !== undefined) wanted.turn.eager_eot_threshold = eager;
   }
+  const records = switched(values.record);
+  if (records !== undefined) wanted.record = records;
   if (values.remember !== undefined || values.forget !== undefined) {
     wanted.memory = {
       remember: values.remember ?? standing.memory?.remember ?? [],

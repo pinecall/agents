@@ -577,10 +577,10 @@ pinecall agent [--agent <slug>] [--json]
 pinecall agent list · stop <app>
 pinecall agent set [--voice x] [--tts x] [--tts-model x] [--stt x] [--llm x] [--greeting '…' | --reply '…']
                    [--hangup '…'] [--endpointing-ms n] [--min-interruption-words n]
-                   [--eot-threshold 0.5-0.9] [--eager-eot-threshold 0.3-0.9]
+                   [--eot-threshold 0.5-0.9] [--eager-eot-threshold 0.3-0.9] [--record on|off]
                    [--remember '…' …] [--forget '…' …] [--team] [--note '…']
 pinecall agent knowledge [--team] · knowledge edit [--team] [--note '…']
-pinecall agent clear [voice|tts|tts-model|stt|llm|greeting|hangup|turn|memory|knowledge|bases …] [--team]
+pinecall agent clear [voice|tts|tts-model|stt|llm|greeting|hangup|turn|memory|record|knowledge|bases …] [--team]
 pinecall agent history [--team] · diff [--against team|production] · rollback <version> [--team]
 pinecall agent pull [--team] · push <file> [--team]
                                         … and any of them with --prod, in production
@@ -600,6 +600,7 @@ maravilla · sandbox
   hangup        —               when the person has what…   when the person has what…
   turn          —               —                           —
   memory        —               remember 4 · forget 1       remember 4 · forget 1
+  record        —               —                           keeps the audio
   knowledge     —               2,140 chars                 2,140 chars
   bases         —               maravilla (k 4)             maravilla (k 4)
 
@@ -631,6 +632,13 @@ before the person had finished speaking — on a line, an agent that replies to 
 not cut anybody off: the turn is committed only when Flux is sure, and the latency that would
 cost is bought back by the eager bar. The eager one may never sit above the other, and a set that
 would is refused before it is written.
+
+**`--record on|off` says whether this agent's calls keep their audio**, and it is typed rather
+than being a bare flag because the answer worth being able to give is no. A corner that sets it
+decides for the copies built there; a corner that says nothing falls through to the one below, and
+an agent nobody has told keeps its audio. What is kept is the whole room — the caller, the agent,
+the hold music, and a supervisor who took the line — served back by the console's session screen
+and by `pinecall sessions`. `pinecall agent clear record` gives the answer back to the corner below.
 
 **A model knob takes a tier by its short name.** `--llm haiku` · `sonnet` · `opus` are expanded
 here to the model id the provider answers to — the same table `pinecall test --model` reads — so

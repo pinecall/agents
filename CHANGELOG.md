@@ -19,6 +19,11 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   its own default of 0.7, so this is the knob that decides whether an agent answers half a
   sentence; `--eot-threshold 0.85 --eager-eot-threshold 0.4` is Deepgram's own pairing for a line
   that must not cut anybody off, and the eager bar is what keeps that from costing latency.
+- **`pinecall agent set --record on|off`, and `clear record`.** Whether this agent's calls keep
+  their audio, per world and per corner like every other setting. It is `on|off` and not a bare
+  flag on purpose: the answer worth being able to give is no. Nobody's calls stop being recorded
+  by this release — a corner that says nothing keeps them. A class that declares `record` is
+  refused at load, by name, like every other field that is the world's.
 
 ### Fixed
 - **A written `pinecall simulate` stops when somebody hangs the call up.** The caller improvised

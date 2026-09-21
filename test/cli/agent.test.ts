@@ -294,6 +294,26 @@ describe("the versions", () => {
     expect(said.text()).toContain("is not a confidence");
   });
 
+  // Recording is the one knob whose OFF is the thing an org needs to be able to say, so it is
+  // typed rather than being a bare flag that could only ever turn it on.
+  it("turns the recording off for one agent, in one corner", async () => {
+    gateway.yours = null;
+    gateway.team = null;
+
+    await run(["set", "--agent", AGENT, "--record", "off"], { out: written().stream, env: environment() });
+
+    expect(gateway.written).toEqual({ config: { record: false }, if_version: null, note: null, team: false });
+  });
+
+  it("refuses anything but on or off, before anything is written", async () => {
+    const said = written();
+    const code = await run(["set", "--agent", AGENT, "--record", "sometimes"], { out: written().stream, err: said.stream, env: environment() });
+
+    expect(code).toBe(2);
+    expect(gateway.heard.filter((one) => one.method === "PUT")).toEqual([]);
+    expect(said.text()).toContain("is not on or off");
+  });
+
   it("says what changes between two configs, field by field", () => {
     expect(changes({ voice: "carolina" }, { voice: "amelia", turn: { endpointing_ms: 300 } }, "")).toBe("voice carolina → amelia · turn — → endpointing 300 ms");
     expect(changes({}, {}, "  ")).toBe("");

@@ -14,6 +14,7 @@ export const THE_WORLDS: Readonly<Record<string, string>> = {
   says: "pinecall lexicon add <word> --say '…'",
   hears: "pinecall lexicon hear <word> …",
   memory: "pinecall memory policy --remember '…' --forget '…'",
+  record: "pinecall agent set --record on|off",
   knowledge: "pinecall agent knowledge edit — what the agent knows by heart is a setting, not a file",
   docs: "pinecall docs push, then pinecall docs attach <base>",
 };
