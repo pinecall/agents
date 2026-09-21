@@ -513,7 +513,8 @@ signed in, and production's at the box's own. An app that would rather hold the 
 own Node server mounts the class there instead: [production.md](production.md).
 
 And two flags of `agent set` the pipeline section above does not name — `--tts`, `--tts-model`,
-`--endpointing-ms`, `--min-interruption-words` — plus `pinecall docs drop <base>`, which takes a
+`--endpointing-ms`, `--min-interruption-words`, `--eot-threshold`, `--eager-eot-threshold` — plus
+`pinecall docs drop <base>`, which takes a
 base out of the world altogether.
 
 **What the package hands a test**, beyond the class itself: `describe(Class, source)` gives a class

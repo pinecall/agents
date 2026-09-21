@@ -22,6 +22,7 @@ const USAGE = [
   "       pinecall agent list · stop <app>",
   "       pinecall agent set [--voice x] [--tts x] [--tts-model x] [--stt x] [--llm x] [--greeting '…' | --reply '…']",
   "                          [--hangup '…'] [--endpointing-ms n] [--min-interruption-words n]",
+  "                          [--eot-threshold 0.5-0.9] [--eager-eot-threshold 0.3-0.9]",
   "                          [--remember '…' …] [--forget '…' …] [--team] [--note '…']",
   "       pinecall agent knowledge [--team] · knowledge edit [--team] [--note '…']",
   "       pinecall agent clear [voice|tts|tts-model|stt|llm|greeting|hangup|turn|memory|knowledge|bases …] [--team]",
@@ -76,6 +77,18 @@ const NOT_A_MODEL = (said: string): string =>
   `--llm ${said} names no model: vendor/model, a vendor alone, a model alone, ` +
   `or one of ${Object.keys(SHORT_NAMES).join(" · ")}`;
 
+// How sure the ears are, which is a confidence and never a count. The gateway holds the two to
+// Deepgram's own bands and to each other; this only holds them to being a number between 0 and 1,
+// so `--eot-threshold high` is answered here rather than three hops away.
+const NOT_A_CONFIDENCE = (flag: string, said: string): string =>
+  `--${flag} ${said} is not a confidence: a number above 0 and no higher than 1`;
+
+function fraction(said: string | undefined): number | undefined {
+  if (said === undefined) return undefined;
+  const number = Number(said);
+  return Number.isFinite(number) && number > 0 && number <= 1 ? number : undefined;
+}
+
 /** What the verb can be told besides the argv: where to print, and which environment. Tests only. */
 export interface Setting {
   out?: NodeJS.WritableStream;
@@ -100,6 +113,8 @@ export const OPTIONS = {
   reply: { type: "string" },
   hangup: { type: "string" },
   "endpointing-ms": { type: "string" },
+  "eot-threshold": { type: "string" },
+  "eager-eot-threshold": { type: "string" },
   "min-interruption-words": { type: "string" },
   remember: { type: "string", multiple: true },
   forget: { type: "string", multiple: true },
@@ -116,6 +131,15 @@ export async function run(argv: string[], how: Setting = {}): Promise<number> {
   if (values.llm !== undefined && llm === undefined) {
     err.write(`${NOT_A_MODEL(values.llm)}\n`);
     return 2;
+  }
+  // A confidence that is not one is answered here, beside the model that names nothing: before a
+  // door is opened, so nothing is read and nothing is written.
+  for (const flag of ["eot-threshold", "eager-eot-threshold"] as const) {
+    const said = values[flag];
+    if (said !== undefined && fraction(said) === undefined) {
+      err.write(`${NOT_A_CONFIDENCE(flag, said)}\n`);
+      return 2;
+    }
   }
   const door = theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
@@ -189,10 +213,16 @@ export function typed(values: Typed, standing: TuningBody): Partial<TuningBody> 
   if (values.hangup !== undefined) wanted.hangup = { when: values.hangup };
   const endpointing = numberOf(values["endpointing-ms"]);
   const words = numberOf(values["min-interruption-words"]);
-  if (endpointing !== undefined || words !== undefined) {
+  // How sure a recogniser that ends the turn itself has to be: a fraction, never a whole number,
+  // which is why these two are read with a different reader.
+  const sure = fraction(values["eot-threshold"]);
+  const eager = fraction(values["eager-eot-threshold"]);
+  if ([endpointing, words, sure, eager].some((set) => set !== undefined)) {
     wanted.turn = { ...(standing.turn ?? {}) };
     if (endpointing !== undefined) wanted.turn.endpointing_ms = endpointing;
     if (words !== undefined) wanted.turn.min_interruption_words = words;
+    if (sure !== undefined) wanted.turn.eot_threshold = sure;
+    if (eager !== undefined) wanted.turn.eager_eot_threshold = eager;
   }
   if (values.remember !== undefined || values.forget !== undefined) {
     wanted.memory = {

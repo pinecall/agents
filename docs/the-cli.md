@@ -577,6 +577,7 @@ pinecall agent [--agent <slug>] [--json]
 pinecall agent list · stop <app>
 pinecall agent set [--voice x] [--tts x] [--tts-model x] [--stt x] [--llm x] [--greeting '…' | --reply '…']
                    [--hangup '…'] [--endpointing-ms n] [--min-interruption-words n]
+                   [--eot-threshold 0.5-0.9] [--eager-eot-threshold 0.3-0.9]
                    [--remember '…' …] [--forget '…' …] [--team] [--note '…']
 pinecall agent knowledge [--team] · knowledge edit [--team] [--note '…']
 pinecall agent clear [voice|tts|tts-model|stt|llm|greeting|hangup|turn|memory|knowledge|bases …] [--team]
@@ -613,6 +614,23 @@ are **settings**, kept by the gateway and laid over the class at the one place e
 built. A class that still declares one of them is refused at load — before a prompt is printed or
 a gateway is knocked at — and the refusal names the verb: `` `voice` is the world's now, not the
 class's: pinecall agent set --voice <name> — remove it from the class``.
+
+**How a turn is decided is four numbers, and two of them are confidences.** `--endpointing-ms` is
+the longest silence a caller is left in before the turn is called finished, and
+`--min-interruption-words` how many words it takes to stop the agent mid-sentence. The other two
+are for a recogniser that decides the end of a turn *itself* — Deepgram Flux, which is the
+runtime's own ears: `--eot-threshold` is how sure it must be before it ends one, and
+`--eager-eot-threshold` the lower bar at which it says a turn MIGHT be over, which is what lets
+the model start on an answer that is thrown away if the caller carries on.
+
+The first of those is the knob that decides whether an agent answers half a sentence. Deepgram's
+own measurement of its default, 0.7, is that as much as a fifth of the turns it ends were ended
+before the person had finished speaking — on a line, an agent that replies to the first half of
+"normal cleaning needed, it gets done every couple of months" and runs a tool on half the facts.
+`--eot-threshold 0.85 --eager-eot-threshold 0.4` is Deepgram's own pairing for a line that must
+not cut anybody off: the turn is committed only when Flux is sure, and the latency that would
+cost is bought back by the eager bar. The eager one may never sit above the other, and a set that
+would is refused before it is written.
 
 **A model knob takes a tier by its short name.** `--llm haiku` · `sonnet` · `opus` are expanded
 here to the model id the provider answers to — the same table `pinecall test --model` reads — so

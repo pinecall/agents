@@ -6,6 +6,14 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Added
+- **`pinecall agent set --eot-threshold` and `--eager-eot-threshold`.** How sure the ears have to
+  be that the caller has finished before the turn is called over, and the lower bar at which they
+  say it might be. Deepgram measures a fifth of the turns ending before the person had finished at
+  its own default of 0.7, so this is the knob that decides whether an agent answers half a
+  sentence; `--eot-threshold 0.85 --eager-eot-threshold 0.4` is Deepgram's own pairing for a line
+  that must not cut anybody off, and the eager bar is what keeps that from costing latency.
+
 ## [0.9.0] — The console is the box's, at a second name of its own
 
 The one place a tenant looked at their sandbox was a server on their own laptop. It is a name the

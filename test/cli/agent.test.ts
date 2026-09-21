@@ -273,6 +273,27 @@ describe("the versions", () => {
     expect(out.text()).toContain("v10 · m_bruno");
   });
 
+  // Deepgram measures a fifth of the turns ending before the caller has finished at its own
+  // default confidence, so the bar is the knob that decides whether an agent answers half a
+  // sentence — and a fraction is not a whole number, which is what every other numeric flag takes.
+  it("takes the two confidences a turn ends on as fractions, beside the knobs already there", async () => {
+    gateway.yours = null;
+    gateway.team = null;
+
+    await run(["set", "--agent", AGENT, "--eot-threshold", "0.85", "--eager-eot-threshold", "0.4"], { out: written().stream, env: environment() });
+
+    expect(gateway.written).toEqual({ config: { turn: { eot_threshold: 0.85, eager_eot_threshold: 0.4 } }, if_version: null, note: null, team: false });
+  });
+
+  it("refuses a confidence that is not one, before anything is written", async () => {
+    const said = written();
+    const code = await run(["set", "--agent", AGENT, "--eot-threshold", "high"], { out: written().stream, err: said.stream, env: environment() });
+
+    expect(code).toBe(2);
+    expect(gateway.heard.filter((one) => one.method === "PUT")).toEqual([]);
+    expect(said.text()).toContain("is not a confidence");
+  });
+
   it("says what changes between two configs, field by field", () => {
     expect(changes({ voice: "carolina" }, { voice: "amelia", turn: { endpointing_ms: 300 } }, "")).toBe("voice carolina → amelia · turn — → endpointing 300 ms");
     expect(changes({}, {}, "  ")).toBe("");
