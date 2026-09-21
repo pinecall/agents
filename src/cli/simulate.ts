@@ -35,7 +35,7 @@ export const group: Group = {
 
   --persona <name>    one of the org's personas, by name: pinecall personas lists them
   --judge             read back the call.score the log seals on, and print every judge
-  --turns n           how many turns the caller improvises before hanging up (default 6)
+  --turns n           how many turns the caller improvises before hanging up (default 15)
   --voice             a real line: a room, and the caller in a person's voice, not the agent's
   --listen            the call on this machine's speakers while it happens; turns --voice on
   --background-noise  dB under the caller: a television behind them. Spoken runs only
@@ -54,10 +54,14 @@ const LISTEN_IS_A_LINE = "--listen is a call with audio in it: --voice is on";
 export const ONLY_ON_A_LINE = "--background-noise and --packet-loss are about audio: add --voice";
 
 /**
- * How many turns a caller improvises when nobody said. Six is the length of the walkthrough the
- * examples are written against, and long enough for a booking to reach its confirmation.
+ * How many turns a caller improvises when nobody said.
+ *
+ * Fifteen, because six was the length of a walkthrough and not of a call: a booking that settles
+ * an address, takes the property, the size, the condition, a day and a window, and then confirms,
+ * is past six turns before it has begun — and a simulation that hangs up there tests the opening
+ * of every agent and the end of none.
  */
-export const TURNS = 6;
+export const TURNS = 15;
 
 // The log seals on `call.score`, which is written after the caller has gone — so it is read back
 // rather than heard, and this is how long the judges are given before the terminal gives up.

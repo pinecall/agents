@@ -6,6 +6,12 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Changed
+- **`pinecall simulate --turns` defaults to 15, not 6.** Six was the length of a walkthrough, not
+  of a call: a booking that settles an address, takes the property, the size, the condition, a day
+  and a window and then confirms is past six turns before it has begun, so every simulation was
+  testing the opening of an agent and the end of none.
+
 ### Added
 - **`pinecall agent set --eot-threshold` and `--eager-eot-threshold`.** How sure the ears have to
   be that the caller has finished before the turn is called over, and the lower bar at which they

@@ -417,7 +417,7 @@ at that many dB under them, and `--packet-loss` drops that share of their packet
 ## `simulate`
 
 ```
-pinecall simulate --persona <name> [--judge] [--turns n (6)] [--voice] [--listen]
+pinecall simulate --persona <name> [--judge] [--turns n (15)] [--voice] [--listen]
                   [--background-noise dB] [--packet-loss percent] [--agent <name>] [--file agent.tsx]
 ```
 

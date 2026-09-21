@@ -2,7 +2,7 @@
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { Simulated, Simulation } from "../../../src/cli/simulate.js";
+import { TURNS, type Simulated, type Simulation } from "../../../src/cli/simulate.js";
 import type { Persona } from "../../../src/cli/testing/personas.js";
 import { Refusal } from "../../../src/cli/ui/refusal.js";
 import { simulatingFrom } from "../../../src/cli/ui/simulating.js";
@@ -54,7 +54,7 @@ describe("starting one", () => {
     const started = await door.start({ agent: "clinica-norte", persona: "apurado" });
 
     expect(started).toEqual({ call: "call_abc" });
-    expect(opening.asked[0]).toMatchObject({ door: DOOR, judge: false, voice: false, turns: 6 });
+    expect(opening.asked[0]).toMatchObject({ door: DOOR, judge: false, voice: false, turns: TURNS });
     expect(opening.asked[0]?.degraded).toBeUndefined();
   });
 
