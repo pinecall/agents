@@ -6,6 +6,12 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.9.0] — The console is the box's, at a second name of its own
+
+The one place a tenant looked at their sandbox was a server on their own laptop. It is a name the
+box answers to now, so there is nothing local to run — and the middle number moves because a verb
+was taken away.
+
 ### Removed
 - **`pinecall serve` and `pinecall start --serve` are gone.** The sandbox's console was a server on
   your own machine, `http://localhost:4100`, signing every request with the project's key. The box
