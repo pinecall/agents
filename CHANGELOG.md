@@ -14,6 +14,12 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   sentence; `--eot-threshold 0.85 --eager-eot-threshold 0.4` is Deepgram's own pairing for a line
   that must not cut anybody off, and the eager bar is what keeps that from costing latency.
 
+### Fixed
+- **A written `pinecall simulate` stops when somebody hangs the call up.** The caller improvised
+  its remaining turns down a socket the gateway had already sealed, waiting thirty seconds on each
+  for an answer that was not coming. `call.ended` on the log is the end of the conversation, here
+  as it is for a spoken run.
+
 ## [0.9.0] — The console is the box's, at a second name of its own
 
 The one place a tenant looked at their sandbox was a server on their own laptop. It is a name the

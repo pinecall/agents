@@ -207,12 +207,16 @@ async function inWriting(
   await once(socket, "open");
   await heard.quiet();
   for (let turn = 0; turn < how.turns; turn += 1) {
+    // Somebody hung the call up — the console's Stop, the app, the agent. The line the model is
+    // about to improvise would go down a socket that is already sealed, so the caller stops with
+    // the call, exactly as the spoken one does off the same entry (runtime api/evals/voice.py).
+    if (heard.over) break;
     const next = await theNextLine(door, {
       persona: callingAs(persona),
       heard: heard.said,
       turns_left: how.turns - turn,
     });
-    if (next.say === "") break;
+    if (next.say === "" || heard.over) break;
     const before = heard.agentTurns;
     socket.send(JSON.stringify({ text: next.say }));
     await heard.answered(before);

@@ -16,6 +16,8 @@ export const A_TURN_MAY_TAKE_MS = 30_000;
 export class Heard {
   call: string | undefined;
   agentTurns = 0;
+  /** Whether the call has been hung up: by the agent, by the app, or by a person who stopped it. */
+  over = false;
   readonly said: Spoken[] = [];
   private last = Date.now();
 
@@ -32,6 +34,10 @@ export class Heard {
       this.opened?.(entry.call);
     }
     if (entry.type === "turn.agent") this.agentTurns += 1;
+    // The one entry that says nothing more will be answered. A caller that did not read it went on
+    // sending its remaining turns down a socket the gateway had already sealed, thirty seconds of
+    // waiting each (2026-09-21, the console's Stop on a written simulation).
+    if (entry.type === "call.ended") this.over = true;
     if (entry.type === "turn.user" || entry.type === "turn.agent") {
       this.said.push({
         who: entry.type === "turn.agent" ? "agent" : "caller",
@@ -51,7 +57,7 @@ export class Heard {
   /** Waits until the agent has spoken again, and then until the app has finished reacting. */
   async answered(said: number): Promise<void> {
     const deadline = Date.now() + A_TURN_MAY_TAKE_MS;
-    while (this.agentTurns === said && Date.now() < deadline) await after(SETTLE_MS / 4);
+    while (this.agentTurns === said && !this.over && Date.now() < deadline) await after(SETTLE_MS / 4);
     await this.quiet();
   }
 
