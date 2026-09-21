@@ -29,7 +29,6 @@ path end to end, with every output under it.
 | [`link`](#link) | this project's folder to one of your orgs: your key, written to its `.env` | yes |
 | [`start`](#start) | the app registered and answering — **the process you deploy** | yes |
 | [`console`](#console) | the box's console in a browser, signed in: the sandbox's, `--prod` for production's | yes |
-| [`serve`](#serve) | that same console on this machine, `http://localhost:4100`, until your box answers to a second name | yes |
 | [`chat`](#chat) | the same app in this terminal, and a written caller against it | yes |
 | [`prompt`](#prompt) | the exact prompt a state would produce, offline | **no** |
 | [`test`](#test) | ring 1 (and ring 2 with `--voice`): the goldens through this process | yes |
@@ -272,23 +271,6 @@ console, never from production's, which has no corners
 **The sandbox's name answers no production.** A request that arrives there and asks for production
 is refused by the gateway in a sentence, whoever holds the key — the name is the boundary, not a
 label on a page.
-
-## `serve`
-
-```
-pinecall serve [--port <n>] [--no-open]
-```
-
-**The same console, on this machine**, for a box that does not answer to a second name yet:
-`http://localhost:4100`, a sidecar that forwards every request to the gateway with the project's
-key on it. The key never reaches the browser, so the page has no login and no sign-out; only this
-machine's own page may ask, and a `Host` or an `Origin` that is not this loopback is answered `403`
-before the key is spent. One per machine: a second `serve` for the same gateway and org finds the
-first and says where it is.
-
-It is what [`console`](#console) replaces. **It goes the day the last box has its second name**, and
-nothing else here depends on it — `pinecall start` names the box's console whether it is running or
-not. In a checkout the page has to be bundled first (`scripts/build`).
 
 ## `line`
 
