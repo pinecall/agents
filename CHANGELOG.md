@@ -6,6 +6,8 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.9.1] — A persona's model, voice and verdict, and a class that declares no doors
+
 ### Changed
 - **`pinecall simulate --turns` defaults to 15, not 6.** Six was the length of a walkthrough, not
   of a call: a booking that settles an address, takes the property, the size, the condition, a day
@@ -13,6 +15,10 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   testing the opening of an agent and the end of none.
 
 ### Added
+- **`pinecall personas add|edit --llm --tts --voice --accepts-when --declines-when`.** How a caller
+  is played — the model that improvises it and the voice its lines are read in, in the words
+  `agent set` takes — and its own rule for a call. `pinecall simulate --judge` then scores a
+  `persona` row: `held` when the caller hung up satisfied, `broken` (exit 1) when it declined.
 - **`pinecall agent set --eot-threshold` and `--eager-eot-threshold`.** How sure the ears have to
   be that the caller has finished before the turn is called over, and the lower bar at which they
   say it might be. Deepgram measures a fifth of the turns ending before the person had finished at

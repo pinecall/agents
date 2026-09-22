@@ -14,7 +14,7 @@ import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { agentOfThisDirectory, notASlug } from "./load.js";
 import { asked, type Door } from "./testing/gateway.js";
-import { SHORT_NAMES, theModelNamed } from "./testing/models.js";
+import { NOT_A_MODEL, theModelNamed } from "./testing/models.js";
 import { refusal } from "./whoami.js";
 
 const USAGE = [
@@ -69,13 +69,6 @@ export const group: Group = {
   run,
 };
 
-// A short name is a tier, not a model: `--llm haiku` was stored as written and the gateway read a
-// bare name as the vendor in use, so the corner held `anthropic/haiku` — a 404 at the provider,
-// and no call said so. It is expanded HERE, through the one table `pinecall test --model` reads,
-// and a name that means no model at all never reaches the corner.
-const NOT_A_MODEL = (said: string): string =>
-  `--llm ${said} names no model: vendor/model, a vendor alone, a model alone, ` +
-  `or one of ${Object.keys(SHORT_NAMES).join(" · ")}`;
 
 // How sure the ears are, which is a confidence and never a count. The gateway holds the two to
 // Deepgram's own bands and to each other; this only holds them to being a number between 0 and 1,

@@ -10,6 +10,13 @@ export interface Persona {
   style: string;
   facts: Record<string, string>;
   state: Record<string, unknown>;
+  /** How they are played, in the agent's own three words; null is the runtime's choice. */
+  llm: string | null;
+  tts: string | null;
+  voice: string | null;
+  /** When they hang up satisfied, and unsatisfied: the rule the `persona` judge reads the call by. */
+  accepts_when: string;
+  declines_when: string;
   author: string;
   set_at: number;
 }
@@ -21,6 +28,11 @@ export interface Written {
   style: string;
   facts?: Record<string, string>;
   state?: Record<string, unknown>;
+  llm?: string | null;
+  tts?: string | null;
+  voice?: string | null;
+  accepts_when?: string;
+  declines_when?: string;
   was?: string;
 }
 

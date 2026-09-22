@@ -126,12 +126,20 @@ export async function oneRun(door: Door, id: string): Promise<EvalRun> {
   return await asked<EvalRun>(door, `/v1/evals/runs/${encodeURIComponent(id)}`);
 }
 
-/** Who is on the phone, as the door that plays them needs it: no script, three declarations. */
+/**
+ * Who is on the phone, as the door that plays them needs it: no script, three declarations — and
+ * how they are played, and the rule the judge at hang-up reads the call by, when they wrote them.
+ */
 export interface Persona {
   name: string;
   goal: string;
   style: string;
   facts?: Record<string, unknown>;
+  llm?: string;
+  tts?: string;
+  voice?: string;
+  accepts_when?: string;
+  declines_when?: string;
 }
 
 /** One turn of a simulated call from the caller's side: the business, or the caller themselves. */

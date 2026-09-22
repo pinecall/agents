@@ -9,7 +9,8 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { asATable, run } from "../../src/cli/personas.js";
+import { asATable } from "../../src/cli/persona-lines.js";
+import { run } from "../../src/cli/personas.js";
 import { pointingAt } from "./home.js";
 import { written } from "./said.js";
 
@@ -25,7 +26,12 @@ const APURADO = {
   goal: "cambiar la cita al martes",
   style: "frases cortas, interrumpe",
   facts: { "su teléfono": "600 000 001" },
-  state: {},
+  state: {} as Record<string, unknown>,
+  llm: null as string | null,
+  tts: null as string | null,
+  voice: null as string | null,
+  accepts_when: "",
+  declines_when: "",
   author: "m_ana",
   set_at: 1758300000,
 };
@@ -157,6 +163,52 @@ describe("the verbs it answers to", () => {
 
     expect(await run(["edit", "apurado", "--style", "grita un poco"], { out: written().stream, env })).toBe(0);
     expect(gateway.personas[0]).toMatchObject({ goal: "cambiar la cita", style: "grita un poco" });
+  });
+});
+
+describe("how a caller is played, and when it accepts the call", () => {
+  it("sends the three knobs and the rule, with a tier expanded as agent set expands it", async () => {
+    const argv = ["add", "apurado", "--goal", "g", "--style", "s", "--llm", "haiku", "--voice", "carolina"];
+    expect(await run([...argv, "--accepts-when", "una hora hoy", "--declines-when", "le piden llamar"], { out: written().stream, env })).toBe(0);
+
+    const [put] = gateway.heard.filter((one) => one.method === "PUT");
+    expect(put?.body).toMatchObject({
+      llm: "anthropic/claude-haiku-4-5-20251001",
+      tts: null,
+      voice: "carolina",
+      accepts_when: "una hora hoy",
+      declines_when: "le piden llamar",
+    });
+  });
+
+  it("keeps what edit does not name, and clears what it names empty", async () => {
+    gateway.personas = [{ ...APURADO, llm: "openai/gpt-5", voice: "carolina", accepts_when: "una hora" }];
+
+    expect(await run(["edit", "apurado", "--voice", ""], { out: written().stream, env })).toBe(0);
+
+    const [put] = gateway.heard.filter((one) => one.method === "PUT");
+    expect(put?.body).toMatchObject({ llm: "openai/gpt-5", voice: "", accepts_when: "una hora" });
+  });
+
+  it("refuses a --llm that names no model, in agent set's own sentence, and sends nothing", async () => {
+    const err = written();
+
+    const code = await run(["add", "apurado", "--goal", "g", "--style", "s", "--llm", "vendor/"], { out: written().stream, err: err.stream, env });
+
+    expect(code).toBe(2);
+    expect(err.text()).toContain("--llm vendor/ names no model");
+    expect(gateway.heard.filter((one) => one.method === "PUT")).toEqual([]);
+  });
+
+  it("is shown with whose choice each knob is, and whether any judge reads its calls", async () => {
+    gateway.personas = [{ ...APURADO, llm: "openai/gpt-5", declines_when: "le piden llamar" }];
+    const out = written();
+
+    expect(await run(["show", "apurado"], { out: out.stream, env })).toBe(0);
+
+    expect(out.text()).toContain("played by openai/gpt-5 · read by the runtime's · voice the runtime's");
+    expect(out.text()).toContain("declines when: le piden llamar");
+    expect(out.text()).not.toContain("accepts when");
   });
 });
 

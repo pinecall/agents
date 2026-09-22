@@ -32,3 +32,11 @@ export function theModelNamed(value: string): string | undefined {
   if (model === undefined) return undefined;
   return value.includes("/") || SHORT_NAMES[value] !== undefined ? `${model.provider}/${model.model}` : value;
 }
+
+// A short name is a tier, not a model: `--llm haiku` was stored as written and the gateway read a
+// bare name as the vendor in use, so the corner held `anthropic/haiku` — a 404 at the provider,
+// and no call said so. Every verb that takes `--llm` refuses a name that means no model in this
+// one sentence: `agent set` for the agent, `personas add|edit` for a caller.
+export const NOT_A_MODEL = (said: string): string =>
+  `--llm ${said} names no model: vendor/model, a vendor alone, a model alone, ` +
+  `or one of ${Object.keys(SHORT_NAMES).join(" · ")}`;

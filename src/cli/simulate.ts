@@ -280,13 +280,23 @@ async function listening(door: Door, call: string, out: NodeJS.WritableStream): 
   }
 }
 
-/** The persona as the runtime's two doors take it: three declarations, and no script at all. */
-function callingAs(persona: Persona): Calling {
+/**
+ * The persona as the runtime's two doors take it: three declarations and no script — and every
+ * field it set of the five that say how it is played and when it accepts the call. A field that is
+ * not forwarded here never reaches the gateway, which plays and judges what it is sent.
+ */
+export function callingAs(persona: Persona): Calling {
+  const set = (value: string | null | undefined): value is string => value !== undefined && value !== null && value !== "";
   return {
     name: persona.name,
     goal: persona.goal,
     style: persona.style,
     ...(persona.facts === undefined ? {} : { facts: persona.facts }),
+    ...(set(persona.llm) ? { llm: persona.llm } : {}),
+    ...(set(persona.tts) ? { tts: persona.tts } : {}),
+    ...(set(persona.voice) ? { voice: persona.voice } : {}),
+    ...(set(persona.accepts_when) ? { accepts_when: persona.accepts_when } : {}),
+    ...(set(persona.declines_when) ? { declines_when: persona.declines_when } : {}),
   };
 }
 

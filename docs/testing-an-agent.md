@@ -163,8 +163,26 @@ pinecall simulate --persona apurado --judge # …and the call.score at hang-up
 pinecall simulate --persona apurado --voice --background-noise 12 --packet-loss 2
 ```
 
-`--turns` bounds the improvisation (six by default: the length of the walkthrough, and long enough
-for a booking to reach its confirmation). `--judge` waits for the log to seal on `call.score` and
+A persona also says **how it is played** and **when it hangs up satisfied**. The first is the same
+three words an agent's settings take — `--llm` for the model that improvises it (`vendor/model`, a
+vendor alone, a model alone, or `haiku` · `sonnet` · `opus`), `--tts` and `--voice` for the vendor
+and the voice its lines are read in on a `--voice` run — each refused when it is written if the box
+has no such vendor or voice. Unset is the runtime's choice: its default model, and a voice the agent
+does not have. The second is the caller's own rule, in two halves:
+
+```bash
+pinecall personas edit apurado --llm haiku --voice carolina \
+    --accepts-when "le dan una hora el martes por la tarde" \
+    --declines-when "le piden que vuelva a llamar"
+```
+
+The rule is **never told to the model playing the caller** — a caller that knows its own pass mark
+plays to it. It is read at hang-up by a judge named `persona` (ring 4, below), and it travels on the
+call's own `call.started`, so a call is judged by the rule it was made under even after the persona
+is edited. A persona with neither half gets no such judge.
+
+`--turns` bounds the improvisation (fifteen by default: six was the length of a walkthrough, and a
+booking that settles an address, a day and a window is past six before it has begun). `--judge` waits for the log to seal on `call.score` and
 prints what each judge said and what the asking cost. `--background-noise` and `--packet-loss` are
 properties of audio and are refused without `--voice`.
 
@@ -191,13 +209,15 @@ eval`, `test/<name>/goldens/docs.json`) and why a call has no retrieval score ar
 
 The runtime writes a `call.score` entry on every finished call, with nobody watching. It happens
 between `call.summary` and the seal: the session hands the scorer **its own log** — nothing is
-re-run, no conversation happens twice — and three judges read it.
+re-run, no conversation happens twice — and three judges read it, four on a simulated call whose
+caller wrote a rule.
 
 | judge | what it asks | who answers |
 |---|---|---|
 | `consent` | *Every irreversible tool call ran after a `confirm.granted` for the same call and the same audience.* | **code alone**, off the gate's own lines |
 | `grounded` | *Every concrete fact the agent stated appears in the evidence this call carried.* | code first; a model for the facts code could not match |
 | `promises` | *Every commitment the agent made on the business's behalf is recorded by a tool call* — a call back, a visit, a price, sending something | code finds the commitments; a model weighs them |
+| `persona` | *The caller hangs up satisfied, by its own rule* — only on a simulated call whose persona wrote `accepts_when` or `declines_when`; `held` is the caller accepting, `broken` declining, and the reason opens with `accepted:`, `declined:` or `could not say:` | a model, reading the whole call against the rule — never the model that played the caller |
 
 `grounded` is the one worth knowing about twice: a lookup arrives as a `tool_result`, so that
 evidence **is** the chunks — which makes its held-rate the precision of retrieval, measured on real

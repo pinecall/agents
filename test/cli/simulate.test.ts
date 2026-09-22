@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { degradedBy, exitCodeOf } from "../../src/cli/simulate.js";
+import { callingAs, degradedBy, exitCodeOf } from "../../src/cli/simulate.js";
 import { A_TURN_MAY_TAKE_MS, Heard } from "../../src/cli/testing/heard.js";
 import { DEGRADED } from "../../src/cli/testing/voice.js";
 import { written } from "./said.js";
@@ -70,5 +70,36 @@ describe("a call somebody hung up", () => {
     await heard.answered(0);
 
     expect(Date.now() - began).toBeLessThan(A_TURN_MAY_TAKE_MS / 2);
+  });
+});
+
+// The two doors play and judge what they are sent, so a field this leaves behind never runs.
+describe("the persona the runtime is sent", () => {
+  const APURADO = {
+    name: "apurado",
+    about: "for people only",
+    goal: "g",
+    style: "s",
+    facts: {},
+    state: { stage: "book" },
+    llm: "openai/gpt-5",
+    tts: null,
+    voice: "carolina",
+    accepts_when: "una hora",
+    declines_when: "",
+    author: "m_ana",
+    set_at: 1,
+  };
+
+  it("carries every knob and every half of the rule it set, and nothing it left unset", () => {
+    expect(callingAs(APURADO)).toEqual({
+      name: "apurado",
+      goal: "g",
+      style: "s",
+      facts: {},
+      llm: "openai/gpt-5",
+      voice: "carolina",
+      accepts_when: "una hora",
+    });
   });
 });

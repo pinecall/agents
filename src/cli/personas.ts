@@ -6,7 +6,9 @@ import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { AGENT_FLAG, homeOf, oneHome, type Home } from "./home.js";
 import { agentFilesOfTheProject, slugOfAgentFile } from "./load.js";
+import { asATable, linesOf, theFacts } from "./persona-lines.js";
 import { aSimulation, TURNS } from "./simulate.js";
+import { NOT_A_MODEL, theModelNamed } from "./testing/models.js";
 import { personasIn as personasInFiles } from "./testing/caller.js";
 import type { Door } from "./testing/gateway.js";
 import { dropPersona, NOBODY, personaNamed, personasOf, writePersona, type Persona } from "./testing/personas.js";
@@ -15,6 +17,7 @@ const USAGE =
   "usage: pinecall personas [list] | show <name> | try <name>\n" +
   "       pinecall personas add <name> --goal '…' --style '…' [--about '…'] [--fact 'what=said']…\n" +
   "       pinecall personas edit <name> [--goal '…'] [--style '…'] [--about '…'] [--fact 'what=said']… [--rename <name>]\n" +
+  "       … add and edit also take [--llm x] [--tts x] [--voice x] [--accepts-when '…'] [--declines-when '…']\n" +
   "       pinecall personas rm <name> · pinecall personas push [--from test/<agent>/personas]\n" +
   "       … any of them with --json, and --prod for production's; try and push also take\n" +
   "       --agent <name|slug> or --file agent.tsx, because those two need the class\n";
@@ -35,6 +38,11 @@ export const group: Group = {
   try <name>       one call against the class in this directory — simulate, without the judge
   push             the personas still in files, sent to the gateway once: the migration
 
+  --llm x              the model that plays them, as \`agent set --llm\` takes it; --tts and
+                       --voice the vendor and the voice their lines are read in. Unset, the
+                       runtime's: its default model, a voice the agent does not have
+  --accepts-when '…'   when they hang up satisfied, and --declines-when when not: a judge named
+                       persona reads every call of theirs against it at hang-up. '' clears one
   --agent <name|slug>  which agent try calls, and which project's files push sends: an agent of
                        this project by its name. The other verbs name no agent at all
   --file agent.tsx     which class, when the directory holds more than one. try and push only
@@ -53,13 +61,7 @@ export interface Setting {
 /** Every verb of the group, so a word nobody wrote is answered before anything is loaded. */
 const VERBS = ["list", "show", "add", "edit", "rm", "try", "push"] as const;
 
-// A caller with no facts of their own is not broken — they are somebody who will invent nothing,
-// which is what the model playing them is told. `show` says so rather than printing an empty block.
-const NO_FACTS = "(no facts: this caller may state nothing about themselves)";
-
 const NONE_YET = `this org has no personas yet: \`pinecall personas add <name> --goal '…' --style '…'\`, or the console's Personas`;
-
-const FACT_SHAPE = "a fact is what=said: --fact 'their phone=305 555 0101'";
 
 // The gateway's own rule for a caller's name, read here too, because a name it will refuse is
 // worth a sentence and not a JSON body: `--persona` takes the same word afterwards.
@@ -80,6 +82,20 @@ const NOT_THIS_VERB = (verb: string, flag: string) =>
 
 const NOT_JSON = "try prints a call as it happens, not an answer the gateway gave: drop --json";
 
+/** What `add` and `edit` were told on the command line: the caller's words, knobs and rule. */
+interface Asked {
+  goal?: string;
+  style?: string;
+  about?: string;
+  fact?: string[];
+  rename?: string;
+  llm?: string;
+  tts?: string;
+  voice?: string;
+  "accepts-when"?: string;
+  "declines-when"?: string;
+}
+
 export async function run(argv: string[], how: Setting = {}): Promise<number> {
   const out = how.out ?? process.stdout;
   const err = how.err ?? process.stderr;
@@ -92,6 +108,11 @@ export async function run(argv: string[], how: Setting = {}): Promise<number> {
       about: { type: "string" },
       fact: { type: "string", multiple: true },
       rename: { type: "string" },
+      llm: { type: "string" },
+      tts: { type: "string" },
+      voice: { type: "string" },
+      "accepts-when": { type: "string" },
+      "declines-when": { type: "string" },
       from: { type: "string" },
       file: { type: "string" },
       json: { type: "boolean", default: false },
@@ -181,7 +202,7 @@ async function written(
   door: Door,
   name: string,
   verb: "add" | "edit",
-  values: { goal?: string; style?: string; about?: string; fact?: string[]; rename?: string },
+  values: Asked,
   asJson: boolean,
   out: NodeJS.WritableStream,
   err: NodeJS.WritableStream,
@@ -213,12 +234,23 @@ async function written(
     err.write(`${refused instanceof Error ? refused.message : String(refused)}\n`);
     return 2;
   }
+  const llm = values.llm === undefined || values.llm === "" ? values.llm : theModelNamed(values.llm);
+  if (llm === undefined && values.llm !== undefined) {
+    err.write(`${NOT_A_MODEL(values.llm)}\n`);
+    return 2;
+  }
   const kept = await writePersona(door, writing, {
     goal,
     style,
     about: values.about ?? before?.about ?? "",
     facts,
     state: before?.state ?? {},
+    // What was not named stays what it was; '' clears it back to the runtime's choice.
+    llm: llm ?? before?.llm ?? null,
+    tts: values.tts ?? before?.tts ?? null,
+    voice: values.voice ?? before?.voice ?? null,
+    accepts_when: values["accepts-when"] ?? before?.accepts_when ?? "",
+    declines_when: values["declines-when"] ?? before?.declines_when ?? "",
     ...(writing === name ? {} : { was: name }),
   });
   if (asJson) {
@@ -316,35 +348,4 @@ function halfWay(landed: string[], left: string[], refused: unknown): string {
     `  still only files: ${left.join(", ")}`,
     "  nothing was undone and no file was touched: push again once it is fixed",
   ].join("\n");
-}
-
-/** `--fact 'their phone=305 555 0101'`, repeated: what this caller knows about themselves. */
-function theFacts(said: string[]): Record<string, string> {
-  const facts: Record<string, string> = {};
-  for (const one of said) {
-    const at = one.indexOf("=");
-    if (at <= 0) throw new Error(FACT_SHAPE);
-    facts[one.slice(0, at).trim()] = one.slice(at + 1).trim();
-  }
-  return facts;
-}
-
-/** The lines `show` prints: the caller, the goal, the style, and every fact they may state. */
-function linesOf(persona: Persona): string[] {
-  const facts = Object.entries(persona.facts);
-  return [
-    `${persona.name} · ${persona.goal}`,
-    ...(persona.about === "" ? [] : [`  ${persona.about}`]),
-    `  ${persona.style}`,
-    ...(facts.length === 0 ? [`  ${NO_FACTS}`] : facts.map(([what, said]) => `  ${what}: ${said}`)),
-  ];
-}
-
-// The columns are as wide as what is IN them. They used to be 12 and 46, so `office-manager`
-// (14) pushed its own row two characters right and the table stopped being a table — the same
-// mistake `pinecall agent` had and fixed by measuring (cli/agent-lines.ts).
-export function asATable(personas: Persona[]): string[] {
-  const name = Math.max(...personas.map((one) => one.name.length));
-  const style = Math.max(...personas.map((one) => one.style.length));
-  return personas.map((one) => `${one.name.padEnd(name)}  ${one.style.padEnd(style)}  ${one.goal}`);
 }

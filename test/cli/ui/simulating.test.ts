@@ -15,6 +15,11 @@ const APURADO: Persona = {
   style: "rápido, corta frases",
   facts: { "su teléfono": "600000001" },
   state: {},
+  llm: null,
+  tts: null,
+  voice: null,
+  accepts_when: "",
+  declines_when: "",
   author: "Ana",
   set_at: 1,
 };
