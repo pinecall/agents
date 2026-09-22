@@ -282,7 +282,7 @@ names and types become the JSON Schema the model fills.
 |---|---|
 | `when: (s) => …` | the only visibility there is: a question asked of the state on every change |
 | `stage: "book"` / `["choose","book"]` | sugar, lowered to a `when` at declaration time. Type-checked against your own `stage` field, so a misspelling is a compile error |
-| `confirm: "Reservado: el {{result.when}}."` | makes the tool `irreversible`: the platform **reads the sentence back in your words** once the tool has run, so the caller hears what was done and not the model's paraphrase of it. It does **not** hold the tool: the gate is deferred, the call has already happened, and a sentence written as a question (`¿Lo confirmo?`) will be spoken after the thing it asks about is done. Write it as a receipt |
+| `confirm: "Reservado: el {{result.when}}."` | makes the tool `irreversible`: the platform **reads the sentence back in your words** once the tool has run and before the model replies, so the caller hears what was done and not the model's paraphrase of it, and the reply goes on from the receipt instead of repeating it. It does **not** hold the tool: the gate is deferred, the call has already happened, and a sentence written as a question (`¿Lo confirmo?`) will be spoken after the thing it asks about is done. Write it as a receipt |
 | `preview: 2` | how many rows of an array result the **model** sees; the state field keeps them all |
 | `pii: ["name", "phone"]` | parameters masked in the log by declaration |
 | `timeout: 8` | how long the platform waits for this method |
