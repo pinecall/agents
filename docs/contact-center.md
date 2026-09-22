@@ -46,6 +46,11 @@ tell them. Dialling a number into a browser call needs the org's outbound trunk 
 the console's Numbers screen, or `POST /v1/carrier/outbound`; without one the transfer answers
 `ok: false` and says so.
 
+The number also passes your org's **dial guards**, because the leg goes out on your own carrier:
+its shape, and how many calls the org has placed this minute and today. Hit one and nothing is
+dialled — `error` says which (`dial.too_fast`) and the ledger has the row. The "call back means
+back" fence is not applied here: a colleague you transfer to has no reason to have ever rung you.
+
 ## `attention` — a person, without sending the caller anywhere
 
 ```ts

@@ -6,6 +6,11 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Changed
+- **A number `this.call.transfer(...)` dials passes the org's dial guards** — shape, and the
+  per-minute and per-day windows — because the leg goes out on the org's own carrier. Refused,
+  nothing is dialled and the value you get back says which guard said no.
+
 ## [0.9.3] — The desk takes a pipe
 
 ### Fixed
