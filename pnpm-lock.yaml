@@ -9,7 +9,7 @@ importers:
   .:
     dependencies:
       '@pinecall/protocol':
-        specifier: ^0.6.4
+        specifier: ^0.6.5
         version: link:../protocol/typescript
       oxc-parser:
         specifier: ^0.148.0

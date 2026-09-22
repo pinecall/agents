@@ -6,6 +6,8 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.9.2] — Handing a call to a person
+
 ### Added
 - **`this.call` hands the call to a person.** `transfer(to, {mode?})` sends a phone caller on with
   a REFER, or dials the number into a browser caller's own call and falls silent once it answers;
