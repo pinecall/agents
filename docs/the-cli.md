@@ -200,8 +200,7 @@ several.
 
 In the sandbox, every time the socket comes up — the first connect and each reconnect, in every
 mode — `start` re-sends the phone `pinecall line from` kept for this gateway, whatever agents it
-holds and not only one that declares a number, because a production number is the box's route and
-no class declares it. The gateway keeps that phone only beside its live table, so a gateway that
+holds — no class declares a number, so there is no way to tell from here which agent has one. The gateway keeps that phone only beside its live table, so a gateway that
 restarted learns it back at once instead of sending your test call to production. A gateway that
 goes away is one line — `gateway  … — reconnecting`, then `gateway  back` — and never a stack per
 redial.
@@ -209,8 +208,9 @@ redial.
 ```console
 $ pinecall start
 gateway https://box.pinecall.io · key from .env
-clinica-norte · clinica · sandbox · connected to https://box.pinecall.io · key from .env · tools 4 · doors web
+clinica-norte · clinica · sandbox · connected to https://box.pinecall.io · key from .env · tools 4
 console  https://sandbox.pinecall.io/a/clinica-norte?login=lc_9f2   (opens within five minutes, once)
+doors    web · phone +34910000000
 line     rings in this terminal · also running: carla@clinica.test
 › Clínica Norte, buenos días. ¿En qué puedo ayudarle?
 ‹ Quería cambiar una cita
@@ -438,11 +438,14 @@ apurado · cambiar la cita al martes por la tarde sin dar más datos de los just
   call_6123e7d7deb875e2e9be7686 · 2 caller turn(s) · 3 agent turn(s) · a clean line
 ```
 
-`--persona` names a caller of this agent, kept by the gateway — not a file of the project.
+`--persona` names a caller of the org, kept by the gateway — not a file of the project. The model
+that plays it is the persona's own `llm` when it set one; with `--judge`, a caller that wrote a
+rule adds a `persona` row to the score — `held` when it hung up satisfied, `broken` when it
+declined, which is exit 1 like any broken judge.
 
-`--voice` is a real line: a room, the agent dispatched into it, and the caller read out in an
-**ElevenLabs voice the agent does not have**, in the agent's language, so the two sides are told
-apart by ear. The caller waits for the opening to be said before its first line, as a person does.
+`--voice` is a real line: a room, the agent dispatched into it, and the caller read out in the
+persona's own `tts` and `voice` when it set them — else an **ElevenLabs voice the agent does not
+have** — in the agent's language, so the two sides are told apart by ear. The caller waits for the opening to be said before its first line, as a person does.
 `--background-noise` and `--packet-loss` spoil that line on purpose and are refused without it.
 
 `--listen` puts the call on **this machine's speakers** while it happens: the same hidden `observe`
@@ -456,6 +459,7 @@ written call has no audio in it. `--judge` reads back the `call.score` the log s
 pinecall personas [list] | show <name> | try <name>
 pinecall personas add <name> --goal '…' --style '…' [--about '…'] [--fact 'what=said']…
 pinecall personas edit <name> [--goal '…'] [--style '…'] [--about '…'] [--fact 'what=said']… [--rename <name>]
+                … add and edit also take [--llm x] [--tts x] [--voice x] [--accepts-when '…'] [--declines-when '…']
 pinecall personas rm <name> · pinecall personas push [--from test/<agent>/personas]
                 … any of them with --json, --prod in production; try and push also take
                 --agent <name|slug> or --file agent.tsx, because those two need the class
@@ -476,7 +480,13 @@ price-shopper written · 3 persona(s)
 ```
 
 `add` writes one whole; `edit` changes what is named and leaves the rest, and `--rename` moves it
-to another name. `show` prints one with every fact; `rm` drops it; `try` puts it on the class in
+to another name. `--llm`, `--tts` and `--voice` say how the caller is played, in the words
+`agent set` takes for the agent — the model that improvises it, the vendor and the voice its lines
+are read in — and a vendor or a voice the box does not have is refused when it is written. Unset,
+the runtime chooses: its default model, and a voice the agent does not have; `edit --voice ''`
+clears one back. `--accepts-when` and `--declines-when` are the caller's own rule for a call: a
+judge named `persona` reads every call of theirs against it at hang-up, and the model playing them
+is never told it. `show` prints both, and says so when a caller has no rule. `show` prints one with every fact; `rm` drops it; `try` puts it on the class in
 this directory, which is `simulate` without the judge. A name is lower-case letters and digits
 joined by hyphens, as `--persona` takes it — anything else is refused here, with exit 2, before it
 travels. A caller nobody wrote is the same sentence and the same **exit 2** from `show`, `edit`,
@@ -609,7 +619,7 @@ maravilla · sandbox
 
 **What an agent runs on is the org's, not the class's** — per world, per corner, a version a row
 (the runtime's `docs/protocol/settings-api.md`). The class declares the contract: its tools, its
-state, its `render()`, its language, its doors. The voice, the models, the opening, how a call
+state, its `render()`, its language. The doors, the voice, the models, the opening, how a call
 ends, how a turn is cut, what is remembered, what is known by heart and which bases are searched
 are **settings**, kept by the gateway and laid over the class at the one place every session is
 built. A class that still declares one of them is refused at load — before a prompt is printed or
@@ -1080,7 +1090,7 @@ code can call — over HTTP, in any language, with the same key.
 | verb | doors |
 |---|---|
 | `start` · `chat` · `test` · `simulate` · `remember` | `WS /v1/apps` — the class is mounted in the process that typed the verb |
-| `start`, once connected | `POST /v1/login/codes` (the console's URL, in production), `PUT /v1/line/from` (the kept phone, on every connect in the sandbox), `GET /v1/agents/{slug}/line` (for an agent that declares a number) |
+| `start`, once connected | `POST /v1/login/codes` (the console's URL, in production), `PUT /v1/line/from` (the kept phone, on every connect in the sandbox), `GET /v1/routes` (the doors it answers at), `GET /v1/agents/{slug}/line` (when one of them is a number) |
 | `chat` | `WS /v1/chat?agent=&app=&contact=` |
 | `start --events` · `sessions` · `supervise` | `GET /v1/calls/{call}/events` (SSE), `GET /v1/agents/{slug}/sessions` |
 | `sessions <call>` · `supervise` | `GET /v1/calls/{call}/state` — asked FIRST, because it is the one door that 404s for a call this gateway has no log of |

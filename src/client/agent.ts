@@ -5,13 +5,6 @@ import { Call, CallBook, type CallGateway } from "./calls.js";
 import { DevRefused, PinecallError, Refused } from "./frames.js";
 import { Listeners, asError, camelEvent, type AnyListener, type CamelEvent, type Listener, type Payload } from "./listeners.js";
 
-/** A door the agent answers. `number` is null for a channel that has none, which is what web is. */
-export interface RouteInput {
-  channel: Route["channel"];
-  number?: string | null;
-  label?: string;
-}
-
 /** One tool: the contract the model sees, and the function this process runs when it is called. */
 export interface Tool extends Camel<ToolSpec> {
   run: (args: Record<string, unknown>, call: Call) => unknown;
@@ -19,7 +12,6 @@ export interface Tool extends Camel<ToolSpec> {
 
 /** Everything an app declares about an agent, plus the tools' own code. */
 export interface AgentOptions extends Omit<Camel<AgentConfig>, "tools"> {
-  routes?: RouteInput[];
   tools?: Tool[];
   /**
    * Whether the gateway may hand this socket a call that named no app — every phone call, and every
@@ -66,7 +58,6 @@ export class Agent implements CallGateway {
   readonly #listeners: Listeners<Call | null>;
   readonly #tools = new Map<string, Tool>();
   readonly #waiters: Waiter[] = [];
-  #routes: RouteInput[];
   #config: Camel<AgentConfig>;
   #takesUnclaimed: boolean;
   #app: string | undefined;
@@ -77,8 +68,7 @@ export class Agent implements CallGateway {
     options: AgentOptions,
     private readonly gateway: AgentGateway,
   ) {
-    const { routes = [], tools = [], takesUnclaimed = true, ...config } = options;
-    this.#routes = routes;
+    const { tools = [], takesUnclaimed = true, ...config } = options;
     this.#config = config;
     this.#takesUnclaimed = takesUnclaimed;
     this.declare(tools);
@@ -135,10 +125,13 @@ export class Agent implements CallGateway {
     return this.#ask("agent.configure", "agent.configured", { config: this.#config });
   }
 
-  /** Claim the slug and its doors, then send the declaration. Run again on every reconnect. */
+  /** Claim the slug, then send the declaration. Run again on every reconnect. */
   async open(): Promise<void> {
+    // No doors. A door is a row the org keeps — `pinecall numbers import`, the console's Numbers
+    // screen — and the gateway reads none from here; the field stays on the wire so a gateway of
+    // an older release still takes this frame.
     const registered = await this.#ask("agent.register", "agent.registered", {
-      routes: this.#routes.map((route) => ({ channel: route.channel, number: route.number ?? null, ...(route.label === undefined ? {} : { label: route.label }) })),
+      routes: [],
       sdk: this.gateway.sdk,
       host: this.gateway.host,
       takesUnclaimed: this.#takesUnclaimed,

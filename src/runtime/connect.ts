@@ -15,7 +15,6 @@ import { toolNamed } from "../agent/tools.js";
 import { viewOf } from "../agent/view.js";
 import { PROMPT_BLOCKS } from "../views/layout.js";
 import { promptOf } from "../views/render.js";
-import { routesOf } from "./channels.js";
 import { inOrder, type Serving } from "./dispatch.js";
 import { refuseTheEnvironment } from "./environment.js";
 import { wordsRecalled } from "./recall.js";
@@ -87,8 +86,8 @@ function stateFieldsOf(ctor: Function): AgentOptions["stateFields"] {
 }
 
 /**
- * Everything the class says about itself, as the declaration the gateway is sent: its doors, its
- * tools, its language, its layout, whether it searches its bases, its visibilities and events —
+ * Everything the class says about itself, as the declaration the gateway is sent: its tools, its
+ * language, its layout, whether it searches its bases, its visibilities and events —
  * the contract, and nothing of the environment, which is refused here (runtime/environment.ts).
  * The probe is one instance of the class, read and thrown away; mount builds it once and hands it
  * in. Whether the class searches is read off its source — the file's when given, else the class's
@@ -97,7 +96,11 @@ function stateFieldsOf(ctor: Function): AgentOptions["stateFields"] {
 export function optionsFor(ctor: Ctor, tools: Tool[], instance: Agent = new ctor(), file?: string, source?: string): AgentOptions {
   const probe = instance as unknown as Record<string, unknown>;
   refuseTheEnvironment(probe);
-  const options: AgentOptions = { routes: routesOf(probe), tools };
+  // No doors. A door is a number somebody bought and pointed at this agent — a row the org keeps,
+  // moved with `pinecall numbers import` and with no deploy — and the widget is not a door at
+  // all: every agent can be talked to from a page. A class that still carries `phone` is carrying
+  // a field nobody reads, like any other config field it makes up.
+  const options: AgentOptions = { tools };
   if (searchesKnowledge(source ?? ctor.toString(), file)) options.usesKnowledge = true;
   const language = probe["language"];
   if (typeof language === "string") options.language = language;

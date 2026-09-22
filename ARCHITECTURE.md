@@ -42,7 +42,7 @@ a directory earns its place there by having a line in that table (§13).
 
 | file | what it is |
 |---|---|
-| `agent.ts` | the `Agent` base: the Proxy that turns an assignment into an authored change, the internals kept off the instance, `seal`, `collapse`, `restore`, `startIn`, `log`, `say`/`reply`, `this.call`, `this.knowledge`, `render()`, `remembers()`, the four hooks. `CONFIG_FIELDS` is the four names that configure and are not state: the three doors and `language` |
+| `agent.ts` | the `Agent` base: the Proxy that turns an assignment into an authored change, the internals kept off the instance, `seal`, `collapse`, `restore`, `startIn`, `log`, `say`/`reply`, `this.call`, `this.knowledge`, `render()`, `remembers()`, the four hooks. `CONFIG_FIELDS` is the four names that configure and are not state: `language`, and the three door names a class no longer declares, kept on the list so an old class's `phone` stays out of the state |
 | `knowledge.ts` | `Knowledge`: what a class reaches its bases through — `this.knowledge.search(query, {k})`, one verb the gateway answers for the call in hand |
 | `searching.ts` | whether a class searches at all: its source read with oxc for a `this.knowledge` member expression — never a regex, because the words inside a string or a comment are not a search. What it answers travels as `uses_knowledge` in the declaration |
 | `decorators.ts` | `@tool({…})`, which registers a method and wraps it so every write inside it carries its name, and `@render(Prompt)`, which gives the class a prompt written beside it. `Prompt<T> = (agent: T) => Child` |
@@ -98,7 +98,6 @@ a directory earns its place there by having a line in that table (§13).
 |---|---|
 | `connect.ts` | `mount()`: the class registered once, one live instance per call, and the sync that sends only what changed. `optionsFor` is the declaration read off a probe instance — the routes, the tools, the language, whether it searches, the state fields, the events — and the first thing it does is refuse a field of the world's. Also `slugOf` |
 | `recall.ts` | a `memory.ops` entry → the words this call has been told about the caller, which is what `remembers()` answers from |
-| `channels.ts` | `phone` / `whatsapp` / `web` fields → the routes the agent registers |
 | `environment.ts` | `THE_WORLDS`: the fields a class may no longer declare — `voice`, `llm`, `stt`, `greeting`, `hangup`, `says`, `hears`, `memory`, `knowledge`, `docs` — each with the verb that sets it in the world, and `refuseTheEnvironment`, which stops a class still carrying one at load, naming that verb |
 | `dispatch.ts` | an outside fact off the wire, gated by the declaration and handed to `onEvent` — one at a time, in order |
 | `run-tool.ts` | one tool call: the args checked against the spec, the method run through the instance, the result cut to its `preview` |
@@ -208,8 +207,8 @@ a view, never in a snapshot, and assigning one does not go through the change re
 
 | field | becomes |
 |---|---|
-| `phone`, `whatsapp`, `web` | the routes in `agent.register` (`runtime/channels.ts`); truthy means "this agent answers there" |
 | `language` | which of `views/lang.ts`'s two word-sets the `identity` block carries |
+| `phone`, `whatsapp`, `web` | **nothing.** A door is a row the org keeps (`pinecall numbers import`), never a field: `agent.register` sends `routes: []`. The three names stay on `CONFIG_FIELDS` so an old class's `phone` is still kept out of the state rather than becoming an authored change |
 
 **The class is code; the world is environment.** Everything else an agent runs on is not the
 class's to say: it varies between the sandbox and production, it is the org's to change without a
@@ -346,7 +345,7 @@ the class and the socket know about each other.
 1. **At mount** — `describe(ctor, source, file)` gives the class its own text back (a docstring sits
    *above* the class, where `toString()` cannot see it, and parameter types are gone after
    compilation; the file name is what says whether that text is `.ts` or `.tsx`). One **probe** instance is built, refused if it still carries a field of the world's
-   (`runtime/environment.ts`), read for its doors, its language, its tools, its state fields and its
+   (`runtime/environment.ts`), read for its language, its tools, its state fields and its
    events, and thrown away; the source is read once more for `this.knowledge`, so the declaration
    says whether the class searches (`uses_knowledge`).
    `pc.agent(slug, options)` declares it. Nothing is sent until `pc.connect()`.

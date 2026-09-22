@@ -25,6 +25,23 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   by this release — a corner that says nothing keeps them. A class that declares `record` is
   refused at load, by name, like every other field that is the world's.
 
+### Changed
+- **A class declares no doors: `phone`, `whatsapp` and `web` are read by nobody.** A number is
+  bought, pointed at an agent and moved by whoever answers the telephone — `pinecall numbers
+  import <+34…> --agent <slug>`, or the console's Numbers screen — and that was already the only
+  way to MOVE one: a door a class declared could not be moved, dropped or reassigned, and the
+  gateway logged a warning every time it lost one to the row that outranked it. And the web is not
+  a door at all now: every agent can be talked to from a page without being turned on.
+
+  Nothing is refused. The three fields are ignored, like any other field a class makes up, and
+  they stay on `CONFIG_FIELDS` so an old class's `phone` is still kept out of the agent's state.
+  What an agent ACTUALLY answers at is the new `doors` line of `pinecall start`, read off the
+  gateway on every connect — so a number pointed at it while the process was running shows up
+  without a restart. `pinecall numbers list` drops "declared by the app": every door is a row.
+
+  `routesOf`, `phoneRoute`, `whatsappRoute`, `webRoute` and `RouteInput` leave the package's
+  public surface, and `AgentOptions.routes` with them.
+
 ### Fixed
 - **A written `pinecall simulate` stops when somebody hangs the call up.** The caller improvised
   its remaining turns down a socket the gateway had already sealed, waiting thirty seconds on each

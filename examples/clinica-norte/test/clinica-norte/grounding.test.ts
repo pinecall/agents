@@ -13,10 +13,11 @@ import ClinicaNorte from "../../agents/clinica-norte/agent.js";
 const AGENT = fileURLToPath(new URL("../../agents/clinica-norte/agent.tsx", import.meta.url));
 
 describe("la declaración que recibe el gateway", () => {
-  it("lleva las puertas, el idioma y las tools, y nada del entorno", () => {
+  it("lleva el idioma y las tools, y nada del entorno ni de las puertas", () => {
     const options = optionsFor(ClinicaNorte, [], new ClinicaNorte(), AGENT);
 
-    expect(options.routes?.map((route) => route.channel)).toEqual(["phone", "whatsapp", "web"]);
+    // Una puerta es una fila de la org (`pinecall numbers import`), nunca un campo de la clase.
+    expect("routes" in options).toBe(false);
     expect(options.language).toBe("es");
     for (const field of ["voice", "llm", "stt", "greeting", "says", "hears", "memory", "docs", "knowledge"]) {
       expect((options as Record<string, unknown>)[field]).toBeUndefined();

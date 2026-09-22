@@ -72,8 +72,6 @@ import { Agent, tool, state, type Stages } from "pinecall";
 
 /** Eres la recepción de Clínica Norte. Hablas de usted, con frases cortas. */
 export default class ClinicaNorte extends Agent {
-  web = true;
-
   @state stage: Stages<"identify" | "resolve"> = "identify";
   @state patient?: { name: string; phone: string };
 
@@ -153,8 +151,13 @@ pinecall start
 
 ```
 gateway http://127.0.0.1:8080 · key from .env
-clinica-norte · default · sandbox · connected to http://127.0.0.1:8080 · key from .env · tools 1 · doors web
+clinica-norte · default · sandbox · connected to http://127.0.0.1:8080 · key from .env · tools 1
+doors    web
 ```
+
+Every agent is on the web, which is why that line says `web` for a class that declares nothing:
+the doors are the org's — `pinecall numbers import <+34…> --agent clinica-norte` adds the
+telephone — and `start` reads them off the gateway each time it connects.
 
 The second is a caller:
 

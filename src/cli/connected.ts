@@ -1,12 +1,11 @@
 /** The one line `pinecall start` prints when the socket is up: who registered, where, and as whom. */
 
-import type { RouteInput } from "../client/index.js";
+import type { Door_ } from "./line.js";
 
 export interface Connected {
   slug: string;
   url: string;
   tools: number;
-  doors: string[];
   /** Whose org took it, and which of the two worlds. Absent when the gateway would not say. */
   org?: string;
   env?: string;
@@ -34,13 +33,15 @@ export function connectedLine(agent: Connected): string {
   said.push(`connected to ${agent.url}`);
   if (agent.source !== undefined) said.push(`key from ${agent.source}`);
   said.push(`tools ${agent.tools}`);
-  if (agent.doors.length > 0) said.push(`doors ${agent.doors.join(", ")}`);
   return said.join(" · ");
 }
 
-/** Each door the class declared, as the line names it: the channel, and its number when it has one. */
-export function doorsOf(routes: RouteInput[] | undefined): string[] {
-  return (routes ?? []).map((route) =>
-    route.number === null || route.number === undefined ? route.channel : `${route.channel} ${route.number}`,
-  );
+// Said after the socket is up, because it is the ORG's answer and not the class's: a class
+// declares no doors, and what this agent answers at is a row somebody typed. An agent with no row
+// answers on the web, which every agent does, and the line says so rather than saying nothing.
+/** The doors line: every door of this agent, as a person reads them. */
+export function doorsOf(slug: string, doors: Door_[]): string {
+  const its = doors.filter((one) => one.agent === slug);
+  const said = its.map((one) => (one.number === null ? one.channel : `${one.channel} ${one.number}`));
+  return `doors    ${["web", ...said].join(" · ")}`;
 }

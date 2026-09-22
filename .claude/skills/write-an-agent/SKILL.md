@@ -24,8 +24,14 @@ and what the example already paid for. The long form is `docs/writing-an-agent.m
 - **Never declare the world on the class.** `voice`, `llm`, `stt`, `greeting`, `hangup`, `says`,
   `hears`, `memory`, `knowledge`, `docs` are refused at load with the verb that sets each: they
   are settings, per world and corner, versioned (`pinecall agent`, `pinecall lexicon`, `pinecall
-  memory policy`, `pinecall docs attach`). The class declares the contract — the doors, `language`,
-  the state, the tools, `render()` — and nothing else.
+  memory policy`, `pinecall docs attach`). The class declares the contract — `language`, the
+  state, the tools, `render()` — and nothing else.
+- **Never declare a door either.** `phone`, `whatsapp` and `web` are read by nobody: a number is a
+  row the org keeps (`pinecall numbers import <+34…> --agent <slug>`, or the console's Numbers
+  screen), moved and reassigned with no deploy, and every agent is on the web without being told.
+  Unlike the world's fields above this one is not refused — it is ignored, like any other field a
+  class makes up — so what an agent ACTUALLY answers at is the `doors` line `pinecall start`
+  prints, read off the gateway.
 - **Never write the business into the repository.** What the agent knows by heart is a setting,
   `pinecall agent knowledge edit` or Settings ▸ Knowledge, read whole on every call. `docs/<name>/`
   holds only what a turn searches, and a tool reaches it with `await this.knowledge.search(q, { k })`.

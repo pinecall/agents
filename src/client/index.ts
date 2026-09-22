@@ -5,7 +5,7 @@
 // its own way of deciding what to answer imports this and never the framework.
 
 export { Agent } from "./agent.js";
-export type { AgentGateway, AgentOptions, DevHandler, RouteInput, Tool } from "./agent.js";
+export type { AgentGateway, AgentOptions, DevHandler, Tool } from "./agent.js";
 export { Call, CallBook } from "./calls.js";
 export type { CallGateway, CallStatus } from "./calls.js";
 export { Pinecall } from "./client.js";

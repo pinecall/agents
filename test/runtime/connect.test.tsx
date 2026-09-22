@@ -67,15 +67,13 @@ function commands(type: string): Record<string, unknown>[] {
   return gateway.commandsOf(type).map((command) => command.data);
 }
 
-it("registers the class under its name in kebab-case, with its four tools and its three doors", async () => {
+it("registers the class under its name in kebab-case, with its four tools and no door", async () => {
   await connected();
   expect(slugOf(ClinicaNorte)).toBe(SLUG);
   const [register] = commands("agent.register");
-  expect(register?.["routes"]).toEqual([
-    { channel: "phone", number: "+34 910 000 000" },
-    { channel: "whatsapp", number: "clinica-norte" },
-    { channel: "web", number: null },
-  ]);
+  // Even though the fixture class still writes `phone`, `whatsapp` and `web`: a door is a row the
+  // org keeps (`pinecall numbers import`), and a field on a class is read by nobody.
+  expect(register?.["routes"]).toEqual([]);
   const config = commands("agent.configure")[0]?.["config"] as { tools: { name: string }[]; prompt: unknown };
   expect(config.tools.map((tool) => tool.name)).toEqual([
     "findPatient",

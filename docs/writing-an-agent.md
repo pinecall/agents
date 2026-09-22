@@ -84,9 +84,6 @@ changes. **Never add a `paths` mapping for `pinecall`**: the app resolves it thr
  * Todo lo que dices se lee en voz alta: sin listas, sin markdown, los números como se dicen.
  */
 export default class ClinicaNorte extends Agent {
-  phone = "+34910000000";
-  whatsapp = "+34910000000";
-  web = true;
   language = "es";
 
   stage: Stages<"identify" | "choose" | "book" | "done"> = "identify";
@@ -109,8 +106,16 @@ never rendered, never in a snapshot:
 
 | field | what it means |
 |---|---|
-| `phone`, `whatsapp`, `web` | the doors this agent answers. A number, or `true` for a door with none |
 | `language` | which standing rules the framework contributes (`es`, `en`). The prompt is written in it |
+
+**The doors are not here.** A number is bought, pointed at an agent and moved by whoever answers
+the telephone, not by whoever deploys: it is a row the org keeps — `pinecall numbers import
+<+34…> --agent <slug>`, or the console's Numbers screen — and moving it to another agent is that
+one command, with nothing rebuilt and nothing restarted. And the web needs no door at all: every
+agent can be talked to from a page, so there is nothing to turn on. A class that still writes
+`phone = "+34…"` is writing a field nobody reads, like any other word it makes up; what the agent
+actually answers at is what `pinecall start` prints on its `doors` line, read off the org's own
+table every time it connects.
 
 Everything the agent **runs on** is the world's, not the class's: set per world and per corner,
 versioned, with who set it and why, and changed without a deploy — by `pinecall agent set`, the

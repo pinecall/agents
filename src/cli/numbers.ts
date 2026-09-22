@@ -14,14 +14,11 @@ const USAGE = `usage: pinecall numbers list
 
 const NUMBERS = "/v1/numbers";
 
-// A door the org answers at, and which table put it there: an operator typed it, or the class
-// declared it in its `routes`. Only the first is a row, and only a row can be moved or dropped.
-const AN_OPERATORS = "operator";
-
-/** One door as the listing answers it: the route itself, and which table it came from. */
+// Every door is a row somebody typed. A class declares none, so there is no second table to tell
+// this one from, and every door listed here can be moved, dropped and pointed at another agent.
+/** One door as the listing answers it. */
 interface Door_ {
   route: { number: string | null; channel: string; agent: string; env: string; managed: boolean };
-  source: string;
 }
 
 /** What the move answers: where the number is now, whether anything was written, and from where. */
@@ -91,11 +88,10 @@ async function list(door: Door, out: NodeJS.WritableStream): Promise<number> {
   return 0;
 }
 
-/** One door as a person reads it: the number, whose it is, where, and who put it there. */
+/** One door as a person reads it: the number, whose it is, where, and whether the box bought it. */
 export function aLine(one: Door_): string {
   const said = [one.route.number ?? "—", one.route.channel, `→ ${one.route.agent}`, one.route.env];
-  if (one.source !== AN_OPERATORS) said.push(`declared by the app`);
-  else if (one.route.managed) said.push("bought here");
+  if (one.route.managed) said.push("bought here");
   return said.join(" · ");
 }
 

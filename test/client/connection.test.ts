@@ -26,10 +26,9 @@ async function connected(options: Partial<ConstructorParameters<typeof Pinecall>
 }
 
 describe("connecting", () => {
-  it("claims every agent's doors and sends its declaration, naming the sdk", async () => {
+  it("claims the slug and sends its declaration, naming the sdk, and claims no door", async () => {
     const pc = await connected();
     pc.agent("clinica-norte", {
-      routes: [{ channel: "phone", number: "+34910000001", label: "centralita" }, { channel: "web" }],
       language: "es",
       greeting: { say: "Clínica Norte, ¿en qué puedo ayudarte?" },
     });
@@ -37,10 +36,9 @@ describe("connecting", () => {
 
     const [register] = gateway.commandsOf("agent.register");
     expect(register?.agent).toBe("clinica-norte");
-    expect(register?.data["routes"]).toEqual([
-      { channel: "phone", number: "+34910000001", label: "centralita" },
-      { channel: "web", number: null },
-    ]);
+    // A door is a row the org keeps. The field stays on the wire so a gateway of an older release
+    // still takes this frame, and it is always empty.
+    expect(register?.data["routes"]).toEqual([]);
     expect(register?.data["sdk"]).toMatch(/^pinecall\//);
     expect(register?.data["host"]).toBe(hostname());
 

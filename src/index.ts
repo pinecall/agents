@@ -29,7 +29,6 @@ export * from "./views/render.js";
 // The tree a view renders to. The TAGS are `pinecall/panels`, a door of their own: a view is
 // written in them and nothing else, and a prompt never imports one by accident.
 export { renderToNodes, said, type Panels, type Tone, type ViewNode } from "./views/nodes.js";
-export * from "./runtime/channels.js";
 // Not the whole module: `runTool` and its error are how a tenant runs one tool the way the bridge
 // would, which is what an agent's own ring-0 suite is written against. The rest of run-tool.ts —
 // the argument check, the preview cut — is the bridge's business and stays inside.

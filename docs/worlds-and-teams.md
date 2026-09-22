@@ -277,7 +277,7 @@ what happens on its own when the terminal holding it closes. A claim on an agent
 not running is refused: a ring lands on the line, so a corner with no app in it would take the
 call and drop it. Production has one corner and the server holds it, so there is nothing to claim
 there — only a developer's own phone is diverted, as above; `pinecall start` prints the line under
-the console's line for any agent that declares a number.
+the console's line for any agent the org's table gives a number.
 
 Web and chat need none of this. They name the agent AND the person, so they always reach your own.
 

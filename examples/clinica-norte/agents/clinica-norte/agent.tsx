@@ -21,10 +21,6 @@ import { crmFor } from "./crm.js";
  * Nunca inventes una hora: las horas salen de la agenda, siempre.
  */
 export default class ClinicaNorte extends Agent {
-  // canales: un agente, tres puertas
-  phone = "+34910000000";
-  whatsapp = "+34910000000";
-  web = true;
   language = "es";
 
   // Y nada más de configuración: la voz, el modelo, el saludo, las palabras (`pinecall lexicon`),

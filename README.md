@@ -5,7 +5,6 @@ model may do, its docstrings are the prompt, and its `render()` is what it says 
 
 ```tsx
 export default class ClinicaNorte extends Agent {
-  phone = "+34910000000";
   language = "es";
 
   stage: Stages<"identify" | "choose" | "book"> = "identify";
@@ -33,7 +32,8 @@ export default class ClinicaNorte extends Agent {
 ```
 
 One class, three doors: the same agent answers the web, WhatsApp and the telephone, and
-remembers the customer across them. What does the real time — the audio, the rooms, the log,
+remembers the customer across them. Which doors those are is the org's, never the class's — a
+number is a row `pinecall numbers import` writes, and every agent is on the web. What does the real time — the audio, the rooms, the log,
 the tenants — is `pinecall/runtime`, a Python distribution this package never imports and only
 ever talks to over a socket.
 

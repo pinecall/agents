@@ -2,7 +2,6 @@
 
 import { parseArgs } from "node:util";
 
-import type { RouteInput } from "../client/index.js";
 
 import { showPrompt } from "../views/render.js";
 import { mount, slugOf, type Mounted } from "../runtime/connect.js";
@@ -10,7 +9,7 @@ import type { Agent as AgentClass } from "../agent/agent.js";
 import { showMachine } from "./machine.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
-import { callsFrom, describing, theLine } from "./line.js";
+import { callsFrom, describing, doorsOfTheOrg, theLine, type Door_ } from "./line.js";
 import { connectedLine, doorsOf } from "./connected.js";
 import { cannotTell, PRODUCTION, standing } from "./world.js";
 import { orgOf, type Who } from "./whoami.js";
@@ -185,12 +184,11 @@ export async function run(argv: string[]): Promise<number> {
           slug: mounted.slug,
           url,
           tools: mounted.options.tools?.length ?? 0,
-          doors: doorsOf(mounted.options.routes),
           org: orgOf(who),
           env: who.env,
           source: door.source,
         }),
-        after: () => onceUp(door, mounted, rings(mounted.options.routes), who.env),
+        after: () => onceUp(door, mounted, who.env),
       }));
       return await plain(pc, agents, url);
     }
@@ -217,10 +215,27 @@ export async function run(argv: string[]): Promise<number> {
 // What is only true once the socket is up: the console's URL, and — when the agent answers at a
 // number — whose terminal that number rings in. Asked of the gateway, and neither worth failing
 // the run over: a gateway that refuses says so on its own line and the app runs on.
-async function onceUp(door: Door, mounted: Mounted, rings: boolean, world: string): Promise<string[]> {
-  const said = [await consoleLine(door, mounted.slug, world)];
-  if (rings) said.push(await lineLine(door, mounted.slug));
+// The doors are asked for HERE and not built from the class: a class declares none, and what this
+// agent answers at is the org's table — which means a number pointed at it while this process was
+// already running shows up on the next connect, with nothing rebuilt.
+async function onceUp(door: Door, mounted: Mounted, world: string): Promise<string[]> {
+  const doors = await theDoors(door);
+  const said = [await consoleLine(door, mounted.slug, world), doorsOf(mounted.slug, doors)];
+  if (doors.some((one) => one.agent === mounted.slug && one.number !== null)) {
+    said.push(await lineLine(door, mounted.slug));
+  }
   return said;
+}
+
+
+// Never the reason a start says nothing: a gateway that will not answer this is a `doors` line
+// missing, and the agent is up either way.
+async function theDoors(door: Door): Promise<Door_[]> {
+  try {
+    return await doorsOfTheOrg(door);
+  } catch {
+    return [];
+  }
 }
 
 // What `ws` and the network say when the gateway is not there: a refused or reset connection, a
@@ -242,11 +257,6 @@ async function sayWhoCallsFromHere(door: Door): Promise<void> {
     // A refusal here is upkeep that did not land — the phone is said again on the next connect —
     // and not worth a line in front of a person who did not ask. `pinecall line` says the truth.
   }
-}
-
-/** Whether this agent answers at a number at all: with no number there is no ring to land. */
-export function rings(routes: RouteInput[] | undefined): boolean {
-  return (routes ?? []).some((route) => route.number !== null && route.number !== undefined);
 }
 
 // A number exists once in a world: in production the box answers it, and in the sandbox the org

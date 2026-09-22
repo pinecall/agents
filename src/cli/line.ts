@@ -107,6 +107,22 @@ export function forgotten(numbers: string[]): string {
 }
 
 /** Who is answering this agent's ringing doors right now. */
+/** One door of the org's own table: the channel it answers on, and the number when it has one. */
+export interface Door_ {
+  agent: string;
+  channel: string;
+  number: string | null;
+}
+
+// Asked of the gateway and never of the class, because the class does not know: a number is a row
+// the org keeps (`pinecall numbers import`, the console's Numbers screen), moved with no deploy.
+// This is the worker's own read, `app`, so a server token opens it as a person's key does.
+/** Every door this corner answers at, of every agent: what `pinecall start` says out loud. */
+export async function doorsOfTheOrg(door: Door): Promise<Door_[]> {
+  return await asked<Door_[]>(door, "/v1/routes");
+}
+
+
 export async function theLine(door: Door, slug: string): Promise<TheLine> {
   return await asked<TheLine>(door, path(slug));
 }

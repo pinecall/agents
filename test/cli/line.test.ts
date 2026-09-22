@@ -4,7 +4,6 @@
 import { describe, expect, it } from "vitest";
 
 import { calling, describing, forgotten } from "../../src/cli/line.js";
-import { rings } from "../../src/cli/start.js";
 import type { TheLine } from "@pinecall/protocol";
 
 const AGENT = "tienda-sur";
@@ -84,13 +83,5 @@ describe("saying which phone is yours", () => {
   });
 });
 
-describe("whether an agent has a ring to land anywhere", () => {
-  it("is true of an agent that answers at a number", () => {
-    expect(rings([{ channel: "phone", number: "+59829001199" }])).toBe(true);
-  });
-
-  it("is false of one that only answers a widget, so `start` says nothing about a line", () => {
-    expect(rings([{ channel: "web" }])).toBe(false);
-    expect(rings(undefined)).toBe(false);
-  });
-});
+// Whether there is a ring to land is read off the ORG's rows now — `pinecall start` asks the
+// gateway for them (cli/start.ts) — because the class declares no doors and cannot know.

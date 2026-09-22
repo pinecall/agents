@@ -26,24 +26,11 @@ function collected(): { stream: NodeJS.WritableStream; text(): string } {
 describe("the line `pinecall start` prints when the socket is up", () => {
   // It names no page: the console's URL is its own line, minted after the socket is up, because
   // it carries a one-use code this line cannot have before the gateway answers.
-  it("names the agent, the gateway, the tools and the doors, and no page", () => {
-    const line = connectedLine({
-      slug: "clinica-norte",
-      url: GATEWAY,
-      tools: 4,
-      doors: ["phone +34 910 000 000", "web"],
-    });
+  it("names the agent, the gateway and the tools, and no page", () => {
+    const line = connectedLine({ slug: "clinica-norte", url: GATEWAY, tools: 4 });
 
-    expect(line).toBe(
-      "clinica-norte · connected to https://box.pinecall.io · tools 4 · doors phone +34 910 000 000, web",
-    );
+    expect(line).toBe("clinica-norte · connected to https://box.pinecall.io · tools 4");
     expect(line).not.toContain("console");
-  });
-
-  it("says no doors at all for an agent that declared none", () => {
-    const line = connectedLine({ slug: "tienda-sur", url: GATEWAY, tools: 0, doors: [] });
-
-    expect(line).toBe("tienda-sur · connected to https://box.pinecall.io · tools 0");
   });
 
   // The line used to say the gateway and nothing else, and a key exported in the shell wins over
@@ -54,7 +41,6 @@ describe("the line `pinecall start` prints when the socket is up", () => {
       slug: "clinica-norte",
       url: GATEWAY,
       tools: 4,
-      doors: ["web"],
       org: "acme",
       env: "sandbox",
       source: "credentials",
@@ -62,22 +48,29 @@ describe("the line `pinecall start` prints when the socket is up", () => {
 
     expect(line).toBe(
       "clinica-norte · acme · sandbox · connected to https://box.pinecall.io"
-        + " · key from credentials · tools 4 · doors web",
+        + " · key from credentials · tools 4",
     );
   });
 
   it("says none of it rather than guessing when the gateway would not answer", () => {
-    const line = connectedLine({ slug: "clinica-norte", url: GATEWAY, tools: 1, doors: [], source: "env" });
+    const line = connectedLine({ slug: "clinica-norte", url: GATEWAY, tools: 1, source: "env" });
 
     expect(line).toBe("clinica-norte · connected to https://box.pinecall.io · key from env · tools 1");
   });
 
-  it("reads the doors from the routes the class registered, and only those", () => {
-    expect(doorsOf([{ channel: "phone", number: "+34 910 000 000" }, { channel: "web", number: null }])).toEqual([
-      "phone +34 910 000 000",
-      "web",
-    ]);
-    expect(doorsOf(undefined)).toEqual([]);
+  // The doors are the ORG's rows, asked of the gateway after the socket is up — never the class's,
+  // which declares none. The web is always one of them: every agent can be talked to from a page.
+  it("reads the doors off the org's own table, for this agent alone", () => {
+    const doors = [
+      { agent: "clinica-norte", channel: "phone", number: "+34910000000" },
+      { agent: "tienda-sur", channel: "phone", number: "+34910000001" },
+    ];
+
+    expect(doorsOf("clinica-norte", doors)).toBe("doors    web · phone +34910000000");
+  });
+
+  it("says the web for an agent no number reaches, because every agent is on the web", () => {
+    expect(doorsOf("tienda-sur", [])).toBe("doors    web");
   });
 });
 
