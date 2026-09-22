@@ -42,8 +42,8 @@ refused rather than quietly swapped: the two leave different calls behind.
 
 `{ ok, mode, to, error }` comes back. **`ok: false` means nobody moved** — the caller is still on
 the line, waiting to hear what happened, and the tool's return value is how the agent knows what to
-tell them. Dialling a number into a browser call needs the org's outbound trunk
-(`pinecall carrier outbound`, or the console's Numbers screen); without one the transfer answers
+tell them. Dialling a number into a browser call needs the org's outbound trunk — turned on from
+the console's Numbers screen, or `POST /v1/carrier/outbound`; without one the transfer answers
 `ok: false` and says so.
 
 ## `attention` — a person, without sending the caller anywhere
@@ -86,8 +86,8 @@ this.call.hangup("the caller was served");   // say the goodbye BEFORE this
 ```
 
 `callback` writes the number into the call's log; your backend reads them with
-`GET /v1/callbacks` and places the calls (`pc.agent(...).dial(...)`). `hangup` from the class is
-the same ending as the model's own `end_call`, for a call your code decides is over.
+`GET /v1/callbacks` and places each call with `POST /v1/agents/{slug}/dial`. `hangup` from the
+class is the same ending as the model's own `end_call`, for a call your code decides is over.
 
 None of these four answer anything: they either happen or they leave one error line in the call's
 log saying why not — a chat has no line to hold, a browser call has no leg to send tones down.
