@@ -189,7 +189,29 @@ eval`, `test/<name>/goldens/docs.json`) and why a call has no retrieval score ar
 
 ## Ring 4 — every call, judged at hang-up
 
-The runtime writes a `call.score` entry on every finished call, with nobody watching. Read it:
+The runtime writes a `call.score` entry on every finished call, with nobody watching. It happens
+between `call.summary` and the seal: the session hands the scorer **its own log** — nothing is
+re-run, no conversation happens twice — and three judges read it.
+
+| judge | what it asks | who answers |
+|---|---|---|
+| `consent` | *Every irreversible tool call ran after a `confirm.granted` for the same call and the same audience.* | **code alone**, off the gate's own lines |
+| `grounded` | *Every concrete fact the agent stated appears in the evidence this call carried.* | code first; a model for the facts code could not match |
+| `promises` | *Every commitment the agent made on the business's behalf is recorded by a tool call* — a call back, a visit, a price, sending something | code finds the commitments; a model weighs them |
+
+`grounded` is the one worth knowing about twice: a lookup arrives as a `tool_result`, so that
+evidence **is** the chunks — which makes its held-rate the precision of retrieval, measured on real
+traffic, for free ([testing-memory-and-knowledge.md](testing-memory-and-knowledge.md)).
+
+**What judging one call may spend on a model is the box's ceiling**, `PINECALL_JUDGE_CEILING_EUR`
+(0.002 EUR, and a tenant reads it rather than sets it). At zero no judge model is built at all: the
+ones that answer by code still answer, and the ones that wanted a model are `skipped` with the
+reason — never a fail the call did not earn. **An org can also turn judging off entirely**, both
+worlds, from the console or `PUT /v1/org/judging` — the calls then seal with a verdict-less score
+saying so, and one of them is judged later with `POST /v1/evals/judge/{call}` when somebody wants
+to know. A judge that breaks is dropped rather than guessed at, and the call seals anyway.
+
+Read it:
 
 ```bash
 pinecall runs list [--limit n]         # the suites this gateway has run
