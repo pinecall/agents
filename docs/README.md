@@ -8,6 +8,7 @@ called, and the rest are the reference it points at.
 |---|---|
 | [tutorial.md](tutorial.md) | forty minutes, from nothing: the class, a call, what it knows by heart, the documents it searches, memory, the log, and a test |
 | [writing-an-agent.md](writing-an-agent.md) | the class: state, tools, stages, channels, hooks, events — what is the world's and not the class's — and the one layout of a project on disk |
+| [contact-center.md](contact-center.md) | handing a call to a person: transfer, asking for a supervisor, hold, touch tones, a call back |
 | [the-prompt.md](the-prompt.md) | the prompt: named blocks in two regions, `render()`, and where what a lookup found actually lands |
 | [testing-an-agent.md](testing-an-agent.md) | the five rings: unit tests, goldens, personas, one call replayed, and the score every real call gets |
 | [testing-memory-and-knowledge.md](testing-memory-and-knowledge.md) | the goldens that are not about one call: what the agent remembers, what it recalls, whether the index answers, and why a call has no retrieval score |

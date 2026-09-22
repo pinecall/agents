@@ -367,6 +367,10 @@ this.call.send("cart", { total: 42 }, { to: identity });   // a payload to a bro
 this.log("appointment.booked", booking);          // one named fact in the call's log
 ```
 
+And the verbs that hand the call to somebody else — `transfer`, `attention`, `hold`, `unhold`,
+`dtmf`, `callback`, `hangup`. Each one answers with what really happened, so your tool decides what
+the caller is told: [contact-center.md](contact-center.md).
+
 Two more it carries, which a view and an agenda both want: `this.call.today` is the day this call
 opened, `YYYY-MM-DD`, and it is what "today" and "el martes" have to be counted from — never the
 machine's clock, which on a box is a different day in a different timezone. `this.call.history` is

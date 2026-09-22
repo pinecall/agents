@@ -73,7 +73,7 @@ a directory earns its place there by having a line in that table (§13).
 
 | file | what it is |
 |---|---|
-| `call.ts` | `CallWorld`: the line, the room, the history, `say`/`reply` (which settle on the turn they land as), `send`, `participant()`, `invite`, `search()` — the gateway's search of the bases the world attached, answered as `Found[]`; a call nobody serves through a gateway refuses it with `NO_GATEWAY_TO_SEARCH` — and `take()`, one entry folded in |
+| `call.ts` | `CallWorld`: the line, the room, the history, `say`/`reply` (which settle on the turn they land as), `send`, `participant()`, `invite`, `search()` — the gateway's search of the bases the world attached, answered as `Found[]`; a call nobody serves through a gateway refuses it with `NO_GATEWAY_TO_SEARCH` — the verbs that hand the call to a person (`transfer` and `attention`, which settle on the entry the runtime writes, and `hold`/`unhold`/`dtmf`/`callback`/`hangup`, which answer nothing) — and `take()`, one entry folded in |
 | `room.ts` | `Room` and `Participant` reduced from the room's own entries; `ParticipantHandle.mute()/remove()`; `invite` |
 | `history.ts` | `History` and `Turn`: the finished turns, and the sentence a `collapse()` left in their place |
 
@@ -173,6 +173,7 @@ Beside `src/`:
 |---|---|---|
 | `CallWorld` | `call/call.ts` | `id`, `contact`, `from?`, `channel?`, `room`, `history`, `cause`, `numbered()`, `search()` |
 | `Found` | `call/call.ts` | one chunk a search found, as the model reads it: where it came from, and its text |
+| `Transferred` · `Attended` | `call/call.ts` | what a transfer and an ask for a person came to: `ok`, and who or why not |
 | `Knowledge` | `agent/knowledge.ts` | `search(query, {k?})` — what `this.knowledge` is |
 | `Room` | `call/room.ts` | `participants`, `caller`, `has(kind)`, `get(identity)`, `invite()` |
 | `Participant` | `call/room.ts` | `identity`, `kind` (`caller` · `agent` · `supervisor` · `listener` · `sip`), `name?`, `joinedAt`, `speaking` |

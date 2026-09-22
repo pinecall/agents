@@ -6,6 +6,14 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Added
+- **`this.call` hands the call to a person.** `transfer(to, {mode?})` sends a phone caller on with
+  a REFER, or dials the number into a browser caller's own call and falls silent once it answers;
+  `attention(reason, {waitS})` asks for a supervisor and holds the caller until somebody takes the
+  line or the wait runs out. Both settle on what the runtime wrote in the log — `{ok, error}` —
+  so the tool decides what the caller is told. And `hold()`, `unhold()`, `dtmf(digits)`,
+  `callback(number, {when?, note?})` and `hangup(reason?)`. `docs/contact-center.md`.
+
 ## [0.9.1] — A persona's model, voice and verdict, and a class that declares no doors
 
 ### Changed

@@ -7,6 +7,42 @@ import { ParticipantHandle, Room, type Commander, type ParticipantKind } from ".
 /** How long a say or a reply waits for the turn it lands as before it gives up saying so. */
 const ACK_MS = 30_000;
 
+/** How long a transfer waits for its outcome: the far end may ring for 25s before it fails. */
+const TRANSFER_MS = 90_000;
+
+/** The slack an ask for a person keeps on top of its own wait, for the entry to make its way back. */
+const A_MOMENT_MS = 15_000;
+
+/** What a verb answers when nothing came back at all: the gateway, not the far end, went quiet. */
+const NO_ANSWER = "the runtime never said how it went";
+
+/** What a verb still waiting is answered with when the call ends under it. */
+const THE_CALL_ENDED = "the call ended before it was answered";
+
+/** Which of the two transfers happened: the caller sent on, or the far end dialled in to them. */
+export type TransferMode = "cold" | "warm";
+
+/** Who took a line when somebody did, as their token named them. */
+export interface Supervisor {
+  id: string;
+  name?: string;
+}
+
+/** What a transfer came to. `ok: false` means nobody moved and the caller is still on the line. */
+export interface Transferred {
+  to: string;
+  mode: TransferMode | null;
+  ok: boolean;
+  error?: string;
+}
+
+/** What an ask for a person came to: who took the line, or why nobody did. */
+export interface Attended {
+  ok: boolean;
+  by: Supervisor | null;
+  error?: string;
+}
+
 /** One chunk a search found, as the model reads it: where it came from, and its text. */
 export interface Found {
   path: string;
@@ -44,6 +80,9 @@ export class CallWorld implements HookCall {
   // is the only acknowledgement the wire has for either: the command frame itself is fire and
   // forget, and the gateway answers commands with the entries they land as.
   #speaking: ((spoken: boolean) => void)[] = [];
+  // The same, for the two verbs the log answers later: a transfer and an ask for a person.
+  #transfers: ((transferred: Transferred) => void)[] = [];
+  #asks: ((attended: Attended) => void)[] = [];
   /** The event being dispatched right now, so a write inside onEvent can name its cause. */
   cause: { name: string; seq: number } | null = null;
   #events = 0;
@@ -104,6 +143,56 @@ export class CallWorld implements HookCall {
     this.room.invite(to, options);
   }
 
+  // ── handing the call to somebody else ───────────────────────────────────────
+
+  /**
+   * Hand the caller to this number. On a phone their own line is sent on and the call ends here;
+   * in a browser the number is dialled into this call instead and the agent falls silent once it
+   * answers. Say `mode` only to insist on one of the two. Resolves with what really happened:
+   * `ok: false` means nobody moved and the caller is still with the agent, waiting to be told.
+   */
+  transfer(to: string, options: { mode?: TransferMode } = {}): Promise<Transferred> {
+    this.out("call.transfer", options.mode === undefined ? { to } : { to, mode: options.mode });
+    return this.#answered(this.#transfers, TRANSFER_MS, { to, mode: null, ok: false, error: NO_ANSWER });
+  }
+
+  /**
+   * Ask for a person without sending the caller anywhere: they wait — on hold in a call, simply
+   * unanswered in a thread — until a supervisor takes the line or `waitS` passes with nobody
+   * free. `reason` is what the supervisor reads before taking it. The tool that calls this is
+   * still running all that time, so give it a `timeout` longer than `waitS`.
+   */
+  attention(reason: string, options: { waitS: number }): Promise<Attended> {
+    this.out("call.attention", { reason, waitS: options.waitS });
+    const lapsed: Attended = { ok: false, by: null, error: NO_ANSWER };
+    return this.#answered(this.#asks, options.waitS * 1000 + A_MOMENT_MS, lapsed);
+  }
+
+  /** The caller waits: they hear the hold melody, and the agent neither speaks nor hears. */
+  hold(): void {
+    this.out("call.hold", {});
+  }
+
+  /** The wait is over: the agent has the caller back. */
+  unhold(): void {
+    this.out("call.unhold", {});
+  }
+
+  /** Touch tones down the line, for an IVR on the far end: `0-9`, `*`, `#`, `,` for a pause. */
+  dtmf(digits: string): void {
+    this.out("call.dtmf", { digits });
+  }
+
+  /** The caller wants ringing back. Written into the call's log for your backend to read and dial. */
+  callback(number: string, options: { when?: string; note?: string } = {}): void {
+    this.out("call.callback", { number, ...options });
+  }
+
+  /** End the call. Say the goodbye BEFORE this: nothing said after it is heard. */
+  hangup(reason?: string): void {
+    this.out("call.hangup", reason === undefined ? {} : { reason });
+  }
+
   /** One entry of this call's, folded into the room and the history. Unknown types are ignored. */
   take(type: string, data: Record<string, unknown>, at: number): void {
     switch (type) {
@@ -125,6 +214,26 @@ export class CallWorld implements HookCall {
       case "turn.agent":
         this.history.took({ who: "agent", text: String(data["text"] ?? ""), speechId: String(data["speech_id"] ?? data["speechId"] ?? ""), interrupted: data["interrupted"] === true, at });
         return this.#settle(true);
+      case "call.transferred":
+        return settle(this.#transfers, {
+          to: String(data["to"] ?? ""),
+          mode: (data["mode"] ?? null) as TransferMode | null,
+          ok: data["ok"] === true,
+          ...(typeof data["error"] === "string" ? { error: data["error"] } : {}),
+        });
+      case "attention.answered":
+        return settle(this.#asks, {
+          ok: data["ok"] === true,
+          by: (data["by"] ?? null) as Supervisor | null,
+          ...(typeof data["error"] === "string" ? { error: data["error"] } : {}),
+        });
+      // Nobody is waiting for anything any more, and a verb whose answer was still coming is
+      // answered by the ending itself rather than left hanging until its own ceiling.
+      case "call.ended":
+        this.#settle(false);
+        settle(this.#transfers, { to: "", mode: null, ok: false, error: THE_CALL_ENDED });
+        settle(this.#asks, { ok: false, by: null, error: THE_CALL_ENDED });
+        return;
       default:
         return;
     }
@@ -147,4 +256,23 @@ export class CallWorld implements HookCall {
     this.#speaking = [];
     for (const resolve of waiting) resolve(spoken);
   }
+
+  // A verb of the line is answered by an entry of this call's own log, seconds or minutes later.
+  // The ceiling is not the answer — the runtime always writes one — it is what keeps a tool from
+  // waiting for a gateway that went away mid-call.
+  #answered<T>(waiting: ((answer: T) => void)[], ceiling: number, lapsed: T): Promise<T> {
+    return new Promise<T>((resolve) => {
+      waiting.push(resolve);
+      setTimeout(() => {
+        const index = waiting.indexOf(resolve);
+        if (index >= 0) waiting.splice(index, 1);
+        resolve(lapsed);
+      }, ceiling).unref?.();
+    });
+  }
+}
+
+function settle<T>(waiting: ((answer: T) => void)[], answer: T): void {
+  const resolvers = waiting.splice(0, waiting.length);
+  for (const resolve of resolvers) resolve(answer);
 }
