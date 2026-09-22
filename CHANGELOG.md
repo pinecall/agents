@@ -6,6 +6,14 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Fixed
+- **`pinecall supervise` takes a pipe.** Fed its moves on stdin —
+  `printf 't\nq\n' | pinecall supervise <call>` — the desk sent them and then died with
+  `ERR_USE_AFTER_CLOSE`: the transcript kept drawing a prompt on the interface the keyboard had
+  already closed, and it outlives that interface by however long the next entry takes. The prompt
+  is now drawn for a terminal only, and leaving stops the transcript instead of waiting on an
+  entry that may never come — which is what a piped desk hung on once it stopped crashing.
+
 ## [0.9.2] — Handing a call to a person
 
 ### Added

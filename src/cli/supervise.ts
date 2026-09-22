@@ -1,6 +1,6 @@
 /** `pinecall supervise <call>`: a human at the desk — the transcript as it lands, and the five moves. */
 
-import { createInterface } from "node:readline";
+import { createInterface, type Interface } from "node:readline";
 
 import type { Verb } from "@pinecall/protocol";
 
@@ -13,6 +13,9 @@ import { standingOf } from "./the-call.js";
 import { refusal } from "./whoami.js";
 
 const USAGE = "usage: pinecall supervise <call>";
+
+// What a person at a keyboard is shown before each move, and nothing at all through a pipe.
+const PROMPT = "> ";
 
 // The audio is the console's, deliberately: a terminal has no speakers this process may reach, and
 // `pinecall simulate --listen` already says the same sentence about the same room. What a terminal
@@ -43,11 +46,13 @@ ${MOVES.map(([key, what]) => `    ${key.padEnd(11)} ${what}`).join("\n")}
   run,
 };
 
-/** What the verb can be told besides the argv: where to print, and which environment. Tests only. */
+/** What the verb can be told besides the argv: where to print, what to read, which environment. */
 export interface Running {
   out?: NodeJS.WritableStream;
   err?: NodeJS.WritableStream;
   env?: NodeJS.ProcessEnv;
+  /** Where the moves are typed. The keyboard, unless a test — or a pipe — hands over another. */
+  input?: NodeJS.ReadableStream;
 }
 
 export async function run(argv: string[], how: Running = {}): Promise<number> {
@@ -71,7 +76,7 @@ export async function run(argv: string[], how: Running = {}): Promise<number> {
   out.write(`${call} · ${ON_THE_SPEAKERS}\n`);
   const pc = new Pinecall({ url: door.url, apiKey: door.apiKey });
   try {
-    return await atTheDesk(pc, door, call, out, err);
+    return await atTheDesk(pc, door, call, out, err, how.input ?? process.stdin);
   } catch (refused) {
     err.write(`${refusal(refused)}\n`);
     return 1;
@@ -92,20 +97,23 @@ async function atTheDesk(
   call: string,
   out: NodeJS.WritableStream,
   err: NodeJS.WritableStream,
+  input: NodeJS.ReadableStream,
 ): Promise<number> {
-  const lines = createInterface({ input: process.stdin, output: process.stdout, prompt: "> " });
+  const lines = createInterface({ input, output: process.stdout, prompt: PROMPT });
+  const leaving = new AbortController();
   let ended = false;
+  let left = false;
   const watching = (async () => {
-    for await (const seen of pc.observe({ call })) {
+    for await (const seen of pc.observe({ call }, { signal: leaving.signal })) {
       // The entry's own data and not the folded event: what a desk prints is what the log wrote.
       const line = lineOf(seen.entry.seq, seen.entry.type, seen.entry.data);
       if (line !== null) out.write(`\r${line}\n`);
-      lines.prompt();
+      prompting(lines, input, left);
       if (seen.entry.type === "call.ended") ended = true;
       if (ended) break;
     }
   })();
-  lines.prompt();
+  prompting(lines, input, left);
   for await (const typed of lines) {
     if (ended) break;
     const move = moveOf(typed.trim());
@@ -115,11 +123,28 @@ async function atTheDesk(
     } else {
       await sent(door, call, move).catch((refused: unknown) => err.write(`\r${refusal(refused)}\n`));
     }
-    lines.prompt();
+    prompting(lines, input, left);
   }
+  // The keyboard is done — `q`, the call ending, or the last piped line. The transcript is NOT
+  // awaited: it is parked on an entry that may never come, so it is stopped instead, which is
+  // what the signal is for.
+  left = true;
+  leaving.abort();
   lines.close();
   await watching.catch(() => undefined);
   return 0;
+}
+
+/**
+ * The prompt is for a person at a keyboard. Piped in — a script sending two moves — `> ` would be
+ * noise in whatever reads this output; and drawn after the keyboard is gone it throws
+ * ERR_USE_AFTER_CLOSE, which is what a piped desk crashed with, because the transcript outlives
+ * the interface by however long the last entry takes (2026-09-22).
+ */
+function prompting(lines: Interface, input: NodeJS.ReadableStream, left: boolean): void {
+  if (!left && (input as NodeJS.ReadStream).isTTY === true) {
+    lines.prompt();
+  }
 }
 
 /** One typed line as the verb it names, `leave` for q, and nothing at all for a line nobody meant. */

@@ -2,6 +2,7 @@
 
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
+import { Readable } from "node:stream";
 
 import { describe, expect, it } from "vitest";
 
@@ -94,6 +95,28 @@ describe("the verb itself", () => {
     await gateway.close();
   });
 
+  // Piped in — `printf 't\nq\n' | pinecall supervise <call>` — the desk used to send its moves
+  // and then throw ERR_USE_AFTER_CLOSE: the transcript kept drawing a prompt on an interface the
+  // keyboard had already closed, and the process died on a call it had just taken the line on.
+  it("takes its moves from a pipe, sends them, and leaves without a word of its own", async () => {
+    const desk = await aDeskWhereTheCallIsLive();
+    const out = collected();
+
+    const code = await run(["call_live"], {
+      out: out.stream,
+      err: collected().stream,
+      env: desk.env,
+      input: Readable.from(["t\n", "s Buenos días.\n", "q\n"]),
+    });
+
+    expect(code).toBe(0);
+    expect(desk.verbs).toEqual([{ verb: "takeover" }, { verb: "say", text: "Buenos días." }]);
+    // The transcript still prints; what a pipe never gets is the prompt drawn for a keyboard.
+    expect(out.text()).toContain("¿Tenéis algo el martes?");
+    expect(out.text()).not.toContain(">");
+    await desk.close();
+  });
+
   it("refuses a desk on a call this gateway never wrote", async () => {
     const gateway = await aGatewayWhereTheCall(null);
     const err = collected();
@@ -104,6 +127,55 @@ describe("the verb itself", () => {
     await gateway.close();
   });
 });
+
+/** A gateway a desk can really sit at: the call is live, the transcript never ends, verbs land. */
+async function aDeskWhereTheCallIsLive(): Promise<{
+  env: NodeJS.ProcessEnv;
+  verbs: unknown[];
+  close(): Promise<void>;
+}> {
+  const verbs: unknown[] = [];
+  const anEntry = {
+    seq: 13,
+    ts: 1790000000,
+    call: "call_live",
+    agent: "clinica-norte",
+    type: "turn.user",
+    ephemeral: false,
+    data: { speech_id: "sp_1", text: "¿Tenéis algo el martes?", metrics: {} },
+  };
+  const server = createServer((request, response) => {
+    if (request.url?.endsWith("/verbs") === true) {
+      const body: Buffer[] = [];
+      request.on("data", (chunk: Buffer) => body.push(chunk));
+      request.on("end", () => {
+        verbs.push(JSON.parse(Buffer.concat(body).toString()));
+        response.writeHead(202, { "content-type": "application/json" });
+        response.end("{}");
+      });
+      return;
+    }
+    if (request.headers.accept === "text/event-stream") {
+      // One turn, then open for as long as the call lasts. The desk leaves it — it is never the
+      // stream that ends this — which is the hang this test exists to catch.
+      response.writeHead(200, { "content-type": "text/event-stream" });
+      response.write(`data: ${JSON.stringify(anEntry)}\n\n`);
+      return;
+    }
+    response.writeHead(200, { "content-type": "application/json" });
+    response.end(JSON.stringify({ live: true, last_seq: 12 }));
+  });
+  await new Promise<void>((bound) => server.listen(0, "127.0.0.1", bound));
+  const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  return {
+    env: pointingAt(url, "pc_a_key"),
+    verbs,
+    close: async () => {
+      server.closeAllConnections();
+      await new Promise<void>((closed) => server.close(() => closed()));
+    },
+  };
+}
 
 /** A gateway whose `/state` door answers with that standing, or 404 when there is none. */
 async function aGatewayWhereTheCall(standing: { live: boolean; last_seq: number } | null): Promise<{
