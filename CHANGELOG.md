@@ -6,6 +6,8 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.9.3] — The desk takes a pipe
+
 ### Fixed
 - **`pinecall supervise` takes a pipe.** Fed its moves on stdin —
   `printf 't\nq\n' | pinecall supervise <call>` — the desk sent them and then died with
