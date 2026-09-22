@@ -42,7 +42,7 @@ access** and where their sandbox is. The sandbox is watched at the box's SECOND 
 sandbox's may not run in production, whoever asks.
 
 Yours to hold, not yours to hide: **an admin, and whoever runs the gateway, see every corner of
-the sandbox**. The agent listing answers a key that opens `team` with one row per corner and the
+the sandbox**. The agent listing answers a key that opens `team` and `app` — an admin's; a manager runs the floor and opens nobody's copy — with one row per corner and the
 member each belongs to, because somebody has to be able to tell what the team is running — a
 corner nobody can see is one nobody can help with. What nobody else can do is take it: a corner is
 still held by the person whose key registered it.
@@ -154,7 +154,10 @@ folder, linked on its own; there is nothing to switch between.
 
 **A person is their email, and may belong to several orgs.** One password is theirs across every
 org they are in, whichever org it was chosen in, and an email is matched trimmed and lower-cased,
-so `Nico@TiendaSur.uy ` is the same person. Signing in to the console asks for the email and the
+so `Nico@TiendaSur.uy ` is the same person. A second org seats them without a link only once the
+address is **verified** — they accepted a link that came by mail, signed in through an identity
+provider, or the box's operator invited them; a link an admin handed over proves nothing about who
+opened it, so until then a new org invites them like anybody else. Signing in to the console asks for the email and the
 password, and then offers the workspaces those open when they belong to several (`POST
 /v1/login/orgs`, which mints nothing). It signs in to production, and the one key is kept by that
 browser, so a second tab is the same person. The console's workspace menu and its switcher then
@@ -168,7 +171,9 @@ as `PINECALL_KEY` ([production.md](production.md)).
 
 People are rows, not shared keys. The admin invites from the console's Team screen or with `POST
 /v1/members`. On a gateway that can send mail the person gets a **letter** with a one-use link —
-and the admin is shown the same link, to hand over where mail is not set up; the person opens it,
+and the admin is shown the same link, to hand over where mail is not set up, for a person who is
+nobody else's on this box: somebody already invited to or a member of another org gets it by
+letter only, because that link chooses the one password every org of theirs opens with; the person opens it,
 chooses a password on the card it lands on, and holds keys of their own from then on — one per
 device, revoked on their own. On a gateway that takes no sign-up, the very first admin is invited
 the same way by whoever runs the box (`pinecall-runtime orgs invite`). A role is a preset of what
@@ -186,6 +191,12 @@ those keys open, in whichever world the request runs:
 `production`, set by an admin, says whether they may do it in production — read at every request,
 so switching it off closes the very next one. An admin's is always on, and the gateway refuses to
 turn it off. The Team screen has it on every row and in the invitation form.
+
+**You hand out what you hold.** A role is granted only by a key whose own preset opens every door
+that role would — a manager invites qa, supervisors and managers, never a developer or an admin —
+production access only by somebody who has it, and nobody changes their own role or switch:
+another admin does. So Clínica Norte's admins are made by Laura, and by nobody Laura did not
+make one.
 
 The roles are presets and nothing more: every door reads the key's scopes, and a role re-cut
 tomorrow changes the next key minted and not one door. `agents` on a member narrows which of the
