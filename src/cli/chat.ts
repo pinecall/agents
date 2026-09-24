@@ -87,7 +87,7 @@ export async function run(argv: string[]): Promise<number> {
   if (door === undefined) return 2;
   const url = door.url;
   if (reach !== undefined) {
-    return await talk(chatUrl(url, reach, undefined, values.as), door, values.events === true);
+    return await talk(() => chatUrl(url, reach, undefined, values.as), door, values.events === true);
   }
   const loaded = await load((await oneHome("chat", values.file, values.agent)).file);
   const pc = pinecallFor(door);
@@ -111,7 +111,7 @@ export async function run(argv: string[]): Promise<number> {
     await pc.connect();
     // The id exists only after the register the connect awaited, which is why it is read here
     // and not where the agent was mounted.
-    const address = chatUrl(url, mounted.slug, mounted.agent.app, values.as);
+    const address = (): string => chatUrl(url, mounted.slug, mounted.agent.app, values.as);
     return await talk(address, door, values.events === true);
   } finally {
     pc.close();
@@ -142,58 +142,106 @@ export function chatUrl(base: string, agent: string, app?: string, contact?: str
 // Every line typed is one turn; every frame received is one entry, printed as it lands. The key
 // travels as the upgrade's Authorization header, never in the URL, which is the only thing the
 // chat door accepts and the reason this socket is `ws` and not the runtime's global WebSocket.
-function talk(url: string, door: Open, events: boolean): Promise<number> {
-  const socket = new WebSocket(url, { headers: signed(door.apiKey, door.world) });
-  const lines = createInterface({ input: process.stdin, output: process.stdout, prompt: PROMPT });
+//
+// A written call runs in the gateway, and a gateway that restarts drops this socket without a
+// word — never the call, whose log is whole. So a close that is neither this terminal leaving nor
+// the call ending is the gateway going away: the socket is dialled again naming the call
+// (`?call=`), and the conversation goes on where it was. `address` is asked again each time,
+// because the app socket this process holds came back with a new id.
+export function talk(
+  address: () => string,
+  door: Open,
+  events: boolean,
+  input: NodeJS.ReadableStream = process.stdin,
+): Promise<number> {
+  const lines = createInterface({ input, output: process.stdout, prompt: PROMPT });
   // An entry can land after the keyboard is gone — a piped stdin ends the moment it is read, and
   // the agent's greeting arrives after that — and readline throws on a prompt it has closed.
   let typing = true;
+  let call: string | null = null;
+  let over = false;
+  let socket: WebSocket | null = null;
+  let back = 0;
   // The keyboard waits for the socket: `ws` throws on a send while the upgrade is still in flight
   // rather than queueing it. Paused, a line typed early stays in the stream and arrives as the
   // first turn the moment the socket is up, which is what a person who typed it meant.
   lines.pause();
   return new Promise<number>((done) => {
-    socket.on("open", () => {
-      lines.resume();
-      lines.prompt();
-    });
-    socket.on("message", (frame: Buffer) => {
-      // --events is the wire itself, one JSON entry per line, exactly what `run --events` prints:
-      // the same word means the same thing in both verbs, and it is what a person reaches for when
-      // what is wrong is the stream and not the conversation.
-      const line = events ? frame.toString() : lineOf(frame.toString());
-      if (line === null) return;
-      // The prompt is rewritten after every entry: one may land while the caller is still typing.
-      process.stdout.write(`\r${line}\n`);
-      if (typing) lines.prompt();
-    });
-    socket.on("error", (failed: Error) => {
-      process.stderr.write(`\rthe gateway refused the chat socket: ${failed.message}\n`);
-      lines.close();
-      done(1);
-    });
-    // A close that carries a reason is the gateway saying why it will not take this call — today
-    // that is an agent nobody is serving, and the sentence names it. A close with none is the
-    // conversation ending, which is how every chat ends and is not worth a line.
-    socket.on("close", (_code: number, reason: Buffer) => {
-      lines.close();
-      const why = reason.toString();
-      if (why === "") {
-        done(0);
-        return;
-      }
-      process.stderr.write(`\r${why}\n`);
-      done(1);
-    });
+    const dial = (): void => {
+      const url = call === null ? address() : withCall(address(), call);
+      const opened = new WebSocket(url, { headers: signed(door.apiKey, door.world) });
+      socket = opened;
+      opened.on("open", () => {
+        if (back > 0) process.stderr.write("\rthe gateway is back: the call goes on\n");
+        back = 0;
+        lines.resume();
+        if (typing) lines.prompt();
+      });
+      opened.on("message", (frame: Buffer) => {
+        const entry = JSON.parse(frame.toString()) as { call?: string | null; type?: string };
+        if (typeof entry.call === "string") call = entry.call;
+        if (entry.type === "call.score") over = true;
+        // --events is the wire itself, one JSON entry per line, exactly what `run --events` prints:
+        // the same word means the same thing in both verbs, and it is what a person reaches for
+        // when what is wrong is the stream and not the conversation.
+        const line = events ? frame.toString() : lineOf(frame.toString());
+        if (line === null) return;
+        // The prompt is rewritten after every entry: one may land while the caller is typing.
+        process.stdout.write(`\r${line}\n`);
+        if (typing) lines.prompt();
+      });
+      // An error is followed by a close, and the close decides.
+      opened.on("error", () => undefined);
+      opened.on("close", (_code: number, reason: Buffer) => {
+        lines.pause();
+        const why = reason.toString();
+        if (!typing || over) {
+          lines.close();
+          done(0);
+          return;
+        }
+        // A reason is the gateway saying why it will not take this call. Before any call it is
+        // the answer; on a way back it may be the app socket not re-registered yet, so it is
+        // asked again until the patience runs out.
+        const coming = call !== null && back < BACK_TRIES;
+        if (!coming) {
+          lines.close();
+          if (why !== "") process.stderr.write(`\r${why}\n`);
+          done(why === "" ? 0 : 1);
+          return;
+        }
+        if (back === 0) process.stderr.write("\rthe gateway went away — the call is kept, reconnecting…\n");
+        back += 1;
+        setTimeout(dial, waitBack(back));
+      });
+    };
     lines.on("line", (line) => {
-      if (line.trim() !== "") socket.send(JSON.stringify({ text: line.trim() }));
+      if (line.trim() !== "" && socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ text: line.trim() }));
       lines.prompt();
     });
     lines.on("close", () => {
       typing = false;
-      socket.close();
+      socket?.close();
     });
+    dial();
   });
+}
+
+// A gateway restarting is seconds; this is the patience for it, about a minute in all.
+export const BACK_TRIES = 15;
+const BACK_FIRST_MS = 500;
+const BACK_CAP_MS = 5_000;
+
+/** How long to wait before the `back`-th try at a chat socket the gateway dropped. */
+export function waitBack(back: number): number {
+  return Math.min(BACK_FIRST_MS * 2 ** (back - 1), BACK_CAP_MS);
+}
+
+/** The chat address, naming the call a caller is coming back to. */
+function withCall(address: string, call: string): string {
+  const url = new URL(address);
+  url.searchParams.set("call", call);
+  return url.toString();
 }
 
 // One entry off the socket, printed the way the live view draws it — cli/view.ts owns the four

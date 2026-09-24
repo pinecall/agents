@@ -6,6 +6,15 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.9.5] — A written call outlives the gateway
+
+### Changed
+- **`pinecall chat` and the console's chat carry on through a gateway restart.** A written call runs
+  in the gateway, and a restart dropped the socket and ended the chat. The socket is now dialled
+  again naming the call (`?call=`), for about a minute, and the conversation goes on where it was,
+  history and state whole. Only the person leaving, or the call ending, closes it. Needs the
+  runtime of 2026-09-24.
+
 ## [0.9.4] — A deploy never cuts a call
 
 ### Added

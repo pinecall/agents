@@ -347,6 +347,10 @@ caller against it in the same terminal. This is `rails console`: the tools run h
 breakpoint in a `@tool` is reachable. It works with no `pinecall start` up and with three of them,
 because the caller socket names this process.
 
+A written call runs in the gateway, so a gateway that restarts drops the socket — and keeps the
+call. `chat` says `the gateway went away — the call is kept, reconnecting…`, dials again naming
+the call, and the conversation goes on, history and state whole. It gives up after about a minute.
+
 ```console
 $ pinecall chat --as +34600000001
 ‹ hola, quería cambiar mi cita del jueves

@@ -6,7 +6,7 @@ import type { CamelEvent, Pinecall } from "../../client/index.js";
 import { signed } from "../../client/signed.js";
 
 import { mount } from "../../runtime/connect.js";
-import { chatUrl } from "../chat.js";
+import { BACK_TRIES, chatUrl, waitBack } from "../chat.js";
 import { pinecallFor } from "../client-for.js";
 import { load, mountOptions } from "../load.js";
 import type { Door } from "../testing/gateway.js";
@@ -162,8 +162,8 @@ async function theStateOf(
  * server: a real phone call must not ring in a browser tab because somebody left `ui` open.
  */
 export function linesFromThisProcess(door: Door, out: NodeJS.WritableStream, file?: string): Lines {
-  let mounting: Promise<{ pc: Pinecall; url: string }> | undefined;
-  const mounted = async (opening?: Record<string, unknown> | undefined): Promise<{ pc: Pinecall; url: string }> => {
+  let mounting: Promise<{ pc: Pinecall; url: () => string }> | undefined;
+  const mounted = async (opening?: Record<string, unknown> | undefined): Promise<{ pc: Pinecall; url: () => string }> => {
     const loaded = await load(file);
     const pc = pinecallFor(door);
     const app = mount(loaded.ctor, {
@@ -173,8 +173,9 @@ export function linesFromThisProcess(door: Door, out: NodeJS.WritableStream, fil
     });
     await pc.connect();
     // The app's id exists only after the register the connect awaited, and naming it is what sends
-    // the call to THIS process rather than to whichever `pinecall start` registered last.
-    return { pc, url: chatUrl(door.url, app.slug, app.agent.app) };
+    // the call to THIS process rather than to whichever `pinecall start` registered last. Asked
+    // each time: a gateway that restarted gave this process's socket a new one.
+    return { pc, url: () => chatUrl(door.url, app.slug, app.agent.app) };
   };
   return {
     async open(contact: string | undefined, opening?: Record<string, unknown> | undefined): Promise<Line> {
@@ -183,9 +184,12 @@ export function linesFromThisProcess(door: Door, out: NodeJS.WritableStream, fil
       // other conversation at the same time — one slot shared between two would be a race.
       const its = opening === undefined ? undefined : await mounted(opening);
       const { url } = its ?? (await (mounting ??= mounted()));
-      const address = new URL(url);
-      if (contact !== undefined) address.searchParams.set("contact", contact);
-      const line = await aLine(address.toString(), door, out);
+      const address = (): string => {
+        const at = new URL(url());
+        if (contact !== undefined) at.searchParams.set("contact", contact);
+        return at.toString();
+      };
+      const line = await aLine(address, door, out);
       if (its === undefined) return line;
       const end = line.end;
       return { ...line, end: () => { end(); its.pc.close(); } };
@@ -200,35 +204,61 @@ export function linesFromThisProcess(door: Door, out: NodeJS.WritableStream, fil
 
 // One chat socket, answered as soon as the call has an id. Everything that comes back is printed
 // in the terminal that typed `ui`, the way `pinecall chat` prints it, and read by the page off the
-// log — so the two views of the call are one log and not two transcripts.
-async function aLine(url: string, door: Door, out: NodeJS.WritableStream): Promise<Line> {
-  const socket = new WebSocket(url, { headers: signed(door.apiKey, door.world) });
+// log — so the two views of the call are one log and not two transcripts. A written call runs in
+// the gateway, and a gateway that restarts drops this socket and keeps the call: the socket is
+// dialled again naming it (`?call=`), and the conversation goes on. Only the page ending it, or
+// the call ending, closes it for good.
+async function aLine(address: () => string, door: Door, out: NodeJS.WritableStream): Promise<Line> {
+  let socket: WebSocket | null = null;
+  let ended = false;
+  let over = false;
+  let back = 0;
   const line: Line = {
     call: "",
-    say: (text: string) => socket.send(JSON.stringify({ text })),
-    end: () => socket.close(),
+    say: (text: string) => {
+      if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ text }));
+    },
+    end: () => {
+      ended = true;
+      socket?.close();
+    },
   };
   return await new Promise<Line>((answer, refuse) => {
     const giveUp = setTimeout(() => refuse(new Refusal(502, NO_CALL)), A_CALL_OPENS_WITHIN_MS);
-    socket.on("message", (frame: Buffer) => {
-      const entry = JSON.parse(frame.toString()) as { type?: string; call?: unknown; data?: Record<string, unknown> };
-      if (line.call === "" && typeof entry.call === "string") {
-        line.call = entry.call;
-        clearTimeout(giveUp);
-        answer(line);
-      }
-      const said = lineFor({ ...entry, data: entry.data ?? {} } as CamelEvent);
-      if (said !== null) out.write(`${said.mark} ${said.text}\n`);
-    });
-    // A close that carries a reason is the gateway saying why it will not take this call — an
-    // agent nobody is serving, a key this org does not have — and the page is told that sentence.
-    socket.on("close", (_code: number, why: Buffer) => {
-      clearTimeout(giveUp);
-      if (line.call === "") refuse(new Refusal(502, why.toString() === "" ? NO_CALL : why.toString()));
-    });
-    socket.on("error", (failed: Error) => {
-      clearTimeout(giveUp);
-      if (line.call === "") refuse(new Refusal(502, failed.message));
-    });
+    const dial = (): void => {
+      const at = new URL(address());
+      if (line.call !== "") at.searchParams.set("call", line.call);
+      const opened = new WebSocket(at.toString(), { headers: signed(door.apiKey, door.world) });
+      socket = opened;
+      opened.on("open", () => {
+        back = 0;
+      });
+      opened.on("message", (frame: Buffer) => {
+        const entry = JSON.parse(frame.toString()) as { type?: string; call?: unknown; data?: Record<string, unknown> };
+        if (entry.type === "call.score") over = true;
+        if (line.call === "" && typeof entry.call === "string") {
+          line.call = entry.call;
+          clearTimeout(giveUp);
+          answer(line);
+        }
+        const said = lineFor({ ...entry, data: entry.data ?? {} } as CamelEvent);
+        if (said !== null) out.write(`${said.mark} ${said.text}\n`);
+      });
+      // A close that carries a reason is the gateway saying why it will not take this call — an
+      // agent nobody is serving, a key this org does not have — and the page is told that sentence.
+      opened.on("close", (_code: number, why: Buffer) => {
+        if (line.call === "") {
+          clearTimeout(giveUp);
+          refuse(new Refusal(502, why.toString() === "" ? NO_CALL : why.toString()));
+          return;
+        }
+        if (ended || over || back >= BACK_TRIES) return;
+        back += 1;
+        setTimeout(dial, waitBack(back));
+      });
+      // An error is followed by a close, and the close decides.
+      opened.on("error", () => undefined);
+    };
+    dial();
   });
 }

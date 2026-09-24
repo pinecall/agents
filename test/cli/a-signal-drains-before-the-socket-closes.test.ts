@@ -19,12 +19,11 @@ async function started(holdsDrain = false): Promise<{ gateway: FakeGateway; runn
   const pc = new Pinecall({ url: gateway.url, apiKey: KEY });
   pc.onErrors(() => {});
   pc.agent("clinica-norte", {});
+  const listening = process.listenerCount("SIGTERM");
   const running = stream(pc, () => () => {}).finally(() => pc.close());
-  const open = gateway;
-  for (let turn = 0; turn < 100 && open.commandsOf("agent.configure").length === 0; turn++) {
-    await new Promise((resolve) => setTimeout(resolve, 5));
-  }
-  return { gateway: open, running };
+  // Until the verb is listening for the signal: sent any earlier, nobody would hear it.
+  while (process.listenerCount("SIGTERM") === listening) await new Promise((resolve) => setTimeout(resolve, 5));
+  return { gateway, running };
 }
 
 it("drains every agent on SIGTERM before the socket closes, then leaves", async () => {
@@ -37,9 +36,7 @@ it("drains every agent on SIGTERM before the socket closes, then leaves", async 
 it("leaves at once on a second signal while the drain waits", async () => {
   const { gateway, running } = await started(true);
   process.emit("SIGTERM", "SIGTERM");
-  for (let turn = 0; turn < 100 && gateway.commandsOf("agent.drain").length === 0; turn++) {
-    await new Promise((resolve) => setTimeout(resolve, 5));
-  }
+  while (gateway.commandsOf("agent.drain").length === 0) await new Promise((resolve) => setTimeout(resolve, 5));
   process.emit("SIGINT", "SIGINT");
   expect(await running).toBe(0);
 });
