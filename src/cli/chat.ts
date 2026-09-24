@@ -172,13 +172,16 @@ export function talk(
       const opened = new WebSocket(url, { headers: signed(door.apiKey, door.world) });
       socket = opened;
       opened.on("open", () => {
-        if (back > 0) process.stderr.write("\rthe gateway is back: the call goes on\n");
-        back = 0;
+        if (!typing) return;
         lines.resume();
-        if (typing) lines.prompt();
+        lines.prompt();
       });
       opened.on("message", (frame: Buffer) => {
         const entry = JSON.parse(frame.toString()) as { call?: string | null; type?: string };
+        // The call answered: it is back, and only now is the patience for the next drop whole again.
+        // An open alone proves nothing — the door accepts, then may refuse a call it cannot take up.
+        if (back > 0) process.stderr.write("\rthe gateway is back: the call goes on\n");
+        back = 0;
         if (typeof entry.call === "string") call = entry.call;
         if (entry.type === "call.score") over = true;
         // --events is the wire itself, one JSON entry per line, exactly what `run --events` prints:
@@ -193,13 +196,13 @@ export function talk(
       // An error is followed by a close, and the close decides.
       opened.on("error", () => undefined);
       opened.on("close", (_code: number, reason: Buffer) => {
-        lines.pause();
         const why = reason.toString();
         if (!typing || over) {
           lines.close();
           done(0);
           return;
         }
+        lines.pause();
         // A reason is the gateway saying why it will not take this call. Before any call it is
         // the answer; on a way back it may be the app socket not re-registered yet, so it is
         // asked again until the patience runs out.

@@ -230,10 +230,9 @@ async function aLine(address: () => string, door: Door, out: NodeJS.WritableStre
       if (line.call !== "") at.searchParams.set("call", line.call);
       const opened = new WebSocket(at.toString(), { headers: signed(door.apiKey, door.world) });
       socket = opened;
-      opened.on("open", () => {
-        back = 0;
-      });
       opened.on("message", (frame: Buffer) => {
+        // The call answered: only now is the patience for the next drop whole again.
+        back = 0;
         const entry = JSON.parse(frame.toString()) as { type?: string; call?: unknown; data?: Record<string, unknown> };
         if (entry.type === "call.score") over = true;
         if (line.call === "" && typeof entry.call === "string") {
