@@ -6,6 +6,14 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.9.6] — The chat that comes back, for real
+
+### Fixed
+- **A chat the gateway refused on the way back no longer dials for ever.** The patience for a
+  dropped chat socket reset on every open, and the door opens before it knows whether the call can
+  be taken up; it now resets when the call answers. And the keyboard is not paused once closed.
+  Found restarting the gateway under a `pinecall chat` against the box.
+
 ## [0.9.5] — A written call outlives the gateway
 
 ### Changed
