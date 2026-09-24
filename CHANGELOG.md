@@ -6,6 +6,8 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.9.4] — A deploy never cuts a call
+
 ### Added
 - **A deploy never cuts a call.** `pc.drain()` hands this process's live calls to another process
   holding the agent, or keeps them for the next one, and lets the tools running finish; a call
