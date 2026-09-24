@@ -49,8 +49,10 @@ const pc = new Pinecall({ url: "https://box.pinecall.io", apiKey: process.env.PI
 mount(Recepcion, { pc, source: readFileSync(new URL("./agents/recepcion/agent.tsx", import.meta.url), "utf8") });
 await pc.connect();
 
-process.on("SIGTERM", () => pc.close());
+process.on("SIGTERM", () => void pc.drain().finally(() => pc.close()));
 ```
+
+`drain()` before `close()`: the calls this process serves go on in the next one (below).
 
 `new Pinecall` reads nothing from the environment: the app hands it the URL and the key it keeps.
 `source` is the agent file's own text — the class docstring and the tools' parameter types are gone
@@ -76,7 +78,8 @@ the agent. `--events` prints JSON lines instead, for a log shipper. A project of
 runs them all on one socket, or one per process with `--agent <name>`.
 
 A gateway that restarts is one line, `gateway … — reconnecting`, then `gateway back`: the client
-redials on its own, and the manager has nothing to restart.
+redials on its own, the manager has nothing to restart, and every call in progress goes on — the
+gateway hands each back to this process with `call.attached`.
 
 **What is running, and a stop.** `pinecall agent list --prod` prints every process holding the
 org's agents in production — the agents, the machine and address it connected from, the SDK,
@@ -85,6 +88,26 @@ since when — so an old deploy still holding a slug is one line to find. `pinec
 exits instead of dialling back, and an app that mounts the SDK hears it on
 `pc.onStopped(why => …)`. A manager that restarts whatever exits — systemd's `Restart=always`,
 pm2 — starts it again, so a process kept that way is stopped for good where it is managed.
+
+## A deploy
+
+A deploy never cuts a call. On `SIGTERM` the process **drains**: it tells the gateway it is leaving,
+the gateway hands its live calls to another process holding the agent — or keeps them, parked, for
+the new one, which takes them when it registers — and the tools it is running are let finish. A
+caller hears nothing of it; a tool the model asks for in the gap waits for the new process, up to
+its own timeout.
+
+The process needs **40 seconds** between the signal and the kill: ten for the gateway to answer, and
+thirty for the slowest tool. Give it that under whatever runs it:
+
+- pm2: `pm2 start "pinecall start --prod" --name agent --kill-timeout 40000` (its default is 1.6 s,
+  which cuts every tool in flight). shipway: `restart.kill_timeout: 40000`.
+- systemd: `TimeoutStopSec=45` and `KillSignal=SIGTERM` (the default).
+- A platform with a fixed grace (Heroku's 30 s) still drains the calls; a tool longer than about
+  twenty seconds may be cut, and the model reads its timeout.
+
+Start the new process as soon as the old one has the signal, not after it exits: the calls it kept
+wait for the new one to register.
 
 ## The base, in the release step
 

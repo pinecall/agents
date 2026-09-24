@@ -499,6 +499,16 @@ the facts under it are still read.
 - `this.restore(snapshot)` puts a whole state back; `this.startIn(partial)` writes only the fields
   a case names over the ones the class gave itself.
 
+### A call that changes hands
+
+A deploy stops one process and starts the next; a call in the middle of it goes on, served by the
+next one (the runtime's `a-deploy-never-cuts-a-call.md`). What reaches the new instance is the
+call's **state** — the fields `state.changed` last carried, restored whole — and `this.call`. What
+does not: a field that is not state, a promise or a timer the old instance held, and what memory
+recalled (`this.remembers()` is empty until the next recall). `onCall` does not run again — the call
+opened long ago — and `onEnd` runs in whichever process the call ends in. So keep what a call needs
+in state, and let `onCall` only open it.
+
 ## Running it
 
 ```bash

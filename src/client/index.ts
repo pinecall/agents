@@ -9,7 +9,7 @@ export type { AgentGateway, AgentOptions, DevHandler, Tool } from "./agent.js";
 export { Call, CallBook } from "./calls.js";
 export type { CallGateway, CallStatus } from "./calls.js";
 export { Pinecall } from "./client.js";
-export type { Found, PinecallOptions } from "./client.js";
+export type { DrainOptions, Drained, Found, PinecallOptions } from "./client.js";
 export { Connection } from "./connection.js";
 export type { Backoff, ConnectionHandlers, ConnectionOptions } from "./connection.js";
 export { agentLogUrl, appsUrl, callLogUrl, lookupUrl } from "./endpoints.js";

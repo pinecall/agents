@@ -23,6 +23,8 @@ export interface FakeGatewayOptions {
   /** Close every socket that opens, 1008, with this sentence in the close frame's reason — what
    * the real door does to a key whose scopes do not open it. */
   refusesWith?: string;
+  /** Take agent.drain and never answer it: an older gateway, or one that hung mid-deploy. */
+  holdsDrain?: boolean;
 }
 
 /** One command the fake gateway received, as it arrived. */
@@ -196,6 +198,9 @@ export class FakeGateway {
         return this.#answer(socket, command, "agent.configured", { changed: Object.keys((command.data["config"] ?? {}) as object) });
       case "ping":
         return this.#answer(socket, command, "pong", { ts: Date.now() / 1000 });
+      case "agent.drain":
+        if (this.options.holdsDrain === true) return;
+        return this.#answer(socket, command, "agent.draining", { app, env: "sandbox", handed: 0, parked: 0 });
       default:
         return;
     }

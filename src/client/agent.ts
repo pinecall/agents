@@ -51,13 +51,18 @@ type Waiter = { type: EventType; id: string; settle: (data: unknown) => void; re
  * knows which sockets are open right now and nothing else. Many sockets may hold one agent at
  * once and a call nobody claimed takes the newest of those that take unclaimed calls, so a rolling
  * deploy's new process serves from the moment it registers and never waits for the old one to let
- * go — and a console holding the same agent is never handed a call it did not open.
+ * go — and a console holding the same agent is never handed a call it did not open. A process
+ * that is leaving drains instead of closing: the gateway hands its live calls to the newest other
+ * holder, or keeps them for the next process that registers, and none of them is cut.
  */
 export class Agent implements CallGateway {
   readonly calls: CallBook;
   readonly #listeners: Listeners<Call | null>;
   readonly #tools = new Map<string, Tool>();
   readonly #waiters: Waiter[] = [];
+  // The tools this process is running right now, each until its tool.result is on the wire: what a
+  // drain waits for before the socket closes.
+  readonly #running = new Set<Promise<void>>();
   #config: Camel<AgentConfig>;
   #takesUnclaimed: boolean;
   #app: string | undefined;
@@ -171,6 +176,25 @@ export class Agent implements CallGateway {
     this.gateway.onError(error);
   }
 
+  /**
+   * This process is leaving: the gateway hands it no new call of this agent, and moves the calls it
+   * serves to another socket holding the agent or keeps them for the next one. It still holds the
+   * agent, so the tools it is running answer. Resolves with how many calls went where.
+   */
+  async drain(answerMs = ANSWER_MS): Promise<Payload<"agent.draining">> {
+    return this.#ask("agent.drain", "agent.draining", {}, answerMs);
+  }
+
+  /** How many tools this process is running right now for this agent. */
+  get inFlight(): number {
+    return this.#running.size;
+  }
+
+  /** Resolves once every tool running now has sent its tool.result. */
+  async settled(): Promise<void> {
+    await Promise.all([...this.#running]);
+  }
+
   /** Prove the socket is alive: `ping` is agent-scoped like every command, and lands as `pong`. */
   ping(): void {
     this.command("ping", null, {});
@@ -192,7 +216,7 @@ export class Agent implements CallGateway {
       return;
     }
     const started = Date.now();
-    void (async () => {
+    const running = (async () => {
       try {
         const output = await tool.run(args, call);
         call.toolResult({ callId, name, output, durationS: (Date.now() - started) / 1000 });
@@ -201,9 +225,15 @@ export class Agent implements CallGateway {
         // and reads it as `error`, and the log keeps the same tool.result for a person to read
         // afterwards. Printing it as well would report a refusal the app made on purpose twice.
         const error = asError(failed);
-        call.toolResult({ callId, name, error: error.message, durationS: (Date.now() - started) / 1000 });
+        try {
+          call.toolResult({ callId, name, error: error.message, durationS: (Date.now() - started) / 1000 });
+        } catch (unsent) {
+          this.onError(asError(unsent));
+        }
       }
     })();
+    this.#running.add(running);
+    void running.finally(() => this.#running.delete(running));
   }
 
   // ── a console's ask ─────────────────────────────────────────────────────────
@@ -232,15 +262,20 @@ export class Agent implements CallGateway {
 
   // A command is answered by the event it lands as, or by an `error` naming the id we sent. Only
   // the two declarations are awaited: everything else on this wire is fire and read the log.
-  async #ask<K extends CommandType, E extends EventType>(type: K, lands: E, data: Camel<CommandData<K>>): Promise<Payload<E>> {
+  async #ask<K extends CommandType, E extends EventType>(
+    type: K,
+    lands: E,
+    data: Camel<CommandData<K>>,
+    withinMs = ANSWER_MS,
+  ): Promise<Payload<E>> {
     const id = `${this.slug}:${type}`;
     const answer = new Promise<Payload<E>>((resolve, reject) => {
       const waiter: Waiter = { type: lands, id, settle: (payload) => resolve(payload as Payload<E>), refuse: reject };
       this.#waiters.push(waiter);
       setTimeout(() => {
         this.#drop(waiter);
-        reject(new PinecallError(`${type}: the gateway did not answer in ${ANSWER_MS}ms`));
-      }, ANSWER_MS).unref();
+        reject(new PinecallError(`${type}: the gateway did not answer in ${withinMs}ms`));
+      }, withinMs).unref();
     });
     this.gateway.send(type, this.slug, null, data, id);
     return answer;

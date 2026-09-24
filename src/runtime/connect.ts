@@ -10,7 +10,7 @@ import { CallWorld, type CallLine, type Searching } from "../call/call.js";
 import { describe } from "../agent/docstrings.js";
 import { searchesKnowledge } from "../agent/searching.js";
 import { runHook, type Call as HookCall } from "../agent/lifecycle.js";
-import { snapshot, type LastCall, type Snapshot } from "../agent/state.js";
+import { restore, snapshot, type LastCall, type Snapshot } from "../agent/state.js";
 import { toolNamed } from "../agent/tools.js";
 import { viewOf } from "../agent/view.js";
 import { PROMPT_BLOCKS } from "../views/layout.js";
@@ -146,6 +146,21 @@ export function mount(
       void start(ctor, live, call, send, searching, last, opening);
     }
   });
+  // A call this process did not open: handed to it mid-conversation. One it already serves — its
+  // own socket came back after the gateway restarted — keeps its instance and sends its whole
+  // prompt again, since the gateway may have lost what it was sent.
+  agent.on("call.attached", (attached, call) => {
+    if (call === null) return;
+    const held = live.get(call.id);
+    if (held !== undefined) {
+      held.sent = { blocks: new Map() };
+      sync(held, call);
+      return;
+    }
+    const send: Send = (type, id, data) => agent.command(type, id, data);
+    const searching: Searching = (query, k) => pc.search(call.id, query, k);
+    adopt(ctor, live, call, attached.state as Snapshot, send, searching, last);
+  });
   agent.on("call.ended", (_payload, call) => {
     if (call !== null) void end(live, call);
   });
@@ -178,6 +193,44 @@ async function start(
   last?: LastCall,
   opening?: (call: SdkCall) => Snapshot | undefined,
 ): Promise<void> {
+  const link = serve(ctor, live, call, send, searching, last);
+  await runHook(link.agent, "onCall", hookCall(call));
+  const wanted = opening?.(call);
+  if (wanted !== undefined) link.agent.startIn(wanted);
+  call.setState(snapshot(link.agent));
+  sync(link, call);
+  follow(link, call);
+}
+
+// A call handed to this process mid-conversation (call.attached): the process that served it
+// drained or died, or the gateway restarted. Synchronous, because the tools still waiting are the
+// very next entries and must find the instance. No onCall: the call opened long ago, and the state
+// it has reached is the snapshot the gateway sends, restored whole. The prompt goes out whole too,
+// because nothing the last process sent reached this one.
+function adopt(
+  ctor: Ctor,
+  live: Map<string, Live>,
+  call: SdkCall,
+  state: Snapshot,
+  send: Send,
+  searching: Searching,
+  last?: LastCall,
+): void {
+  const link = serve(ctor, live, call, send, searching, last);
+  restore(link.agent, state);
+  sync(link, call);
+  follow(link, call);
+}
+
+// One instance for one call, with its world, in the map the tools are routed through.
+function serve(
+  ctor: Ctor,
+  live: Map<string, Live>,
+  call: SdkCall,
+  send: Send,
+  searching: Searching,
+  last?: LastCall,
+): Live {
   const agent = seal(new ctor());
   if (last !== undefined) setLast(agent, last);
   const world = new CallWorld(callLine(call), (type, data) => send(type, call.id, data), searching);
@@ -185,11 +238,14 @@ async function start(
   const serving: Serving = { agent, ctor, call: world, warned: new Set<string>(), queue: Promise.resolve() };
   const link: Live = { agent, sent: { blocks: new Map() }, stop: [], serving };
   live.set(call.id, link);
-  await runHook(agent, "onCall", hookCall(call));
-  const wanted = opening?.(call);
-  if (wanted !== undefined) agent.startIn(wanted);
-  call.setState(snapshot(agent));
-  sync(link, call);
+  return link;
+}
+
+// From here on the instance hears the call: a field that moves is a state.set and a new render, a
+// line it logs is a call.log, and every entry of the call is a fact its world takes.
+function follow(link: Live, call: SdkCall): void {
+  const { agent, serving } = link;
+  const world = serving.call;
   link.stop.push(
     onChange(agent, (change) => {
       call.setState(snapshot(agent), [change.field]);

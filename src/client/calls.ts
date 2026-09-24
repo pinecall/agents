@@ -31,8 +31,11 @@ export class Call {
   run: string | null = null;
   /** The app's state as this client last set it, and as `state.changed` last reported it. */
   state: Record<string, unknown> = {};
-  /** The day the call opened, `YYYY-MM-DD` in this process's timezone: what a prompt means by today. */
-  readonly today: string;
+  /**
+   * The day the call opened, `YYYY-MM-DD` in this process's timezone: what a prompt means by today.
+   * Learned again from `call.attached`: the day the call opened, not the day it changed hands.
+   */
+  today: string;
 
   readonly #listeners: Listeners<Call>;
 
@@ -132,6 +135,13 @@ export class Call {
         return;
       case "call.ended":
         this.status = "ended";
+        return;
+      // A call handed to this process mid-conversation: how it started, and where its state stands.
+      case "call.attached":
+        this.status = "active";
+        this.#line(event.data.started);
+        this.state = { ...event.data.state };
+        this.today = dayOf(event.data.started.startedAt);
         return;
       case "state.changed":
         this.state = { ...event.data.state };

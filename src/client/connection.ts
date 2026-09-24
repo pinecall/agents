@@ -99,6 +99,16 @@ export class Connection {
     socket.send(JSON.stringify(command));
   }
 
+  /**
+   * The process is leaving: keep the socket that is up, and dial no other if it drops. A socket
+   * dialled mid-drain would register every agent again and be handed calls the drain just moved.
+   */
+  leaving(): void {
+    this.#closed = true;
+    if (this.#reconnect !== null) clearTimeout(this.#reconnect);
+    this.#reconnect = null;
+  }
+
   /** Stop, and stay stopped: no reconnect follows a close the app asked for. */
   close(): void {
     this.#closed = true;

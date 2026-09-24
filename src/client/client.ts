@@ -26,6 +26,24 @@ export interface Found {
   text: string;
 }
 
+/** How long a drain waits: for the gateway to answer each agent's drain, and for the tools running. */
+export interface DrainOptions {
+  answerMs?: number;
+  toolsMs?: number;
+}
+
+/** What a drain did: calls handed to another process, calls kept for the next, tools let finish. */
+export interface Drained {
+  handed: number;
+  parked: number;
+  tools: number;
+  finished: number;
+}
+
+// A deploy's grace is the process manager's, and this is most of it: a tool slower than this is cut
+// as a slow app's would be, and the model reads the tool's own timeout instead of its answer.
+const DEFAULT_TOOLS_MS = 30_000;
+
 /** Where the gateway is, who we are to it, and which world we hold our agents in. */
 export interface PinecallOptions {
   url?: string;
@@ -102,6 +120,37 @@ export class Pinecall implements AgentGateway {
   /** Open the socket, claim every agent's slug and doors, and send every declaration. */
   async connect(): Promise<void> {
     await this.#connection.start();
+  }
+
+  /**
+   * Leave without cutting a call: every agent drains — the gateway moves its live calls to another
+   * process holding it, or keeps them for the next one that registers — and the tools running now
+   * are let finish, up to `toolsMs`. It does not close: `close()` after it does. A socket that is
+   * already down has nothing to drain, because the gateway moved its calls when it saw it go.
+   */
+  async drain({ answerMs, toolsMs = DEFAULT_TOOLS_MS }: DrainOptions = {}): Promise<Drained> {
+    this.#connection.leaving();
+    const agents = [...this.#agents.values()];
+    const done: Drained = { handed: 0, parked: 0, tools: 0, finished: 0 };
+    if (!this.connected) return done;
+    const answers = await Promise.allSettled(agents.map((agent) => agent.drain(answerMs)));
+    for (const answer of answers) {
+      if (answer.status === "fulfilled") {
+        done.handed += answer.value.handed;
+        done.parked += answer.value.parked;
+      } else {
+        this.onError(asError(answer.reason));
+      }
+    }
+    done.tools = agents.reduce((sum, agent) => sum + agent.inFlight, 0);
+    let timer: NodeJS.Timeout | undefined;
+    const cap = new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, toolsMs);
+    });
+    await Promise.race([Promise.all(agents.map((agent) => agent.settled())), cap]);
+    clearTimeout(timer);
+    done.finished = done.tools - agents.reduce((sum, agent) => sum + agent.inFlight, 0);
+    return done;
   }
 
   /** Close the socket and stay closed. Every agent's slug is free the moment it shuts. */

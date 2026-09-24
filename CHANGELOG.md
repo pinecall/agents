@@ -6,7 +6,15 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Added
+- **A deploy never cuts a call.** `pc.drain()` hands this process's live calls to another process
+  holding the agent, or keeps them for the next one, and lets the tools running finish; a call
+  handed to this process mid-conversation arrives as `call.attached` and is adopted — its state
+  restored, the whole prompt sent, no `onCall`. Requires `@pinecall/protocol` 0.6.6.
+
 ### Changed
+- **`pinecall start` drains on `SIGTERM` and `SIGINT`** before it exits, and says in one line where
+  the live calls went. Give it 40 s of grace under its process manager (`docs/production.md`).
 - **A number `this.call.transfer(...)` dials passes the org's dial guards** — shape, and the
   per-minute and per-day windows — because the leg goes out on the org's own carrier. Refused,
   nothing is dialled and the value you get back says which guard said no.

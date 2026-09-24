@@ -205,6 +205,13 @@ restarted learns it back at once instead of sending your test call to production
 goes away is one line — `gateway  … — reconnecting`, then `gateway  back` — and never a stack per
 redial.
 
+**A signal drains before it leaves.** `SIGTERM` (a deploy) or `SIGINT` (Ctrl-C, or `q` in `--ui`)
+sends `agent.drain` for every agent: the gateway hands the live calls to another process holding
+the agent, or keeps them for the next one that registers, and the tools running now are let finish,
+up to 30 s. One line on stderr says what happened — `draining · 1 live call kept for the next
+process · 1 tool finished` — and then the process exits. A second signal leaves at once. Give the
+process that long under its manager ([production.md](production.md#a-deploy)).
+
 ```console
 $ pinecall start
 gateway https://box.pinecall.io · key from .env

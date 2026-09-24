@@ -1,6 +1,6 @@
 /** What `pinecall start` prints while it holds the agents: the plain log, the JSON pipe, and the full-screen view. */
 
-import type { CamelEvent, Pinecall } from "../client/index.js";
+import type { CamelEvent, Drained, Pinecall } from "../client/index.js";
 import { absorb, draw, screenFor, type Screen } from "./view.js";
 
 // Ten frames a second. The terminal view is a person watching a conversation, and a person cannot read
@@ -100,6 +100,11 @@ export async function live(pc: Pinecall, listen: Listen, watching: Watching): Pr
   paint();
   let why: string | undefined;
   await new Promise<void>((done) => {
+    // Raw mode swallows ^C as a key, so a SIGTERM from a process manager is the one signal left.
+    void signalled().then(() => {
+      stop();
+      done();
+    });
     const stop = onKey((key) => {
       if (key === "q" || key === "\u0003") {
         stop();
@@ -123,6 +128,7 @@ export async function live(pc: Pinecall, listen: Listen, watching: Watching): Pr
   clearInterval(timer);
   process.stdout.write(CLEAR);
   if (why !== undefined) process.stderr.write(`${why}\n`);
+  else await drained(pc);
   return 0;
 }
 
@@ -151,22 +157,51 @@ function onKey(handle: (key: string) => void): () => void {
 }
 
 // `start` ends on a signal, or when a member of the org stops the app from `pinecall agent stop` or
-// the console: then it says who, and exits instead of dialling back.
-function held(pc: Pinecall): Promise<void> {
-  return new Promise<void>((done) => {
+// the console: then it says who, and exits instead of dialling back. A signal is a deploy, or a
+// person at the terminal, and neither is a reason to cut a call: the process drains first — its live
+// calls go to another process or wait for the next — and a second signal leaves at once.
+async function held(pc: Pinecall): Promise<void> {
+  const stopped = new Promise<"stopped">((done) => {
     pc.onStopped((why) => {
       process.stderr.write(`${why}\n`);
-      done();
+      done("stopped");
     });
-    void forever().then(done);
   });
+  if ((await Promise.race([stopped, signalled()])) === "stopped") return;
+  await Promise.race([drained(pc), signalled()]);
 }
 
 // The verb ends when the process is signalled, not when a promise settles: it registers an
 // agent and then has nothing left to do but stay reachable.
-export function forever(): Promise<void> {
-  return new Promise<void>((done) => {
-    process.once("SIGINT", () => done());
-    process.once("SIGTERM", () => done());
+export function signalled(): Promise<"signalled"> {
+  return new Promise((done) => {
+    const heard = (): void => {
+      process.off("SIGINT", heard);
+      process.off("SIGTERM", heard);
+      done("signalled");
+    };
+    process.once("SIGINT", heard);
+    process.once("SIGTERM", heard);
   });
+}
+
+// On stderr, so `--events` keeps stdout to JSON lines: what a deploy's log says of the calls it left.
+async function drained(pc: Pinecall): Promise<void> {
+  process.stderr.write(drainLine(await pc.drain()) + "\n");
+}
+
+/** The one line a drain prints: where the live calls went, and what became of the tools running. */
+export function drainLine(done: Drained): string {
+  const calls = done.handed + done.parked;
+  if (calls === 0 && done.tools === 0) return "draining · no live calls";
+  const parts = ["draining"];
+  if (done.handed > 0) parts.push(`${plural(done.handed, "live call")} handed over`);
+  if (done.parked > 0) parts.push(`${plural(done.parked, "live call")} kept for the next process`);
+  if (done.finished > 0) parts.push(`${plural(done.finished, "tool")} finished`);
+  if (done.tools > done.finished) parts.push(`${plural(done.tools - done.finished, "tool")} cut`);
+  return parts.join(" · ");
+}
+
+function plural(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? "" : "s"}`;
 }

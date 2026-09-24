@@ -370,6 +370,10 @@ the class and the socket know about each other.
    name on it, and the hook never sees it (one warning per call and name, not one per second).
    Events run **one at a time, in wire order**, so `call.cause` names the event actually running.
 8. **`call.ended`** → the listeners are dropped, `onEnd` runs, `this.call` is cleared.
+9. **`call.attached`** → a call handed to this process mid-conversation (another process drained
+   or died, or the gateway restarted): `adopt()` builds the instance, `restore()`s the state the
+   gateway sent, runs no `onCall`, and sends the whole prompt and the tools. A call this process
+   already serves keeps its instance and sends its whole prompt again.
 
 ## 9. `pinecall/client` — the socket alone
 
@@ -378,16 +382,20 @@ class, no view, no CLI. It knows two things — `@pinecall/protocol` and `ws`.
 
 - **Registration is memory, not a database.** `open()` runs again on every reconnect. Many sockets
   may hold one agent at once; a call that named no app goes to the **newest** registration that
-  takes unclaimed calls, and a call keeps the socket it opened on for its whole life. That is what
-  makes a rolling deploy work and what makes `pinecall chat` a console: it registers with
-  `takesUnclaimed: false` and its caller socket names `?app=<its own id>`.
+  takes unclaimed calls. A call is the AGENT's, not the socket's: when its socket leaves, the gateway
+  hands it to another socket holding the agent, or keeps it for the next one, with `call.attached`.
+  That is what makes a rolling deploy work and what makes `pinecall chat` a console: it registers
+  with `takesUnclaimed: false`, its caller socket names `?app=<its own id>`, and it adopts nothing.
+- **A drain is the other close that is not retried.** `pc.drain()` sends `agent.drain` for every
+  agent (answered by `agent.draining`: how many calls were `handed` and `parked`), stops dialling
+  back, and waits for the tools running to answer, up to `toolsMs`; `close()` follows.
 - **A stop is the one close that is not retried.** Every other close is a blip and is redialled
   with jittered backoff for ever. An `error` coded `stopped` for no agent — a member of the org
   pressed Stop (`POST /v1/apps/{app}/stop`) — closes the connection for good and is handed to
   `onStopped`; `pinecall start` prints it and exits. `agent.register` names the machine (`host`),
   so the gateway's list of processes (`GET /v1/apps`) says where each one runs.
-- **Two commands are awaited** (`agent.register` → `agent.registered`, `agent.configure` →
-  `agent.configured`), each answered by the event it lands as or by an `error` naming its id.
+- **Three commands are awaited** (`agent.register` → `agent.registered`, `agent.configure` →
+  `agent.configured`, `agent.drain` → `agent.draining`), each answered by the event it lands as or by an `error` naming its id.
   Everything else is fire-and-read-the-log.
 - **The log is read, never invented.** `observe()` and `history()` fold entries with the protocol's
   own reducer, so the same golden log reduces to the same state here and in Python.
