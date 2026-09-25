@@ -22,10 +22,11 @@ const USAGE = [
   "       pinecall agent list · stop <app>",
   "       pinecall agent set [--voice x] [--tts x] [--tts-model x] [--stt x] [--llm x] [--greeting '…' | --reply '…']",
   "                          [--hangup '…'] [--endpointing-ms n] [--min-interruption-words n] [--record on|off]",
+  "                          [--max-duration 1-60|off]",
   "                          [--eot-threshold 0.5-0.9] [--eager-eot-threshold 0.3-0.9]",
   "                          [--remember '…' …] [--forget '…' …] [--team] [--note '…']",
   "       pinecall agent knowledge [--team] · knowledge edit [--team] [--note '…']",
-  "       pinecall agent clear [voice|tts|tts-model|stt|llm|greeting|hangup|turn|memory|record|knowledge|bases …] [--team]",
+  "       pinecall agent clear [voice|tts|tts-model|stt|llm|greeting|hangup|turn|memory|record|max-duration|knowledge|bases …] [--team]",
   "       pinecall agent history [--team] · diff [--against team|production] · rollback <version> [--team]",
   "       pinecall agent pull [--team] · push <file> [--team]",
 ].join("\n");
@@ -85,6 +86,18 @@ function switched(said: string | undefined): boolean | undefined {
   return said === "on" ? true : said === "off" ? false : undefined;
 }
 
+// The longest a voice call of the agent runs: minutes, 1 to 60, or `off` for no limit — the
+// runtime's own range, answered here before a door is opened. Sent as seconds, the wire's unit.
+const NOT_A_LIMIT = (said: string): string => `--max-duration ${said} is not 1 to 60 minutes, or off`;
+const LONGEST_MINUTES = 60;
+
+function limitOf(said: string | undefined): number | undefined {
+  if (said === undefined) return undefined;
+  if (said === "off") return 0;
+  const minutes = Number(said);
+  return Number.isInteger(minutes) && minutes >= 1 && minutes <= LONGEST_MINUTES ? minutes * 60 : undefined;
+}
+
 function fraction(said: string | undefined): number | undefined {
   if (said === undefined) return undefined;
   const number = Number(said);
@@ -119,6 +132,7 @@ export const OPTIONS = {
   "eager-eot-threshold": { type: "string" },
   "min-interruption-words": { type: "string" },
   record: { type: "string" },
+  "max-duration": { type: "string" },
   remember: { type: "string", multiple: true },
   forget: { type: "string", multiple: true },
   against: { type: "string" },
@@ -146,6 +160,10 @@ export async function run(argv: string[], how: Setting = {}): Promise<number> {
   }
   if (values.record !== undefined && switched(values.record) === undefined) {
     err.write(`${NOT_ON_OR_OFF(values.record)}\n`);
+    return 2;
+  }
+  if (values["max-duration"] !== undefined && limitOf(values["max-duration"]) === undefined) {
+    err.write(`${NOT_A_LIMIT(values["max-duration"])}\n`);
     return 2;
   }
   const door = await theDoor(how.env ?? process.env, err);
@@ -233,6 +251,8 @@ export function typed(values: Typed, standing: TuningBody): Partial<TuningBody> 
   }
   const records = switched(values.record);
   if (records !== undefined) wanted.record = records;
+  const limit = limitOf(values["max-duration"]);
+  if (limit !== undefined) wanted.max_duration_s = limit;
   if (values.remember !== undefined || values.forget !== undefined) {
     wanted.memory = {
       remember: values.remember ?? standing.memory?.remember ?? [],

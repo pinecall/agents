@@ -77,7 +77,7 @@ export function theCornerCalled(standing: TuningAnswer, team: boolean): string {
 }
 
 /** The fields on the page, in the order a person reads them, under the names a person types. */
-export const FIELDS = ["voice", "tts", "tts-model", "stt", "llm", "greeting", "hangup", "turn", "memory", "record", "knowledge", "bases"] as const;
+export const FIELDS = ["voice", "tts", "tts-model", "stt", "llm", "greeting", "hangup", "turn", "memory", "record", "max-duration", "knowledge", "bases"] as const;
 export type Field = (typeof FIELDS)[number];
 
 /** The name a person types, as the wire spells it. */
@@ -92,6 +92,7 @@ export const WIRE: Record<Field, keyof TuningBody> = {
   turn: "turn",
   memory: "memory",
   record: "record",
+  "max-duration": "max_duration_s",
   knowledge: "knowledge",
   bases: "bases",
 };
@@ -135,6 +136,11 @@ export function shown(config: TuningBody, field: Field): string | undefined {
   if (field === "record") {
     const records = config.record ?? undefined;
     return records === undefined ? undefined : records ? "keeps the audio" : "keeps no audio";
+  }
+  // Zero is a corner choosing no limit, which is why it is read before "not set".
+  if (field === "max-duration") {
+    const seconds = config.max_duration_s ?? undefined;
+    return seconds === undefined ? undefined : seconds === 0 ? "no limit" : `${seconds / 60} min`;
   }
   if (field === "knowledge") {
     const text = config.knowledge ?? undefined;

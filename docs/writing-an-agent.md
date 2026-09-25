@@ -134,6 +134,7 @@ verb that sets it now:
 | `stt` | the ears: `deepgram` (Flux), `soniox`, or `vendor/model`. Unsaid, the runtime's own | `pinecall agent set --stt` |
 | `greeting` | how the call opens: the words, or what the model reads before finding its own | `pinecall agent set --greeting '…'` · `--reply '…'` |
 | `hangup` | whether the model may end the call itself, and when, in your words | `pinecall agent set --hangup '…'` |
+| `max duration` | the longest a voice call runs — ten minutes unless set, `off` for none, an hour at most | `pinecall agent set --max-duration 15` |
 | `says` | how a word the voice would misread is said: `Vidal` → `Bidal` | the org's lexicon: `pinecall lexicon add <word> --say '…'` |
 | `hears` | the words the ears must know: names, brands, the doctor's surname | the org's lexicon: `pinecall lexicon hear <word> …` |
 | `memory` | what to remember about a caller across calls, and what never to | `pinecall memory policy --remember '…' --forget '…'` |

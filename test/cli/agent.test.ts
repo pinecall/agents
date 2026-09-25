@@ -317,6 +317,27 @@ describe("the versions", () => {
     expect(said.text()).toContain("is not on or off");
   });
 
+  it("sets how long a voice call may run, in minutes, sent as seconds", async () => {
+    gateway.yours = null;
+    gateway.team = null;
+
+    await run(["set", "--agent", AGENT, "--max-duration", "15"], { out: written().stream, env: environment() });
+
+    expect(gateway.written).toEqual({ config: { max_duration_s: 900 }, if_version: null, note: null, team: false });
+  });
+
+  it("takes off for no limit, and refuses a minute count outside 1 to 60 before anything is written", async () => {
+    gateway.yours = null;
+    gateway.team = null;
+    await run(["set", "--agent", AGENT, "--max-duration", "off"], { out: written().stream, env: environment() });
+    expect(gateway.written).toEqual({ config: { max_duration_s: 0 }, if_version: null, note: null, team: false });
+
+    const said = written();
+    const code = await run(["set", "--agent", AGENT, "--max-duration", "90"], { out: written().stream, err: said.stream, env: environment() });
+    expect(code).toBe(2);
+    expect(said.text()).toContain("is not 1 to 60 minutes, or off");
+  });
+
   it("says what changes between two configs, field by field", () => {
     expect(changes({ voice: "carolina" }, { voice: "amelia", turn: { endpointing_ms: 300 } }, "")).toBe("voice carolina → amelia · turn — → endpointing 300 ms");
     expect(changes({}, {}, "  ")).toBe("");

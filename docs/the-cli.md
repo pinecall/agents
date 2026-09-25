@@ -634,9 +634,10 @@ pinecall agent list · stop <app>
 pinecall agent set [--voice x] [--tts x] [--tts-model x] [--stt x] [--llm x] [--greeting '…' | --reply '…']
                    [--hangup '…'] [--endpointing-ms n] [--min-interruption-words n]
                    [--eot-threshold 0.5-0.9] [--eager-eot-threshold 0.3-0.9] [--record on|off]
+                   [--max-duration 1-60|off]
                    [--remember '…' …] [--forget '…' …] [--team] [--note '…']
 pinecall agent knowledge [--team] · knowledge edit [--team] [--note '…']
-pinecall agent clear [voice|tts|tts-model|stt|llm|greeting|hangup|turn|memory|record|knowledge|bases …] [--team]
+pinecall agent clear [voice|tts|tts-model|stt|llm|greeting|hangup|turn|memory|record|max-duration|knowledge|bases …] [--team]
 pinecall agent history [--team] · diff [--against team|production] · rollback <version> [--team]
 pinecall agent pull [--team] · push <file> [--team]
                                         … and any of them with --prod, in production
@@ -695,6 +696,13 @@ decides for the copies built there; a corner that says nothing falls through to 
 an agent nobody has told keeps its audio. What is kept is the whole room — the caller, the agent,
 the hold music, and a supervisor who took the line — served back by the console's session screen
 and by `pinecall sessions`. `pinecall agent clear record` gives the answer back to the corner below.
+
+**`--max-duration 1-60|off` is the longest a voice call of this agent runs**, in minutes; unset
+anywhere it is ten. A minute before it the agent is told to close and say goodbye, and at it the
+call ends after the sentence being said — `timeout` by the `platform` in the call's log. `off` is
+no limit. It holds on the phone and on the widget's voice, never on a written conversation, and a
+supervisor on the line does not stop the clock. `pinecall agent clear max-duration` gives it back
+to the corner below.
 
 **A model knob takes a tier by its short name.** `--llm haiku` · `sonnet` · `opus` are expanded
 here to the model id the provider answers to — the same table `pinecall test --model` reads — so

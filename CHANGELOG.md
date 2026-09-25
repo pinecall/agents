@@ -7,6 +7,9 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Added
+- **`pinecall agent set --max-duration 1-60|off`**: the longest a voice call of the agent runs, in
+  minutes (ten unless set; `off` for none). Shown on the settings page as `max-duration`, and
+  `pinecall agent clear max-duration` gives it back to the corner below. Needs runtime with protocol 0.6.10.
 - **A caller who is also on the site.** `this.call.claimed` is the code a page showed that the
   call claimed — keyed on the phone, or claimed by the class with `this.call.claim(code)` when the
   caller said it — and `null` until `call.claimed` lands. The client's `Call` has the same field and
