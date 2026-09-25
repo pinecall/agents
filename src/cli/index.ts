@@ -11,7 +11,7 @@ import { inTheWorld, withoutTheWorldFlag } from "./world.js";
 // The order this table is written is the order the help prints: link, start and chat first,
 // because they are what a person types on the first day, and the planned groups after, in the
 // design's order. start is rails server and chat is rails console — see docs/decisions/tenant-cli.md.
-const BUILT = ["link", "start", "console", "chat", "prompt", "test", "simulate", "eval", "sessions", "runs", "agent", "lexicon", "pipeline", "line", "numbers", "personas", "docs", "memory", "remember", "supervise", "providers", "callbacks", "login", "whoami"] as const;
+const BUILT = ["link", "start", "console", "chat", "prompt", "test", "simulate", "eval", "sessions", "runs", "agent", "lexicon", "pipeline", "line", "numbers", "personas", "docs", "memory", "remember", "supervise", "providers", "voices", "callbacks", "login", "whoami"] as const;
 
 /** Everything `pinecall` answers to, built and planned alike, in the order help prints them. */
 export function groupNames(): string[] {
@@ -97,6 +97,7 @@ export async function groupFor(name: string, out: NodeJS.WritableStream = proces
   if (name === "sessions") return (await import("./sessions.js")).group;
   if (name === "numbers") return (await import("./numbers.js")).group;
   if (name === "providers") return (await import("./providers.js")).group;
+  if (name === "voices") return (await import("./voices.js")).group;
   if (name === "callbacks") return (await import("./callbacks.js")).group;
   if (name === "login") return (await import("./login.js")).group;
   if (name === "whoami") return (await import("./whoami.js")).group;
@@ -130,6 +131,7 @@ export function usage(): string {
     "  remember  the goldens memory.remember is held to: what a call teaches, and what it never keeps",
     "  supervise listen in on a live call: whisper, say, take the line, give it back, end",
     "  providers add | rm | list the provider keys this org brought of its own",
+    "  voices    a vendor's voices in a language, and play one here before you choose it",
     "  callbacks the numbers people left when every seat was taken: who to call back",
     "  login     sign this machine in through a browser; `link` asks for it when it is needed",
     "  whoami    which gateway, which org, whether you act in production, and where the key came from",

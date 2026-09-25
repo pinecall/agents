@@ -47,6 +47,7 @@ path end to end, with every output under it.
 | [`remember`](#remember) | the extraction goldens: what a hang-up makes of a call | yes |
 | [`supervise`](#supervise) | listen in on a live call and move on it | yes |
 | [`providers`](#providers) | every vendor this build runs, and the keys this org brought | yes |
+| [`voices`](#voices) | a vendor's voices in a language, and one of them played here before it is chosen | yes |
 | [`callbacks`](#callbacks) | the numbers people left when every seat was taken | yes |
 | [`login`](#login) | sign this machine in through a browser; `link` asks for it when it is needed | yes |
 | [`whoami`](#whoami) | which gateway, which org, whether you act in production, and where the key came from | yes |
@@ -878,6 +879,36 @@ process, on that org's key — which is the whole reason the vault exists. A key
 again. A runtime with no `PINECALL_VAULT_KEY` cannot keep somebody else's
 secret and says so with a 503; the vault, and how to turn it on, is the gateway API's §6.
 
+## `voices`
+
+```
+pinecall voices [--tts cartesia] [--language es] [--country ES]
+pinecall voices play <voice> ["the words"] [--tts cartesia] [--model sonic-3] [--language es] [--save file.wav]
+```
+
+```console
+$ pinecall voices --language es --country ES
+de38f545-c574-44e8-9b54-a7d6fec1c6b1   Marta - Friendly Guide               feminine   ES castilian
+13ff5deb-2591-42ad-a356-63a04e524411   Marcos - Steady Advisor              masculine  ES castilian
+$ pinecall voices play de38f545-c574-44e8-9b54-a7d6fec1c6b1 "Hola, soy la asistente de Clínica Norte." --language es
+de38f545-c574-44e8-9b54-a7d6fec1c6b1 · first audio 271 ms · whole sentence 955 ms · afplay
+```
+
+With nothing after it: the vendor's voices in that language, one per line — the id the agent's
+`voice` setting takes, then the name, the gender and where the accent is from. The country is the
+column that matters for Spanish: `ES` is Spain and `MX` is Mexico, and a language code does not
+tell them apart; `--country` keeps one. The vendor is **Cartesia** when none is named, the one
+whose catalogue is read from the vendor itself (`GET /v1/voices`); `--tts elevenlabs` lists the
+names this build curates, and any other vendor is refused by name — its voice is its own id.
+
+`play` says the words in that voice through the vendor's own plugin, exactly as a call would build
+it (`POST /v1/voices/sample`), and plays the WAV on this machine with whichever of `afplay`,
+`ffplay`, `play`, `aplay` or `pw-play` it finds. Beside it are the vendor's two numbers: how long
+until the first audio — the wait a caller hears after they stop talking — and the whole sentence.
+It runs on the org's own key for the vendor when it brought one, and on the box's otherwise; both
+doors ask for `pipeline`, the scope that may change the voice. The one it plays is set with
+`pinecall agent set --tts cartesia --tts-model sonic-3 --voice <id>`.
+
 ## `callbacks`
 
 ```
@@ -1123,6 +1154,7 @@ code can call — over HTTP, in any language, with the same key.
 | `remember` | `POST /v1/agents/{slug}/memory/extraction` |
 | `numbers` | `GET`·`POST /v1/numbers`, `PUT /v1/numbers/{number}/env`, `DELETE /v1/numbers/{number}` |
 | `providers` | `GET /v1/providers` · `PUT`·`DELETE`·`GET /v1/provider-keys[/{vendor}]` |
+| `voices` | `GET /v1/voices` · `POST /v1/voices/sample` |
 | `callbacks` | `GET /v1/callbacks[?agent=&after=]` |
 | `personas` | `GET /v1/personas` · `PUT`·`DELETE /v1/personas/{name}` — and `push` reads the project's remaining files before sending them |
 | `line` | `GET`·`POST`·`DELETE /v1/agents/{slug}/line`, `PUT`·`DELETE /v1/line/from` |

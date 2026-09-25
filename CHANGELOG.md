@@ -6,6 +6,11 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Added
+- **`pinecall voices`.** A vendor's voices in a language, one per line with the id the `voice`
+  setting takes and where the accent is from (`--country ES` keeps Spain's); `voices play <id>`
+  says a sentence in one of them and plays it here, with how long the vendor took to start.
+
 ## [0.9.6] — The chat that comes back, for real
 
 ### Fixed
