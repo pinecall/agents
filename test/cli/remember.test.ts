@@ -14,7 +14,7 @@ import { pointingAt } from "./home.js";
 import { casesIn } from "../../src/cli/testing/goldens.js";
 import { onStderr } from "./said.js";
 
-const A_KEY = "pk_the_orgs_own_key";
+const A_KEY = "pc_test_the_orgs_own_key";
 
 const ANSWERED: ExtractionRun = {
   agent: "clinica-norte",
@@ -75,7 +75,7 @@ afterEach(async () => await gateway.close());
 
 describe("the door the verb knocks at", () => {
   it("posts every case whole to the agent's own extraction door", async () => {
-    const answer = await extracted({ url: gateway.url, apiKey: A_KEY }, "clinica-norte", [A_CASE]);
+    const answer = await extracted({ url: gateway.url, apiKey: A_KEY, world: "sandbox" }, "clinica-norte", [A_CASE]);
 
     expect(answer.agent).toBe("clinica-norte");
     expect(gateway.heard[0]?.path).toBe("/v1/agents/clinica-norte/memory/extraction");

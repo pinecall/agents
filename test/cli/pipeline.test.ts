@@ -9,7 +9,7 @@ import { run } from "../../src/cli/pipeline.js";
 import { pointingAt } from "./home.js";
 import { written } from "./said.js";
 
-const A_KEY = "pk_the_orgs_key";
+const A_KEY = "pc_test_the_orgs_key";
 const AGENT = "clinica-norte";
 
 /** What the pipeline door answers: the legs as the next call would be built. */

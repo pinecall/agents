@@ -5,7 +5,7 @@ import { parseArgs } from "node:util";
 
 import type { ExtractionGolden, ExtractionRun } from "@pinecall/protocol";
 
-import { Pinecall } from "../client/index.js";
+import { pinecallFor } from "./client-for.js";
 
 import { mount } from "../runtime/connect.js";
 import { theDoor } from "./env.js";
@@ -68,7 +68,7 @@ export async function run(argv: string[], how: Running = {}): Promise<number> {
       json: { type: "boolean", default: false },
     },
   });
-  const door = theDoor(how.env ?? process.env, err);
+  const door = await theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
   // The agent's home says where its cases are; a directory with no agent at all is told where a
   // case belongs, before any class is looked for.
@@ -85,7 +85,7 @@ export async function run(argv: string[], how: Running = {}): Promise<number> {
     return 2;
   }
   const loaded = await load(home?.file ?? values.file);
-  const pc = new Pinecall({ url: door.url, apiKey: door.apiKey });
+  const pc = pinecallFor(door);
   // takesUnclaimed: false for the reason `test` has it: this process holds the agent so the run
   // reaches THIS class, and a real call must not ring in a terminal running a suite.
   const mounted = mount(loaded.ctor, { ...mountOptions(loaded, pc), takesUnclaimed: false });

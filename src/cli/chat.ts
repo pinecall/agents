@@ -83,7 +83,7 @@ export async function run(argv: string[]): Promise<number> {
     process.stderr.write(`${NOT_YOURS_TO_OPEN}\n`);
     return 2;
   }
-  const door = theDoor();
+  const door = await theDoor();
   if (door === undefined) return 2;
   const url = door.url;
   if (reach !== undefined) {

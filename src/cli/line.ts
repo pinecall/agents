@@ -27,7 +27,8 @@ export const group: Group = {
   reaches your own agent — on the number your customers call, in production, as much as on a
   sandbox one: while you are running the agent your phone reaches your copy, and everybody else
   reaches production. No claim, no coordination, three of you testing at the same time. It is
-  remembered for this gateway and re-sent by every \`pinecall start\`, each time it connects.
+  said to the sandbox instance, kept in ~/.pinecall/session.json under its URL, and re-sent by
+  every \`pinecall start\`, each time it connects.
   \`forget\` undoes it.
 
   \`claim\` and \`release\` are the fallback, for a call from a number nobody said was theirs — a
@@ -43,7 +44,7 @@ const VERBS = new Set(["from", "forget", "claim", "release"]);
 
 export async function run(argv: string[], out: NodeJS.WritableStream = process.stdout): Promise<number> {
   const [verb, ...rest] = VERBS.has(argv[0] ?? "") ? argv : ["show", ...argv];
-  const door = theDoor();
+  const door = await theDoor();
   if (door === undefined) return 2;
 
   // `from` and `forget` are about the PERSON and not about one agent, so neither loads a class:

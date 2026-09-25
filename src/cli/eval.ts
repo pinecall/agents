@@ -58,7 +58,7 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
     process.stderr.write("usage: pinecall eval <call-id> [--policy policy.json] [--json]\n");
     return 2;
   }
-  const door = theDoor();
+  const door = await theDoor();
   if (door === undefined) return 2;
   // The policy is read BEFORE the gateway is asked anything: a path with a typo in it is a
   // command that cannot run (exit 2), not a measurement that did not hold (exit 1).

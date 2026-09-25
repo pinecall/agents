@@ -11,7 +11,9 @@ import { inTheWorld } from "../../src/cli/world.js";
 import { pointingAt } from "./home.js";
 import { written } from "./said.js";
 
-const A_KEY = "pk_the_orgs_own_key";
+const A_KEY = "pc_test_the_orgs_own_key";
+// The same org's production server token: what --prod knocks with at the instance it was made on.
+const A_LIVE_KEY = "pc_live_the_orgs_own_key";
 const AGENT = "clinica-norte";
 const SETTINGS = `/v1/agents/${AGENT}/settings`;
 
@@ -56,7 +58,7 @@ class FakeGateway {
     const world = request.headers["pinecall-env"];
     const heard: Heard = { method: request.method ?? "", path: request.url ?? "", body: text === "" ? null : JSON.parse(text), world: typeof world === "string" ? world : undefined };
     this.heard.push(heard);
-    if (request.headers.authorization !== `Bearer ${A_KEY}`) return this.#said(response, 401, { detail: "this door takes an API key" });
+    if (![A_KEY, A_LIVE_KEY].some((key) => request.headers.authorization === `Bearer ${key}`)) return this.#said(response, 401, { detail: "this door takes an API key" });
     if (heard.path === "/v1/knowledge/attached") return this.#said(response, 200, { bases: [{ base: "clinica", agents: [AGENT, "clinica-sur"] }, { base: "tarifas", agents: ["clinica-sur"] }] });
     if (heard.path === SETTINGS && heard.method === "GET") return this.#said(response, 200, { world: "sandbox", yours: this.yours, team: TEAM, production: TEAM, declared: null });
     if (heard.path === SETTINGS && heard.method === "PUT") {
@@ -129,7 +131,8 @@ describe("attaching a base", () => {
   });
 
   it("names production when --prod does, on the read and on the write", async () => {
-    await inTheWorld("production", () => run(["attach", "clinica", "--agent", AGENT], { out: written().stream, env }));
+    const live = pointingAt(gateway.url, A_LIVE_KEY);
+    await inTheWorld("production", () => run(["attach", "clinica", "--agent", AGENT], { out: written().stream, env: live }));
 
     expect(gateway.heard.map((one) => one.world)).toEqual(["production", "production"]);
   });

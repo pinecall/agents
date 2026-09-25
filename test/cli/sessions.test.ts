@@ -108,7 +108,7 @@ describe("the small stuff", () => {
 describe("the verb itself", () => {
   it("says what it needs when no agent can be found and none was named", async () => {
     const err = collected();
-    const env = pointingAt("http://127.0.0.1:1", "pk_test");
+    const env = pointingAt("http://127.0.0.1:1", "pc_test_a_key");
 
     const code = await run([], { err: err.stream, out: collected().stream, env });
 

@@ -527,8 +527,8 @@ pinecall console                   # that console in a browser, signed in as thi
 
 `pinecall start` is the same process in the sandbox and in production (`--prod`, on a server's
 token): it runs the agent, binds no port and serves no page. What a person looks at is `--ui` in the
-terminal, or a console — the sandbox's at the box's second name, which `pinecall console` opens
-signed in, and production's at the box's own. An app that would rather hold the agent in its
+terminal, or a console — the sandbox's at the sandbox instance production names, which `pinecall
+console` opens signed in, and production's at `PINECALL_URL`. An app that would rather hold the agent in its
 own Node server mounts the class there instead: [production.md](production.md).
 
 And two flags of `agent set` the pipeline section above does not name — `--tts`, `--tts-model`,

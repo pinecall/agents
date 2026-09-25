@@ -12,7 +12,7 @@ import { inTheWorld } from "../../src/cli/world.js";
 import { pointingAt } from "./home.js";
 import { written } from "./said.js";
 
-const A_KEY = "pk_the_orgs_key";
+const A_KEY = "pc_test_the_orgs_key";
 const AGENT = "clinica-norte";
 
 const TEAM = {
@@ -106,9 +106,12 @@ afterEach(async () => {
   await gateway.close();
 });
 
-function environment(): NodeJS.ProcessEnv {
-  return pointingAt(gateway.url, A_KEY);
+function environment(key: string = A_KEY): NodeJS.ProcessEnv {
+  return pointingAt(gateway.url, key);
 }
+
+// A production server's token: --prod knocks with it at the instance it was made on.
+const A_LIVE_KEY = "pc_live_the_orgs_key";
 
 describe("the page", () => {
   it("draws the three corners, a row per field, and which version each is at", () => {
@@ -319,14 +322,14 @@ describe("the versions", () => {
     expect(changes({}, {}, "  ")).toBe("");
   });
 
-  // Production is set where it is, by a person their org lets act there: --prod names the world on
-  // the request, and the gateway decides. Nothing is promoted into it from the sandbox.
-  it("sets production when --prod names it, and names no world otherwise", async () => {
-    await inTheWorld("production", () => run(["set", "--agent", AGENT, "--voice", "amelia"], { out: written().stream, env: environment() }));
+  // Production is set where it is, at its own instance: every request names the world it believes
+  // it is talking to, and the instance refuses the other. Nothing is promoted into it from the sandbox.
+  it("names production when --prod names it, and the sandbox otherwise", async () => {
+    await inTheWorld("production", () => run(["set", "--agent", AGENT, "--voice", "amelia"], { out: written().stream, env: environment(A_LIVE_KEY) }));
     await run(["set", "--agent", AGENT, "--voice", "carolina"], { out: written().stream, env: environment() });
 
     const writes = gateway.heard.filter((one) => one.method === "PUT");
-    expect(writes.map((one) => one.world)).toEqual(["production", undefined]);
+    expect(writes.map((one) => one.world)).toEqual(["production", "sandbox"]);
   });
 
   it("rolls one version back as the next one", async () => {
@@ -348,7 +351,7 @@ describe("the processes", () => {
   it("stops one by its id, in the world --prod names", async () => {
     const out = written();
 
-    expect(await inTheWorld("production", () => run(["stop", "app_7"], { out: out.stream, env: environment() }))).toBe(0);
+    expect(await inTheWorld("production", () => run(["stop", "app_7"], { out: out.stream, env: environment(A_LIVE_KEY) }))).toBe(0);
 
     expect(gateway.heard.at(-1)).toMatchObject({ method: "POST", path: "/v1/apps/app_7/stop", world: "production" });
     expect(out.text()).toContain("stopped app_7");

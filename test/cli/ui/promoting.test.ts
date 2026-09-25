@@ -65,7 +65,7 @@ describe("promoting a call", () => {
   it("writes the candidate beside this directory's goldens and answers where it landed", async () => {
     gateway.entries = aJudgedCall();
     process.chdir(mkdtempSync(join(tmpdir(), "pinecall-candidates-")));
-    const door = promotingFrom({ url: gateway.url, apiKey: "pk" }, "clinica-norte", written().stream);
+    const door = promotingFrom({ url: gateway.url, apiKey: "pk", world: "sandbox" }, "clinica-norte", written().stream);
 
     const promoted = await door.promote({ call: CALL });
 
@@ -78,7 +78,7 @@ describe("promoting a call", () => {
   // derive one from — and the sentence says exactly that rather than writing an empty expect.
   it("refuses a call nobody judged, in the words the verb uses", async () => {
     gateway.entries = aJudgedCall().slice(0, 2);
-    const door = promotingFrom({ url: gateway.url, apiKey: "pk" }, "clinica-norte", written().stream);
+    const door = promotingFrom({ url: gateway.url, apiKey: "pk", world: "sandbox" }, "clinica-norte", written().stream);
 
     await expect(door.promote({ call: CALL })).rejects.toMatchObject({
       status: 422,
@@ -87,7 +87,7 @@ describe("promoting a call", () => {
   });
 
   it("refuses when no class stands in this directory: a candidate has no goldens to join", async () => {
-    const door = promotingFrom({ url: gateway.url, apiKey: "pk" }, null, written().stream);
+    const door = promotingFrom({ url: gateway.url, apiKey: "pk", world: "sandbox" }, null, written().stream);
 
     await expect(door.promote({ call: CALL })).rejects.toMatchObject({ status: 409 });
   });

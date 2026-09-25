@@ -4,8 +4,9 @@ import { describe, expect, it } from "vitest";
 
 import { chattingFrom, type Line, type Lines } from "../../../src/cli/ui/chatting.js";
 import { Refusal } from "../../../src/cli/ui/refusal.js";
+import type { Door } from "../../../src/cli/testing/gateway.js";
 
-const DOOR = { url: "http://127.0.0.1:1", apiKey: "pk_never_sent_anywhere" };
+const DOOR: Door = { url: "http://127.0.0.1:1", apiKey: "pk_never_sent_anywhere", world: "sandbox" };
 
 function quiet(): NodeJS.WritableStream {
   return { write: () => true } as unknown as NodeJS.WritableStream;

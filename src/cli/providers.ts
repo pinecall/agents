@@ -48,7 +48,7 @@ export async function run(argv: string[], how: Bringing = {}): Promise<number> {
   const out = how.out ?? process.stdout;
   const err = how.err ?? process.stderr;
   const [verb, vendor] = argv;
-  const door = theDoor(how.env ?? process.env, err);
+  const door = await theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
   try {
     if (verb === undefined || verb === "--does") return await catalogue(door, vendor, out, err);

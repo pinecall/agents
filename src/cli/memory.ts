@@ -75,7 +75,7 @@ export async function run(argv: string[], how: Recalling = {}): Promise<number> 
     options: { file: { type: "string" }, k: { type: "string" }, ...AGENT_FLAG },
   });
   const [verb, second] = positionals;
-  const door = theDoor(how.env ?? process.env, err);
+  const door = await theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
   try {
     if (verb === "eval") {

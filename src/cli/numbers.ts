@@ -57,7 +57,7 @@ export async function run(argv: string[], how: Numbering = {}): Promise<number> 
   const out = how.out ?? process.stdout;
   const err = how.err ?? process.stderr;
   const verb = argv[0] ?? "list";
-  const door = theDoor(how.env ?? process.env, err);
+  const door = await theDoor(how.env ?? process.env, err);
   // 2, like every other verb with no key: this command cannot run, and retrying changes nothing.
   if (door === undefined) return 2;
   // `list` takes no flag of its own, and a parser that reads none is how it says so: a word

@@ -73,7 +73,7 @@ describe("drift as the page asks for it", () => {
       { call: "before_held", live: false, ended_at: NOW - 10 * A_DAY, started_at: NOW - 10 * A_DAY },
     ];
     gateway.scores = { now_broke: "broken", before_held: "held" };
-    const door = driftingFrom({ url: gateway.url, apiKey: "pk" }, () => NOW);
+    const door = driftingFrom({ url: gateway.url, apiKey: "pk", world: "sandbox" }, () => NOW);
 
     const drifted = await door.read({ agent: "clinica-norte" });
 
@@ -90,7 +90,7 @@ describe("drift as the page asks for it", () => {
   });
 
   it("takes the two windows the page names, and refuses one it did not", async () => {
-    const door = driftingFrom({ url: gateway.url, apiKey: "pk" }, () => NOW);
+    const door = driftingFrom({ url: gateway.url, apiKey: "pk", world: "sandbox" }, () => NOW);
 
     expect(await door.read({ agent: "clinica-norte", window: A_DAY, baseline: 2 * A_DAY })).toMatchObject({
       window: A_DAY,

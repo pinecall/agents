@@ -68,15 +68,16 @@ pnpm exec pinecall agent knowledge edit              what it knows by heart, in 
 pnpm exec pinecall test            ring 1: the goldens, through the app in this process
 ```
 
-Two consoles, one per world, and both are the box's own pages: it answers to two names, and the one
-you open decides which world you are looking at — `sandbox.pinecall.io` for what you are running,
-`box.pinecall.io` for production. `pinecall console` opens the first and `--prod` the second,
-signed in as this project's key without it ever leaving the terminal.
+Two consoles, one per world, each served by its own instance: `box.pinecall.io` is production — the
+identity, where you sign in — and it names its sandbox (`sandbox.pinecall.io`), where what you are
+running is. `pinecall console` opens the sandbox's and `--prod` production's, signed in without
+a key ever leaving the terminal.
 [docs/the-cli.md](docs/the-cli.md#console).
 
 Every verb reads `PINECALL_KEY` (and `PINECALL_URL`, when the gateway is not the cloud) from the
-environment, else from the project's `.env`, which `pinecall link` wrote; each is the sandbox until
-`--prod` says production, for a person whose org lets them act there. On a server the agent runs
+environment, else from the project's `.env`, which `pinecall link` wrote — production's, the
+identity. Each verb is the sandbox until `--prod` says production, for a person whose org lets them
+act there: the sandbox instance production names, with a key minted there from yours. On a server the agent runs
 on a server's token from the console's Tokens screen, as `pinecall start --prod` or mounted inside
 your own Node app — [docs/production.md](docs/production.md). `pinecall agent list --prod` says
 which process holds each agent, on which machine, since when, and `pinecall agent stop <app>` stops

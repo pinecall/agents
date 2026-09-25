@@ -47,6 +47,8 @@ class FakeGateway {
     if (request.url === `/v1/login/pairings/${A_WORD}/key`) {
       return this.approved ? said(response, 200, { key: A_KEY }) : said(response, 202, {});
     }
+    // An instance of one world, with no sandbox beside it: a laptop's gateway, a box of one.
+    if (request.url === "/.well-known/pinecall") return said(response, 200, { world: "production", elsewhere: null });
     if (request.headers.authorization !== `Bearer ${A_KEY}`) {
       return said(response, 401, { detail: "this door takes an API key" });
     }
@@ -57,7 +59,7 @@ class FakeGateway {
       slug: "clinica",
       key_id: "k_1",
       label: "the laptop",
-      env: "sandbox",
+      env: "production",
       name: "Berna",
       production: true,
     });
@@ -180,14 +182,16 @@ describe("which gateway a login is for", () => {
 });
 
 describe("whoami", () => {
-  it("prints the gateway, where the key came from, and what the gateway says the key is", async () => {
+  it("prints production's door and whose key it takes, and says there is no sandbox where none is named", async () => {
     const out = written();
 
-    const code = await whoami([], out.stream, written().stream, { PINECALL_KEY: A_KEY, PINECALL_URL: gateway.url });
+    const code = await whoami([], out.stream, written().stream, { PINECALL_KEY: A_KEY, PINECALL_URL: gateway.url, PINECALL_HOME: home });
 
     expect(code).toBe(0);
     expect(out.text()).toBe(
-      `gateway ${gateway.url} · key from the environment\norg clinica · key k_1 · sandbox · the laptop · production: yes\n`,
+      `gateway ${gateway.url} · key from the environment · production\n`
+        + "  org clinica · key k_1 · production · the laptop · production: yes\n"
+        + `sandbox: ${gateway.url} names no sandbox instance: run the verb with --prod, or ask its operator\n`,
     );
     expect(out.text()).not.toContain("org_98889a61509c");
     expect(out.text()).not.toContain(A_KEY);
@@ -199,10 +203,11 @@ describe("whoami", () => {
     const code = await whoami([], written().stream, err.stream, {
       PINECALL_KEY: "pc_a_key_this_gateway_never_issued",
       PINECALL_URL: gateway.url,
+      PINECALL_HOME: home,
     });
 
     expect(code).toBe(1);
-    expect(err.text()).toBe("the gateway answered 401: this door takes an API key\n");
+    expect(err.text()).toBe("production: the gateway answered 401: this door takes an API key\n");
   });
 
   it("leaves a key with no label as two words rather than a dangling separator", () => {

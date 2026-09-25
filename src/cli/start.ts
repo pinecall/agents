@@ -37,8 +37,8 @@ export const group: Group = {
   usage: `usage: pinecall start [agent.tsx] [--agent <name>] [--prod] [--ui] [--events] [--show-prompt]
 
   With nothing after it: the agent registered on the gateway, one line per log entry on stdout,
-  no port bound and no page served. It answers the console for this directory: the box's sandbox
-  console while it runs here, and production's console when it runs with --prod.
+  no port bound and no page served. Without --prod it registers at the sandbox instance — the
+  one production names — and answers that console; with --prod, at production and its console.
 
   At the root of a project of several agents — agents/<name>.tsx — every agent at once, on one
   socket, each line prefixed by its slug; --agent <name> (or its slug) runs one of them.
@@ -92,11 +92,11 @@ export async function run(argv: string[]): Promise<number> {
     return 2;
   }
 
-  const door = theDoor();
+  const door = await theDoor();
   if (door === undefined) return 2;
-  // Before the socket and not after it: which world this lands in — the one --prod named, and
-  // only if the gateway opens it for this key — is the one thing this verb must not be wrong
-  // about, and a refusal here is the gateway's own sentence, before anything registers.
+  // Before the socket and not after it: whose org this lands in is the one thing this verb must
+  // not be wrong about, and a refusal here is the gateway's own sentence, before anything
+  // registers. The world is the door's: each instance is one, and the socket asserts it.
   let who: Who;
   try {
     who = await standing(door);
@@ -127,7 +127,7 @@ export async function run(argv: string[]): Promise<number> {
   pc.onConnected(() => {
     if (lost && values.events !== true && values.ui !== true) process.stderr.write("gateway  back\n");
     lost = false;
-    if (who.env !== PRODUCTION) void sayWhoCallsFromHere(door);
+    if (door.world !== PRODUCTION) void sayWhoCallsFromHere(door);
   });
   // Whoever opens the app socket closes it. Left open it keeps this process alive after the
   // signal has been read — a plain `kill` on `pinecall start` did nothing until this landed —
@@ -188,7 +188,7 @@ export async function run(argv: string[]): Promise<number> {
           env: who.env,
           source: door.source,
         }),
-        after: () => onceUp(door, mounted, who.env),
+        after: () => onceUp(door, mounted),
       }));
       return await plain(pc, agents, url);
     }
@@ -218,9 +218,9 @@ export async function run(argv: string[]): Promise<number> {
 // The doors are asked for HERE and not built from the class: a class declares none, and what this
 // agent answers at is the org's table — which means a number pointed at it while this process was
 // already running shows up on the next connect, with nothing rebuilt.
-async function onceUp(door: Door, mounted: Mounted, world: string): Promise<string[]> {
+async function onceUp(door: Door, mounted: Mounted): Promise<string[]> {
   const doors = await theDoors(door);
-  const said = [await consoleLine(door, mounted.slug, world), doorsOf(mounted.slug, doors)];
+  const said = [await consoleLine(door, mounted.slug), doorsOf(mounted.slug, doors)];
   if (doors.some((one) => one.agent === mounted.slug && one.number !== null)) {
     said.push(await lineLine(door, mounted.slug));
   }
@@ -247,7 +247,7 @@ export function aLostSocket(failed: Error): boolean {
   return typeof (failed as NodeJS.ErrnoException).code === "string" || LOST.test(failed.message);
 }
 
-/** Re-send the phone `pinecall line from` remembered for this gateway. Silent: it is upkeep. */
+/** Re-send the phone `pinecall line from` remembered for the sandbox. Silent: it is upkeep. */
 async function sayWhoCallsFromHere(door: Door): Promise<void> {
   const kept = callingFrom(door.url);
   if (kept === undefined) return;

@@ -148,7 +148,7 @@ export async function run(argv: string[], how: Setting = {}): Promise<number> {
     err.write(`${NOT_ON_OR_OFF(values.record)}\n`);
     return 2;
   }
-  const door = theDoor(how.env ?? process.env, err);
+  const door = await theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
   const [verb, ...rest] = positionals;
   try {

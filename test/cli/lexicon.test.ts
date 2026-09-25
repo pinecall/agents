@@ -9,7 +9,7 @@ import { linesOf, run } from "../../src/cli/lexicon.js";
 import { pointingAt } from "./home.js";
 import { written } from "./said.js";
 
-const A_KEY = "pk_the_orgs_key";
+const A_KEY = "pc_test_the_orgs_key";
 
 const TEAM = {
   holder: "",

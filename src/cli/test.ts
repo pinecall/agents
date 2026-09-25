@@ -3,10 +3,10 @@
 import { existsSync, watch } from "node:fs";
 import { parseArgs } from "node:util";
 
-import { Pinecall } from "../client/index.js";
+import { pinecallFor } from "./client-for.js";
 
 import { modelOf } from "./testing/models.js";
-import { theDoor } from "./env.js";
+import { theDoor, type Open } from "./env.js";
 import type { Group } from "./groups.js";
 import { load } from "./load.js";
 import { AGENT_FLAG, hasDirectory, homesFor, type Home } from "./home.js";
@@ -84,7 +84,7 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
       "packet-loss": { type: "string" },
     },
   });
-  const door = theDoor();
+  const door = await theDoor();
   if (door === undefined) return 2;
   // A project of several agents: each agent's goldens through its own class, one after another,
   // and the exit code is the worst of them. Paths typed name goldens of one agent, so they need one.
@@ -113,7 +113,7 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
   if (values.watch !== true) return await suiteOf(home, paths, door, values, out);
 
   const loaded = await load(home.file);
-  const pc = new Pinecall({ url: door.url, apiKey: door.apiKey });
+  const pc = pinecallFor(door);
   const held = mountedForASuite(loaded, pc);
   const models = (values.model ?? []).map(modelOf).filter((model) => model !== undefined);
 
@@ -164,12 +164,12 @@ async function watching(
 async function suiteOf(
   home: Home,
   paths: string[],
-  door: NonNullable<ReturnType<typeof theDoor>>,
+  door: Open,
   values: Parameters<typeof aLine>[0] & { grep?: string | undefined; model?: string[] | undefined; json?: boolean | undefined },
   out: NodeJS.WritableStream,
 ): Promise<number> {
   const loaded = await load(home.file);
-  const pc = new Pinecall({ url: door.url, apiKey: door.apiKey });
+  const pc = pinecallFor(door);
   const held = mountedForASuite(loaded, pc);
   const models = (values.model ?? []).map(modelOf).filter((model) => model !== undefined);
   try {

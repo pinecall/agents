@@ -11,16 +11,24 @@ you walk it from a laptop.
 **One key per person, per device; the role says what they do; a production switch, set by an
 admin, says whether they may do it in production** — an admin's is always on. **A project folder
 is linked to one org** (`pinecall link` writes the key into its `.env`); a second org is a second
-folder. **Every command runs in the sandbox unless it says `--prod`**, and the gateway lets `--prod`
-through only while the switch is on. **Production's agent runs on the org's own server**, on a
+folder. **Every command runs in the sandbox unless it says `--prod`**, and production lets a
+person's `--prod` through only while the switch is on. **Production's agent runs on the org's own server**, on a
 server's token from the console's Tokens screen, restarted by every deploy.
 
 ## The two worlds
 
-A gateway holds two worlds — `production` and `sandbox` — and **the world is the request's**: every
-request and every socket names it with the `pinecall-env` header, and none named is the sandbox.
-Every agent a command holds, every call it takes, every fact and every base it writes is that
-world's. Nothing you do in the sandbox reaches production, and nothing production does reaches you.
+There are two worlds — `production` and `sandbox` — and **each is an instance of the runtime of its
+own**: its own gateway, database, worker and keys, at its own URL. **Production is the identity**:
+it is `PINECALL_URL`, where a person signs in and where the key in the project's `.env` was minted,
+and it names its sandbox at `GET /.well-known/pinecall` (`elsewhere`). A command with `--prod`
+knocks at production with the project's key; every other command knocks at the sandbox with a key
+the sandbox minted from a one-use code production's key asked for, kept in
+`~/.pinecall/session.json` and minted again when it has aged out (a day)
+([the-cli.md](the-cli.md#where-the-gateway-and-the-key-come-from)). Every request and every socket
+also says which world it believes it reached — the `pinecall-env` header — and an instance of the
+other world refuses it. Every agent a command holds, every call it takes, every fact and every base
+it writes is that instance's. Nothing you do in the sandbox reaches production, and nothing
+production does reaches you.
 
 **Production is the org's.** What is deployed is held by a process on the org's own server, on a
 server's token — the org's, not a person's, so it keeps running when whoever made it leaves. A
@@ -32,14 +40,15 @@ refused every `--prod` in one sentence, so no laptop answers the org's numbers b
 your `pinecall chat`, your suite, your console. A colleague running the same agent is in their own
 corner, and neither of you takes the other's.
 
-**Each world is watched in its own place.** The gateway's console — the page you sign in to —
-shows production and only production: what is deployed, its calls, the org's numbers, tokens,
-people and usage; a person without production access who signs in there is shown **No production
-access** and where their sandbox is. The sandbox is watched at the box's SECOND name —
-`sandbox.pinecall.io` on the cloud — which serves the same console looking at your corner;
+**Each world is watched in its own place.** Production's console — at `PINECALL_URL`, the page you
+sign in to — shows production and only production: what is deployed, its calls, the org's numbers,
+tokens, people and usage; a person without production access who signs in there is shown **No
+production access** and where their sandbox is. The sandbox's console is the sandbox instance's own
+page — `sandbox.pinecall.io` on the cloud, the URL production names — looking at your corner;
 `pinecall console` opens it signed in, without the key leaving your terminal
-([the-cli.md](the-cli.md#console)). One box, two names, and a request that arrives at the
-sandbox's may not run in production, whoever asks.
+([the-cli.md](the-cli.md#console)). Two instances, one sign-in, and a request that arrives at the
+sandbox may not run in production, whoever asks. A production that names no sandbox — a gateway
+on a laptop, a box of one instance — has none, and every sandbox verb says so in one sentence.
 
 Yours to hold, not yours to hide: **an admin, and whoever runs the gateway, see every corner of
 the sandbox**. The agent listing answers a key that opens `team` and `app` — an admin's; a manager runs the floor and opens nobody's copy — with one row per corner and the
@@ -50,11 +59,11 @@ still held by the person whose key registered it.
 | | production | sandbox |
 |---|---|---|
 | the agent | the org's: one holder, the server's token | **yours**: one per person. CI's, on a token naming nobody, is the org's own, and a person holding none falls back to it |
-| `pinecall start` | `--prod`: the server's token, or a person with the switch | yours |
+| `pinecall start` | `--prod`, at `PINECALL_URL`: the server's token, or a person with the switch | yours, at the sandbox instance |
 | web and chat (`pinecall chat`, the console's **Chat** tab — Call or Write) | the org's agent | your own |
 | a phone or WhatsApp number | the org's. A call from a developer's [own phone](#which-phone-is-yours) reaches that developer's sandbox copy while they hold the agent; every other caller reaches production | **optional, and the org's, shared**: a call lands in the corner of whoever's phone dialled it, else on [the line](#the-line) |
 | settings and the lexicon | one corner, written with `--prod` or from production's console; history and rollback | yours, and the team's with `--team` |
-| where it is watched | the box's own name, signed in to | the box's second name: `sandbox.pinecall.io`, signed in to as well (`pinecall console`) |
+| where it is watched | production's console, at `PINECALL_URL`, signed in to | the sandbox instance's console — `sandbox.pinecall.io` on the cloud — signed in to through production (`pinecall console`) |
 | the calls a console lists | production's | the corner's own: a developer sees only their own sandbox calls, and an admin who opens a teammate's copy sees that copy's |
 | a contact's memory | production's facts | the sandbox's facts, apart |
 | what the agent knows by heart | production's Settings ▸ Knowledge, one corner | yours, and the team's with `--team` — `pinecall agent knowledge edit` |
@@ -151,6 +160,15 @@ That sign-in is the machine's (`~/.pinecall/session.json`), and nothing runs on 
 lists your orgs, asks which one this project is, mints your key there, and writes it into the
 project's `.env` — the file every verb in that folder reads. A project of another org is another
 folder, linked on its own; there is nothing to switch between.
+
+**All of it is production's.** A person is signed in, and linked, at production — the sandbox
+instance keeps no password and makes nobody. The first sandbox verb in a folder asks production for
+a one-use code with the `.env`'s key and spends it at the sandbox (`POST /v1/login {code, device}`,
+labelled with this machine's name), which asks production who the code names, mirrors the org and
+the member, and mints a key of its own that lives a day. That key is kept in `session.json` under
+the sandbox's URL — one per production key it came from, so two projects of two orgs are two
+people there — and minted again, once, the day the sandbox answers it 401. Nothing of it is
+written into the project.
 
 **A person is their email, and may belong to several orgs.** One password is theirs across every
 org they are in, whichever org it was chosen in, and an email is matched trimmed and lower-cased,
@@ -313,7 +331,12 @@ permissions), never a fence of ours. The door and its guards: the runtime's
 - **`no PINECALL_KEY here`** — this folder, and none above it, has a `.env` with a key, and none is
   exported. `pinecall link` in the project's folder.
 - **Production's console says `no agent called … is held here`.** It shows production, and what
-  your laptop holds is in the sandbox: `pinecall console`, at the box's other name.
+  your laptop holds is in the sandbox: `pinecall console`, at the sandbox instance.
+- **`<url> names no sandbox instance`** — the production your `PINECALL_URL` names runs no sandbox
+  beside it (a gateway on a laptop, a box of one instance). Every verb works there with `--prod`;
+  a sandbox is its operator's to add.
+- **`this PINECALL_KEY is a production server's token … run the verb with --prod`** — a server's
+  token opens the one instance it was made on, and a verb without `--prod` meant the sandbox.
 - **A console refuses your key.** It was revoked, or you were removed. `pinecall link` again in the
   project, then `pinecall console`.
 - **A verb answered for an org you did not expect.** The first line says where the key came from
@@ -336,11 +359,14 @@ permissions), never a fence of ours. The door and its guards: the runtime's
 
 ## The doors underneath
 
-`POST /v1/signup` · `POST /v1/login` · `GET /v1/login/orgs`, `POST /v1/login/org` (the person's
+`GET /.well-known/pinecall` (the instance's `world`, and `elsewhere`: where the sandbox is) ·
+`POST /v1/signup` · `POST /v1/login` — at production a password, at the sandbox a code
+`POST /v1/login/codes` minted at production · `GET /v1/login/orgs`, `POST /v1/login/org` (the person's
 orgs, and their key in another) · the four under `/v1/login/pairings` (signing a terminal in) ·
 `GET`/`POST /v1/keys`, `POST /v1/keys/{fingerprint}/revoke` (the Tokens screen) · `GET`/`POST
 /v1/members`, `PATCH /v1/members/{id}` (`production` among its fields) · `POST
 /v1/invitations/{token}` · `GET`/`POST`/`DELETE /v1/agents/{slug}/line` · `PUT`/`DELETE
 /v1/line/from` · `GET /v1/agents/{slug}/rings-for` (the worker's, on every production ring: whose
-sandbox copy a caller's phone reaches) · the `pinecall-env` header on every one of them. Shapes and
+sandbox copy a caller's phone reaches) · the `pinecall-env` header on every one of them, the world
+the request believes it reached, which the other instance refuses. Shapes and
 refusals: the runtime's `docs/protocol/people.md` and `gateway-api.md` §1, §5, §7, §8.

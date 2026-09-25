@@ -79,7 +79,7 @@ export async function run(argv: string[], how: Turning = {}): Promise<number> {
       greeting: { type: "string" },
     },
   });
-  const door = theDoor(how.env ?? process.env, err);
+  const door = await theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
   const aFile = notASlug(values.agent);
   if (aFile !== undefined) {

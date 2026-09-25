@@ -1,29 +1,9 @@
 /** The `console` line `pinecall start` prints: where a person looks at what this process is running. */
 
-import { CLOUD_URL, SANDBOX_URL } from "./env.js";
 import { asked, Refused, type Door } from "./testing/gateway.js";
-import { PRODUCTION } from "./world.js";
 
 // What a gateway answers for a path no router of its declared.
 const NO_SUCH_DOOR = 404;
-
-/**
- * Where the console of that world is, or undefined when it cannot be known from here.
- *
- * A box answers to its own name and, when it has a sandbox, to a second one. The first is the
- * gateway this terminal talks to, so production's console needs nothing said. The second is the
- * box's to name, and this CLI knows only the cloud's — a tenant's own box is told by its own
- * operator, and a URL guessed for them would be a URL that does not answer.
- */
-export function consoleFor(gateway: string, world: string): string | undefined {
-  const named = gateway.replace(/\/$/, "");
-  if (world === PRODUCTION) return named;
-  return named === CLOUD_URL ? SANDBOX_URL : undefined;
-}
-
-/** Said instead of a URL for a box whose second name only its operator knows. */
-export const ITS_OWN_NAME =
-  "your box's sandbox console is at its second name (PINECALL_SANDBOX_DOMAIN on the box)";
 
 // A console holds a key of its own — the browser's, minted at a login — and never this process's.
 // So this process mints a one-use code standing for its key (five minutes, once) and prints the
@@ -56,14 +36,13 @@ export async function aLoginCode(door: Door): Promise<string> {
   return (await asked<{ code: string }>(door, "/v1/login/codes", { method: "POST", body: {} })).code;
 }
 
-// The two consoles are the box's two names, and which one this process's work shows up in is the
-// world it registered in — never a choice made here.
+// A console is served by the instance it shows, so the console of this process's world is the
+// door it knocks at — production's, or the sandbox production named — and the code that signs the
+// browser in is minted there, by that instance, for that instance's own key.
 /** The line under `connected`: the console's URL, signed in, or why there is none. */
-export async function consoleLine(door: Door, slug: string, world: string): Promise<string> {
-  const where = consoleFor(door.url, world);
-  if (where === undefined) return `console  ${ITS_OWN_NAME}`;
+export async function consoleLine(door: Door, slug: string): Promise<string> {
   try {
-    return `console  ${consoleUrl(where, slug, await aLoginCode(door))}   (opens within five minutes, once)`;
+    return `console  ${consoleUrl(door.url, slug, await aLoginCode(door))}   (opens within five minutes, once)`;
   } catch (refused) {
     return `console  not available: ${whyNoConsole(refused)}`;
   }

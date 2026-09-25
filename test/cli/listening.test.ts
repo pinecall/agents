@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { aSeatIn, anEarIn, EAR, NO_PLAYER } from "../../src/cli/listening.js";
 import { written } from "./said.js";
 
-const A_KEY = "pk_the_orgs_key";
+const A_KEY = "pc_test_the_orgs_key";
 const CALL = "call_abc";
 const SEAT = { server_url: "ws://127.0.0.1:7880", participant_token: "a.room.token", identity: "sup_1" };
 
@@ -58,7 +58,7 @@ describe("the seat", () => {
   it("is knocked for until the room opens, and is the listen door's own answer", async () => {
     gateway.refusals = 2;
 
-    const seat = await aSeatIn({ url: gateway.url, apiKey: A_KEY }, CALL);
+    const seat = await aSeatIn({ url: gateway.url, apiKey: A_KEY, world: "sandbox" }, CALL);
 
     expect(seat).toEqual(SEAT);
     expect(gateway.asked).toBe(3);
@@ -80,7 +80,7 @@ describe("what plays it", () => {
     const path = process.env["PATH"];
     process.env["PATH"] = "";
     try {
-      await expect(anEarIn({ url: gateway.url, apiKey: A_KEY }, CALL, written().stream)).rejects.toThrow(NO_PLAYER);
+      await expect(anEarIn({ url: gateway.url, apiKey: A_KEY, world: "sandbox" }, CALL, written().stream)).rejects.toThrow(NO_PLAYER);
       expect(gateway.asked).toBe(0);
     } finally {
       process.env["PATH"] = path;

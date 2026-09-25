@@ -22,7 +22,7 @@ const GOLDEN_LOG = fileURLToPath(import.meta.resolve("@pinecall/protocol/fixture
 const THE_CALL = "CA_8f4a2c";
 const GOLDEN: Entry[] = JSON.parse(readFileSync(GOLDEN_LOG, "utf8")) as Entry[];
 
-const DOOR: Door = { url: "http://gateway", apiKey: "dev" };
+const DOOR: Door = { url: "http://gateway", apiKey: "dev", world: "sandbox" };
 
 afterEach(() => {
   vi.unstubAllGlobals();

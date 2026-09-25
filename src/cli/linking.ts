@@ -11,6 +11,7 @@ import { signedInThrough, type Signing } from "./login.js";
 import { pinecallHome, signedIn } from "./signed-in.js";
 import { asked, type Door } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
+import { PRODUCTION } from "./world.js";
 
 const USAGE = "usage: pinecall link [--org <slug>] [--gateway <url>]";
 
@@ -61,7 +62,7 @@ export async function link(argv: string[], how: Linking = {}): Promise<number> {
   const url = session?.url ?? values.gateway ?? CLOUD_URL;
   const key = session?.key ?? (await signedInThrough(url, how, out, err));
   if (key === null) return 1;
-  const door: Door = { url, apiKey: key };
+  const door: Door = { url, apiKey: key, world: PRODUCTION };
 
   let orgs: Theirs[];
   try {

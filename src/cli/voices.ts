@@ -58,7 +58,7 @@ export interface Choosing {
 export async function run(argv: string[], how: Choosing = {}): Promise<number> {
   const out = how.out ?? process.stdout;
   const err = how.err ?? process.stderr;
-  const door = theDoor(how.env ?? process.env, err);
+  const door = await theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
   // The flags are read OUTSIDE the catch below, so one the verb does not take lands as the
   // dispatcher's own sentence and exit 2 (cli/index.ts), not as a refusal from the gateway.

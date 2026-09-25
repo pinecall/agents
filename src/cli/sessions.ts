@@ -63,7 +63,7 @@ export async function run(argv: string[], how: Running = {}): Promise<number> {
     allowPositionals: true,
     options: { agent: { type: "string" }, limit: { type: "string" }, json: { type: "boolean", default: false } },
   });
-  const door = theDoor(how.env ?? process.env, err);
+  const door = await theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
   const call = positionals.find((word) => !NOT_A_CALL.includes(word));
   try {

@@ -1,10 +1,13 @@
-/** `pinecall whoami`: which gateway this terminal talks to, whose key it holds, and where it found it. */
+/** `pinecall whoami`: the two doors this project opens — production's and the sandbox's — and whose key each takes. */
 
 import { parseArgs } from "node:util";
 
-import { doorLine, theDoor } from "./env.js";
+import type { World } from "../client/signed.js";
+import { aServersWorld, doorIn, doorLine, keyFrom, NO_KEY, type Open } from "./env.js";
 import type { Group } from "./groups.js";
+import { pinecallHome } from "./signed-in.js";
 import { asked, type Door } from "./testing/gateway.js";
+import { PRODUCTION, SANDBOX } from "./world.js";
 
 // The door that answers who is knocking, written once: `login` proves a key at this same path,
 // through whoIs() below, so neither verb spells it.
@@ -18,7 +21,7 @@ export interface Who {
   slug?: string | null;
   key_id: string;
   label: string | null;
-  /** The world this request ran in: the one `--prod` named, else the sandbox — or a server token's own. */
+  /** The world of the instance that answered: each one is a world of its own. */
   env: string;
   /** The person the key was minted for; none for a server's token. */
   name?: string | null;
@@ -27,17 +30,19 @@ export interface Who {
 }
 
 export const group: Group = {
-  purpose: "which org and which key this terminal is holding",
+  purpose: "which org and which key this terminal is holding, at production and at the sandbox",
   usage: `usage: pinecall whoami
 
-  Prints the gateway every connecting verb would talk to, where the key came from (the
-  environment, or the project's .env), and what that gateway says the key is: the org, the
-  key's id, the world this command runs in, the label it was issued under, and whether you may
-  act in production. The key itself is neither printed nor sent anywhere else.`,
+  Prints both doors a verb may knock at: production's — PINECALL_URL, with the key from the
+  environment or the project's .env — and the sandbox's, the instance production names, with the
+  key minted there from yours (kept in ~/.pinecall/session.json). Under each, what that instance
+  says the key is: the org, the key's id, the world, the label it was issued under, and whether
+  you may act in production. A server's token opens its own instance alone, so it prints one.
+  The keys themselves are neither printed nor sent anywhere else.`,
   run,
 };
 
-/** Resolve the door, ask it who is knocking, and print the two lines. */
+/** Resolve each door the project's key opens, ask each who is knocking, and print them. */
 export async function run(
   argv: string[],
   out: NodeJS.WritableStream = process.stdout,
@@ -48,18 +53,37 @@ export async function run(
   // --json` was taken and answered with the same two lines, which reads as JSON having been
   // refused rather than never offered (2026-09-20).
   parseArgs({ args: argv, options: {} });
-  const door = theDoor(env, err);
-  if (door === undefined) return 2;
-  let who: Who;
-  try {
-    who = await whoIs(door);
-  } catch (refused) {
-    err.write(`${refusal(refused)}\n`);
-    return 1;
+  const { apiKey, ...held } = keyFrom(env);
+  if (apiKey === undefined) {
+    err.write(`${NO_KEY}\n`);
+    return 2;
   }
-  out.write(`${doorLine(door)}\n`);
-  out.write(`${describing(who)}\n`);
-  return 0;
+  const project: Open = { ...held, apiKey, world: PRODUCTION };
+  const token = aServersWorld(apiKey);
+  // The project's own door decides the exit: the sandbox's is told, and a box with none is no failure.
+  const home = pinecallHome(env);
+  const answered = await told(token ?? PRODUCTION, project, home, out, err);
+  if (token === undefined) await told(SANDBOX, project, home, out, out);
+  return answered ? 0 : 1;
+}
+
+// One door: its line and whose key it takes, or the sentence that says why there is none.
+async function told(
+  world: World,
+  project: Open,
+  home: string,
+  out: NodeJS.WritableStream,
+  err: NodeJS.WritableStream,
+): Promise<boolean> {
+  try {
+    const door = await doorIn(world, project, home);
+    const who = await whoIs(door);
+    out.write(`${doorLine(door)}\n  ${describing(who)}\n`);
+    return true;
+  } catch (refused) {
+    err.write(`${world}: ${refusal(refused)}\n`);
+    return false;
+  }
 }
 
 /** Who the gateway says is knocking with this key. */

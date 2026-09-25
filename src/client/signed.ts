@@ -1,12 +1,14 @@
-// What every request to the gateway carries: whose key, and which world it asks for.
+// What every request to the gateway carries: whose key, and which world it believes it is in.
 
-/** The two worlds a gateway holds. A person's key opens either, as far as their org allows. */
+/** The two worlds. An instance of the runtime is one of them, and names it at /.well-known/pinecall. */
 export type World = "sandbox" | "production";
 
 /**
- * The header a request names its world with. A person holds one key and works in both worlds, so
- * the world is the request's: none named is the sandbox, and production answers only while the
- * person's row opens it. A server's token was made for one world and needs none.
+ * The header a request names its world with. It chooses nothing: an instance IS one world, and
+ * the header is what the client believes it is talking to — an instance of the other world
+ * refuses the request rather than answer it from the wrong one, and production refuses a person's
+ * key that names none. The CLI names it on every request; a server's token was made for one world
+ * and may leave it out.
  */
 export const ENV_HEADER = "pinecall-env";
 

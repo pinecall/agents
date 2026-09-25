@@ -12,7 +12,7 @@ import { aDuration, run, type Played } from "../../src/cli/voices.js";
 import { pointingAt } from "./home.js";
 import { written } from "./said.js";
 
-const A_KEY = "pk_the_orgs_own_key";
+const A_KEY = "pc_test_the_orgs_own_key";
 const MARTA = "de38f545-c574-44e8-9b54-a7d6fec1c6b1";
 const A_WAV = Buffer.from("RIFF....WAVEfmt ");
 

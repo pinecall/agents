@@ -13,7 +13,7 @@ import { theKItIsReadWith, markdownUnder, pushedLine, run, scoreLines } from "..
 import { pointingAt } from "./home.js";
 import { written } from "./said.js";
 
-const A_KEY = "pk_the_orgs_own_key";
+const A_KEY = "pc_test_the_orgs_own_key";
 
 /** One request as the gateway heard it: the method, the path, and the body it was sent. */
 interface Heard {

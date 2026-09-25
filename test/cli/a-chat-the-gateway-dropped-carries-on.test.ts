@@ -46,7 +46,7 @@ it("dials again naming the call when the gateway drops the socket, and ends with
     },
   );
   const typed = new PassThrough();
-  const ended = await talk(() => door.url, { url: door.url, apiKey: "pk_test", source: "test" }, true, typed);
+  const ended = await talk(() => door.url, { url: door.url, apiKey: "pk_test", source: "test", world: "sandbox" }, true, typed);
   expect(ended).toBe(0);
   expect(door.asked).toEqual(["/v1/chat?agent=clinica", "/v1/chat?agent=clinica&call=call_1"]);
 });
@@ -56,7 +56,7 @@ it("leaves when the gateway refuses the call in a sentence before it has one", a
   const said: string[] = [];
   vi.spyOn(process.stderr, "write").mockImplementation((chunk) => (said.push(String(chunk)), true));
   const door = await aDoor((socket) => socket.close(1008, "nobody is holding clinica"));
-  const ended = await talk(() => door.url, { url: door.url, apiKey: "pk_test", source: "test" }, true, new PassThrough());
+  const ended = await talk(() => door.url, { url: door.url, apiKey: "pk_test", source: "test", world: "sandbox" }, true, new PassThrough());
   expect(ended).toBe(1);
   expect(door.asked).toHaveLength(1);
   expect(said.join("")).toContain("nobody is holding clinica");

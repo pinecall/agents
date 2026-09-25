@@ -82,7 +82,7 @@ export async function run(argv: string[], how: Pushing = {}): Promise<number> {
     },
   });
   const [verb, ...rest] = positionals;
-  const door = theDoor(how.env ?? process.env, err);
+  const door = await theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
   try {
     if (verb === "attached") return await attached(door, out);

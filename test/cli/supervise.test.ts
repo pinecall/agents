@@ -168,7 +168,7 @@ async function aDeskWhereTheCallIsLive(): Promise<{
   await new Promise<void>((bound) => server.listen(0, "127.0.0.1", bound));
   const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   return {
-    env: pointingAt(url, "pc_a_key"),
+    env: pointingAt(url, "pc_test_a_key"),
     verbs,
     close: async () => {
       server.closeAllConnections();
@@ -189,7 +189,7 @@ async function aGatewayWhereTheCall(standing: { live: boolean; last_seq: number 
   await new Promise<void>((bound) => server.listen(0, "127.0.0.1", bound));
   const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   return {
-    env: pointingAt(url, "pc_a_key"),
+    env: pointingAt(url, "pc_test_a_key"),
     close: async () => {
       server.closeAllConnections();
       await new Promise<void>((closed) => server.close(() => closed()));

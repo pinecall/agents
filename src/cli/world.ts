@@ -20,14 +20,14 @@ const chosen = new AsyncLocalStorage<World>();
 /** An invocation with `--prod` taken out of it, and the world it named. */
 export interface Named {
   argv: string[];
-  /** `production` when `--prod` was typed; undefined names no world, which is the sandbox. */
+  /** `production` when `--prod` was typed; undefined when it was not, and the verb is the sandbox's. */
   world: World | undefined;
 }
 
 /**
- * Take `--prod` out of an invocation's argv. It belongs to no group: it says which world THIS
- * command runs in, and the gateway lets it through only while the person's row opens production.
- * The group sees only its own flags.
+ * Take `--prod` out of an invocation's argv. It belongs to no group: it says which instance THIS
+ * command knocks at (cli/env.ts), and production lets a person through only while their row opens
+ * it. The group sees only its own flags.
  */
 export function withoutTheWorldFlag(argv: readonly string[]): Named {
   return { argv: argv.filter((word) => word !== "--prod"), world: argv.includes("--prod") ? PRODUCTION : undefined };
@@ -38,12 +38,12 @@ export function inTheWorld<T>(world: World | undefined, body: () => Promise<T>):
   return world === undefined ? body() : chosen.run(world, body);
 }
 
-/** Production when this invocation said `--prod`; otherwise nothing is named and it is the sandbox. */
-export function theChosenWorld(): World | undefined {
-  return chosen.getStore();
+/** Production when this invocation said `--prod`; otherwise the sandbox. */
+export function theChosenWorld(): World {
+  return chosen.getStore() ?? SANDBOX;
 }
 
-/** What the gateway says this key is, in the world this command asked for. */
+/** What the gateway says this key is, at the instance of the world this command asked for. */
 export async function standing(door: Open): Promise<Who> {
   return await whoIs(door);
 }

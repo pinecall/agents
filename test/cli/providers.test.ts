@@ -9,7 +9,7 @@ import { run } from "../../src/cli/providers.js";
 import { pointingAt, pointingNowhere } from "./home.js";
 import { written } from "./said.js";
 
-const A_KEY = "pk_the_orgs_own_key";
+const A_KEY = "pc_test_the_orgs_own_key";
 
 // The thing that must never come back out: it is added, and every assertion below asks whether
 // this string appears anywhere a person or a log would see it.

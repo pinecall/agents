@@ -1,14 +1,15 @@
 /** `pinecall login [gateway]`: this machine signed in through a browser, as a person, for `link` to mint from. */
 
-import { hostname } from "node:os";
 import { parseArgs } from "node:util";
 
 import { openInABrowser } from "./browser.js";
 import { CLOUD_URL } from "./env.js";
 import type { Group } from "./groups.js";
 import { pinecallHome, signIn } from "./signed-in.js";
-import { asked } from "./testing/gateway.js";
+import { asked, type Door } from "./testing/gateway.js";
+import { thisMachine } from "./this-machine.js";
 import { refusal, whoIs, type Who } from "./whoami.js";
+import { PRODUCTION } from "./world.js";
 
 const USAGE = "usage: pinecall login [gateway-url]";
 
@@ -75,7 +76,7 @@ export async function signedInThrough(
   // a refusal they will not understand.
   let who: Who;
   try {
-    who = await whoIs({ url, apiKey: key });
+    who = await whoIs({ url, apiKey: key, world: PRODUCTION });
   } catch (refused) {
     err.write(`${refusal(refused)}\n`);
     return null;
@@ -98,7 +99,8 @@ async function throughABrowser(
   out: NodeJS.WritableStream,
   err: NodeJS.WritableStream,
 ): Promise<string | null> {
-  const door = { url, apiKey: "" };
+  // A person signs in at production, which is where a person is kept: the sandbox keeps nobody.
+  const door: Door = { url, apiKey: "", world: PRODUCTION };
   let opened: { code: string };
   try {
     opened = await asked<{ code: string }>(door, "/v1/login/pairings", {
@@ -122,7 +124,7 @@ export function signingIn(gateway: string, code: string): string {
 
 /** Ask until the browser has answered, the word is gone, or nobody ever opened the link. */
 async function collected(
-  door: { url: string; apiKey: string },
+  door: Door,
   code: string,
   how: Signing,
   err: NodeJS.WritableStream,
@@ -143,15 +145,6 @@ async function collected(
   }
   err.write(`${TOOK_TOO_LONG}\n`);
   return null;
-}
-
-/** What this terminal calls itself, so the card names it and the key is labelled by it. */
-function thisMachine(): string {
-  try {
-    return hostname();
-  } catch {
-    return "cli";
-  }
 }
 
 function after(ms: number): Promise<void> {

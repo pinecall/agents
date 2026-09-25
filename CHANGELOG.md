@@ -13,6 +13,22 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   no words the gateway reads a line in the language; `--save` keeps the WAV; a player that fails
   is said so and the file kept; the list is the protocol's `VoicesListed`, parsed as such.
 
+### Changed
+- **Breaking: the sandbox is an instance of its own, and the CLI knocks at it there.**
+  `PINECALL_URL` is production's — the identity, where a person signs in — and a verb with
+  `--prod` knocks there with the project's key. Every other verb knocks at the sandbox production
+  names at `GET /.well-known/pinecall` (`elsewhere`), with a key minted there from a one-use code
+  production's key asked for, kept in `~/.pinecall/session.json` and minted again once when the
+  sandbox answers 401. Every request and socket now says `pinecall-env` — the world it believes it
+  reached, which the other instance refuses. `pinecall console` and `start`'s console line open the
+  console of the instance the verb knocked at, with a code minted there; `pinecall whoami` prints
+  both doors; `pinecall line from` keeps the phone under the sandbox's URL. A production that names
+  no sandbox is said in one sentence (`<url> names no sandbox instance: run the verb with --prod, or
+  ask its operator`), and **a gateway that names no `world` at `/.well-known/pinecall` is refused
+  in one sentence**: it is older than this CLI, so update the gateway before this. A server's token
+  belongs to the instance it was made on: `pc_live_` needs `--prod`, `pc_test_` refuses it, and
+  nothing is derived from either. Needs the runtime with instances (M1, M2).
+
 ## [0.9.6] — The chat that comes back, for real
 
 ### Fixed

@@ -49,8 +49,9 @@ export interface PinecallOptions {
   url?: string;
   apiKey?: string;
   /**
-   * The world, when the key is a person's: `production` is `pinecall start --prod`, and opens only
-   * while their org lets them act there. A server's token was made for one world and needs none.
+   * The world this client believes the gateway is, sent on every request: an instance of the
+   * other world refuses it, and production refuses a person's key that names none. A server's
+   * token was made for one instance and needs none.
    */
   env?: World;
   pingMs?: number;

@@ -1,6 +1,6 @@
 /** The console's own door to the goldens: this directory's, listed, and a run of the chosen ones started from the page. */
 
-import { Pinecall } from "../../client/index.js";
+import { pinecallFor } from "../client-for.js";
 import { modelOf } from "../testing/models.js";
 
 import { load } from "../load.js";
@@ -156,7 +156,7 @@ async function inThisProcess(
   file?: string,
 ): Promise<number> {
   const loaded = await load(file);
-  const pc = new Pinecall({ url: door.url, apiKey: door.apiKey });
+  const pc = pinecallFor(door);
   const held = mountedForASuite(loaded, pc);
   try {
     await pc.connect();

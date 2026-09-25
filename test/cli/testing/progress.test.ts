@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Cell, Door, EvalRun, Score } from "../../../src/cli/testing/gateway.js";
 import { followed, header, type Watched } from "../../../src/cli/testing/progress.js";
 
-const DOOR: Door = { url: "http://gateway.test", apiKey: "dev" };
+const DOOR: Door = { url: "http://gateway.test", apiKey: "dev", world: "sandbox" };
 
 const WATCHED: Watched = { agent: "clinica-norte", goldens: 2, models: ["haiku"], declaredAs: "haiku" };
 

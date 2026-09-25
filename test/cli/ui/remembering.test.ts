@@ -7,8 +7,9 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { rememberingFrom, type Pieces } from "../../../src/cli/ui/remembering.js";
+import type { Door } from "../../../src/cli/testing/gateway.js";
 
-const DOOR = { url: "http://127.0.0.1:1", apiKey: "pk_never_sent_anywhere" };
+const DOOR: Door = { url: "http://127.0.0.1:1", apiKey: "pk_never_sent_anywhere", world: "sandbox" };
 
 const A_CASE: ExtractionGolden = {
   name: "la-primera-cita",

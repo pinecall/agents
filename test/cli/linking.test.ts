@@ -20,6 +20,8 @@ const IN_THE_OTHER_ORG = "pc_berna_in_the_other_org";
 /** The two doors link knocks at: the person's orgs, and their key in another one. */
 class FakeGateway {
   readonly minted: string[] = [];
+  /** The `pinecall-env` of every request, in order. */
+  readonly worlds: (string | string[] | undefined)[] = [];
   #server!: Server;
   url = "";
 
@@ -35,6 +37,7 @@ class FakeGateway {
   }
 
   async #answer(request: IncomingMessage, response: ServerResponse): Promise<void> {
+    this.worlds.push(request.headers["pinecall-env"]);
     if (request.headers.authorization !== `Bearer ${SIGNED_IN}`) return said(response, 401, { detail: "this door takes an API key" });
     if (request.url === "/v1/login/orgs") {
       return said(response, 200, {
@@ -66,6 +69,7 @@ let project = "";
 
 beforeEach(async () => {
   gateway.minted.length = 0;
+  gateway.worlds.length = 0;
   await gateway.open();
   home = mkdtempSync(join(tmpdir(), "pinecall-home-"));
   project = mkdtempSync(join(tmpdir(), "pinecall-project-"));
@@ -93,6 +97,15 @@ describe("linking a project", () => {
 
     expect(readDotenv(join(project, ".env"))["PINECALL_KEY"]).toBe(IN_THE_OTHER_ORG);
     expect(gateway.minted).toEqual(["org_2"]);
+  });
+
+  // A person signs in at production and their key is production's: link writes that, and nothing
+  // of the sandbox's — whose URL production names and whose key is minted from this one, per verb.
+  it("asks production, saying so on every request, and writes nothing of the sandbox's", async () => {
+    await linked(["--org", "cloudacio"]);
+
+    expect(gateway.worlds).toEqual(["production", "production"]);
+    expect(Object.keys(readDotenv(join(project, ".env")))).toEqual(["PINECALL_KEY", "PINECALL_URL"]);
   });
 
   it("asks which org when the person belongs to several, and offers none they only visit", async () => {

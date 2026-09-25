@@ -57,7 +57,7 @@ export async function run(argv: string[], how: Wording = {}): Promise<number> {
       note: { type: "string" },
     },
   });
-  const door = theDoor(how.env ?? process.env, err);
+  const door = await theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
   const [verb, ...words] = positionals;
   const team = values.team === true;

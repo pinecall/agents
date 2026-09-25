@@ -49,7 +49,7 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
       threshold: { type: "string" },
     },
   });
-  const door = theDoor();
+  const door = await theDoor();
   if (door === undefined) return 2;
   const [verb, ...rest] = positionals;
   const asJson = values.json === true;

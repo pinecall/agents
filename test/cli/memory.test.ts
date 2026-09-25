@@ -12,7 +12,7 @@ import { factLine, recallLines, run } from "../../src/cli/memory.js";
 import { pointingAt } from "./home.js";
 import { written } from "./said.js";
 
-const A_KEY = "pk_the_orgs_own_key";
+const A_KEY = "pc_test_the_orgs_own_key";
 const ANA = "+34600000001";
 
 const CURRENT = { id: "f1", text: "prefiere que le llamen Ana", category: "preferencia", source: "CA_1", valid_from: 1_788_000_000, invalidated_at: null };

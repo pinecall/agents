@@ -367,10 +367,10 @@ pinecall start
 console  https://sandbox.pinecall.io/a/clinica-norte?login=lc_9f2   (opens within five minutes, once)
 ```
 
-Open that URL, or run `pinecall console`. It is the console of your sandbox, served by the box at
-its second name; the code in the URL is one use and five minutes, spent for a key of that browser's
-own, so the project's key never reaches the browser. (Production is watched at the box's own name,
-which you sign in to as well.) The agent's Calls screen shows a call as it happens: the turns, the tools, the state after each
+Open that URL, or run `pinecall console`. It is the console of your sandbox, served by the sandbox
+instance at the URL production names for it; the code in the URL was minted there, is one use and
+five minutes, and is spent for a key of that browser's own, so no key of yours reaches the browser.
+(Production is watched at `PINECALL_URL`, which you sign in to as well.) The agent's Calls screen shows a call as it happens: the turns, the tools, the state after each
 one, `recall · 1 fact · 138 ms`, `search · 3 chunks · 181 ms`, and the verdicts at hang-up.
 
 The same thing without a browser:

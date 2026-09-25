@@ -104,8 +104,8 @@ export interface Entry {
 export interface Door {
   url: string;
   apiKey: string;
-  /** The world the request names; none is the sandbox (`--prod`, `client/signed.ts`). */
-  world?: World;
+  /** The world this gateway is, named on every request as the assertion the instance checks. */
+  world: World;
 }
 
 /** Every golden through the app that is holding the agent, scored and stored, in one round trip. */
@@ -199,39 +199,6 @@ export async function theSessions(door: Door, agent: string, limit: number): Pro
 }
 
 /** What the gateway answered when it did not answer 2xx: the status, and its own sentence. */
-/** What a gateway says about itself with no key: which runtime, and whether it opens a sign-up. */
-export interface Discovered {
-  version: string;
-  cloud: boolean;
-  signup: boolean;
-  /** How short a password this gateway accepts; 0 is no rule. A card asking for one says it. */
-  min_password: number;
-}
-
-/**
- * `GET /.well-known/pinecall`, the one door that takes no key and asks nothing of the caller.
- *
- * A gateway too old to answer it, or one that does not answer at all, reads as a gateway that
- * opens no sign-up: guessing that way offers nothing, and the other way would walk a person
- * through typing a password for a door that refuses.
- */
-export async function discovered(url: string): Promise<Discovered> {
-  const shut: Discovered = { version: "", cloud: false, signup: false, min_password: 0 };
-  try {
-    const answer = await fetch(`${url.replace(/\/$/, "")}/.well-known/pinecall`);
-    if (!answer.ok) return shut;
-    const said = (await answer.json()) as Partial<Discovered>;
-    return {
-      version: said.version ?? "",
-      cloud: said.cloud === true,
-      signup: said.signup === true,
-      min_password: said.min_password ?? 0,
-    };
-  } catch {
-    return shut;
-  }
-}
-
 export class Refused extends Error {
   constructor(
     readonly status: number,

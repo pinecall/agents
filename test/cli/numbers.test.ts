@@ -36,7 +36,7 @@ describe("the verb's shape", () => {
   // The flag has to leave this verb unhandled: the dispatcher is what turns node's "Unknown
   // option '--bogus'" into `no such flag for numbers: '--bogus'` and exit 2 (cli/index.ts).
   it("lets a flag it does not take reach the dispatcher, which names the verb", async () => {
-    await expect(run(["list", "--bogus"], { env: pointingAt("http://127.0.0.1:1", "pc_a_key") })).rejects.toThrow(
+    await expect(run(["list", "--bogus"], { env: pointingAt("http://127.0.0.1:1", "pc_test_a_key") })).rejects.toThrow(
       "Unknown option '--bogus'",
     );
   });

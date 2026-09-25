@@ -67,7 +67,7 @@ CLI is still a design, and a verb leaves that table in the commit that writes it
 **The project's, the way any app reads its own secrets** (`src/cli/env.ts`). Every verb reads
 `PINECALL_KEY` and `PINECALL_URL` from the process's environment — a server's secrets, a CI job's
 — else from the nearest `.env` walking up from the directory it runs in, which
-[`pinecall link`](#link) wrote. The gateway is `https://box.pinecall.io` unless one of the two
+[`pinecall link`](#link) wrote. `PINECALL_URL` is `https://box.pinecall.io` unless one of the two
 names another. Nothing else is read: v1's `PINECALL_API_KEY` never is, because a shell that still
 had v1's key exported once pointed every verb at another org with every line reading the same.
 
@@ -83,36 +83,60 @@ which org is this project? 1
 ▸ clinica · PINECALL_KEY written to .env
 ```
 
-**One key per person, and `--prod` for one command.** The key is yours: your role says what it may
-do, and in the sandbox it does that in your own corner. `--prod`, anywhere on the line of any verb,
-sends `pinecall-env: production` on every request and every socket of that one command
-(`src/client/signed.ts`) and keeps nothing, so the next command is in the sandbox again. The gateway
-lets it through only while your production switch is on — an admin's always is — and otherwise
-answers `403 <name> has no production access: an admin gives it in Team`.
+**Two instances, one identity.** Production and the sandbox are two instances of the runtime, each
+one world with its own database and its own keys. `PINECALL_URL` is **production's** — where a
+person signs in, and the only place their key is kept — and a verb knocks at one of two doors:
+
+| the verb | knocks at | with |
+|---|---|---|
+| with `--prod` | `PINECALL_URL` itself | the project's key |
+| without it — the sandbox | the URL production names as `elsewhere` at `GET /.well-known/pinecall` | a key minted there from the project's |
+
+The sandbox's key is **derived**, never linked: the first sandbox verb asks production for a
+one-use code (`POST /v1/login/codes`, the project's key), spends it at the sandbox (`POST
+/v1/login {code, device}`, the device being this machine's name, as `login` labels its key), and
+keeps what the sandbox answers in `~/.pinecall/session.json`. The next verb uses it. A sandbox
+key lives a day: when the sandbox answers 401 the kept key is dropped and one is minted again,
+once, and a refusal of that one is printed as it came. Where the sandbox is, is kept for a day
+too, and asked again sooner when the one kept does not answer. A production that names no
+sandbox — a box of one instance, a gateway on a laptop — is said in one sentence: ``<url> names no
+sandbox instance: run the verb with --prod, or ask its operator``; one that names no world at all
+is older than this CLI, and refused: ``<url> names no world at /.well-known/pinecall, so it is
+older than this CLI: …``.
+
+**Every request says which world it believes it is talking to** — `pinecall-env: production` or
+`sandbox`, on every request and every socket (`src/client/signed.ts`) — and an instance of the
+other world refuses it rather than answer from the wrong one. `--prod` is for one command and keeps
+nothing, so the next command is in the sandbox again. Production lets a person through only while
+their production switch is on — an admin's always is — and otherwise answers `403 <name> has no
+production access: an admin gives it in Team`.
 
 ```console
-~/clinica $ pinecall sessions            # your sandbox calls
-~/clinica $ pinecall sessions --prod     # production's
+~/clinica $ pinecall sessions            # your sandbox calls, at the sandbox
+~/clinica $ pinecall sessions --prod     # production's, at PINECALL_URL
 ~/clinica $ pinecall agent set --voice carolina --note "warmer" --prod
 ```
 
-**A server's token** is the other kind of key: the org's, made for one world in the console's
-Tokens screen, and put in the server's secrets as `PINECALL_KEY`. It needs no `--prod` — it opens
-the world it was made for — and nothing on a server logs in. [production.md](production.md) is
-that path.
+**A server's token** is the other kind of key: the org's, made in the console's Tokens screen of
+the instance it is for, and put in the server's secrets as `PINECALL_KEY`. Its prefix says its
+world — `pc_live_` production, `pc_test_` the sandbox — and **`PINECALL_URL` is the instance it
+was made on**: nothing is derived from it and nobody else is asked. `--prod` must say the same
+world the token does, or the verb stops before it knocks: ``this PINECALL_KEY is a production
+server's token, made at <url>: run the verb with --prod`` (and ``… without --prod`` for a sandbox
+token). [production.md](production.md) is that path.
 
-`whoami` and `callbacks` open by printing where they went: `gateway <url> · key from <the
-environment | .env> · production (--prod)`, the last part only when `--prod` was typed. The rest
-get on with the answer. With no key anywhere every one of them is refused: ``no PINECALL_KEY
-here: `pinecall link` in the project's folder writes it to .env (a server keeps it in its
-secrets)``, and the exit code is 2. **`pinecall whoami` is the first thing to run when a door
-refuses you and will not say why.**
+`whoami` and `callbacks` open by printing where they went: `gateway <url> · key from <where> ·
+<world>`, where a derived key is `key from session.json, minted from .env's`. The rest get on with
+the answer. With no key anywhere every one of them is refused: ``no PINECALL_KEY here: `pinecall
+link` in the project's folder writes it to .env (a server keeps it in its secrets)``, and the exit
+code is 2. **`pinecall whoami` is the first thing to run when a door refuses you and will not say
+why.**
 
 ## `~/.pinecall/`
 
 | file | what it holds |
 |---|---|
-| `session.json` | `{ "gateways": { "<url>": { key, calling } }, "last": … }` — this machine signed in, as a person, one row per gateway (`src/cli/signed-in.ts`). No verb runs on it: `link` mints a project's key from it, and `calling` is the phone `pinecall line from` said for that gateway, re-sent by every `start` |
+| `session.json` | `{ "gateways": { "<url>": { key?, calling?, elsewhere?, minted? } }, "last": … }` — this machine, one row per instance it knows (`src/cli/signed-in.ts`). **Production's row**: `key`, this machine signed in as a person (`login`), which `link` mints a project's key from; `elsewhere`, `{url, read_at}`, where production said its sandbox is and when. **The sandbox's row**: `minted`, the keys minted there, one per production key they came from, named by that key's sha256 and never by the key — two projects of two orgs are two people in the sandbox; `calling`, the phone `pinecall line from` said, re-sent by every `start`. No project reads it for its own key: that is the `.env` |
 
 The directory is `0700` and the file `0600`; `PINECALL_HOME` moves it. A key is never printed,
 never logged, and never put in a URL. A `.env` that `link` creates is `0600` too.
@@ -178,29 +202,31 @@ At a project's root with no file named, every `agents/<name>/agent.tsx` is held 
 socket: see [The project](#the-project).
 
 The app registered on the gateway and answering: **this is the process you deploy**, the same one
-on a laptop and on a server. With nothing said it holds the **sandbox** agent, and in the sandbox
+on a laptop and on a server. With nothing said it holds the **sandbox** agent — at the sandbox
+instance production names, with the key minted there ([above](#where-the-gateway-and-the-key-come-from)) — and in the sandbox
 **the agent is held per person**: two developers of one tenant each run the same agent and each
 reaches their own, while a *number* is one door and rings in one place — a developer's own phone
 reaches their copy, and anybody else's call lands where the line was claimed ([`line`](#line)). An
 admin, and whoever runs the gateway, see every corner of the sandbox rather than only their own.
 
-**`--prod` runs production's agent**, the one the org's customers reach. On a server that is a
-server's token in `PINECALL_KEY`, which was made for production and opens it with or without the
-flag; on a person's key it opens only while their production switch is on, and the gateway's
-refusal is printed before anything registers. How a server runs it — under the process manager, or
+**`--prod` runs production's agent**, the one the org's customers reach, at `PINECALL_URL`. On a
+server that is a production server's token in `PINECALL_KEY`, which was made for it and is
+refused without the flag; on a person's key it opens only while their production switch is on,
+and the gateway's refusal is printed before anything registers. How a server runs it — under the process manager, or
 inside your own Node app — is [production.md](production.md).
 
 It binds no port and serves no page. One line per log entry on stdout, and under the connected
-line where its console is — **and there are two consoles, one per world**, both served by the box
-under a name of its own. In the sandbox the line reads
-`console  https://sandbox.pinecall.io/a/clinica-norte?login=lc_…` and in production
-`console  https://box.pinecall.io/a/clinica-norte?login=lc_…`: a one-use code that dies in five
-minutes, which the page spends for a key of its own and never sees this process's. Opening a
+line where its console is — **and there are two consoles, one per world**, each served by its own
+instance at its own URL: the one this process registered at. In the sandbox the line reads
+`console  https://sandbox.pinecall.io/a/clinica-norte?login=lc_…` — the URL production named — and
+in production `console  https://box.pinecall.io/a/clinica-norte?login=lc_…`: a one-use code minted
+by that instance for the key this process holds there, dead in five minutes, which the page spends
+for a key of its own and never sees this process's. Opening a
 console without one asks for an email, a password, and the org only when the person belongs to
 several.
 
 In the sandbox, every time the socket comes up — the first connect and each reconnect, in every
-mode — `start` re-sends the phone `pinecall line from` kept for this gateway, whatever agents it
+mode — `start` re-sends the phone `pinecall line from` kept for the sandbox, whatever agents it
 holds — no class declares a number, so there is no way to tell from here which agent has one. The gateway keeps that phone only beside its live table, so a gateway that
 restarted learns it back at once instead of sending your test call to production. A gateway that
 goes away is one line — `gateway  … — reconnecting`, then `gateway  back` — and never a stack per
@@ -215,8 +241,7 @@ process that long under its manager ([production.md](production.md#a-deploy)).
 
 ```console
 $ pinecall start
-gateway https://box.pinecall.io · key from .env
-clinica-norte · clinica · sandbox · connected to https://box.pinecall.io · key from .env · tools 4
+clinica-norte · clinica · sandbox · connected to https://sandbox.pinecall.io · key from session.json, minted from .env's · tools 4
 console  https://sandbox.pinecall.io/a/clinica-norte?login=lc_9f2   (opens within five minutes, once)
 doors    web · phone +34910000000
 line     rings in this terminal · also running: carla@clinica.test
@@ -228,7 +253,7 @@ line     rings in this terminal · also running: carla@clinica.test
 
 | flag | |
 |---|---|
-| `--prod` | production's agent: a server's token, or a person's key while their switch is on |
+| `--prod` | production's agent, at `PINECALL_URL`: a production server's token, or a person's key while their switch is on |
 | `--ui` | the full-screen terminal view. `p` pause · `c` clear · `e` events · `s` prompt · `q` quit |
 | `--events` | one JSON line per log entry instead of the lines, for a pipe |
 | `--show-prompt` | the prompt a fresh instance would produce, then exit. No key, no gateway |
@@ -247,26 +272,29 @@ A `pinecall start` in another agent's directory answers `simulate` with a senten
 pinecall console [agent] [--prod] [--no-open]
 ```
 
-**The box's console, in a browser, signed in.** The box answers to two names and serves the same
-console at each: production's at its own name, and the **sandbox's** at the second
-(`sandbox.pinecall.io` on the cloud). This verb opens the one for the world this project's key is
-in — your copies of the agents, their calls as they happen, chat, evals and their suites, docs,
-memory, the widget and its preview, and how to reach your copy by phone — and `--prod` opens the
-other, if your org lets you act there.
+**The console of this project's world, in a browser, signed in.** Each instance serves its own
+console at its own URL: production's at `PINECALL_URL`, the **sandbox's** at the URL production
+names for it (`sandbox.pinecall.io` on the cloud) — the same door every sandbox verb knocks at. This
+verb opens the sandbox's — your copies of the agents, their calls as they happen, chat, evals and
+their suites, docs, memory, the widget and its preview, and how to reach your copy by phone — and
+`--prod` opens production's, if your org lets you act there. A production that names no sandbox
+has no sandbox console, and the verb says so in one sentence.
 
 ```console
 $ pinecall console
 console  https://sandbox.pinecall.io/?login=lc_9f2   (opens within five minutes, once)
 ```
 
-**The key never travels.** The gateway mints a one-use code standing for it — five minutes, one
-use — and the page spends the code for a key of that browser's own, which is revoked on its own
-from Tokens. Name an agent (`pinecall console clinica-norte`) and it opens that agent's screens
-instead of the org's floor. A machine with no browser prints the URL, and `--no-open` says not to
-try. A server's token signs no browser in: it names no person, and the gateway says so.
+**The key never travels.** The instance mints a one-use code standing for the key this terminal
+holds THERE — production's for `--prod`, the minted one in the sandbox — five minutes, one use, and
+the page spends the code for a key of that browser's own, which is revoked on its own from Tokens.
+Name an agent (`pinecall console clinica-norte`) and it opens that agent's screens instead of the
+org's floor. A machine with no browser prints the URL, and `--no-open` says not to try. A server's
+token signs no browser in: it names no person, and the gateway says so.
 
-A person signs in to each name separately, because a browser keeps a key per origin — the chip in
-the top bar links to the other console, and the first visit there asks for a password.
+A person signs in to each console separately, because a browser keeps a key per origin — the chip
+in the top bar links to the other console, and the sandbox's sends the browser to production to
+sign in and back with a code.
 
 Which screens each console has is one table in the console's source
 (`src/cli/ui/console/lib/mode.ts`): running the org — numbers, tokens, providers, the team, usage —
@@ -276,9 +304,9 @@ Lexicon and every tab of an agent are both's. An admin opens a colleague's copy 
 console, never from production's, which has no corners
 ([worlds-and-teams.md](worlds-and-teams.md)).
 
-**The sandbox's name answers no production.** A request that arrives there and asks for production
-is refused by the gateway in a sentence, whoever holds the key — the name is the boundary, not a
-label on a page.
+**The sandbox instance answers no production.** A request that arrives there saying production is
+refused in a sentence naming where production answers, whoever holds the key — an instance is one
+world, with its own database, and the header is only the request saying which it believes it reached.
 
 ## `line`
 
@@ -309,8 +337,8 @@ calls from +59899111111 reach this terminal
 ```
 
 A phone is a **person's** and not an agent's, so it works in whatever directory you are standing
-in and on every agent you hold. It is kept with this machine's sign-in for that gateway (`calling`
-in `~/.pinecall/session.json`) and re-sent by every `pinecall start` when it starts — the gateway keeps
+in and on every agent you hold. It is said to the sandbox instance and kept under its URL (`calling`
+in `~/.pinecall/session.json`, beside the key minted there) and re-sent by every `pinecall start` when it starts — the gateway keeps
 it beside its live table and not in a row, because it is only meaningful next to a socket: a
 developer running nothing has no corner for a call to land in. `forget` undoes it. `claim`,
 `release` and the bare `line` are about one agent: at a project's root with several, name it with
@@ -946,7 +974,10 @@ machine in through the browser when it is not ([`login`](#login), the same dance
 (`GET /v1/login/orgs`), asks which one this project is — `--org` names it — and mints your key
 there (`POST /v1/login/org`), unless it is the org this machine is signed in to, whose key it
 already holds. The key goes into `./.env` as `PINECALL_KEY`, and `PINECALL_URL` beside it when the
-gateway is not `https://box.pinecall.io`; every other line of the file is left as it was.
+gateway is not `https://box.pinecall.io`; every other line of the file is left as it was. Both are
+**production's** — where a person is kept — and nothing of the sandbox's is written: its URL is
+what production names, and its key is minted from this one by the first sandbox verb
+([above](#where-the-gateway-and-the-key-come-from)).
 
 ```console
 ~/clinica $ pinecall link --org clinica
@@ -987,9 +1018,11 @@ signed in to https://box.pinecall.io as Ana García
 in `~/.pinecall/session.json`; what a project runs on is the key [`link`](#link) mints from it into
 the project's `.env`. `link` signs in on its own when it has to, so this is rarely typed. With no
 URL it is `https://box.pinecall.io`, and it says so above the link, so a person who meant their
-own box sees the assumption before anything is kept. The word in the link dies in ten minutes and
-on first collection; a terminal with no browser prints the same link and you open it from wherever
-you are. A server has no login at all.
+own box sees the assumption before anything is kept. The URL is production's: a sandbox instance
+keeps no password and signs nobody in (it answers `404` naming where people sign in), and the
+sandbox's key is minted from this machine's projects, never logged in to. The word in the link
+dies in ten minutes and on first collection; a terminal with no browser prints the same link and
+you open it from wherever you are. A server has no login at all.
 
 ## `whoami`
 
@@ -997,20 +1030,21 @@ you are. A server has no login at all.
 pinecall whoami
 ```
 
-The gateway every connecting verb would talk to and where its key came from, then what that
-gateway says the key is: the org (its slug, or its id when the gateway carries none), the key's id,
-the world this command runs in, the label it was issued under, and whether the key may act in
-production — your switch, an admin's always, or a production server token. The key itself is
-neither printed nor sent anywhere else.
+**Both doors**: production's — `PINECALL_URL`, with the key from the environment or the project's
+`.env` — and the sandbox's — the URL production names, with the key minted there — each on one
+line with where its key came from, and under it what that instance says the key is: the org (its
+slug, or its id when the gateway carries none), the key's id, the world, the label it was issued
+under, and whether the key may act in production — your switch, an admin's always, or a production
+server token. A production that names no sandbox says so on the sandbox's line; a server's token
+opens its own instance alone, and prints that one. The exit code is the project's own door's. The
+keys themselves are neither printed nor sent anywhere else.
 
 ```console
 $ pinecall whoami
-gateway https://box.pinecall.io · key from .env
-org clinica · key k_4f2a1d9c66b30e17 · sandbox · ana-macbook · production: yes
-
-$ pinecall whoami --prod
-gateway https://box.pinecall.io · key from .env · production (--prod)
-org clinica · key k_4f2a1d9c66b30e17 · production · ana-macbook · production: yes
+gateway https://box.pinecall.io · key from .env · production
+  org clinica · key k_4f2a1d9c66b30e17 · production · ana-macbook · production: yes
+gateway https://sandbox.pinecall.io · key from session.json, minted from .env's · sandbox
+  org clinica · key k_91c0e2aa5d7f3b48 · sandbox · ana-macbook · production: yes
 ```
 
 ---
@@ -1144,7 +1178,7 @@ code can call — over HTTP, in any language, with the same key.
 | verb | doors |
 |---|---|
 | `start` · `chat` · `test` · `simulate` · `remember` | `WS /v1/apps` — the class is mounted in the process that typed the verb |
-| `start`, once connected | `POST /v1/login/codes` (the console's URL, in production), `PUT /v1/line/from` (the kept phone, on every connect in the sandbox), `GET /v1/routes` (the doors it answers at), `GET /v1/agents/{slug}/line` (when one of them is a number) |
+| `start`, once connected | `POST /v1/login/codes` (the console's URL, at the instance it registered at), `PUT /v1/line/from` (the kept phone, on every connect in the sandbox), `GET /v1/routes` (the doors it answers at), `GET /v1/agents/{slug}/line` (when one of them is a number) |
 | `chat` | `WS /v1/chat?agent=&app=&contact=` |
 | `start --events` · `sessions` · `supervise` | `GET /v1/calls/{call}/events` (SSE), `GET /v1/agents/{slug}/sessions` |
 | `sessions <call>` · `supervise` | `GET /v1/calls/{call}/state` — asked FIRST, because it is the one door that 404s for a call this gateway has no log of |
@@ -1166,9 +1200,10 @@ code can call — over HTTP, in any language, with the same key.
 | `callbacks` | `GET /v1/callbacks[?agent=&after=]` |
 | `personas` | `GET /v1/personas` · `PUT`·`DELETE /v1/personas/{name}` — and `push` reads the project's remaining files before sending them |
 | `line` | `GET`·`POST`·`DELETE /v1/agents/{slug}/line`, `PUT`·`DELETE /v1/line/from` |
-| `console` | `POST /v1/login/codes` — the one-use code the browser spends for a key of its own. Every other door the console asks, it asks for itself |
+| `console` | `POST /v1/login/codes` at the instance of the world — the one-use code the browser spends for a key of its own. Every other door the console asks, it asks for itself |
 | `login` | `POST /v1/login/pairings`, `GET …/{code}/key` — then `GET /v1/whoami` to prove what it got |
 | `link` | what `login` knocks at when the machine is not signed in, then `GET /v1/login/orgs` for the person's orgs and `POST /v1/login/org` for the key in the one picked |
-| `whoami` | `GET /v1/whoami` |
-| every verb, with `--prod` | the same doors, with `pinecall-env: production` on each request and socket |
+| `whoami` | `GET /v1/whoami` at production, and at the sandbox |
+| every verb, without `--prod` | `GET /.well-known/pinecall` at `PINECALL_URL` for its `elsewhere` (kept a day); the first time, `POST /v1/login/codes` there and `POST /v1/login {code, device}` at the sandbox for its key; `GET /v1/whoami` at the sandbox to prove a kept one — then its own doors at the sandbox, with `pinecall-env: sandbox` on each request and socket |
+| every verb, with `--prod` | the same doors at `PINECALL_URL`, with `pinecall-env: production` on each request and socket |
 | `prompt` | none. It is the one verb that needs no gateway and no key |

@@ -1,18 +1,22 @@
 // The verb a person types at an agent: `start` starts it, says what it registered, prints where the
 // console is, and binds no port on this machine — the gateway serves the page.
 
-import { readdirSync, readFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { builtNames, groupFor, groupNames, main, usage } from "../../src/cli/index.js";
 import { PLANNED } from "../../src/cli/groups.js";
 import { Refused } from "../../src/cli/testing/gateway.js";
 import { connectedLine, doorsOf } from "../../src/cli/connected.js";
 import { run } from "../../src/cli/start.js";
-import { CLOUD_URL, SANDBOX_URL } from "../../src/cli/env.js";
-import { consoleFor, consoleUrl, whyNoConsole } from "../../src/cli/start-console.js";
+import { run as openTheConsole } from "../../src/cli/console.js";
+import { namesNoSandbox } from "../../src/cli/elsewhere.js";
+import { consoleLine, consoleUrl, whyNoConsole } from "../../src/cli/start-console.js";
+import { inTheWorld } from "../../src/cli/world.js";
+import { PRODUCTIONS_KEY, TwoInstances } from "./two-instances.js";
 
 const GATEWAY = "https://box.pinecall.io";
 
@@ -85,16 +89,7 @@ describe("the console's URL `pinecall start` and `pinecall console` print", () =
   });
 
   it("is the org's floor when no agent was named", () => {
-    expect(consoleUrl(SANDBOX_URL, undefined, "lc_abc")).toBe("https://sandbox.pinecall.io/?login=lc_abc");
-  });
-
-  // Production's console is the gateway itself; the sandbox's is the box's OTHER name, which this
-  // CLI knows for the cloud alone — a tenant's own box is named by its own operator.
-  it("names the sandbox's console for the cloud, and refuses to guess another box's", () => {
-    expect(consoleFor(CLOUD_URL, "production")).toBe(CLOUD_URL);
-    expect(consoleFor(CLOUD_URL, "sandbox")).toBe(SANDBOX_URL);
-    expect(consoleFor("https://box.acme.test/", "production")).toBe("https://box.acme.test");
-    expect(consoleFor("https://box.acme.test", "sandbox")).toBeUndefined();
+    expect(consoleUrl("https://sandbox.box.test", undefined, "lc_abc")).toBe("https://sandbox.box.test/?login=lc_abc");
   });
 
   it("says a gateway with no login-code door is an old one, and what to do about it", () => {
@@ -109,6 +104,59 @@ describe("the console's URL `pinecall start` and `pinecall console` print", () =
       "the gateway answered 403: a server's token names nobody",
     );
     expect(whyNoConsole(new Error("connect ECONNREFUSED"))).toBe("connect ECONNREFUSED");
+  });
+});
+
+// A console is served by the instance it shows: production's at PINECALL_URL, the sandbox's where
+// production says its sandbox is (/.well-known/pinecall) — and the browser's code is minted by
+// that instance, for the key this terminal holds there. No console name is known to this CLI.
+describe("the console of each world", () => {
+  let instances = new TwoInstances();
+  let env: NodeJS.ProcessEnv = {};
+
+  beforeEach(async () => {
+    instances = new TwoInstances();
+    await instances.open();
+    env = { PINECALL_KEY: PRODUCTIONS_KEY, PINECALL_URL: instances.production, PINECALL_HOME: mkdtempSync(join(tmpdir(), "pinecall-home-")) };
+  });
+
+  afterEach(async () => {
+    await instances.close();
+  });
+
+  it("is the sandbox production names, signed in with a code the sandbox minted", async () => {
+    const out = collected();
+
+    expect(await openTheConsole(["clinica-norte", "--no-open"], { out: out.stream, env })).toBe(0);
+
+    expect(out.text()).toBe(`console  ${instances.sandbox}/a/clinica-norte?login=lc_minted_by_the_sandbox   (opens within five minutes, once)\n`);
+    expect(instances.signed().at(-1)).toMatchObject({ at: "sandbox", path: "/v1/login/codes", world: "sandbox" });
+  });
+
+  it("is production's own URL with --prod, signed in with production's code", async () => {
+    const out = collected();
+
+    expect(await inTheWorld("production", () => openTheConsole(["--no-open"], { out: out.stream, env }))).toBe(0);
+
+    expect(out.text()).toBe(`console  ${instances.production}/?login=lc_1   (opens within five minutes, once)\n`);
+  });
+
+  it("is said to be nowhere, in one sentence, on a production that names no sandbox", async () => {
+    instances.names = "no sandbox";
+    const err = collected();
+
+    expect(await openTheConsole(["--no-open"], { out: collected().stream, err: err.stream, env })).toBe(2);
+
+    expect(err.text()).toBe(`${namesNoSandbox(instances.production)}\n`);
+  });
+
+  it("is the line `pinecall start` prints under connected, at the door it registered through", async () => {
+    const door = { url: instances.sandbox, apiKey: "pc_the_sandboxs_key", world: "sandbox" as const };
+    instances.taken.add(door.apiKey);
+
+    expect(await consoleLine(door, "clinica-norte")).toBe(
+      `console  ${instances.sandbox}/a/clinica-norte?login=lc_minted_by_the_sandbox   (opens within five minutes, once)`,
+    );
   });
 });
 

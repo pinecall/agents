@@ -6,8 +6,9 @@ import { TURNS, type Simulated, type Simulation } from "../../../src/cli/simulat
 import type { Persona } from "../../../src/cli/testing/personas.js";
 import { Refusal } from "../../../src/cli/ui/refusal.js";
 import { simulatingFrom } from "../../../src/cli/ui/simulating.js";
+import type { Door } from "../../../src/cli/testing/gateway.js";
 
-const DOOR = { url: "http://127.0.0.1:1", apiKey: "pk_never_sent_anywhere" };
+const DOOR: Door = { url: "http://127.0.0.1:1", apiKey: "pk_never_sent_anywhere", world: "sandbox" };
 const APURADO: Persona = {
   name: "apurado",
   about: "",

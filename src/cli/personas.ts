@@ -131,7 +131,7 @@ export async function run(argv: string[], how: Setting = {}): Promise<number> {
     err.write(`${NOT_JSON}\n`);
     return 2;
   }
-  const door = theDoor(how.env ?? process.env, err);
+  const door = await theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
   let home: Home | undefined;
   // The class is loaded only by the verbs that need one: a caller is the ORG's, so listing,

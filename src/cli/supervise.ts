@@ -4,7 +4,8 @@ import { createInterface, type Interface } from "node:readline";
 
 import type { Verb } from "@pinecall/protocol";
 
-import { Pinecall } from "../client/index.js";
+import type { Pinecall } from "../client/index.js";
+import { pinecallFor } from "./client-for.js";
 
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
@@ -63,7 +64,7 @@ export async function run(argv: string[], how: Running = {}): Promise<number> {
     err.write(`${USAGE}\n`);
     return 2;
   }
-  const door = theDoor(how.env ?? process.env, err);
+  const door = await theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
   // A desk is for a call that is happening. Opened on an id nobody wrote, or on one that ended
   // hours ago, it printed a prompt over an empty transcript and waited for moves that could not
@@ -74,7 +75,7 @@ export async function run(argv: string[], how: Running = {}): Promise<number> {
     return 2;
   }
   out.write(`${call} · ${ON_THE_SPEAKERS}\n`);
-  const pc = new Pinecall({ url: door.url, apiKey: door.apiKey });
+  const pc = pinecallFor(door);
   try {
     return await atTheDesk(pc, door, call, out, err, how.input ?? process.stdin);
   } catch (refused) {

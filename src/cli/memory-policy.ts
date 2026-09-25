@@ -35,7 +35,7 @@ export async function policy(argv: string[], how: Keeping = {}): Promise<number>
       forget: { type: "string", multiple: true },
     },
   });
-  const door = theDoor(how.env ?? process.env, err);
+  const door = await theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
   const aFile = notASlug(values.agent);
   if (aFile !== undefined) {

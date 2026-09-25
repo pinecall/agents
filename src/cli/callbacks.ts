@@ -42,7 +42,7 @@ export async function run(
   err: NodeJS.WritableStream = process.stderr,
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<number> {
-  const door = theDoor(env, err);
+  const door = await theDoor(env, err);
   if (door === undefined) return 2;
   const query = new URLSearchParams();
   const agent = flag(argv, "--agent");

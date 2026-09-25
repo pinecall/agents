@@ -108,7 +108,7 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
     return 2;
   }
   const home = await oneHome("simulate", values.file, values.agent);
-  const door = theDoor();
+  const door = await theDoor();
   if (door === undefined) return 2;
   const agent = await slugOfAgentFile(home.file);
   const persona = await personaNamed(door, values.persona);
@@ -171,7 +171,7 @@ export interface Simulation {
  * and with `judge` the `call.score` the log seals on is read back and printed.
  */
 export async function aSimulation(persona: Persona, how: Simulation): Promise<Simulated | undefined> {
-  const door = how.door ?? theDoor();
+  const door = how.door ?? (await theDoor());
   if (door === undefined) return undefined;
   const loaded = await load(how.agentFile);
   const url = door.url;

@@ -4,7 +4,7 @@ import { existsSync } from "node:fs";
 
 import type { ExtractionGolden, ExtractionRun, MemoryScore } from "@pinecall/protocol";
 
-import { Pinecall } from "../../client/index.js";
+import { pinecallFor } from "../client-for.js";
 import { mount, slugOf } from "../../runtime/connect.js";
 
 import { theQuestionsIn } from "../docs.js";
@@ -105,7 +105,7 @@ async function theCases(): Promise<ExtractionGolden[]> {
 // process opens, and the extraction itself runs where the org's keys are.
 async function inThisProcess(door: Door, cases: ExtractionGolden[], file?: string): Promise<ExtractionRun> {
   const loaded = await load(file);
-  const pc = new Pinecall({ url: door.url, apiKey: door.apiKey });
+  const pc = pinecallFor(door);
   const held = mount(loaded.ctor, { ...mountOptions(loaded, pc), takesUnclaimed: false });
   try {
     await pc.connect();
