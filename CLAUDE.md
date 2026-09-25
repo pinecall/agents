@@ -13,7 +13,7 @@ pnpm install                     # the workspace, and the wire from the repo nex
 pnpm test                        # the framework and its CLI — from the sources
 pnpm lint                        # tsc over src and test
 pnpm -r test                     # the example, and the wire's own suite
-scripts/build                    # what is published: dist/, and the console bundle inside it
+scripts/build                    # what is published: the wire's build, then dist/ (tsc) — no console in it
 scripts/check                    # build → lint → test, in that order — what CI runs
 pnpm vitest run test/agent       # one directory; `-t "a sentence"` for one test
 cd examples/clinica-norte && pnpm exec pinecall link     # once: your key for the org, in ./.env

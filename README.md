@@ -95,7 +95,7 @@ Working on the framework itself:
 ```
 pnpm test          the framework and its CLI, from the sources
 pnpm lint          tsc over src and test, then over the console against the DOM
-scripts/build      what is published: dist/, and the console bundle inside it
+scripts/build      what is published: the wire's build, then dist/ (tsc) — no console in it
 scripts/check      build, then lint, then test — what CI runs
 ```
 
