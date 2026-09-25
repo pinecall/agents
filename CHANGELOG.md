@@ -6,6 +6,8 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.9.7] — The sandbox answers at its own address, and the voices can be heard
+
 ### Added
 - **`pinecall voices`.** A vendor's voices in a language, one per line with the id the `voice`
   setting takes and where the accent is from (`--country ES` keeps Spain's); `voices play <id>`
