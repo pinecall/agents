@@ -6,6 +6,10 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Changed
+- `docs/production.md` gains the table of what a team carries from the sandbox to production and
+  by which verb; `worlds-and-teams.md` points at it.
+
 ## [0.9.7] — The sandbox answers at its own address, and the voices can be heard
 
 ### Added

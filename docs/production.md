@@ -155,6 +155,25 @@ lists every version with who set it and why, and `pinecall agent rollback <n> --
 back as the next version. `pinecall agent pull --prod > settings.json` writes production's as a
 file, and `pinecall agent push settings.json --prod` is how a release applies one from git.
 
+## From the sandbox to production, step by step
+
+There is no promote button: production is written by the same verbs, with `--prod`, by a person
+whose production switch is on. What a team carries across, and how:
+
+| what | where it lives in the sandbox | how it reaches production |
+|---|---|---|
+| the code | your repository | the deploy: `pinecall start --prod` on the server's token |
+| the settings — voice, model, greeting, hangup, turn, memory policy | the team's corner (`--team`) | `pinecall agent pull --team > settings.json`, then `pinecall agent push settings.json --prod` as the next production version — from CI, or by hand once |
+| what it knows by heart | `pinecall agent knowledge --team` | the same push carries it; or `pinecall agent knowledge edit --prod` |
+| the lexicon | `pinecall lexicon --team` | `pinecall lexicon add … --prod`, word by word, or the console's Lexicon screen |
+| the bases it searches | `pinecall docs push` (your base) | `pinecall docs push --prod` in the release step; `pinecall docs attach <base> --prod` once |
+| the personas and the goldens | the org's, run in the sandbox | never: they are tests. CI runs them on a sandbox token before the deploy |
+| a contact's memory, the calls | the sandbox's own | never: each world keeps what happened in it |
+
+To see what differs before pushing, read each side as a file: `pinecall agent pull --team` is the
+sandbox's, `pinecall agent pull --prod` is production's, and `diff` between the two is the review.
+If the push was wrong, `pinecall agent rollback <n> --prod` brings the version before back.
+
 ## Watching it
 
 The gateway's console is production's: sign in at the gateway's address — or open the one-use URL

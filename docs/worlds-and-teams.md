@@ -106,7 +106,8 @@ own sandbox corner with `--team`, which every corner that set nothing reads.
 **4. Goldens in CI.** Before anything reaches production, CI holds the agent to its goldens —
 `pinecall test`, `pinecall docs eval`, `pinecall remember` — on a **sandbox** server token
 from Tokens, and a red run stops the deploy ([testing-an-agent.md](testing-an-agent.md)). There is
-no promote at the gateway: the gate is CI's.
+no promote at the gateway: the gate is CI's, and what a release carries across is one table in
+[production.md](production.md#from-the-sandbox-to-production-step-by-step).
 
 **5. The server's token.** Ana opens **Tokens ▸ New server token** on production's console —
 a token is made in the world of the console it is made on, and the Tokens screen is in both —
