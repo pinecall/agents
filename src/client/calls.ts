@@ -29,6 +29,8 @@ export class Call {
   contact: Camel<Contact> | null = null;
   /** The eval run that opened this call, or null for a person: a run's call starts mid-conversation. */
   run: string | null = null;
+  /** The code a page showed that this call claimed — keyed on the phone or claimed by the agent — or null. */
+  claimed: string | null = null;
   /** The app's state as this client last set it, and as `state.changed` last reported it. */
   state: Record<string, unknown> = {};
   /**
@@ -106,6 +108,11 @@ export class Call {
     this.gateway.command("call.hangup", this.id, reason === undefined ? {} : { reason });
   }
 
+  /** The caller said the code a page shows: bind this call to it. Lands as `call.claimed`, or is refused with `no_code`. */
+  claim(code: string): void {
+    this.gateway.command("call.claim", this.id, { code });
+  }
+
   /** Write a line of the app's own into the call's log. Lands as `custom`, with a seq like anything. */
   log(name: string, data: Record<string, unknown> = {}): void {
     this.gateway.command("call.log", this.id, { name, data });
@@ -145,6 +152,9 @@ export class Call {
         return;
       case "state.changed":
         this.state = { ...event.data.state };
+        return;
+      case "call.claimed":
+        this.claimed = event.data.code;
         return;
       default:
         return;

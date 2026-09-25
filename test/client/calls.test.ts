@@ -139,6 +139,20 @@ describe("a call", () => {
     printed.mockRestore();
   });
 
+  it("knows the code a page showed once the log says the call claimed it", async () => {
+    const call = await serving();
+    expect(call.claimed).toBeNull();
+    gateway.emit(AGENT, call.id, "call.claimed", { code: "4821", via: "keypad" });
+    await vi.waitFor(() => expect(call.claimed).toBe("4821"));
+  });
+
+  it("claims a code the caller said with one call.claim", async () => {
+    const call = await serving();
+    call.claim("4821");
+    await vi.waitFor(() => expect(gateway.commandsOf("call.claim")).toHaveLength(1));
+    expect(gateway.commandsOf("call.claim")[0]).toMatchObject({ call: CALL, data: { code: "4821" } });
+  });
+
   it("follows the log to active and is forgotten when it ends", async () => {
     const call = await serving();
     expect(agent.calls.live).toEqual([call]);

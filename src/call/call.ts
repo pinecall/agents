@@ -59,6 +59,7 @@ export const NO_GATEWAY_TO_SEARCH = "this call cannot search: no gateway is serv
 /** What the call world needs to know about the line, beyond what the room's entries tell it. */
 export interface CallLine extends HookCall {
   today?: string;
+  claimed?: string | null;
 }
 
 /**
@@ -73,6 +74,8 @@ export class CallWorld implements HookCall {
   readonly channel?: string;
   /** The day this call opened, `YYYY-MM-DD`. What a prompt — and an agenda — means by today. */
   readonly today?: string;
+  /** The code a page showed that this call claimed, or null: the caller is also on the site. */
+  claimed: string | null = null;
   readonly room: Room;
   readonly history = new History();
 
@@ -98,6 +101,7 @@ export class CallWorld implements HookCall {
     if (line.from !== undefined) this.from = line.from;
     if (line.channel !== undefined) this.channel = line.channel;
     if (line.today !== undefined) this.today = line.today;
+    if (line.claimed !== undefined) this.claimed = line.claimed;
     this.room = new Room(out);
   }
 
@@ -183,6 +187,15 @@ export class CallWorld implements HookCall {
     this.out("call.dtmf", { digits });
   }
 
+  /**
+   * The caller said the code the page on their screen shows: bind this call to it, so the page
+   * follows the call. Lands as `call.claimed` on the log, and `claimed` is set when it does; a code
+   * nobody issued, one that expired or one another call took is refused with `no_code`.
+   */
+  claim(code: string): void {
+    this.out("call.claim", { code });
+  }
+
   /** The caller wants ringing back. Written into the call's log for your backend to read and dial. */
   callback(number: string, options: { when?: string; note?: string } = {}): void {
     this.out("call.callback", { number, ...options });
@@ -205,6 +218,9 @@ export class CallWorld implements HookCall {
           },
           at,
         );
+      case "call.claimed":
+        this.claimed = String(data["code"]);
+        return;
       case "participant.left":
         return this.room.left(String(data["identity"]));
       case "participant.speaking":

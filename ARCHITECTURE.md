@@ -73,7 +73,7 @@ a directory earns its place there by having a line in that table (§13).
 
 | file | what it is |
 |---|---|
-| `call.ts` | `CallWorld`: the line, the room, the history, `say`/`reply` (which settle on the turn they land as), `send`, `participant()`, `invite`, `search()` — the gateway's search of the bases the world attached, answered as `Found[]`; a call nobody serves through a gateway refuses it with `NO_GATEWAY_TO_SEARCH` — the verbs that hand the call to a person (`transfer` and `attention`, which settle on the entry the runtime writes, and `hold`/`unhold`/`dtmf`/`callback`/`hangup`, which answer nothing) — and `take()`, one entry folded in |
+| `call.ts` | `CallWorld`: the line, the room, the history, `say`/`reply` (which settle on the turn they land as), `send`, `participant()`, `invite`, `search()` — the gateway's search of the bases the world attached, answered as `Found[]`; a call nobody serves through a gateway refuses it with `NO_GATEWAY_TO_SEARCH` — the verbs that hand the call to a person (`transfer` and `attention`, which settle on the entry the runtime writes, and `hold`/`unhold`/`dtmf`/`callback`/`hangup`, which answer nothing) — `claim()`, which binds the call to the code a page shows, and `take()`, one entry folded in |
 | `room.ts` | `Room` and `Participant` reduced from the room's own entries; `ParticipantHandle.mute()/remove()`; `invite` |
 | `history.ts` | `History` and `Turn`: the finished turns, and the sentence a `collapse()` left in their place |
 
@@ -174,7 +174,7 @@ Beside `src/`:
 
 | entity | where | fields |
 |---|---|---|
-| `CallWorld` | `call/call.ts` | `id`, `contact`, `from?`, `channel?`, `room`, `history`, `cause`, `numbered()`, `search()` |
+| `CallWorld` | `call/call.ts` | `id`, `contact`, `from?`, `channel?`, `today?`, `claimed`, `room`, `history`, `cause`, `numbered()`, `search()`, `claim()` |
 | `Found` | `call/call.ts` | one chunk a search found, as the model reads it: where it came from, and its text |
 | `Transferred` · `Attended` | `call/call.ts` | what a transfer and an ask for a person came to: `ok`, and who or why not |
 | `Knowledge` | `agent/knowledge.ts` | `search(query, {k?})` — what `this.knowledge` is |
@@ -198,7 +198,7 @@ Beside `src/`:
 |---|---|---|
 | `Pinecall` | `client/client.ts` | `sdk`, `host`, `url`, `apiKey`, `env`, `agent()`, `connect()`, `close()`, `connected`, `on`/`onAny`/`onErrors`/`onStopped`, `observe`, `history` |
 | `Agent` (client) | `client/agent.ts` | `slug`, `calls`, `config`, `app`, `open()`, `configure()`, `declare(tools)`, `command()`, `take(entry)`, `ping()` |
-| `Call` (client) | `client/calls.ts` | `id`, `status`, `channel`, `from`, `to`, `contact`, `state`, `today`, and one method per command |
+| `Call` (client) | `client/calls.ts` | `id`, `status`, `channel`, `from`, `to`, `contact`, `claimed`, `state`, `today`, and one method per command |
 | `CallBook` | `client/calls.ts` | `live`, `of(id, at)`, `forget(call)` |
 
 ## 4. The class a tenant writes
@@ -339,7 +339,7 @@ express is a new command with a name.
 
 And what the call learns, in `CallWorld.take()`: `participant.joined|left|speaking` fold into the
 room; `turn.user` and `turn.agent` fold into the history, and `turn.agent` settles whoever was
-waiting on a `say`.
+waiting on a `say`; `call.claimed` sets `claimed`.
 
 ## 8. The bridge, step by step
 

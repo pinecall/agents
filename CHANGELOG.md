@@ -6,6 +6,12 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Added
+- **A caller who is also on the site.** `this.call.claimed` is the code a page showed that the
+  call claimed — keyed on the phone, or claimed by the class with `this.call.claim(code)` when the
+  caller said it — and `null` until `call.claimed` lands. The client's `Call` has the same field and
+  verb. Needs `@pinecall/protocol` 0.6.9.
+
 ### Changed
 - `docs/production.md` gains the table of what a team carries from the sandbox to production and
   by which verb; `worlds-and-teams.md` points at it.

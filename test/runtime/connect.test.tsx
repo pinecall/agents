@@ -267,6 +267,25 @@ it("hands the class the day the call opened", async () => {
   expect(serving?.call?.today).toBe(new Date().toISOString().slice(0, 10));
 });
 
+// A caller who is also on the site keys the code their page shows, and from the claim on the
+// class knows it — the times it offers are on their screen too. A code they said instead is the
+// class's to claim, and that is one command on the wire.
+it("tells the class the call was claimed, and claims a code the caller said", async () => {
+  await connected();
+  started();
+  await settled();
+  const serving = mounted.instanceOf(CALL) as unknown as { call: { claimed: string | null; claim(code: string): void } };
+  expect(serving.call.claimed).toBeNull();
+
+  gateway.emit(SLUG, CALL, "call.claimed", { code: "4821", via: "keypad" });
+  await settled();
+  expect(serving.call.claimed).toBe("4821");
+
+  serving.call.claim("7305");
+  await settled();
+  expect(commands("call.claim")).toEqual([{ code: "7305" }]);
+});
+
 // The caller's turn is the fact a view is most often about, and the framework's own page says a
 // view says what to do in THIS turn. It could not: the turn reached the class's history, nothing
 // asked for a new view, and the render that read it was sent one turn late (2026-09-20).

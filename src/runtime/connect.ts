@@ -324,12 +324,13 @@ function hookCall(call: SdkCall): HookCall {
   return hook;
 }
 
-// What the CLASS holds is the hook's call and one thing more: the day this call opened, which the
-// wire carries and `onCall` has no field for. Built here because it was dropped here — the world
-// took `hookCall`'s shape, so `this.call.today` was undefined in every mounted agent and an agenda
-// asking for "today" silently fell back to the machine's clock.
+// What the CLASS holds is the hook's call and two things more, which the wire carries and `onCall`
+// has no field for: the day this call opened, and the code a page showed that the call claimed.
+// Built here because the day was dropped here — the world took `hookCall`'s shape, so
+// `this.call.today` was undefined in every mounted agent and an agenda asking for "today" silently
+// fell back to the machine's clock.
 function callLine(call: SdkCall): CallLine {
-  return { ...hookCall(call), today: call.today };
+  return { ...hookCall(call), today: call.today, claimed: call.claimed };
 }
 
 // call.log carries an object; a tool that logged a number still deserves a line, so a value that
