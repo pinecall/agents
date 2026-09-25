@@ -1,15 +1,18 @@
 /** `pinecall voices`: a vendor's voices in a language, and one of them said out loud on this machine. */
 
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { delimiter, join } from "node:path";
+import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 
-import { signed } from "../client/signed.js";
+import { VoicesListedSchema, type VoiceSample } from "@pinecall/protocol";
+
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
-import { asked, Refused, type Door } from "./testing/gateway.js";
+import { aPlayerFor } from "./players.js";
+import { asColumns } from "./providers.js";
+import { asked, knocked, type Door } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
 
 const USAGE = `usage: pinecall voices [--tts cartesia] [--language es] [--country ES]
@@ -18,7 +21,6 @@ const USAGE = `usage: pinecall voices [--tts cartesia] [--language es] [--countr
 // The vendor a person means when they name none: Cartesia is the one whose catalogue is read from
 // the vendor, and the reason this verb exists — its ids are uuids nobody could type from memory.
 const A_VENDOR = "cartesia";
-const A_SENTENCE = "Hola, gracias por llamar. ¿En qué le puedo ayudar?";
 
 export const group: Group = {
   purpose: "a voice vendor's voices, and any one of them heard on this machine before it is chosen",
@@ -31,30 +33,25 @@ export const group: Group = {
 
   play says the words in that voice, through the vendor's own plugin exactly as a call would, and
   plays them here — afplay, ffplay, play, aplay or pw-play, whichever this machine has — with how
-  long the vendor took to start and to finish. It runs on the org's own key for the vendor when
-  it brought one (pinecall providers add), and on the box's otherwise. --save keeps the WAV.
+  long the vendor took to start and to finish. With no words, the gateway reads one line in the
+  language. It runs on the org's own key for the vendor when it brought one (pinecall providers
+  add), and on the box's otherwise. --save keeps the WAV where you say.
 
-  The voice it plays is chosen with pinecall agent set --tts cartesia --voice <id>.`,
+  The voice it plays is chosen with pinecall agent set --tts cartesia --tts-model <model> --voice
+  <id>: the model you tried with --model is not kept unless --tts-model says it too.`,
   run,
 };
+
+/** What playing a file came to: the player that did, or why nothing was heard. */
+export type Played = { player: string } | { failed: string };
 
 /** What the verb can be told besides the argv: where to print, which environment, how to play. */
 export interface Choosing {
   out?: NodeJS.WritableStream;
   err?: NodeJS.WritableStream;
   env?: NodeJS.ProcessEnv;
-  /** How a WAV is heard. A test hands one in rather than driving a speaker. */
-  play?: (wav: Uint8Array) => string;
-}
-
-/** One voice as the gateway lists it. */
-interface Listed {
-  id: string;
-  name: string;
-  language: string;
-  gender: string;
-  country: string;
-  accent: string;
+  /** How a WAV on disk is heard. A test hands one in rather than driving a speaker. */
+  play?: (file: string) => Played;
 }
 
 /** Read the sub-verb and do it: the list, or one voice said out loud. */
@@ -63,93 +60,96 @@ export async function run(argv: string[], how: Choosing = {}): Promise<number> {
   const err = how.err ?? process.stderr;
   const door = theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
+  // The flags are read OUTSIDE the catch below, so one the verb does not take lands as the
+  // dispatcher's own sentence and exit 2 (cli/index.ts), not as a refusal from the gateway.
+  const playing = argv[0] === "play";
+  const parsed = playing ? aPlayParse(argv.slice(1)) : aListParse(argv);
   try {
-    if (argv[0] === "play") return await play(door, argv.slice(1), how.play ?? aSpeaker, out, err);
-    return await list(door, argv, out);
+    if (playing) return await play(door, parsed as PlayArgs, how.play ?? aSpeaker, out, err);
+    return await list(door, parsed as ListArgs, out);
   } catch (refused) {
-    if (refused instanceof TypeError && "code" in refused) {
-      err.write(`${refused.message}\n${USAGE}\n`);
-      return 2;
-    }
     err.write(`${refusal(refused)}\n`);
     return 1;
   }
 }
 
-async function list(door: Door, argv: string[], out: NodeJS.WritableStream): Promise<number> {
-  const { values } = parseArgs({
+type ListArgs = { tts?: string; language?: string; country?: string };
+type PlayArgs = { voice?: string; text?: string; extra?: string; tts?: string; model?: string; language?: string; save?: string };
+
+function aListParse(argv: string[]): ListArgs {
+  return parseArgs({
     args: argv,
     options: { tts: { type: "string" }, language: { type: "string" }, country: { type: "string" } },
+  }).values;
+}
+
+function aPlayParse(argv: string[]): PlayArgs {
+  const { values, positionals } = parseArgs({
+    args: argv,
+    allowPositionals: true,
+    options: { tts: { type: "string" }, model: { type: "string" }, language: { type: "string" }, save: { type: "string" } },
   });
-  const query = new URLSearchParams({ tts: values.tts ?? A_VENDOR });
-  if (values.language !== undefined) query.set("language", values.language);
-  const answered = await asked<{ voices: Listed[] }>(door, `/v1/voices?${query}`);
-  const country = values.country?.toUpperCase();
-  const voices = answered.voices.filter((voice) => country === undefined || voice.country === country);
+  const [voice, text, extra] = positionals;
+  return { ...values, ...(voice === undefined ? {} : { voice }), ...(text === undefined ? {} : { text }), ...(extra === undefined ? {} : { extra }) };
+}
+
+async function list(door: Door, args: ListArgs, out: NodeJS.WritableStream): Promise<number> {
+  const query = new URLSearchParams({ tts: args.tts ?? A_VENDOR });
+  if (args.language !== undefined) query.set("language", args.language);
+  // The wire's own schema: a 200 that is not the list — a proxy's page, an older gateway — is
+  // refused in its words rather than read as a list with nothing in it.
+  const listed = VoicesListedSchema.parse(await asked<unknown>(door, `/v1/voices?${query}`));
+  const country = args.country?.toUpperCase();
+  const voices = listed.voices.filter((voice) => country === undefined || voice.country === country);
   if (voices.length === 0) {
     out.write("no voice matches: try another --language or --country\n");
     return 0;
   }
-  for (const voice of voices) out.write(`${aLine(voice)}\n`);
+  const rows = voices.map((voice) => [voice.id, voice.name, voice.gender, [voice.country, voice.accent].filter((word) => word !== "").join(" ")]);
+  for (const line of asColumns(rows)) out.write(`${line}\n`);
   return 0;
 }
 
-/** One voice on one line: the id first, because it is the word the setting takes. */
-export function aLine(voice: Listed): string {
-  const where = [voice.country, voice.accent].filter((word) => word !== "").join(" ");
-  return [voice.id.padEnd(38), voice.name.padEnd(36), voice.gender.padEnd(10), where].join(" ").trimEnd();
-}
-
-async function play(
-  door: Door,
-  argv: string[],
-  speaker: (wav: Uint8Array) => string,
-  out: NodeJS.WritableStream,
-  err: NodeJS.WritableStream,
-): Promise<number> {
-  const { values, positionals } = parseArgs({
-    args: argv,
-    allowPositionals: true,
-    options: {
-      tts: { type: "string" },
-      model: { type: "string" },
-      language: { type: "string" },
-      save: { type: "string" },
-    },
-  });
-  const [voice, text] = positionals;
-  if (voice === undefined) {
+async function play(door: Door, args: PlayArgs, speaker: (file: string) => Played, out: NodeJS.WritableStream, err: NodeJS.WritableStream): Promise<number> {
+  if (args.voice === undefined || args.extra !== undefined) {
     err.write(`${USAGE}\n`);
     return 2;
   }
-  const said = await aSample(door, {
-    tts: values.tts ?? A_VENDOR,
-    voice,
-    model: values.model,
-    language: values.language,
-    text: text ?? A_SENTENCE,
-  });
-  if (values.save !== undefined) writeFileSync(values.save, said.wav);
-  const player = speaker(said.wav);
-  out.write(`${voice} · first audio ${said.firstAudioMs} ms · whole sentence ${said.totalMs} ms · ${player}\n`);
+  // The words are the vendor's to hear and nobody else's to invent: with none given, the body
+  // carries none and the gateway reads one line in the language.
+  const body: VoiceSample = {
+    tts: args.tts ?? A_VENDOR,
+    voice: args.voice,
+    model: args.model ?? null,
+    language: args.language ?? null,
+    text: args.text ?? null,
+  };
+  const said = await aSample(door, body);
+  const kept = args.save === undefined ? null : resolve(args.save);
+  const file = kept ?? join(mkdtempSync(join(tmpdir(), "pinecall-voice-")), "sample.wav");
+  writeFileSync(file, said.wav);
+  const played = speaker(file);
+  const wait = said.firstAudioMs === null ? "—" : `${said.firstAudioMs} ms`;
+  const whole = said.totalMs === null ? "—" : `${said.totalMs} ms`;
+  if ("failed" in played) {
+    err.write(`${played.failed}: the sample is ${file}\n`);
+    return 1;
+  }
+  if (kept === null) rmSync(file, { force: true });
+  out.write(`${args.voice} · first audio ${wait} · whole sentence ${whole} · ${played.player}${kept === null ? "" : ` · saved ${kept}`}\n`);
   return 0;
 }
 
-/** The sentence as the gateway said it, and the two numbers it timed it with. */
+/** The sentence as the gateway said it, and the two numbers it timed it with, when it did. */
 export interface Said {
   wav: Uint8Array;
-  firstAudioMs: number;
-  totalMs: number;
+  firstAudioMs: number | null;
+  totalMs: number | null;
 }
 
-// The answer is the WAV itself, not JSON, so this is the one door the verb knocks at by hand.
-async function aSample(door: Door, body: Record<string, string | undefined>): Promise<Said> {
-  const answered = await fetch(`${door.url.replace(/\/$/, "")}/v1/voices/sample`, {
-    method: "POST",
-    headers: { ...signed(door.apiKey, door.world), "content-type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!answered.ok) throw new Refused(answered.status, await answered.text());
+// The answer is the WAV itself, not JSON, so it is read as bytes off the same signed knock.
+async function aSample(door: Door, body: VoiceSample): Promise<Said> {
+  const answered = await knocked(door, "/v1/voices/sample", { method: "POST", body });
   const timing = answered.headers.get("server-timing") ?? "";
   return {
     wav: new Uint8Array(await answered.arrayBuffer()),
@@ -158,34 +158,23 @@ async function aSample(door: Door, body: Record<string, string | undefined>): Pr
   };
 }
 
-/** One metric's `dur` out of a Server-Timing header, or 0 when the gateway sent none. */
-export function aDuration(header: string, metric: string): number {
-  const found = new RegExp(`(?:^|,)\\s*${metric};dur=([0-9.]+)`).exec(header);
-  return found === null ? 0 : Number(found[1]);
+const DURATIONS = {
+  "first-audio": /(?:^|,)\s*first-audio;dur=([0-9.]+)/,
+  total: /(?:^|,)\s*total;dur=([0-9.]+)/,
+};
+
+/** One metric's `dur` out of a Server-Timing header, or null when the gateway sent none. */
+export function aDuration(header: string, metric: keyof typeof DURATIONS): number | null {
+  const found = DURATIONS[metric].exec(header);
+  return found === null ? null : Number(found[1]);
 }
 
-// A WAV is a file every player on every system opens, so the list is short and needs no flags
-// for the format — unlike --listen's, which pipes raw samples (cli/listening.ts).
-const PLAYERS: { name: string; args: string[] }[] = [
-  { name: "afplay", args: [] },
-  { name: "ffplay", args: ["-hide_banner", "-loglevel", "error", "-nodisp", "-autoexit"] },
-  { name: "play", args: ["-q"] },
-  { name: "aplay", args: ["-q"] },
-  { name: "pw-play", args: [] },
-];
-
-/** Play the WAV on this machine and say with what; with no player, say where it was left. */
-function aSpeaker(wav: Uint8Array): string {
-  const dir = mkdtempSync(join(tmpdir(), "pinecall-voice-"));
-  const file = join(dir, "sample.wav");
-  writeFileSync(file, wav);
-  const player = PLAYERS.find((one) => onThePath(one.name));
-  if (player === undefined) return `no player here: the sample is ${file}`;
-  spawnSync(player.name, [...player.args, file], { stdio: "ignore" });
-  rmSync(dir, { recursive: true, force: true });
-  return player.name;
-}
-
-function onThePath(name: string): boolean {
-  return (process.env.PATH ?? "").split(delimiter).some((dir) => existsSync(join(dir, name)));
+/** Play the file on this machine with the first player it has, and say which — or why not. */
+function aSpeaker(file: string): Played {
+  const player = aPlayerFor("file");
+  if (player === null) return { failed: "no player on this machine (afplay, ffplay, play, aplay or pw-play)" };
+  const ran = spawnSync(player.name, [...player.file, file], { stdio: "ignore" });
+  if (ran.error !== undefined) return { failed: `${player.name} could not start (${ran.error.message})` };
+  if (ran.status !== 0) return { failed: `${player.name} could not play it (exit ${ran.status ?? "?"})` };
+  return { player: player.name };
 }

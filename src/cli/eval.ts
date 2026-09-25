@@ -2,11 +2,10 @@
 
 import { parseArgs } from "node:util";
 
-import { signed } from "../client/signed.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { readNamedJson } from "./named-file.js";
-import { Refused, type Door } from "./testing/gateway.js";
+import { asked, type Door } from "./testing/gateway.js";
 
 /** One check's answer, as `POST /v1/evals/replay/{call}` writes it: three strings, no nesting. */
 export interface Verdict {
@@ -81,21 +80,17 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
  * parsing: one door, one sentence when it refuses.
  */
 export async function replayed(door: Door, call: string, said: Case): Promise<Answer> {
-  const answered = await fetch(replayUrl(door.url, call), {
-    method: "POST",
-    headers: { ...signed(door.apiKey, door.world), "content-type": "application/json" },
-    body: JSON.stringify(said),
-  });
-  const body = await answered.text();
-  // The one refusal every verb throws, so the gateway's own sentence is read out of the body
-  // instead of the body being printed at a person: `{"detail":"no log for call …"}` was.
-  if (!answered.ok) throw new Refused(answered.status, body);
-  return JSON.parse(body) as Answer;
+  return asked<Answer>(door, replayPath(call), { method: "POST", body: said });
 }
 
-/** The door this verb knocks at: the gateway's HTTP address and the call, nothing in a query. */
+/** The door this verb knocks at: the call in the path, nothing in a query. */
+export function replayPath(call: string): string {
+  return `/v1/evals/replay/${encodeURIComponent(call)}`;
+}
+
+/** That door under the gateway's HTTP address, as a person would paste it. */
 export function replayUrl(base: string, call: string): string {
-  return `${base.replace(/\/$/, "")}/v1/evals/replay/${encodeURIComponent(call)}`;
+  return `${base.replace(/\/$/, "")}${replayPath(call)}`;
 }
 
 /** The case as a person reads it: the call on top, then a line per check, aligned by name. */

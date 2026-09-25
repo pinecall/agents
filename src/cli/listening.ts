@@ -1,11 +1,11 @@
 /** `--listen`: one live call on this machine's speakers, from the terminal that opened it. */
 
 import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync } from "node:fs";
-import { delimiter, extname, join } from "node:path";
+import { extname } from "node:path";
 import type { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
 
+import { aPlayerFor, PLAYERS } from "./players.js";
 import { asked, type Door } from "./testing/gateway.js";
 
 /** What a seat in a room is: LiveKit's two fields, and who this terminal is in that room. */
@@ -41,18 +41,10 @@ const LEAVING_TAKES_MS = 2_000;
 // stdout at debug and is exported nowhere, so stdout is the one place the samples could not go.
 const PCM = 3;
 
-/** The players this machine might have, in the order they are tried, each with its raw-audio flags. */
-const PLAYERS: { name: string; args: string[] }[] = [
-  { name: "ffplay", args: ["-hide_banner", "-loglevel", "error", "-nodisp", "-autoexit", "-f", "s16le", "-ar", String(SAMPLE_RATE), "-ac", String(CHANNELS), "-i", "-"] },
-  { name: "play", args: ["-q", "-t", "raw", "-r", String(SAMPLE_RATE), "-e", "signed", "-b", "16", "-c", String(CHANNELS), "-"] },
-  { name: "aplay", args: ["-q", "-f", "S16_LE", "-r", String(SAMPLE_RATE), "-c", String(CHANNELS), "-"] },
-  { name: "pw-play", args: [`--format=s16`, `--rate=${SAMPLE_RATE}`, `--channels=${CHANNELS}`, "-"] },
-];
-
 /** What to say when this machine has no way to play raw audio, and what installs one. */
 export const NO_PLAYER =
   `no player on this machine: --listen writes ${SAMPLE_RATE} Hz mono to one of ` +
-  `${PLAYERS.map((one) => one.name).join(", ")} — install ffmpeg, sox or alsa-utils`;
+  `${PLAYERS.filter((one) => one.raw !== null).map((one) => one.name).join(", ")} — install ffmpeg, sox or alsa-utils`;
 
 /** What to say when the room library is not installed: it is optional, and this is what wants it. */
 export const NO_ROOM_LIBRARY =
@@ -137,16 +129,9 @@ function gone(ear: ChildProcess): Promise<void> {
   });
 }
 
-/** The first player this machine has on its PATH, started and waiting for samples. */
+/** The first player this machine has on its PATH that takes raw samples, started and waiting for them. */
 function aPlayer(): ChildProcess | null {
-  for (const { name, args } of PLAYERS) {
-    if (!onThePath(name)) continue;
-    return spawn(name, args, { stdio: ["pipe", "ignore", "ignore"] });
-  }
-  return null;
-}
-
-/** Is this program on this shell's PATH? Asked without starting anything to find out. */
-function onThePath(name: string): boolean {
-  return (process.env["PATH"] ?? "").split(delimiter).some((where) => where !== "" && existsSync(join(where, name)));
+  const player = aPlayerFor("raw");
+  if (player === null || player.raw === null) return null;
+  return spawn(player.name, player.raw(SAMPLE_RATE, CHANNELS), { stdio: ["pipe", "ignore", "ignore"] });
 }

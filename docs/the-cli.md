@@ -902,12 +902,20 @@ whose catalogue is read from the vendor itself (`GET /v1/voices`); `--tts eleven
 names this build curates, and any other vendor is refused by name — its voice is its own id.
 
 `play` says the words in that voice through the vendor's own plugin, exactly as a call would build
-it (`POST /v1/voices/sample`), and plays the WAV on this machine with whichever of `afplay`,
-`ffplay`, `play`, `aplay` or `pw-play` it finds. Beside it are the vendor's two numbers: how long
-until the first audio — the wait a caller hears after they stop talking — and the whole sentence.
+it (`POST /v1/voices/sample`, the protocol's `VoiceSample`), and plays the WAV on this machine with
+whichever of `afplay`, `ffplay`, `play`, `aplay` or `pw-play` it finds — a player that fails is
+said so, with the file kept and named, and exit 1. With no words the gateway reads one line in the
+language, so every client hears the same one. Beside it are the vendor's two numbers: how long
+until the first audio — the wait a caller hears after they stop talking — and the whole sentence;
+a dash when the gateway sent none. `--save file.wav` keeps the WAV there and plays it from there.
 It runs on the org's own key for the vendor when it brought one, and on the box's otherwise; both
-doors ask for `pipeline`, the scope that may change the voice. The one it plays is set with
-`pinecall agent set --tts cartesia --tts-model sonic-3 --voice <id>`.
+doors ask for `pipeline`, the scope that may change the voice. The gateway refuses in one sentence
+what the settings door would refuse — a typo in the voice, a vendor this build has no row for, a
+model it does not vouch for, more than 400 characters (`422`) — and says `429` past thirty samples
+a minute on one key, `503` when nobody has a key for the vendor, `409` when the vendor refused
+that key, `502` when it did not answer. The voice it plays is set with `pinecall agent set --tts
+cartesia --tts-model sonic-3 --voice <id>`: a model tried with `--model` is kept only when
+`--tts-model` names it too.
 
 ## `callbacks`
 

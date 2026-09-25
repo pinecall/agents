@@ -134,7 +134,7 @@ async function catalogue(
 }
 
 /** Every column as wide as its widest value: nothing is cut to make a table line up. */
-function asColumns(rows: string[][]): string[] {
+export function asColumns(rows: string[][]): string[] {
   const widths = rows[0]!.map((_, column) => Math.max(...rows.map((row) => (row[column] ?? "").length)));
   return rows.map((row) => row.map((value, column) => (value ?? "").padEnd(widths[column]!)).join("  ").trimEnd());
 }

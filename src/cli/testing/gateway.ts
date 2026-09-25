@@ -269,17 +269,26 @@ function oneComplaint(said: unknown): string {
 // One door, one fetch, one refusal: every verb that knocks here spells neither the header, the
 // JSON nor the error sentence again. What the gateway refused travels as its own words, because
 // "the agent is not registered" and "no ring installed" both arrive this way and both name the fix.
-export async function asked<T>(
+export async function knocked(
   door: Door,
   path: string,
   sent: { method?: string; body?: unknown } = {},
-): Promise<T> {
+): Promise<Response> {
   const answered = await fetch(`${door.url.replace(/\/$/, "")}${path}`, {
     method: sent.method ?? "GET",
     headers: { ...signed(door.apiKey, door.world), "content-type": "application/json" },
     ...(sent.body === undefined ? {} : { body: JSON.stringify(sent.body) }),
   });
-  const text = await answered.text();
-  if (!answered.ok) throw new Refused(answered.status, text);
+  if (!answered.ok) throw new Refused(answered.status, await answered.text());
+  return answered;
+}
+
+/** The door's JSON answer, or null for a door that answered with no body. */
+export async function asked<T>(
+  door: Door,
+  path: string,
+  sent: { method?: string; body?: unknown } = {},
+): Promise<T> {
+  const text = await (await knocked(door, path, sent)).text();
   return (text === "" ? null : JSON.parse(text)) as T;
 }
