@@ -31,6 +31,8 @@ export interface Open {
   apiKey: string;
   source: string;
   world: World;
+  /** True when a sandbox verb landed at production because production names no sandbox beside it. */
+  theOnlyInstance?: boolean;
 }
 
 /**
@@ -101,7 +103,11 @@ export async function theDoor(
   }
 }
 
-/** The door of that world, from the project's own: itself, or the sandbox production names. */
+/**
+ * The door of that world, from the project's own: itself, or the sandbox production names. A
+ * production that names none is the only instance — a laptop's own gateway, a box of one — and
+ * every verb runs there, saying production, as it did before the sandbox was an instance.
+ */
 export async function doorIn(world: World, project: Open, home: string): Promise<Open> {
   const token = aServersWorld(project.apiKey);
   if (token !== undefined) {
@@ -120,7 +126,8 @@ export async function doorIn(world: World, project: Open, home: string): Promise
   }
 }
 
-async function theSandbox(production: Open, url: string, home: string): Promise<Open> {
+async function theSandbox(production: Open, url: string | null, home: string): Promise<Open> {
+  if (url === null) return { ...production, theOnlyInstance: true };
   const apiKey = await aSandboxKey(production, url, home);
   return { url, apiKey, source: `session.json, minted from ${production.source}'s`, world: SANDBOX };
 }
@@ -131,5 +138,6 @@ export const NO_KEY =
 
 /** The first line a verb that connects prints: which gateway, where its key was read, and its world. */
 export function doorLine(door: Open): string {
-  return `gateway ${door.url} · key from ${door.source} · ${door.world}`;
+  const alone = door.theOnlyInstance === true ? " (the only instance)" : "";
+  return `gateway ${door.url} · key from ${door.source} · ${door.world}${alone}`;
 }

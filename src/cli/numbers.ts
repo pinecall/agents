@@ -1,4 +1,4 @@
-/** `pinecall numbers list | import | move | drop`: which number reaches which agent, in which world. */
+/** `pinecall numbers list | import | drop`: which number reaches which agent, at this instance. */
 
 import { parseArgs } from "node:util";
 
@@ -9,35 +9,24 @@ import { refusal } from "./whoami.js";
 
 const USAGE = `usage: pinecall numbers list
        pinecall numbers import <+34…> --agent <slug> [--channel phone|whatsapp] [--dry-run]
-       pinecall numbers move <+34…> --env <production|sandbox>
        pinecall numbers drop <+34…>`;
 
 const NUMBERS = "/v1/numbers";
 
 // Every door is a row somebody typed. A class declares none, so there is no second table to tell
-// this one from, and every door listed here can be moved, dropped and pointed at another agent.
+// this one from, and every door listed here can be dropped and pointed at another agent.
 /** One door as the listing answers it. */
 interface Door_ {
   route: { number: string | null; channel: string; agent: string; env: string; managed: boolean };
 }
 
-/** What the move answers: where the number is now, whether anything was written, and from where. */
-interface Moved {
-  route: { number: string | null; env: string; agent: string };
-  moved: boolean;
-  from?: string;
-  said?: string;
-}
-
 export const group: Group = {
-  purpose: "list | import | move | drop the numbers the org answers at",
+  purpose: "list | import | drop the numbers the org answers at",
   usage: `${USAGE}
 
-  A number exists once in a world and reaches one agent. \`list\` shows the key's world only,
-  because that is the world this key works in; \`move\` is the one verb that crosses, and it is
-  what makes a staging run cost nothing — point the org's real number at the sandbox for an
-  afternoon, try the new agent on it, and move it back. The carrier is untouched either way: a
-  call arrives at this box whichever world answers it.
+  A number is one instance's and reaches one agent: it is imported where it answers, and
+  \`list\` shows this instance's — the sandbox's, or production's with --prod. Nothing moves a
+  number between the two.
 
   \`import\` takes a number the org's carrier account already owns and points it here: the
   carrier's trunk, the SFU's trunk, the route — \`--dry-run\` prints those steps and writes
@@ -67,7 +56,6 @@ export async function run(argv: string[], how: Numbering = {}): Promise<number> 
   try {
     if (verb === "list") return await list(door, out);
     if (verb === "import") return await brought(argv.slice(1), door, out, err);
-    if (verb === "move") return await moved(argv.slice(1), door, out, err);
     if (verb === "drop") return await dropped(argv[1], door, out, err);
   } catch (refused) {
     err.write(`${refusal(refused)}\n`);
@@ -118,37 +106,6 @@ async function brought(
   const done = await asked<{ steps: string[]; dry_run: boolean }>(door, path, { method: "POST", body });
   for (const step of done.steps) out.write(`  ${step}\n`);
   if (done.dry_run) out.write("  nothing written: drop --dry-run to do it\n");
-  return 0;
-}
-
-/**
- * The one verb that crosses the two worlds.
- *
- * An org buys ONE number, so a team that wants to try a new agent on the real line has nowhere to
- * try it: a second number is a second bill, and a third world would be a third of everything. The
- * row says which world answers, and this moves the row. Moving it back is the same verb.
- */
-async function moved(
-  argv: string[],
-  door: Door,
-  out: NodeJS.WritableStream,
-  err: NodeJS.WritableStream,
-): Promise<number> {
-  const { values, positionals } = parseArgs({ args: argv, allowPositionals: true, options: { env: { type: "string" } } });
-  const number = positionals[0];
-  if (number === undefined || values.env === undefined) {
-    err.write(`${USAGE}\n  a number and the --env it should answer in\n`);
-    return 2;
-  }
-  const answer = await asked<Moved>(door, `${NUMBERS}/${encodeURIComponent(number)}/env`, {
-    method: "PUT",
-    body: { env: values.env },
-  });
-  if (!answer.moved) {
-    out.write(`${answer.said ?? `${number} is already in ${answer.route.env}`}\n`);
-    return 0;
-  }
-  out.write(`${number} · ${answer.from} → ${answer.route.env} · → ${answer.route.agent}\n`);
   return 0;
 }
 

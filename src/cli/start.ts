@@ -127,7 +127,8 @@ export async function run(argv: string[]): Promise<number> {
   pc.onConnected(() => {
     if (lost && values.events !== true && values.ui !== true) process.stderr.write("gateway  back\n");
     lost = false;
-    if (door.world !== PRODUCTION) void sayWhoCallsFromHere(door);
+    // The sandbox's, and the only instance's, which is where a laptop's work lands when there is no sandbox.
+    if (door.world !== PRODUCTION || door.theOnlyInstance === true) void sayWhoCallsFromHere(door);
   });
   // Whoever opens the app socket closes it. Left open it keeps this process alive after the
   // signal has been read — a plain `kill` on `pinecall start` did nothing until this landed —

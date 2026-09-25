@@ -27,10 +27,11 @@ export interface Signed {
    */
   calling?: string;
   /**
-   * On production's entry: where its sandbox answers — the `elsewhere` of its /.well-known/pinecall
+   * On production's entry: where its sandbox answers — the `elsewhere` of its /.well-known/pinecall,
+   * null when it names none and is the only instance
    * — and when that was read (ms since the epoch), so a verb does not ask again for a day.
    */
-  elsewhere?: { url: string; read_at: number };
+  elsewhere?: { url: string | null; read_at: number };
   /**
    * On the sandbox's entry: the keys this machine was minted HERE, one per production key it
    * spent a code of — by that key's fingerprint, never the key — because two projects linked to
@@ -98,8 +99,8 @@ export function keepCalling(url: string, number: string | undefined, home: strin
   writeSession(session, home);
 }
 
-/** Where production's sandbox answers, as last read, while it was read less than `fresh` ms ago. */
-export function sandboxOf(production: string, fresh: number, now: number, home: string = pinecallHome()): string | undefined {
+/** Where production's sandbox answers (null: nowhere), as last read, while it was read less than `fresh` ms ago. */
+export function sandboxOf(production: string, fresh: number, now: number, home: string = pinecallHome()): string | null | undefined {
   const kept = readSession(home).gateways[production]?.elsewhere;
   return kept === undefined || now - kept.read_at >= fresh ? undefined : kept.url;
 }

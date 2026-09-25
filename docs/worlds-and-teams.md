@@ -48,7 +48,9 @@ page — `sandbox.pinecall.io` on the cloud, the URL production names — lookin
 `pinecall console` opens it signed in, without the key leaving your terminal
 ([the-cli.md](the-cli.md#console)). Two instances, one sign-in, and a request that arrives at the
 sandbox may not run in production, whoever asks. A production that names no sandbox — a gateway
-on a laptop, a box of one instance — has none, and every sandbox verb says so in one sentence.
+on a laptop, a box of one instance — is the only instance, and everything happens there: a verb
+without `--prod` runs in production with the project's key, and its door line says `production
+(the only instance)`.
 
 Yours to hold, not yours to hide: **an admin, and whoever runs the gateway, see every corner of
 the sandbox**. The agent listing answers a key that opens `team` and `app` — an admin's; a manager runs the floor and opens nobody's copy — with one row per corner and the
@@ -106,10 +108,11 @@ own sandbox corner with `--team`, which every corner that set nothing reads.
 from Tokens, and a red run stops the deploy ([testing-an-agent.md](testing-an-agent.md)). There is
 no promote at the gateway: the gate is CI's.
 
-**5. The server's token.** Ana opens **Tokens ▸ New server token**, names it `clinica web`, picks
-`production`, and is shown `PINECALL_KEY=pc_live_…` once. She pastes it into the server's secrets.
-The row lists it as *the org's · made by Ana*. Bruno's form offers `sandbox` only: production's is
-made by somebody the org lets act there.
+**5. The server's token.** Ana opens **Tokens ▸ New server token** on production's console —
+a token is made in the world of the console it is made on, and the Tokens screen is in both —
+names it `clinica web`, and is shown `PINECALL_KEY=pc_live_…` once. She pastes it into the server's secrets.
+The row lists it as *the org's · made by Ana*. Bruno makes tokens on the sandbox's console only:
+production's is made by somebody the org lets act there.
 
 **6. The deploy.** The agent runs on Clínica Norte's own server, either inside their Node app — the
 SDK's `mount` in the server's startup — or as a process of its own under the manager they already
@@ -332,9 +335,9 @@ permissions), never a fence of ours. The door and its guards: the runtime's
   exported. `pinecall link` in the project's folder.
 - **Production's console says `no agent called … is held here`.** It shows production, and what
   your laptop holds is in the sandbox: `pinecall console`, at the sandbox instance.
-- **`<url> names no sandbox instance`** — the production your `PINECALL_URL` names runs no sandbox
-  beside it (a gateway on a laptop, a box of one instance). Every verb works there with `--prod`;
-  a sandbox is its operator's to add.
+- **A verb without `--prod` wrote production.** The door line said `production (the only
+  instance)`: your `PINECALL_URL` runs no sandbox beside it (a gateway on a laptop, a box of one),
+  so everything happens there. A sandbox is its operator's to add.
 - **`this PINECALL_KEY is a production server's token … run the verb with --prod`** — a server's
   token opens the one instance it was made on, and a verb without `--prod` meant the sandbox.
 - **A console refuses your key.** It was revoked, or you were removed. `pinecall link` again in the

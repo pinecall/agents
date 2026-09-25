@@ -18,11 +18,6 @@ export function saysNoWorld(url: string): string {
   return `${url} names no world at /.well-known/pinecall, so it is older than this CLI: update the gateway, or use the pinecall released with it`;
 }
 
-/** Said when production knows of no sandbox: a box of one instance, a laptop's own gateway. */
-export function namesNoSandbox(url: string): string {
-  return `${url} names no sandbox instance: run the verb with --prod, or ask its operator`;
-}
-
 /** Said when PINECALL_URL is a sandbox: a person's key is production's, and so is their URL. */
 export function isTheSandbox(url: string, production: string | null): string {
   return `${url} is a sandbox instance, and PINECALL_URL names production, where a person signs in: ${production ?? "its URL"}`;
@@ -41,9 +36,12 @@ export async function discovered(url: string): Promise<Discovered> {
   return { world: said.world, elsewhere: typeof said.elsewhere === "string" ? said.elsewhere : null };
 }
 
-/** The sandbox's URL, and whether it came out of session.json rather than off production just now. */
+/**
+ * The sandbox's URL — null when production names none, and is the only instance: a laptop's own
+ * gateway, a box of one — and whether it came out of session.json rather than off production now.
+ */
 export interface Found {
-  url: string;
+  url: string | null;
   kept: boolean;
 }
 
@@ -53,7 +51,6 @@ export async function whereTheSandboxAnswers(production: string, home: string, n
   if (kept !== undefined) return { url: kept, kept: true };
   const said = await discovered(production);
   if (said.world !== "production") throw new Error(isTheSandbox(production, said.elsewhere));
-  if (said.elsewhere === null) throw new Error(namesNoSandbox(production));
   keepSandbox(production, { url: said.elsewhere, read_at: now }, home);
   return { url: said.elsewhere, kept: false };
 }

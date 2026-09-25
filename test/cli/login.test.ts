@@ -182,16 +182,15 @@ describe("which gateway a login is for", () => {
 });
 
 describe("whoami", () => {
-  it("prints production's door and whose key it takes, and says there is no sandbox where none is named", async () => {
+  it("prints the one door of a gateway of one instance, and whose key it takes", async () => {
     const out = written();
 
     const code = await whoami([], out.stream, written().stream, { PINECALL_KEY: A_KEY, PINECALL_URL: gateway.url, PINECALL_HOME: home });
 
     expect(code).toBe(0);
     expect(out.text()).toBe(
-      `gateway ${gateway.url} · key from the environment · production\n`
-        + "  org clinica · key k_1 · production · the laptop · production: yes\n"
-        + `sandbox: ${gateway.url} names no sandbox instance: run the verb with --prod, or ask its operator\n`,
+      `gateway ${gateway.url} · key from the environment · production (the only instance)\n`
+        + "  org clinica · key k_1 · production · the laptop · production: yes\n",
     );
     expect(out.text()).not.toContain("org_98889a61509c");
     expect(out.text()).not.toContain(A_KEY);

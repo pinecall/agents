@@ -13,7 +13,6 @@ import { Refused } from "../../src/cli/testing/gateway.js";
 import { connectedLine, doorsOf } from "../../src/cli/connected.js";
 import { run } from "../../src/cli/start.js";
 import { run as openTheConsole } from "../../src/cli/console.js";
-import { namesNoSandbox } from "../../src/cli/elsewhere.js";
 import { consoleLine, consoleUrl, whyNoConsole } from "../../src/cli/start-console.js";
 import { inTheWorld } from "../../src/cli/world.js";
 import { PRODUCTIONS_KEY, TwoInstances } from "./two-instances.js";
@@ -141,13 +140,13 @@ describe("the console of each world", () => {
     expect(out.text()).toBe(`console  ${instances.production}/?login=lc_1   (opens within five minutes, once)\n`);
   });
 
-  it("is said to be nowhere, in one sentence, on a production that names no sandbox", async () => {
+  it("is production's own on a gateway of one instance, where everything happens", async () => {
     instances.names = "no sandbox";
-    const err = collected();
+    const out = collected();
 
-    expect(await openTheConsole(["--no-open"], { out: collected().stream, err: err.stream, env })).toBe(2);
+    expect(await openTheConsole(["--no-open"], { out: out.stream, env })).toBe(0);
 
-    expect(err.text()).toBe(`${namesNoSandbox(instances.production)}\n`);
+    expect(out.text()).toBe(`console  ${instances.production}/?login=lc_1   (opens within five minutes, once)\n`);
   });
 
   it("is the line `pinecall start` prints under connected, at the door it registered through", async () => {

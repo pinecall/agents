@@ -8,8 +8,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { doorIn, theDoor, type Open } from "../../src/cli/env.js";
-import { namesNoSandbox, saysNoWorld } from "../../src/cli/elsewhere.js";
+import { doorIn, doorLine, theDoor, type Open } from "../../src/cli/env.js";
+import { saysNoWorld } from "../../src/cli/elsewhere.js";
 import { keepSandbox, readSession } from "../../src/cli/signed-in.js";
 import { run as whoami } from "../../src/cli/whoami.js";
 import { inTheWorld } from "../../src/cli/world.js";
@@ -115,13 +115,23 @@ describe("where the sandbox is", () => {
     expect(readSession(home).gateways[instances.production]?.elsewhere?.url).toBe(instances.sandbox);
   });
 
-  it("is nowhere on a production that names none, and the verb says so in one sentence", async () => {
+  // A laptop's own gateway, a box of one: everything happens there, as it did before the sandbox
+  // was an instance, and the door line says why a verb that named no world is in production.
+  it("is production itself on a gateway of one instance, and the door says so", async () => {
     instances.names = "no sandbox";
-    const err = written();
 
-    expect(await aSandboxVerb(err.stream)).toBeUndefined();
-    expect(err.text()).toBe(`${namesNoSandbox(instances.production)}\n`);
+    const door = await aSandboxVerb();
+
+    expect(door).toMatchObject({ url: instances.production, apiKey: PRODUCTIONS_KEY, world: "production", theOnlyInstance: true });
+    expect(doorLine(door!)).toBe(`gateway ${instances.production} · key from the environment · production (the only instance)`);
     expect(instances.signed()).toEqual([]);
+  });
+
+  it("is the sandbox on a gateway of two, and never production", async () => {
+    const door = await aSandboxVerb();
+
+    expect(door).toMatchObject({ url: instances.sandbox, world: "sandbox" });
+    expect(door?.theOnlyInstance).toBeUndefined();
   });
 
   it("is never guessed at a gateway that names no world: it is older than this CLI", async () => {
@@ -144,6 +154,18 @@ describe("a server's token", () => {
 });
 
 describe("whoami", () => {
+  it("prints one door on a gateway of one instance, saying it is the only one", async () => {
+    instances.names = "no sandbox";
+    const out = written();
+
+    expect(await whoami([], out.stream, written().stream, environment())).toBe(0);
+
+    expect(out.text()).toBe(
+      `gateway ${instances.production} · key from the environment · production (the only instance)\n`
+        + "  org clinica · key k_laptop · production · the laptop · production: yes\n",
+    );
+  });
+
   it("prints both doors: production's with the project's key, the sandbox's with the one minted there", async () => {
     const out = written();
 

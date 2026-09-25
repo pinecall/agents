@@ -22,12 +22,17 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   sandbox answers 401. Every request and socket now says `pinecall-env` — the world it believes it
   reached, which the other instance refuses. `pinecall console` and `start`'s console line open the
   console of the instance the verb knocked at, with a code minted there; `pinecall whoami` prints
-  both doors; `pinecall line from` keeps the phone under the sandbox's URL. A production that names
-  no sandbox is said in one sentence (`<url> names no sandbox instance: run the verb with --prod, or
-  ask its operator`), and **a gateway that names no `world` at `/.well-known/pinecall` is refused
+  both doors; `pinecall line from` keeps the phone under the sandbox's URL. A gateway of one
+  instance — production naming no `elsewhere`: a laptop's, a box of one — is where everything
+  happens: a verb without `--prod` runs there in production, and its door line says `production
+  (the only instance)`. **A gateway that names no `world` at `/.well-known/pinecall` is refused
   in one sentence**: it is older than this CLI, so update the gateway before this. A server's token
   belongs to the instance it was made on: `pc_live_` needs `--prod`, `pc_test_` refuses it, and
   nothing is derived from either. Needs the runtime with instances (M1, M2).
+
+### Removed
+- **`pinecall numbers move`.** A number is one instance's: it is imported where it answers, and
+  the runtime has no door that moves one between the worlds any more.
 
 ## [0.9.6] — The chat that comes back, for real
 

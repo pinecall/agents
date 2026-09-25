@@ -37,7 +37,8 @@ export const group: Group = {
   environment or the project's .env — and the sandbox's, the instance production names, with the
   key minted there from yours (kept in ~/.pinecall/session.json). Under each, what that instance
   says the key is: the org, the key's id, the world, the label it was issued under, and whether
-  you may act in production. A server's token opens its own instance alone, so it prints one.
+  you may act in production. A server's token opens its own instance alone, and a production
+  that names no sandbox is the only instance: each prints one door.
   The keys themselves are neither printed nor sent anywhere else.`,
   run,
 };
@@ -60,23 +61,28 @@ export async function run(
   }
   const project: Open = { ...held, apiKey, world: PRODUCTION };
   const token = aServersWorld(apiKey);
-  // The project's own door decides the exit: the sandbox's is told, and a box with none is no failure.
+  // The project's own door decides the exit: the sandbox's is told, and a failure there is not one.
   const home = pinecallHome(env);
-  const answered = await told(token ?? PRODUCTION, project, home, out, err);
-  if (token === undefined) await told(SANDBOX, project, home, out, out);
+  if (token !== undefined) return (await told(token, doorIn(token, project, home), out, err)) ? 0 : 1;
+  const sandbox = doorIn(SANDBOX, project, home);
+  // A production that names no sandbox is the only instance: one door, and it says so.
+  if (await sandbox.then((door) => door.theOnlyInstance === true, () => false)) {
+    return (await told(PRODUCTION, sandbox, out, err)) ? 0 : 1;
+  }
+  const answered = await told(PRODUCTION, doorIn(PRODUCTION, project, home), out, err);
+  await told(SANDBOX, sandbox, out, out);
   return answered ? 0 : 1;
 }
 
 // One door: its line and whose key it takes, or the sentence that says why there is none.
 async function told(
   world: World,
-  project: Open,
-  home: string,
+  opening: Promise<Open>,
   out: NodeJS.WritableStream,
   err: NodeJS.WritableStream,
 ): Promise<boolean> {
   try {
-    const door = await doorIn(world, project, home);
+    const door = await opening;
     const who = await whoIs(door);
     out.write(`${doorLine(door)}\n  ${describing(who)}\n`);
     return true;

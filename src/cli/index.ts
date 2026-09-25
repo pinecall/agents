@@ -124,7 +124,7 @@ export function usage(): string {
     "  lexicon   the org's words: how the voice says them and what the ears must know",
     "  pipeline  what the agent hears, decides and speaks with, and the knobs over it",
     "  line      which phone is yours, and whose terminal anybody else's call rings in",
-    "  numbers   list | import | move | drop the numbers the org answers at",
+    "  numbers   list | import | drop the numbers the org answers at",
     "  personas  list | show | add | edit | rm | try the org's synthetic callers",
     "  docs      the documents the agent searches: push | list | drop | eval | attach",
     "  memory    what memory kept about a contact, forget it, and hold recall to a golden",

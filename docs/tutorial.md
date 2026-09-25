@@ -61,6 +61,10 @@ pinecall link --gateway http://127.0.0.1:8080   # signs this machine in, writes 
 pinecall whoami                    # which org, which world, where the key came from
 ```
 
+A gateway on a laptop is one instance, production, with no sandbox beside it: every verb below
+runs there without `--prod`, and `whoami` says `production (the only instance)`. On a box that
+runs a sandbox too, the same verbs go to the sandbox, and `--prod` is how one reaches production.
+
 Put `.env` in the project's `.gitignore` — `link` says so until it is. A machine with no browser —
 CI, a container — links nothing: it gets `PINECALL_KEY` in its environment, a server's token from
 the console's Tokens screen ([production.md](production.md)).
@@ -370,7 +374,8 @@ console  https://sandbox.pinecall.io/a/clinica-norte?login=lc_9f2   (opens withi
 Open that URL, or run `pinecall console`. It is the console of your sandbox, served by the sandbox
 instance at the URL production names for it; the code in the URL was minted there, is one use and
 five minutes, and is spent for a key of that browser's own, so no key of yours reaches the browser.
-(Production is watched at `PINECALL_URL`, which you sign in to as well.) The agent's Calls screen shows a call as it happens: the turns, the tools, the state after each
+(Production is watched at `PINECALL_URL`, which you sign in to as well; on a laptop's gateway of
+one instance that is the one console, and the line names it.) The agent's Calls screen shows a call as it happens: the turns, the tools, the state after each
 one, `recall · 1 fact · 138 ms`, `search · 3 chunks · 181 ms`, and the verdicts at hang-up.
 
 The same thing without a browser:

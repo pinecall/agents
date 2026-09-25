@@ -26,9 +26,10 @@ describe("one door as a line", () => {
 });
 
 describe("the verb's shape", () => {
-  it("names the four sub-verbs, and `move` says what it is for", () => {
-    expect(group.usage).toContain("pinecall numbers move <+34…> --env <production|sandbox>");
-    expect(group.usage).toContain("cost nothing");
+  // A number is one instance's: the runtime has no door that moves one, so neither does the verb.
+  it("names three sub-verbs, and none moves a number between the worlds", () => {
+    expect(group.usage).toContain("pinecall numbers drop <+34…>");
+    expect(group.usage).not.toContain("numbers move");
   });
 
   // 2 is what every other verb answers with no key — this command cannot run, and a script reads
@@ -44,7 +45,7 @@ describe("the verb's shape", () => {
   it("says this folder is linked to no org rather than knocking at a default one", async () => {
     const err = written();
 
-    expect(await run(["move", A_NUMBER], { err: err.stream, env: {} })).toBe(2);
+    expect(await run(["drop", A_NUMBER], { err: err.stream, env: {} })).toBe(2);
     expect(err.text()).toContain("`pinecall link`");
   });
 });
