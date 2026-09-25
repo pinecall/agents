@@ -6,6 +6,8 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.9.8] — The longest a voice call runs, and a caller who is also on the site
+
 ### Added
 - **`pinecall agent set --max-duration 1-60|off`**: the longest a voice call of the agent runs, in
   minutes (ten unless set; `off` for none). Shown on the settings page as `max-duration`, and
@@ -14,6 +16,10 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   call claimed — keyed on the phone, or claimed by the class with `this.call.claim(code)` when the
   caller said it — and `null` until `call.claimed` lands. The client's `Call` has the same field and
   verb. Needs `@pinecall/protocol` 0.6.9.
+- **The claim is heard the moment it lands, and survives a hand-over.** A `render()` that reads
+  `this.call.claimed` is sent again as soon as `call.claimed` arrives, not at the caller's next
+  turn; and a call adopted mid-conversation (`call.attached`) keeps its claim. Needs
+  `@pinecall/protocol` 0.6.11.
 
 ### Changed
 - `docs/production.md` gains the table of what a team carries from the sandbox to production and

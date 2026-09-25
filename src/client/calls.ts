@@ -149,6 +149,8 @@ export class Call {
         this.#line(event.data.started);
         this.state = { ...event.data.state };
         this.today = dayOf(event.data.started.startedAt);
+        // The claim travels with the call (protocol 0.6.11); a gateway older than it says nothing.
+        this.claimed = event.data.claimed ?? null;
         return;
       case "state.changed":
         this.state = { ...event.data.state };

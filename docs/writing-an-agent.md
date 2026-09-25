@@ -516,12 +516,12 @@ A page can show a phone number and a four-digit code next to it; the caller ring
 keys the code, and from then on the page follows the call — its transcript, what the agent puts on
 the table. The worker hears the tones and claims the code on its own. When the call is claimed,
 `call.claimed` lands on its log and `this.call.claimed` is the code (it is `null` until then), so a
-`render()` can tell a caller who sees the times on their screen from one who only hears them. The
-view reads it on its next render, which the caller's next turn asks for. A caller who says the code
+`render()` can tell a caller who sees the times on their screen from one who only hears them — and
+the view is rendered again the moment the claim lands, not at the caller's next turn. A caller who says the code
 instead of keying it is the class's to claim: a tool that calls `this.call.claim(code)`. A code
 nobody issued, one that expired or one another call took is refused with `no_code`, and
-`claimed` stays `null`. A call that changes hands does not carry `claimed` to the next process:
-keep it in state if a view needs it after that.
+`claimed` stays `null`. A call that changes hands mid-conversation carries `claimed` with it, so
+the next process's view answers the same.
 
 ## Running it
 

@@ -286,6 +286,26 @@ it("tells the class the call was claimed, and claims a code the caller said", as
   expect(commands("call.claim")).toEqual([{ code: "7305" }]);
 });
 
+// The claim moves no field, and a view about it is a different prompt from that moment: rendered
+// then, not at the caller's next turn.
+class KnowsTheScreen extends ClinicaNorte {
+  override render() {
+    return this.call.claimed === null ? <p>Read the times out.</p> : <p>The times are on their screen.</p>;
+  }
+}
+
+it("renders again the moment the call is claimed", async () => {
+  await connected(KnowsTheScreen);
+  started();
+  await settled();
+  const before = commands("prompt.set").length;
+  gateway.emit(SLUG, CALL, "call.claimed", { code: "4821", via: "keypad" });
+  await settled();
+  const sent = commands("prompt.set").slice(before);
+  expect(sent.map((data) => data["name"])).toEqual(["view"]);
+  expect(String(sent[0]?.["text"])).toContain("on their screen");
+});
+
 // The caller's turn is the fact a view is most often about, and the framework's own page says a
 // view says what to do in THIS turn. It could not: the turn reached the class's history, nothing
 // asked for a new view, and the render that read it was sent one turn late (2026-09-20).

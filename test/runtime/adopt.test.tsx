@@ -62,6 +62,19 @@ it("adopts a call the gateway attaches mid-conversation, and sends the whole pro
   expect(commands("state.set")).toEqual([]);
 });
 
+it("gives an adopted call the claim it carried, so a view about the screen answers the same", async () => {
+  gateway.emit(SLUG, CALL, "call.attached", {
+    app: "app_new",
+    started: theLine("+34 699 999 999", Date.now() / 1000),
+    state: { patient: ANA, slots: [] },
+    seq: 41,
+    claimed: "4821",
+  });
+  await settled();
+  const instance = mounted.instanceOf(CALL) as unknown as { call: { claimed: string | null } };
+  expect(instance.call.claimed).toBe("4821");
+});
+
 it("gives an adopted call the snapshot's fields and runs no onCall", async () => {
   attached({ patient: ANA, slots: [] });
   await settled();

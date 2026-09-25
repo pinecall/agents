@@ -272,6 +272,10 @@ function follow(link: Live, call: SdkCall): void {
       // The window is the gateway's own: it holds the request while this turn's lookups run
       // (runtime's session/lookups.py), which is where the memory.ops above already land.
       if (event.type === "turn.user") sync(link, call);
+      // And the claim: the caller keyed the code their page shows, which moves no field either, and
+      // a view that tells a caller who sees the times on screen from one who only hears them is a
+      // different prompt from this moment, not from their next turn.
+      if (event.type === "call.claimed") sync(link, call);
     }),
   );
 }
