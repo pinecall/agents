@@ -108,7 +108,6 @@ sentences; small methods; 150 lines is the norm. Tests read as sentences.
 
 ## Commits
 
-`Bernardo Castro <me@bernardocastro.dev>`, a subject line and a body that says why, no
-`Co-Authored-By`, no generated-with trailers. `pnpm lint` and `pnpm test` exit 0 before a commit;
+A subject line and a body that says why. `pnpm lint` and `pnpm test` exit 0 before a commit;
 `scripts/check` before anything that touches the build or the console. `CHANGELOG.md` gains a line
 under `Unreleased` for anything a tenant would notice.
