@@ -1,0 +1,116 @@
+// `pinecall prompt --state`: the loader, the goldens file, and every block under its header in order.
+
+import { fileURLToPath } from "node:url";
+
+import { describe, expect, it } from "vitest";
+
+import { docOf } from "../../src/agent/tools.js";
+import { showPrompt } from "../../src/views/render.js";
+import { instanceFor, load } from "../../src/cli/load.js";
+import { main } from "../../src/cli/index.js";
+import { firstState, run } from "../../src/cli/prompt.js";
+
+const AGENT = fileURLToPath(new URL("./clinic/agents/clinica-norte/agent.tsx", import.meta.url));
+const GOLDENS = fileURLToPath(new URL("./choose.json", import.meta.url));
+
+function collected(): { stream: NodeJS.WritableStream; text(): string } {
+  const written: string[] = [];
+  const stream = { write: (chunk: string) => written.push(chunk) } as unknown as NodeJS.WritableStream;
+  return { stream, text: () => written.join("") };
+}
+
+describe("loading an agent from disk", () => {
+  it("hands the class its own source, so the docstring above it survives the import", async () => {
+    const loaded = await load(AGENT);
+
+    // Ctor.toString() cannot see a comment above the class; only describe(Ctor, source) can.
+    expect(docOf(new loaded.ctor())).toContain("recepción de Clínica Norte");
+  });
+
+  it("hands back an instance with a line to answer on, so a render may read this.call", async () => {
+    const loaded = await load(AGENT);
+    const agent = instanceFor(loaded);
+
+    expect(agent.call.channel).toBe("web");
+    expect(agent.render()).toContain("Saluda y pide nombre");
+  });
+
+  it("says where it looked when there is no agent there", async () => {
+    await expect(load("does/not/exist.ts")).rejects.toThrow(/no agent at/);
+  });
+
+  // No file named: the project's single agent is used.
+  it("finds the one agent of the project this terminal stands in", async () => {
+    const was = process.cwd();
+    try {
+      process.chdir(fileURLToPath(new URL("./clinic", import.meta.url)));
+      expect((await load()).file).toBe(AGENT);
+    } finally {
+      process.chdir(was);
+    }
+  });
+});
+
+describe("the goldens file a state comes from", () => {
+  it("takes the first case unless --case names another", () => {
+    expect(firstState(GOLDENS, undefined)).toMatchObject({ patient: { name: "Ana García" } });
+    expect(firstState(GOLDENS, "1")).toMatchObject({ slots: [{ when: "martes 16:00" }] });
+  });
+
+  it("refuses a case the file does not have, by number", () => {
+    expect(() => firstState(GOLDENS, "9")).toThrow(/no case 9/);
+  });
+});
+
+describe("the prompt a state would produce", () => {
+  it("prints every block under its header, the static ones before the history and the view after it", async () => {
+    const out = collected();
+
+    const code = await run([AGENT, "--state", GOLDENS], out.stream);
+
+    expect(code).toBe(0);
+    const printed = out.text();
+    expect(printed.indexOf("── identity (static) ──")).toBe(0);
+    expect(printed.indexOf("── tools (static) ──")).toBeLessThan(printed.indexOf("── history ──"));
+    expect(printed.indexOf("── history ──")).toBeLessThan(printed.indexOf("── view (dynamic) ──"));
+  });
+
+  it("renders the view against the state the goldens describe, not against a fresh instance", async () => {
+    const out = collected();
+
+    await run([AGENT, "--state", GOLDENS, "--case", "1"], out.stream);
+
+    // Case 1 has a patient and one slot: the view takes the identified branch.
+    expect(out.text()).toContain("Ofrece 1 horas");
+  });
+
+  // Exit codes: 1 means a measurement failed or a gateway refused, 2 means the command cannot run
+  // as typed. Refusals thrown deep must still exit 2, not 1 via the dispatcher's generic catch.
+  it("exits 2 for a case the golden does not have, not 1", async () => {
+    const err = collected();
+
+    const code = await main(["prompt", AGENT, "--state", GOLDENS, "--case", "99"], collected().stream, err.stream);
+
+    expect(code).toBe(2);
+    expect(err.text()).toContain("has no case 99");
+  });
+
+  it("asks for the state file rather than guessing one", async () => {
+    const err = collected();
+
+    expect(await run([AGENT], collected().stream, err.stream)).toBe(2);
+    expect(err.text()).toContain("--state <file> is required");
+  });
+});
+
+describe("the same blocks on the class the loader brought", () => {
+  it("puts a goldens case into the instance and renders its view at the end", async () => {
+    const agent = instanceFor(await load(AGENT));
+    agent.startIn(firstState(GOLDENS, "1"));
+
+    const page = showPrompt(agent);
+
+    expect(page.indexOf("── identity (static) ──")).toBeLessThan(page.indexOf("── view (dynamic) ──"));
+    expect(page).toContain("Ofrece 1 horas");
+  });
+});

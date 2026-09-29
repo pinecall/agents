@@ -1,0 +1,6 @@
+packages:
+  - examples/*
+
+# tsx is the tenant CLI's TypeScript loader; esbuild is its compiler, and it builds a binary.
+allowBuilds:
+  esbuild: true

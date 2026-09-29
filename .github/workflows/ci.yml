@@ -1,0 +1,45 @@
+# The gate: build, lint, test, on every push and every pull request. One job, because the whole
+# check is under two minutes and a matrix would only make a failure harder to read.
+name: ci
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+  # release.yml corre ESTE archivo como su gate, en vez de repetir los pasos: el gate del release
+  # y el de cada push son el mismo, o uno de los dos miente.
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: agents
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.2.2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: agents/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+        working-directory: agents
+
+      # build, then lint, then test — the order matters and scripts/check is where it is written.
+      - run: scripts/check
+        working-directory: agents

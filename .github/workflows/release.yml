@@ -1,0 +1,105 @@
+# El tag ES la publicación. `git push origin vX.Y.Z` y esto publica `pinecall` en npm solo.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  # Para ensayar el camino sin quemar un número: corre guard + gates, y publish queda skipped
+  # porque no es un tag.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # Una versión de npm es inmutable: no se despublica ni se pisa. Dos preguntas antes de tocar el
+  # registro — si el tag y el árbol dicen el mismo número, y si lo que el manifiesto declara es
+  # instalable desde afuera de este checkout.
+  guard:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.declared.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      # En dos líneas y no en una: `echo "version=$(scripts/the-version)"` se come el exit code
+      # del script — echo sale 0 — y el paso queda VERDE con la versión vacía, que es exactamente
+      # lo que un guard no puede hacer. Una asignación sí propaga el estado bajo `bash -e`.
+      - id: declared
+        run: |
+          version=$(scripts/the-version)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: el tag y la versión declarada son el mismo número
+        if: github.ref_type == 'tag'
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          declared="${{ steps.declared.outputs.version }}"
+          if [ "$tag" != "$declared" ]; then
+            echo "el tag dice $tag y el árbol declara $declared — uno de los dos está mal" >&2
+            exit 1
+          fi
+          echo "v$declared"
+
+  # El gate de verdad, el mismo que corre en cada push: build, lint, test. Un push de tag NO
+  # matchea `push: branches` de ci.yml — un tag no es una rama — así que sin esta línea el camino
+  # del release no tendría gate ninguno.
+  gates:
+    uses: ./.github/workflows/ci.yml
+
+  # Trusted Publishing NO funciona dentro de un workflow reusable: lo reusable son los tests, el
+  # publish se queda acá arriba.
+  publish-npm:
+    needs: [guard, gates]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      id-token: write   # OIDC, sin token guardado en ningún lado
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: agents
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.2.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      # setup-node trae un npm que NO conoce el intercambio OIDC del registro y cae EN SILENCIO a
+      # un publish anónimo: 404 en el PUT, después de haber dicho que firmó la provenance. El
+      # éxito de la firma no prueba nada sobre el auth.
+      - run: npm install -g npm@latest
+      - run: pnpm install --frozen-lockfile
+        working-directory: agents
+      - run: scripts/build
+        working-directory: agents
+      # Empaqueta pnpm y publica npm, y cada mitad está acá por un motivo distinto.
+      #
+      # `npm pack` NO aplica `publishConfig` — comprobado: el manifiesto que arma sigue diciendo
+      # `main: ./src/index.ts` y `bin: ./bin/pinecall.js`, y `files: ["dist"]` no manda ninguno de
+      # los dos. Un `npm publish` directo publicaría un paquete cuyo `pinecall` no arranca, en un
+      # número que ya no se puede reusar. `pnpm pack` sí lo aplica (dist/cli/index.js).
+      #
+      # Y publica npm porque es npm quien habla OIDC con el registro. El tarball viaja tal cual:
+      # `npm publish <tgz>` no reempaqueta nada.
+      - run: pnpm pack --pack-destination /tmp/pkg
+        working-directory: agents
+      # A version already on the registry was published by hand (`npm publish` from a laptop, the
+      # way 0.2.0 and 0.3.0 went out before npm knew this workflow): the tag then only records it.
+      # npm never takes a number twice, so asking again is a red run that says nothing new.
+      - name: publish, unless this version is already on npm
+        working-directory: agents
+        run: |
+          version="${{ needs.guard.outputs.version }}"
+          if npm view "pinecall@$version" version >/dev/null 2>&1; then
+            echo "pinecall@$version is already on npm: nothing to publish, the tag records it"
+            exit 0
+          fi
+          npm publish --provenance --access public /tmp/pkg/*.tgz
