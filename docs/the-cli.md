@@ -1231,7 +1231,8 @@ pinecall docs attached
 **The documents a turn searches** — the RAG, and only that. `push` reads every `*.md` under the
 directory — a local `docs/<name>/` of the agent when none is named, never tracked by the
 repository — and sends the folder **whole** to
-`PUT /v1/knowledge/<base>`: the base is replaced, never merged. At a project's root with nothing
+`PUT /v1/knowledge/<base>`: the base is replaced, never merged, so a push after documents were
+added in the console's Settings ▸ Docs takes them out. It starts a base; the console keeps it. At a project's root with nothing
 typed, `push` and `eval` act on every agent that has documents or a golden, and name the rest. The
 base is the agent's slug unless `--base` says otherwise. What the agent knows *by heart* is not a
 document and is never pushed: it is [`pinecall agent knowledge`](#agent-knowledge).

@@ -35,10 +35,13 @@ console's Personas screen. A project that still has `test/<name>/personas/` send
 **What the agent knows by heart is not in the repository.** Hours, prices, what needs an
 authorisation: that is the business, and the business describes itself — in the console's Settings
 tab, under Knowledge, or in `pinecall agent knowledge edit`. It is a setting of the world, versioned
-like the voice, and a deploy never changes it. Nor are the documents it searches: they are a
-**base** kept by the gateway, written in the console's Settings ▸ Docs, file by file. The same goes for the voice, the model, the greeting,
+like the voice, and a deploy never changes it. The same goes for the voice, the model, the greeting,
 its lexicon and the memory policy: the class is code, the world is environment. [The class](#the-class)
 says which is which.
+
+**Neither are the documents it searches.** They are a **base** kept by the gateway, per world, and
+whoever runs the business adds, edits and removes them in the console's Settings ▸ Docs, one file
+at a time. There is no `docs/` in the project: see [Knowledge](#knowledge-by-heart-and-searched).
 
 A second agent is a second folder under `agents/`, and the same folders under its name. At the root
 `pinecall start` holds every agent on one socket, and every verb acts on each agent against its own
@@ -196,10 +199,13 @@ nothing for that block. Use it for what is small, stable and always relevant —
 hundred documents are not.
 
 **What the agent searches** is a **base** of Markdown kept by the gateway, attached to the agent in
-the world that reads it. The console's Settings ▸ Docs writes it file by file, and whoever runs the
-business adds a document there. `pinecall docs push` sends a folder from your machine —
-`docs/<name>/` when none is named — and replaces the base whole, so it starts a base; that folder
-is not the project's and stays out of the repository:
+the world that reads it. Its documents are written in the console's Settings ▸ Docs, one file at a
+time, and that is where a manager adds one. The repository holds none of them.
+
+`pinecall docs push` is for starting a base from Markdown on your machine — `docs/<name>/` when no
+folder is named, kept out of git. It replaces the base **whole**: pushed again after someone edited
+the base in the console, it takes their documents out. So it is run once, by hand, and never in a
+deploy:
 
 ```console
 $ pinecall docs push                                   # docs/clinica-norte/ → the base clinica-norte
