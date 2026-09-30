@@ -66,9 +66,9 @@ agent. Every verb runs against the sandbox unless `--prod` is given. The CLI rea
 and `PINECALL_URL` from the environment or the project's `.env`. Full reference:
 [docs/the-cli.md](docs/the-cli.md).
 
-A project holds one or more agents: `agents/<name>/agent.tsx`, their documents in
-`docs/<name>/`, their tests in `test/<name>/`. Voice, model, greeting and knowledge are
-per-world settings, not class fields. Running in production on your own server:
+A project holds one or more agents: `agents/<name>/agent.tsx` and their tests in
+`test/<name>/`. Voice, model, greeting, knowledge and the documents an agent searches are
+per-world settings, not class fields or files in the repository. Running in production on your own server:
 [docs/production.md](docs/production.md).
 
 ## Development

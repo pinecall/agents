@@ -161,7 +161,6 @@ project's root, by the agent's name (`src/cli/home.ts`):
 ```
 agents/<name>/agent.tsx          the class — and beside it only what this agent uses (callbacks.ts)
 lib/                             what two or more agents share
-docs/<name>/                     the documents the agent SEARCHES — the RAG — sent by `docs push`
 test/<name>/agent.test.ts        ring 0: the class as software
 test/<name>/goldens/             ring 1: the conversations `test` runs; beside them `docs.json`,
                                  the questions `docs eval` asks the base, and `memory.json`,
@@ -172,7 +171,9 @@ test/<name>/memory/              the extraction cases `remember` runs
 **The business is not in the repository.** What the agent knows by heart — hours, prices, what
 needs an authorisation — is one field of its settings, per world and corner, written in the
 console's Settings ▸ Knowledge or with [`pinecall agent knowledge edit`](#agent-knowledge), and
-read whole into the prompt on every call. `docs/<name>/` holds only what a turn searches. A class
+read whole into the prompt on every call. Nor are the documents a turn searches: they are a base,
+written in the console's Settings ▸ Docs, and a local `docs/<name>/` is only what `docs push` sends
+when no directory is named. A class
 that still carries a voice, a model, an opening, a memory policy, a knowledge file or a base is
 refused at load, and the refusal names the verb that sets it now
 ([writing-an-agent.md](writing-an-agent.md)).
@@ -1228,7 +1229,8 @@ pinecall docs attached
 ```
 
 **The documents a turn searches** — the RAG, and only that. `push` reads every `*.md` under the
-directory — `docs/<name>/` of the agent when none is named — and sends the folder **whole** to
+directory — a local `docs/<name>/` of the agent when none is named, never tracked by the
+repository — and sends the folder **whole** to
 `PUT /v1/knowledge/<base>`: the base is replaced, never merged. At a project's root with nothing
 typed, `push` and `eval` act on every agent that has documents or a golden, and name the rest. The
 base is the agent's slug unless `--base` says otherwise. What the agent knows *by heart* is not a

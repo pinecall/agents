@@ -74,7 +74,6 @@ Or run `pinecall start --prod` under whatever already keeps the app's processes 
 ```
 web: node dist/server.js
 agent: pinecall start --prod
-release: pinecall docs push --prod
 ```
 
 pm2 (`pm2 start "pinecall start --prod" --name agent`), a systemd unit whose `ExecStart` is the same
@@ -116,14 +115,14 @@ thirty for the slowest tool. Give it that under whatever runs it:
 Start the new process as soon as the old one has the signal, not after it exits: the calls it kept
 wait for the new one to register.
 
-## The base, in the release step
+## The base is not in the deploy
 
-The base the telephone answers from is production's, and it is replaced **whole** by a push, like a
-migration: `pinecall docs push --prod` in the release step, before the new process starts, sends
-every `*.md` under `docs/<name>/` for each agent of the project. The server's token opens it. A
-failed push fails the release, and the old process keeps answering from the old base. Which base
-an agent reads is production's own setting — `pinecall docs attach <base> --k 4 --prod`, once — and
-a push never changes it.
+The base the telephone answers from is production's, and the repository does not carry it: its
+documents are written in the console's Settings ▸ Docs, in production, by a person whose switch is
+on — or started once with `pinecall docs push --prod` from a folder on that person's machine. A
+deploy never pushes it, because a push replaces the base **whole** and would take out what was
+added in the console. Which base an agent reads is production's own setting —
+`pinecall docs attach <base> --k 4 --prod`, once.
 
 ## Before the deploy: the goldens, in CI
 
@@ -137,7 +136,7 @@ hold ([testing-an-agent.md](testing-an-agent.md),
 
 The class carries nothing of the environment, so a deploy changes only code. The voice, the model,
 the greeting, how a call ends, the lexicon, what memory keeps, what the agent knows by heart and
-which base it searches: the org's **settings**, kept by the gateway, one corner in production and a
+which base it searches and the documents in it: the org's **settings**, kept by the gateway, one corner in production and a
 version per save. They change without a deploy, by a person whose production switch is on — `--prod`
 on the verb, and there is no other door into production's corner:
 
@@ -166,7 +165,7 @@ whose production switch is on. What a team carries across, and how:
 | the settings — voice, model, greeting, hangup, turn, memory policy | the team's corner (`--team`) | `pinecall agent pull --team > settings.json`, then `pinecall agent push settings.json --prod` as the next production version — from CI, or by hand once |
 | what it knows by heart | `pinecall agent knowledge --team` | the same push carries it; or `pinecall agent knowledge edit --prod` |
 | the lexicon, each agent's | `pinecall lexicon --team` | `pinecall lexicon add … --prod`, word by word, or the agent's Lexicon tab in the console |
-| the bases it searches | `pinecall docs push` (your base) | `pinecall docs push --prod` in the release step; `pinecall docs attach <base> --prod` once |
+| the bases it searches | the sandbox's base, written in Settings ▸ Docs | written in production's Settings ▸ Docs, or started once with `pinecall docs push --prod`; `pinecall docs attach <base> --prod` once |
 | the personas and the goldens | the agent's, run in the sandbox | never: they are tests. CI runs them on a sandbox token before the deploy |
 | a contact's memory, the calls | the sandbox's own | never: each world keeps what happened in it |
 

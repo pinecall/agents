@@ -204,7 +204,9 @@ documents is not, and that is the next step.
 
 ## 5. The base: what it looks up per turn
 
-Put your Markdown under `docs/clinica-norte/`, one file per subject, with headings. Push it:
+The base lives on the gateway: the console's Settings ▸ Docs writes it file by file. To start one
+from your machine, put your Markdown under `docs/clinica-norte/` (kept out of the repository), one
+file per subject, with headings, and push it:
 
 ```
 pinecall docs push

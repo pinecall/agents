@@ -11,7 +11,7 @@ import { agentFilesOfTheProject, load, slugOfAgentFile } from "./load.js";
  *
  *     agents/<name>/agent.ts      the class and its private helpers
  *     lib/                        code shared by two or more agents
- *     docs/<name>/                documents the agent searches (RAG)
+ *     docs/<name>/                a local folder `docs push` sends when none is named; not tracked
  *     test/<name>/agent.test.ts   ring 0
  *     test/<name>/goldens/        ring 1, plus the `docs.json` and `memory.json` goldens
  *     test/<name>/memory/         extraction cases, one written call each

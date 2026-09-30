@@ -166,7 +166,7 @@ and was missed is a question no conversation can answer, because the model never
 missed.
 
 That is what a retrieval golden is for: `test/<name>/goldens/docs.json`, beside the conversation
-goldens, asking about the documents in `docs/<name>/` — a question and the chunk that should
+goldens, asking about the documents in the base the agent reads — a question and the chunk that should
 answer it:
 
 ```json

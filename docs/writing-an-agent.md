@@ -18,7 +18,6 @@ agents/clinica-norte/
                       and render() is the prompt as a function of the state
   agenda.ts, crm.ts   what only this agent uses: its systems, a callbacks file
 lib/                  what two or more agents share
-docs/clinica-norte/   the documents the agent SEARCHES per turn — the RAG, and nothing else
 test/clinica-norte/
   agent.test.ts       the class as software: ring 0, no network and no model
   goldens/            one file per conversation: { state, input, expect } — and beside them
@@ -36,7 +35,8 @@ console's Personas screen. A project that still has `test/<name>/personas/` send
 **What the agent knows by heart is not in the repository.** Hours, prices, what needs an
 authorisation: that is the business, and the business describes itself — in the console's Settings
 tab, under Knowledge, or in `pinecall agent knowledge edit`. It is a setting of the world, versioned
-like the voice, and a deploy never changes it. The same goes for the voice, the model, the greeting,
+like the voice, and a deploy never changes it. Nor are the documents it searches: they are a
+**base** kept by the gateway, written in the console's Settings ▸ Docs, file by file. The same goes for the voice, the model, the greeting,
 its lexicon and the memory policy: the class is code, the world is environment. [The class](#the-class)
 says which is which.
 
@@ -195,8 +195,11 @@ the cached prefix, so the model has it on every turn and you pay for it once. Th
 nothing for that block. Use it for what is small, stable and always relevant — a page is fine, a
 hundred documents are not.
 
-**What the agent searches** is the folder of Markdown under `docs/<name>/`, pushed to the gateway
-as a **base** and attached to the agent in the world that reads it:
+**What the agent searches** is a **base** of Markdown kept by the gateway, attached to the agent in
+the world that reads it. The console's Settings ▸ Docs writes it file by file, and whoever runs the
+business adds a document there. `pinecall docs push` sends a folder from your machine —
+`docs/<name>/` when none is named — and replaces the base whole, so it starts a base; that folder
+is not the project's and stays out of the repository:
 
 ```console
 $ pinecall docs push                                   # docs/clinica-norte/ → the base clinica-norte
@@ -530,7 +533,7 @@ pinecall link                      # once per project folder: your key for its o
 pinecall chat                      # the app in THIS terminal, and a written caller against it
 pinecall chat --as +34600123456    # the same call, from somebody memory can file it under
 pinecall prompt --state test/clinica-norte/prompts/states.json    # what the model would read, offline
-pinecall docs push                 # docs/<name>/ to the gateway, as the base named after the agent
+pinecall docs push                 # a local docs/<name>/ to the gateway, as the base named after the agent
 pinecall docs attach clinica-norte --k 4      # the agent reads it, in your corner
 pinecall agent knowledge edit      # what it knows by heart, in $EDITOR
 pinecall start                     # the app registered and answering: the process you deploy

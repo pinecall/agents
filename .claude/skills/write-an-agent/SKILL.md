@@ -33,8 +33,9 @@ and what the example already paid for. The long form is `docs/writing-an-agent.m
   class makes up — so what an agent ACTUALLY answers at is the `doors` line `pinecall start`
   prints, read off the gateway.
 - **Never write the business into the repository.** What the agent knows by heart is a setting,
-  `pinecall agent knowledge edit` or Settings ▸ Knowledge, read whole on every call. `docs/<name>/`
-  holds only what a turn searches, and a tool reaches it with `await this.knowledge.search(q, { k })`.
+  `pinecall agent knowledge edit` or Settings ▸ Knowledge, read whole on every call. What a turn
+  searches is a base on the gateway, written in Settings ▸ Docs; a local `docs/<name>/` is only what
+  `docs push` sends, never tracked. A tool reaches it with `await this.knowledge.search(q, { k })`.
 - Never restart your reasoning from the prompt when a tool did not run. Read the log first.
 
 ## The loop

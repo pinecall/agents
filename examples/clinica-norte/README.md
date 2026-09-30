@@ -10,7 +10,7 @@ agents/clinica-norte/
   agent.tsx           la clase: el estado son campos, las tools son métodos con docstring, y
                       render() es el prompt como función del estado — lo último que lee el modelo
   agenda.ts, crm.ts   los sistemas de la clínica; aquí, dobles deterministas
-docs/clinica-norte/   lo que el agente BUSCA por turno: se sube con `pinecall docs push`
+docs/clinica-norte/   datos de muestra: la base que el agente BUSCA, para subirla una vez
 test/clinica-norte/
   agent.test.ts       la clase como software
   goldens/            las conversaciones que `pinecall test` ejecuta; docs.json y memory.json,
@@ -50,7 +50,7 @@ pinecall link               # una vez: inicia sesión y escribe PINECALL_KEY en 
 pinecall start              # la app: registra el agente y responde sus tools
 pinecall chat               # la app en ESTA terminal, y una llamada escrita contra ella
 pinecall test               # los goldens de test/clinica-norte/goldens/, puntuados por el runtime
-pinecall docs push          # docs/clinica-norte/ al gateway, como la base clinica-norte
+pinecall docs push          # una vez: docs/clinica-norte/ al gateway, como la base clinica-norte
 pinecall docs attach clinica-norte --k 4      # el agente la busca por turno
 pinecall simulate --persona apurado --judge   # una persona improvisada por un modelo, y su call.score
 ```
@@ -58,6 +58,11 @@ pinecall simulate --persona apurado --judge   # una persona improvisada por un m
 Lo que la recepción se sabe de memoria — horarios, precios, qué necesita autorización — se escribe
 en la consola, Settings ▸ Knowledge (o `pinecall agent knowledge edit`), y el modelo lo lee entero
 en cada llamada. La voz, el modelo y el saludo, en la misma pantalla, o `pinecall agent set`.
+
+Los documentos que busca tampoco son del repo: son una base del gateway, y se escriben en la consola,
+Settings ▸ Docs, archivo por archivo. `docs/clinica-norte/` está aquí solo porque es un ejemplo: la
+muestra para crear la base la primera vez. Un `docs push` reemplaza la base entera, así que después
+de editarla en la consola no se vuelve a empujar.
 
 Los goldens viven en `test/clinica-norte/goldens/`: uno por fichero, `{state, input, expect}`.
 
