@@ -145,9 +145,19 @@ describe("the console of each world", () => {
     const door = { url: instances.sandbox, apiKey: "pc_the_sandboxs_key", world: "sandbox" as const };
     instances.taken.add(door.apiKey);
 
-    expect(await consoleLine(door, "clinica-norte")).toBe(
+    expect(await consoleLine(door, "clinica-norte", true)).toBe(
       `console  ${instances.sandbox}/a/clinica-norte?login=lc_minted_by_the_sandbox   (opens within five minutes, once)`,
     );
+  });
+
+  // pm2, systemd and a hosted app write stdout to a log somebody reads later.
+  it("carries no code when stdout is not a terminal, and mints none", async () => {
+    const door = { url: instances.sandbox, apiKey: "pc_the_sandboxs_key", world: "sandbox" as const };
+    instances.taken.add(door.apiKey);
+    const before = instances.signed().length;
+
+    expect(await consoleLine(door, "clinica-norte", false)).toBe(`console  ${instances.sandbox}/a/clinica-norte`);
+    expect(instances.signed()).toHaveLength(before);
   });
 });
 

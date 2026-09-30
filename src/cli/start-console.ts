@@ -31,8 +31,18 @@ export async function aLoginCode(door: Door): Promise<string> {
   return (await asked<{ code: string }>(door, "/v1/login/codes", { method: "POST", body: {} })).code;
 }
 
-/** The `console` line: a signed-in URL on the door's own instance, or why there is none. */
-export async function consoleLine(door: Door, slug: string): Promise<string> {
+/** The console's own address for an agent, with no code: what a page asks a person to sign in to. */
+export function consoleAddress(where: string, slug: string): string {
+  return `${where.replace(/\/$/, "")}/a/${encodeURIComponent(slug)}`;
+}
+
+/**
+ * The `console` line: a signed-in URL on the door's own instance, or why there is none. Signed in
+ * only for a terminal: a process under pm2, systemd or a hosted app writes stdout to a log others
+ * read later, and a code there is a way into the console for whoever reads it.
+ */
+export async function consoleLine(door: Door, slug: string, terminal: boolean): Promise<string> {
+  if (!terminal) return `console  ${consoleAddress(door.url, slug)}`;
   try {
     return `console  ${consoleUrl(door.url, slug, await aLoginCode(door))}   (opens within five minutes, once)`;
   } catch (refused) {

@@ -231,9 +231,11 @@ instance at its own URL: the one this process registered at. In the sandbox the 
 `console  https://sandbox.pinecall.io/a/clinica-norte?login=lc_…` — the URL production named — and
 in production `console  https://box.pinecall.io/a/clinica-norte?login=lc_…`: a one-use code minted
 by that instance for the key this process holds there, dead in five minutes, which the page spends
-for a key of its own and never sees this process's. Opening a
-console without one asks for an email, a password, and the org only when the person belongs to
-several.
+for a key of its own and never sees this process's. **Only in a terminal**: when stdout is not one —
+pm2, systemd, a container, a hosted app — the line is the console's address with no code
+(`console  https://box.pinecall.io/a/clinica-norte`) and none is minted, because that output is a log
+somebody else reads later. Opening a console without one asks for an email, a password, and the org
+only when the person belongs to several.
 
 In the sandbox, every time the socket comes up — the first connect and each reconnect, in every
 mode — `start` re-sends the phone `pinecall line from` kept for the sandbox, whatever agents it

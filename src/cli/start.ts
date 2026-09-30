@@ -168,7 +168,7 @@ export async function run(argv: string[]): Promise<number> {
           env: who.env,
           source: door.source,
         }),
-        after: () => onceUp(door, mounted),
+        after: () => onceUp(door, mounted, process.stdout.isTTY === true),
       }));
       return await plain(pc, agents, url);
     }
@@ -193,9 +193,9 @@ export async function run(argv: string[]): Promise<number> {
 
 // Lines printed after connect: console URL, the agent's doors, and its phone line if any. Doors come
 // from the org's table, not the class. Failures print a line; the agent keeps running.
-async function onceUp(door: Door, mounted: Mounted): Promise<string[]> {
+async function onceUp(door: Door, mounted: Mounted, terminal: boolean): Promise<string[]> {
   const doors = await theDoors(door);
-  const said = [await consoleLine(door, mounted.slug), doorsOf(mounted.slug, doors)];
+  const said = [await consoleLine(door, mounted.slug, terminal), doorsOf(mounted.slug, doors)];
   if (doors.some((one) => one.agent === mounted.slug && one.number !== null)) {
     said.push(await lineLine(door, mounted.slug));
   }

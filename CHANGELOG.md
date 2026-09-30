@@ -8,6 +8,9 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ### Changed
 
+- `pinecall start` prints the console's one-use login link only to a terminal. Under pm2, systemd,
+  a container or a hosted app its stdout is a log somebody reads later, so the `console` line is
+  the address alone and no code is minted.
 - The documents an agent searches are no longer part of the project: the base lives on the
   gateway and is written in the console's Settings ▸ Docs. `docs push` still sends a local folder
   (`docs/<name>/` by default), kept out of the repository, and a deploy no longer pushes it —
