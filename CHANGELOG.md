@@ -6,6 +6,13 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Fixed
+
+- `pinecall deploy` no longer crashes on a tracked file deleted from disk: it is left out, as
+  git would leave it out. A file's execute bit travels with it; every other file is 644.
+- `pinecall secrets set` reads the whole of piped stdin, so a key of several lines (a PEM) is
+  kept whole, not its first line.
+
 ## [0.9.11] — Logs, stop and start for a hosted app
 
 ### Added

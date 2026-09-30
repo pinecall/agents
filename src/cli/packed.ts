@@ -19,22 +19,32 @@ export function isLeftOut(path: string): boolean {
 
 /**
  * The project's files, relative and sorted: what git would commit when the folder is a checkout,
- * every file otherwise, and in both cases nothing `isLeftOut` names.
+ * every file otherwise, and in both cases nothing `isLeftOut` names. A tracked file deleted on
+ * disk is not a file.
  */
 export function projectFiles(root: string): string[] {
   const listed = gitFiles(root) ?? walked(root, root);
-  return listed.filter((path) => !isLeftOut(path) && lstatSync(join(root, path)).isFile()).sort();
+  return listed.filter((path) => !isLeftOut(path) && isAFile(join(root, path))).sort();
 }
 
-/** The files as one gzipped ustar archive: plain files, their paths as the project names them. */
+/** The files as one gzipped ustar archive: plain files, their paths and modes as the project has them. */
 export function packed(root: string, files: readonly string[]): Buffer {
   const blocks: Buffer[] = [];
   for (const path of files) {
     const content = readFileSync(join(root, path));
-    blocks.push(header(path, content.length), content, Buffer.alloc((BLOCK - (content.length % BLOCK)) % BLOCK));
+    const executable = (lstatSync(join(root, path)).mode & 0o111) !== 0;
+    blocks.push(header(path, content.length, executable), content, Buffer.alloc((BLOCK - (content.length % BLOCK)) % BLOCK));
   }
   blocks.push(Buffer.alloc(BLOCK * 2));
   return gzipSync(Buffer.concat(blocks));
+}
+
+function isAFile(path: string): boolean {
+  try {
+    return lstatSync(path).isFile();
+  } catch {
+    return false;
+  }
 }
 
 function gitFiles(root: string): string[] | undefined {
@@ -61,11 +71,11 @@ function walked(root: string, folder: string): string[] {
 }
 
 // ustar: a name over 100 bytes is split at a slash into prefix (155) and name (100).
-function header(path: string, size: number): Buffer {
+function header(path: string, size: number, executable: boolean): Buffer {
   const block = Buffer.alloc(BLOCK);
   const [prefix, name] = splitName(path);
   block.write(name, 0, 100, "utf8");
-  block.write("0000644\0", 100, 8, "ascii");
+  block.write(executable ? "0000755\0" : "0000644\0", 100, 8, "ascii");
   block.write("0000000\0", 108, 8, "ascii");
   block.write("0000000\0", 116, 8, "ascii");
   block.write(`${size.toString(8).padStart(11, "0")}\0`, 124, 12, "ascii");

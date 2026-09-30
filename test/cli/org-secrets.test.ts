@@ -92,3 +92,14 @@ describe("pinecall secrets", () => {
     expect(gateway.names).toEqual([]);
   });
 });
+
+describe("a value piped in", () => {
+  it("is the whole of stdin, a key of several lines included, without its final newline", async () => {
+    const { Readable } = await import("node:stream");
+    const { allOfStdin } = await import("../../src/cli/secret.js");
+    const pem = "-----BEGIN KEY-----\nabc\ndef\n-----END KEY-----\n";
+
+    expect(await allOfStdin(Readable.from([Buffer.from(pem)]))).toBe(pem.trimEnd());
+    expect(await allOfStdin(Readable.from([]))).toBe("");
+  });
+});

@@ -1,7 +1,7 @@
 // A project packed as a release: what travels, what never does, and a tarball any tar reads.
 
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { gunzipSync } from "node:zlib";
@@ -39,6 +39,15 @@ describe("what a release carries", () => {
 
     expect(projectFiles(root)).toEqual([".gitignore", "agents/a/agent.ts", "package.json"]);
   });
+
+  it("leaves out a tracked file deleted on disk instead of crashing on it", () => {
+    const root = aProject({ "package.json": "{}", "agents/a/agent.ts": "x", "gone.ts": "" });
+    execFileSync("git", ["init", "-q"], { cwd: root });
+    execFileSync("git", ["add", "-A"], { cwd: root });
+    rmSync(join(root, "gone.ts"));
+
+    expect(projectFiles(root)).toEqual(["agents/a/agent.ts", "package.json"]);
+  });
 });
 
 describe("the tarball", () => {
@@ -53,6 +62,18 @@ describe("the tarball", () => {
 
     expect(execFileSync("cat", [join(out, deep)]).toString()).toBe("export default 1");
     expect(execFileSync("cat", [join(out, "package.json")]).toString()).toBe('{"name":"x"}');
+  });
+
+  it("keeps a file's execute bit, and gives every other file 644", () => {
+    const root = aProject({ "run.sh": "#!/bin/sh", "a.txt": "hi" });
+    chmodSync(join(root, "run.sh"), 0o755);
+    const out = mkdtempSync(join(tmpdir(), "pinecall-unpacked-"));
+    writeFileSync(join(out, "release.tgz"), packed(root, projectFiles(root)));
+
+    execFileSync("tar", ["-xzf", join(out, "release.tgz"), "-C", out]);
+
+    expect(statSync(join(out, "run.sh")).mode & 0o777).toBe(0o755);
+    expect(statSync(join(out, "a.txt")).mode & 0o777).toBe(0o644);
   });
 
   it("ends with the two empty blocks a tar reader looks for", () => {

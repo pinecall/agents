@@ -38,3 +38,10 @@ export async function aLineOfStdin(): Promise<string> {
   }
   return "";
 }
+
+/** The whole of piped stdin, its final newline dropped: a value of several lines, a PEM key. */
+export async function allOfStdin(input: NodeJS.ReadableStream = process.stdin): Promise<string> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of input) chunks.push(Buffer.from(chunk));
+  return Buffer.concat(chunks).toString("utf8").replace(/\r?\n$/, "");
+}

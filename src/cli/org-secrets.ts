@@ -6,7 +6,7 @@ import type { SecretList } from "../wire/rest-hosting.js";
 
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
-import { aLineOfStdin, nobodyIsTyping, typedInSilence } from "./secret.js";
+import { allOfStdin, nobodyIsTyping, typedInSilence } from "./secret.js";
 import { asked } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
 
@@ -99,7 +99,7 @@ function whyNot(name: string): string | undefined {
 }
 
 async function aValue(name: string, out: NodeJS.WritableStream): Promise<string> {
-  return nobodyIsTyping() ? await aLineOfStdin() : await typedInSilence(`${name}: `, out);
+  return nobodyIsTyping() ? await allOfStdin() : await typedInSilence(`${name}: `, out);
 }
 
 function listed(answered: SecretList, asJson: boolean, out: NodeJS.WritableStream): number {
