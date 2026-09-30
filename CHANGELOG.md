@@ -6,7 +6,7 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
-## [1.0.0] — Runtime v2's wire, money in dollars, the org's data and its judges
+## [0.9.9] — Runtime v2's wire, money in dollars, the org's data and its judges
 
 The first release that speaks runtime v2's wire, the one `box.pinecall.io` runs since 2026-09-29:
 every earlier version breaks on it (a call's cost in dollars, `accepts_when` on `call.started`).
