@@ -8,6 +8,7 @@ export const HostedAppSchema = z.strictObject({
   release: z.int().nullable(),
   live_release: z.int().nullable(),
   failed_why: z.string().nullable(),
+  stopped: z.boolean(),
   created_by: z.string(),
   created_at: z.number(),
 });
@@ -36,6 +37,16 @@ export type Release = z.infer<typeof ReleaseSchema>;
 export const ReleaseListSchema = z.strictObject({ releases: z.array(ReleaseSchema) });
 
 export type ReleaseList = z.infer<typeof ReleaseListSchema>;
+
+/** GET /v1/hosted/{name}/logs: the last lines the runner read; `at` null before it sent any. */
+export const AppLogsSchema = z.strictObject({
+  name: z.string(),
+  host: z.string().nullable(),
+  lines: z.string(),
+  at: z.number().nullable(),
+});
+
+export type AppLogs = z.infer<typeof AppLogsSchema>;
 
 /** A row of GET /v1/secrets: never a value. */
 export const SecretRowSchema = z.strictObject({ name: z.string(), set_by: z.string(), set_at: z.number() });

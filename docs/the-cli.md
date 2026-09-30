@@ -51,7 +51,7 @@ path end to end, with every output under it.
 | [`voices`](#voices) | a vendor's voices in a language, and one of them played here before it is chosen | yes |
 | [`callbacks`](#callbacks) | the numbers people left when every seat was taken | yes |
 | [`data`](#data) | the org's data: erasures and their trail, its policy, consent, the do-not-call list, export | yes |
-| [`deploy`](#deploy) | this project run by the box itself: uploaded as a release, installed and started there; list, releases, rollback, rm | yes |
+| [`deploy`](#deploy) | this project run by the box itself: uploaded as a release, installed and started there; list, releases, rollback, logs, stop, start, rm | yes |
 | [`secrets`](#secrets) | the values the org's hosted apps are started with: list, set, rm — never read back | yes |
 | [`login`](#login) | sign this machine in through a browser; `link` asks for it when it is needed | yes |
 | [`whoami`](#whoami) | which gateway, which org, whether you act in production, and where the key came from | yes |
@@ -1369,7 +1369,9 @@ The sandbox's box unless `--prod`; each world hosts its own apps.
 |---|---|
 | `pinecall deploy list` | every app of the org in the world: `live: release 3`, a release on its way, or the one that failed and why |
 | `pinecall deploy releases` | one app's releases, newest first: when, how big, who, and the note |
-| `pinecall deploy rollback <n>` | release n's sources uploaded again as the next release, and followed like any |
+| `pinecall deploy rollback <n>` | release n's sources kept again as the next release, on the box itself, and followed like any |
+| `pinecall deploy logs [--follow]` | the last lines of the app's process, fresh: asking is what makes the box send them, a beat or two later, so the verb waits up to fifteen seconds for lines read after it asked (older ones are printed with how old they are). `--follow` keeps printing the lines that come, until Ctrl-C |
+| `pinecall deploy stop` · `start` | stopped, its process drains and nothing runs — its releases and token stay, and `list` says `stopped`; started, its newest release runs again |
 | `pinecall deploy rm` | the app no longer hosted: its releases go and its token is revoked |
 
 The process prints no console link: a hosted app's output is a log, and a one-use code in a log is
@@ -1438,7 +1440,7 @@ code can call — over HTTP, in any language, with the same key.
 | `login` | `POST /v1/login/pairings`, `GET …/{code}/key` — then `GET /v1/whoami` to prove what it got |
 | `link` | what `login` knocks at when the machine is not signed in, then `GET /v1/login/orgs` for the person's orgs and `POST /v1/login/org` for the key in the one picked |
 | `whoami` | `GET /v1/whoami` at production, and at the sandbox |
-| `deploy` | `POST /v1/hosted/{name}/releases` (the tarball itself, `application/gzip`), then `GET /v1/hosted` every few seconds while it follows; `list` is `GET /v1/hosted`, `releases` `GET …/{name}/releases`, `rollback <n>` `GET …/releases/{n}/source` sent again as the next release, `rm` `DELETE /v1/hosted/{name}` |
+| `deploy` | `POST /v1/hosted/{name}/releases` (the tarball itself, `application/gzip`), then `GET /v1/hosted` every few seconds while it follows; `list` is `GET /v1/hosted`, `releases` `GET …/{name}/releases`, `rollback <n>` `POST …/{name}/rollback {release}`, `logs` `GET …/{name}/logs` every two seconds, `stop` · `start` `POST …/{name}/stop` · `…/start`, `rm` `DELETE /v1/hosted/{name}` |
 | `secrets` | `GET /v1/secrets` · `PUT`·`DELETE /v1/secrets/{name}` |
 | every verb, without `--prod` | `GET /.well-known/pinecall` at `PINECALL_URL` for its `elsewhere` (kept a day); the first time, `POST /v1/login/codes` there and `POST /v1/login {code, device}` at the sandbox for its key; `GET /v1/whoami` at the sandbox to prove a kept one — then its own doors at the sandbox, with `pinecall-env: sandbox` on each request and socket |
 | every verb, with `--prod` | the same doors at `PINECALL_URL`, with `pinecall-env: production` on each request and socket |

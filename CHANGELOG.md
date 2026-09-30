@@ -6,6 +6,20 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.9.11] — Logs, stop and start for a hosted app
+
+### Added
+
+- `pinecall deploy logs [--follow]`: the last lines of a hosted app's process, fresh from the box —
+  the verb waits for lines read after it asked, and `--follow` prints what comes until Ctrl-C.
+- `pinecall deploy stop` · `start`: the process drains and nothing runs, its releases and token
+  kept; started, its newest release runs again. `deploy list` says `stopped`.
+
+### Changed
+
+- `pinecall deploy rollback <n>` asks the box to keep release n's sources as the next release,
+  instead of downloading them and sending them back. Needs runtime `bbfaa80` or later.
+
 ## [0.9.10] — `pinecall deploy`: the box runs the project
 
 The box runs the project for an org that has no server of its own: `pinecall deploy` uploads it,

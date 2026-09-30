@@ -8,6 +8,7 @@ import type { HostedApp, HostedAppList, Release, ReleaseList } from "../wire/res
 
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
+import { logsOf } from "./deploy-logs.js";
 import { packed, projectFiles } from "./packed.js";
 import { asked, knocked, Refused, type Door } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
@@ -17,6 +18,8 @@ const USAGE = [
   "       pinecall deploy list [--json] [--prod]",
   "       pinecall deploy releases [--name <app>] [--json] [--prod]",
   "       pinecall deploy rollback <release> [--name <app>] [--prod]",
+  "       pinecall deploy logs [--name <app>] [--follow] [--prod]",
+  "       pinecall deploy stop | start [--name <app>] [--prod]",
   "       pinecall deploy rm [--name <app>] [--prod]",
 ].join("\n");
 
@@ -37,12 +40,16 @@ export const group: Group = {
   (none)             upload this folder as the app's next release, and follow it until it is live
   list               the org's hosted apps: the newest release, the one serving, and why one failed
   releases           one app's releases, newest first
-  rollback <n>       release n's sources uploaded again as the next release
+  rollback <n>       release n's sources kept again as the next release, and followed
+  logs               the last lines of the app's process, fresh from the box; --follow keeps printing
+  stop               the process drains and nothing runs; its releases and token stay
+  start              a stopped app runs again, its newest release
   rm                 stop hosting the app: its releases go, and its token is revoked
 
   --name <app>       which app: this folder's name unless given (lower-case words and dashes)
   --note '…'         why, kept with the release
-  --no-follow        upload and return, without waiting for it to go live`,
+  --no-follow        upload and return, without waiting for it to go live
+  --follow           with logs: keep printing the lines that come, until Ctrl-C`,
   run,
 };
 
@@ -55,9 +62,11 @@ export interface Deploying {
   /** How often the app is read while following, and for how long. */
   everyMs?: number;
   withinMs?: number;
+  /** Ends `logs --follow`; the CLI's never does. */
+  until?: () => boolean;
 }
 
-const VERBS = ["up", "list", "releases", "rollback", "rm"] as const;
+const VERBS = ["up", "list", "releases", "rollback", "logs", "stop", "start", "rm"] as const;
 
 type Verb = (typeof VERBS)[number];
 
@@ -79,6 +88,16 @@ const NONE_YET = "the box hosts no app for this org here yet: `pinecall deploy` 
 
 const REPLACED = (ours: number, newer: number): string => `release ${ours} was replaced by release ${newer} before it went live`;
 
+const STOPPED = (name: string): string => `${name}: stopped — its process drains; its releases and token stay`;
+
+const STARTED = (name: string): string =>
+  `${name}: started — its newest release answers once its agents register (\`pinecall deploy list\`)`;
+
+// The runner beats every five seconds: a fresh read of an app's lines is a beat or two away.
+const LOGS_EVERY_MS = 2000;
+
+const LOGS_WITHIN_MS = 15_000;
+
 const STILL_WAITING = (release: number, seconds: number): string =>
   `release ${release} is not live after ${seconds}s: \`pinecall deploy list\` says where it is`;
 
@@ -94,6 +113,7 @@ export async function run(argv: string[], how: Deploying = {}): Promise<number> 
       note: { type: "string", default: "" },
       json: { type: "boolean", default: false },
       "no-follow": { type: "boolean", default: false },
+      follow: { type: "boolean", default: false },
     },
   });
   const [said = "up", release] = positionals;
@@ -122,13 +142,26 @@ export async function run(argv: string[], how: Deploying = {}): Promise<number> 
       out.write(`${name}: no longer hosted, its token revoked\n`);
       return 0;
     }
-    const source = verb === "up" ? sourcesOf(cwd) : await sourceOf(door, name, Number(release));
+    if (verb === "stop" || verb === "start") {
+      await knocked(door, `${appPath(name)}/${verb}`, { method: "POST" });
+      out.write(`${verb === "stop" ? STOPPED(name) : STARTED(name)}\n`);
+      return 0;
+    }
+    if (verb === "logs") {
+      const pacing = { everyMs: how.everyMs ?? LOGS_EVERY_MS, withinMs: how.withinMs ?? LOGS_WITHIN_MS, until: how.until ?? (() => false) };
+      return await logsOf(door, name, values.follow, pacing, out);
+    }
+    if (verb === "rollback") {
+      const again = await asked<Release>(door, `${appPath(name)}/rollback`, { method: "POST", body: { release: Number(release) } });
+      out.write(`${name}: release ${release!}'s sources sent again as release ${again.release}\n`);
+      return values["no-follow"] ? 0 : await followed(door, again, following);
+    }
+    const source = sourcesOf(cwd);
     if (source.length === 0) {
       err.write(`${NOTHING_TO_SEND}\n`);
       return 2;
     }
-    const note = verb === "up" ? values.note : `rollback to release ${release!}${values.note === "" ? "" : `: ${values.note}`}`;
-    const sent = await uploaded(door, name, source, note);
+    const sent = await uploaded(door, name, source, values.note);
     out.write(`${name}: release ${sent.release} sent · ${kilobytes(sent.bytes)} · ${sent.sha256.slice(0, 12)}\n`);
     return values["no-follow"] ? 0 : await followed(door, sent, following);
   } catch (failed) {
@@ -140,11 +173,6 @@ export async function run(argv: string[], how: Deploying = {}): Promise<number> 
 function sourcesOf(cwd: string): Buffer {
   const files = projectFiles(cwd);
   return files.length === 0 ? Buffer.alloc(0) : packed(cwd, files);
-}
-
-async function sourceOf(door: Door, name: string, release: number): Promise<Buffer> {
-  const answered = await knocked(door, `${appPath(name)}/releases/${release}/source`);
-  return Buffer.from(await answered.arrayBuffer());
 }
 
 // The body is the tarball itself: `knocked` sends JSON.
@@ -204,6 +232,7 @@ function listed(answered: HostedAppList, asJson: boolean, out: NodeJS.WritableSt
 }
 
 function stateOf(app: HostedApp): string {
+  if (app.stopped) return `stopped${app.release === null ? "" : ` · newest release ${app.release}`}`;
   if (app.release === null) return "no release yet";
   const serving = app.live_release === null ? "nothing live" : `live: release ${app.live_release}`;
   if (app.failed_why !== null) return `${serving} · release ${app.release} failed: ${app.failed_why.split("\n")[0]}`;

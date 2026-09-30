@@ -29,6 +29,8 @@ class FakeGateway {
   apps = new Map<string, HostedApp>();
   releases = new Map<string, Release[]>();
   after: "live" | "failed" | "nothing" = "live";
+  /** What each read of an app's logs answers, in turn; the last one repeats. */
+  logs: { lines: string; at: number | null }[] = [];
   #server!: Server;
   url = "";
 
@@ -49,8 +51,23 @@ class FakeGateway {
     const url = new URL(request.url ?? "/", this.url);
     const heard = { method: request.method ?? "", path: url.pathname, type: request.headers["content-type"] ?? "", body: Buffer.concat(chunks) };
     this.heard.push(heard);
-    const [, , , name, , number, what] = url.pathname.split("/");
+    const [, , , name, action, number, what] = url.pathname.split("/");
     if (url.pathname === "/v1/hosted") return this.#said(response, 200, { apps: [...this.apps.values()] });
+    if (heard.method === "POST" && (action === "stop" || action === "start")) {
+      const app = this.apps.get(name!);
+      if (app === undefined) return this.#said(response, 404, { detail: `the box hosts no app called ${name}` });
+      this.apps.set(name!, { ...app, stopped: action === "stop" });
+      response.writeHead(204).end();
+      return;
+    }
+    if (heard.method === "POST" && action === "rollback") {
+      const wanted = (JSON.parse(heard.body.toString()) as { release: number }).release;
+      return this.#said(response, 200, this.#kept(name!, Buffer.from(`sources of release ${wanted}`), `rollback to release ${wanted}`));
+    }
+    if (action === "logs") {
+      const next = this.logs.length > 1 ? this.logs.shift()! : (this.logs[0] ?? { lines: "", at: null });
+      return this.#said(response, 200, { name, host: `${name}-r1-abcdef12`, ...next });
+    }
     if (heard.method === "POST") return this.#said(response, 200, this.#kept(name!, heard.body, url.searchParams.get("note") ?? ""));
     if (heard.method === "DELETE") {
       if (!this.apps.delete(name!)) return this.#said(response, 404, { detail: `the box hosts no app called ${name}` });
@@ -72,7 +89,7 @@ class FakeGateway {
     const before = this.apps.get(name);
     const live = this.after === "live" ? release.release : (before?.live_release ?? null);
     const failed = this.after === "failed" ? "installing the dependencies failed:\nnpm ERR! 404" : null;
-    this.apps.set(name, { name, release: release.release, live_release: live, failed_why: failed, created_by: "m_ana", created_at: 1790000000 });
+    this.apps.set(name, { name, release: release.release, live_release: live, failed_why: failed, stopped: false, created_by: "m_ana", created_at: 1790000000 });
     return release;
   }
 
@@ -168,7 +185,7 @@ describe("pinecall deploy", () => {
 });
 
 describe("the other verbs", () => {
-  it("rolls back by sending an old release's sources again as the next one", async () => {
+  it("rolls back on the box's own door, and follows the release it made live", async () => {
     await deploying([]);
     await deploying([]);
     const out = written();
@@ -176,9 +193,47 @@ describe("the other verbs", () => {
     expect(await deploying(["rollback", "1"], out)).toBe(0);
 
     const [again] = gateway.heard.filter((one) => one.method === "POST").slice(-1);
-    expect(again!.body.toString()).toBe("sources of release 1");
-    expect(gateway.releases.get("support-line")?.at(-1)?.note).toBe("rollback to release 1");
+    expect(again!.path).toBe("/v1/hosted/support-line/rollback");
+    expect(JSON.parse(again!.body.toString())).toEqual({ release: 1 });
+    expect(gateway.heard.some((one) => one.path.endsWith("/source"))).toBe(false);
+    expect(out.text()).toContain("release 1's sources sent again as release 3");
     expect(out.text()).toContain("release 3 is live");
+  });
+
+  it("stops and starts an app, and the list says it is stopped", async () => {
+    await deploying([]);
+    const out = written();
+
+    expect(await deploying(["stop"], out)).toBe(0);
+    expect(await deploying(["list"], out)).toBe(0);
+    expect(await deploying(["start"], out)).toBe(0);
+
+    expect(out.text()).toContain("support-line: stopped — its process drains");
+    expect(out.text()).toContain("support-line  stopped · newest release 1");
+    expect(out.text()).toContain("support-line: started");
+  });
+
+  it("waits for lines read after the ask and prints them", async () => {
+    await deploying([]);
+    gateway.logs = [{ lines: "old\n", at: 1 }, { lines: "old\n", at: 1 }, { lines: "connected\ndoors web\n", at: Date.now() / 1000 + 5 }];
+    const out = written();
+
+    expect(await deploying(["logs"], out)).toBe(0);
+
+    expect(out.text()).toBe("connected\ndoors web\n");
+  });
+
+  it("says the lines are old when the box sends nothing new in time, and nothing when there is none", async () => {
+    await deploying([]);
+    gateway.logs = [{ lines: "connected\n", at: 1 }];
+    const out = written();
+    expect(await deploying(["logs"], out)).toBe(0);
+    gateway.logs = [{ lines: "", at: null }];
+    const none = written();
+    expect(await deploying(["logs"], none)).toBe(1);
+
+    expect(out.text()).toMatch(/^support-line: the box sent nothing new; these are its lines from \d+s ago\nconnected\n$/);
+    expect(none.text()).toContain("the box sent no lines yet");
   });
 
   it("lists every app with what serves it and what failed", async () => {
@@ -200,5 +255,25 @@ describe("the other verbs", () => {
     expect(await deploying(["rm"], written(), err)).toBe(1);
 
     expect(err.text()).toContain("the box hosts no app called support-line");
+  });
+
+  it("follows: prints what came after each read, until it is told to end", async () => {
+    await deploying([]);
+    const now = Date.now() / 1000;
+    gateway.logs = [
+      { lines: "a\nb\n", at: now + 5 },
+      { lines: "a\nb\n", at: now + 5 },
+      { lines: "b\nc\n", at: now + 10 },
+      { lines: "c\nd\n", at: now + 15 },
+    ];
+    const out = written();
+    let reads = 0;
+
+    const code = await inTheWorld("production", () =>
+      run(["logs", "--follow"], { out: out.stream, err: written().stream, env, cwd, everyMs: 5, withinMs: 200, until: () => ++reads > 4 }),
+    );
+
+    expect(code).toBe(0);
+    expect(out.text()).toBe("a\nb\nc\nd\n");
   });
 });
