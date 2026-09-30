@@ -46,8 +46,8 @@ describe("the groups the CLI answers to", () => {
   });
 
   it("names the verb and its purpose, so the line reads without the table beside it", () => {
-    expect(notBuiltYet("deploy", PLANNED["deploy"]!)).toBe(
-      "deploy is not built yet: put this app on a box and keep it there",
+    expect(notBuiltYet("costs", PLANNED["costs"]!)).toBe(
+      "costs is not built yet: what the calls cost, by agent, model or channel",
     );
   });
 
@@ -111,9 +111,9 @@ describe("the groups the CLI answers to", () => {
   it("prints nothing but the line when a planned group runs", () => {
     const out = collected();
 
-    plannedGroup("deploy", PLANNED["deploy"]!, out.stream).run([]);
+    plannedGroup("costs", PLANNED["costs"]!, out.stream).run([]);
 
-    expect(out.text()).toBe("deploy is not built yet: put this app on a box and keep it there\n");
+    expect(out.text()).toBe("costs is not built yet: what the calls cost, by agent, model or channel\n");
   });
 });
 

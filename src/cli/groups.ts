@@ -28,7 +28,6 @@ export const PLANNED: Record<string, string> = {
   costs: "what the calls cost, by agent, model or channel",
   call: "the agent dials a number, for real",
   tokens: "mint a browser token for a web call",
-  deploy: "put this app on a box and keep it there",
 };
 
 /** The message a planned group prints. */

@@ -51,6 +51,8 @@ path end to end, with every output under it.
 | [`voices`](#voices) | a vendor's voices in a language, and one of them played here before it is chosen | yes |
 | [`callbacks`](#callbacks) | the numbers people left when every seat was taken | yes |
 | [`data`](#data) | the org's data: erasures and their trail, its policy, consent, the do-not-call list, export | yes |
+| [`deploy`](#deploy) | this project run by the box itself: uploaded as a release, installed and started there; list, releases, rollback, rm | yes |
+| [`secrets`](#secrets) | the values the org's hosted apps are started with: list, set, rm — never read back | yes |
 | [`login`](#login) | sign this machine in through a browser; `link` asks for it when it is needed | yes |
 | [`whoami`](#whoami) | which gateway, which org, whether you act in production, and where the key came from | yes |
 
@@ -58,7 +60,7 @@ path end to end, with every output under it.
 production ([below](#where-the-gateway-and-the-key-come-from)) — and a verb that asks no gateway
 anything, `prompt`, refuses it instead of accepting a world it never visits.
 
-Declared and not written: `new`, `g`, `observe`, `costs`, `call`, `tokens`, `deploy`. Typing one prints `<verb> is not built yet: <what it is for>` and exits 0 — a person who types a verb deserves
+Declared and not written: `new`, `g`, `observe`, `costs`, `call`, `tokens`. Typing one prints `<verb> is not built yet: <what it is for>` and exits 0 — a person who types a verb deserves
 better than "unknown command". `src/cli/groups.ts` is the one place that says which half of the
 CLI is still a design, and a verb leaves that table in the commit that writes it.
 
@@ -1327,6 +1329,69 @@ ways of writing one fact are one fact.
 
 ---
 
+## `deploy`
+
+```console
+~/acme-support $ pinecall deploy --prod --note "reads the order's eta back"
+acme-support: release 4 sent · 38 KB · 3b507661b052
+acme-support: the box installs and starts it; the release before keeps answering meanwhile
+acme-support: release 4 is live
+```
+
+The box runs the project for you: the same `pinecall start` you would run on a server
+([production.md](production.md), "(c)"), in a container of its own on Pinecall's machines, with
+nothing to keep up. What it takes:
+
+- **The project, packed.** What git would commit — or every file, outside a checkout — and never
+  `node_modules`, `.git`, `dist` or any `.env`: the key in `.env` is yours, and the app gets one of
+  its own. 10 MB packed at most, 100 MB unpacked, 5 000 files; a link or a path out of the folder is
+  refused.
+- **A lockfile, and `pinecall` in the dependencies.** The box installs from `pnpm-lock.yaml`
+  (`pnpm install --frozen-lockfile --prod`), else `package-lock.json` (`npm ci`), else
+  `package.json`, in five minutes at most; the version of `pinecall` the lockfile pins is the one
+  that runs.
+- **The app's name**: this folder's name, or `--name`. Lower-case words and dashes. The first
+  upload makes the app — counted against the org's `hosted_apps` quota in that world, and given a
+  server's token of its own (`hosted app <name>` in the console's Tokens); every later upload is its
+  next release, numbered, never edited.
+
+Then the box installs the release, starts `pinecall start` (`--prod` in production) with the org's
+[secrets](#secrets), its token and the gateway's address in the environment, and the verb follows
+it: **live** once the release's agents have registered, which is when the release before is told to
+drain — so a deploy cuts no call. A release that does not install, exits, or registers nothing in
+two minutes is **failed**, printed with its last lines, and the release before keeps answering;
+the verb exits 1. `--no-follow` returns once the upload is kept.
+
+Every agent under `agents/` runs in the one process, as `pinecall start` holds them at the root.
+The sandbox's box unless `--prod`; each world hosts its own apps.
+
+| | |
+|---|---|
+| `pinecall deploy list` | every app of the org in the world: `live: release 3`, a release on its way, or the one that failed and why |
+| `pinecall deploy releases` | one app's releases, newest first: when, how big, who, and the note |
+| `pinecall deploy rollback <n>` | release n's sources uploaded again as the next release, and followed like any |
+| `pinecall deploy rm` | the app no longer hosted: its releases go and its token is revoked |
+
+The process prints no console link: a hosted app's output is a log, and a one-use code in a log is
+a way in for whoever reads it (see [`start`](#start)).
+
+## `secrets`
+
+```console
+$ printf %s "$CRM_TOKEN" | pinecall secrets set CRM_TOKEN --prod
+CRM_TOKEN kept · the org's hosted apps here start again with it
+$ pinecall secrets --prod
+CRM_TOKEN   2026-09-30 13:22  m_ana
+```
+
+What the org's hosted apps are started with, as environment variables: the org's, per world, so
+every app `deploy` put there starts with all of them. A name is an environment variable's
+(`CRM_TOKEN`), never one starting with `PINECALL_` — the box sets `PINECALL_KEY` and `PINECALL_URL`
+itself. The value is typed without echo, or piped; it never goes on the command line, where the
+shell would keep it. The gateway keeps it sealed and **nothing reads it back**: `list` shows names,
+who set each and when. Setting or dropping one starts every app of the org in that world again,
+the old process answering until the new one registers. `rm <NAME>` drops one.
+
 ## Exit codes
 
 | | |
@@ -1373,6 +1438,8 @@ code can call — over HTTP, in any language, with the same key.
 | `login` | `POST /v1/login/pairings`, `GET …/{code}/key` — then `GET /v1/whoami` to prove what it got |
 | `link` | what `login` knocks at when the machine is not signed in, then `GET /v1/login/orgs` for the person's orgs and `POST /v1/login/org` for the key in the one picked |
 | `whoami` | `GET /v1/whoami` at production, and at the sandbox |
+| `deploy` | `POST /v1/hosted/{name}/releases` (the tarball itself, `application/gzip`), then `GET /v1/hosted` every few seconds while it follows; `list` is `GET /v1/hosted`, `releases` `GET …/{name}/releases`, `rollback <n>` `GET …/releases/{n}/source` sent again as the next release, `rm` `DELETE /v1/hosted/{name}` |
+| `secrets` | `GET /v1/secrets` · `PUT`·`DELETE /v1/secrets/{name}` |
 | every verb, without `--prod` | `GET /.well-known/pinecall` at `PINECALL_URL` for its `elsewhere` (kept a day); the first time, `POST /v1/login/codes` there and `POST /v1/login {code, device}` at the sandbox for its key; `GET /v1/whoami` at the sandbox to prove a kept one — then its own doors at the sandbox, with `pinecall-env: sandbox` on each request and socket |
 | every verb, with `--prod` | the same doors at `PINECALL_URL`, with `pinecall-env: production` on each request and socket |
 | `prompt` | none. It is the one verb that needs no gateway and no key |

@@ -9,7 +9,7 @@ import { helpFor, PLANNED, plannedGroup, type Group } from "./groups.js";
 import { inTheWorld, withoutTheWorldFlag } from "./world.js";
 
 // Order is the help order: first-day verbs first.
-const BUILT = ["link", "start", "console", "chat", "prompt", "test", "simulate", "eval", "sessions", "runs", "agent", "lexicon", "pipeline", "line", "numbers", "personas", "judges", "docs", "memory", "remember", "supervise", "providers", "voices", "callbacks", "data", "login", "whoami"] as const;
+const BUILT = ["link", "start", "console", "chat", "prompt", "test", "simulate", "eval", "sessions", "runs", "agent", "lexicon", "pipeline", "line", "numbers", "personas", "judges", "docs", "memory", "remember", "supervise", "providers", "voices", "callbacks", "data", "deploy", "secrets", "login", "whoami"] as const;
 
 /** Every group name, built and planned, in help order. */
 export function groupNames(): string[] {
@@ -86,6 +86,8 @@ export async function groupFor(name: string, out: NodeJS.WritableStream = proces
   if (name === "voices") return (await import("./voices.js")).group;
   if (name === "callbacks") return (await import("./callbacks.js")).group;
   if (name === "data") return (await import("./data.js")).group;
+  if (name === "deploy") return (await import("./deploy.js")).group;
+  if (name === "secrets") return (await import("./org-secrets.js")).group;
   if (name === "login") return (await import("./login.js")).group;
   if (name === "whoami") return (await import("./whoami.js")).group;
   const planned = PLANNED[name];
@@ -122,6 +124,8 @@ export function usage(): string {
     "  voices    a vendor's voices in a language, and play one here before you choose it",
     "  callbacks the numbers people left when every seat was taken: who to call back",
     "  data      the org's data: erasures and their trail, who read a call, the policy, consent and the do-not-call list, export",
+    "  deploy    run this project on the box: a release it installs and starts, list | releases | rollback | rm",
+    "  secrets   list | set | rm the values the org's hosted apps are started with",
     "  login     sign this machine in through a browser; `link` asks for it when it is needed",
     "  whoami    which gateway, which org, whether you act in production, and where the key came from",
     "",

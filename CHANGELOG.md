@@ -6,6 +6,16 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Added
+
+- `pinecall deploy`: the project run by the box itself. It uploads the folder as a release (what git
+  would commit, never `node_modules` or `.env`), and the box installs it from the lockfile and
+  starts `pinecall start` in a container of its own, on a token it minted for the app; the verb
+  follows it until it is live — the release before answers until then — or failed, with its last
+  lines. `deploy list`, `releases`, `rollback <n>`, `rm`.
+- `pinecall secrets list | set | rm`: what the org's hosted apps are started with, per world; the
+  value typed without echo or piped, never read back.
+
 ### Changed
 
 - `pinecall start` prints the console's one-use login link only to a terminal. Under pm2, systemd,

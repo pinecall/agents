@@ -1,8 +1,8 @@
 # Production
 
-What answers the org's customers is an ordinary process on the org's own server — the same
-`pinecall start` a developer runs on a laptop, holding production's agent instead of a sandbox
-copy. It runs on a **server's token**, it restarts with every deploy like the rest of the app, and
+What answers the org's customers is an ordinary process — the same `pinecall start` a developer
+runs on a laptop, holding production's agent instead of a sandbox copy — on the org's own server,
+or on Pinecall's with `pinecall deploy --prod` ([(c)](#c-on-the-box-pinecall-deploy)). It runs on a **server's token**, it restarts with every deploy like the rest of the app, and
 nothing on the server logs in. Who may do what in production, and the team walked through it, is
 [worlds-and-teams.md](worlds-and-teams.md); the verbs are [the-cli.md](the-cli.md).
 
@@ -37,7 +37,7 @@ tokens, and a person's verbs there run in production with or without `--prod`.
 Nothing is derived from a token and nothing else is read: no profile, no file in a home directory,
 no `pinecall login`.
 
-## Two ways to run it
+## Three ways to run it
 
 ### (a) Inside your own Node app
 
@@ -95,6 +95,26 @@ exits instead of dialling back, and an app that mounts the SDK hears it on
 `pc.onStopped(why => …)`. A manager that restarts whatever exits — systemd's `Restart=always`,
 pm2 — starts it again, so a process kept that way is stopped for good where it is managed.
 
+### (c) On the box: `pinecall deploy`
+
+With no server of your own, the box runs the process:
+
+```console
+$ pinecall deploy --prod
+support-line: release 1 sent · 38 KB · 3b507661b052
+support-line: release 1 is live
+$ printf %s "$CRM_TOKEN" | pinecall secrets set CRM_TOKEN --prod
+```
+
+It uploads the project (never `node_modules` or `.env`), installs it from the lockfile, and starts
+`pinecall start --prod` in a container of its own on a **server's token it minted for the app**:
+nothing above applies, no token to paste and no process manager to configure. What `.env` held for
+your own code — a CRM's URL, its key — goes in as the org's secrets, which every hosted app of the
+org starts with. A deploy is the next release: the one before answers until the new one's agents
+register, then drains. `pinecall deploy list`, `releases`, `rollback <n>` and `rm` are the rest,
+and [the-cli.md](the-cli.md#deploy) says each. Your own code runs in an isolated sandbox that
+reaches the internet and nothing of Pinecall's; an org's plan says how many apps it may host.
+
 ## A deploy
 
 A deploy never cuts a call. On `SIGTERM` the process **drains**: it tells the gateway it is leaving,
@@ -103,7 +123,8 @@ the new one, which takes them when it registers — and the tools it is running 
 caller hears nothing of it; a tool the model asks for in the gap waits for the new process, up to
 its own timeout.
 
-The process needs **40 seconds** between the signal and the kill: ten for the gateway to answer, and
+`pinecall deploy` does all of this itself. On your own server, the process needs **40 seconds**
+between the signal and the kill: ten for the gateway to answer, and
 thirty for the slowest tool. Give it that under whatever runs it:
 
 - pm2: `pm2 start "pinecall start --prod" --name agent --kill-timeout 40000` (its default is 1.6 s,
