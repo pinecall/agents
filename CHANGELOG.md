@@ -6,6 +6,8 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.9.12] — A deploy that packs what is there, and a secret of several lines
+
 ### Fixed
 
 - `pinecall deploy` no longer crashes on a tracked file deleted from disk: it is left out, as
