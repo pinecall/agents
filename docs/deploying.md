@@ -38,7 +38,7 @@ binaries for linux-x64, which most do.
 own after `pinecall link`, or a server's token in CI ([below](#from-ci)). It needs the `app` scope
 (the developer and admin roles have it), and `--prod` needs your production switch on.
 
-**The app's name.** Lower-case words and dashes: `support-line`. It is the folder's name unless you
+**The app's name.** Lower-case words and dashes, 40 characters at most: `support-line`. It is the folder's name unless you
 pass `--name`, and it is the org's: two folders deploying under one name are two releases of one
 app. The first upload makes the app, within your plan's number of hosted apps.
 
@@ -152,10 +152,11 @@ secrets under **Settings ▸ Secrets**.
 lines, in the console or from a terminal. Never print a secret; `pinecall start` itself prints no
 console link when its output is not a terminal, for this reason.
 
-**If the process exits after going live** — out of memory, an uncaught exception — the release is
-reported failed with its last lines, like one that never started, and it is not started again: the
-app answers nothing until the next release or a `pinecall deploy rollback`. Watch `deploy list`,
-or the console's Apps, after a deploy.
+**If the process exits after going live** — out of memory, an uncaught exception — the box starts
+it again at once, and its last lines become the app's logs, so `pinecall deploy logs` says why it
+exited. After **five exits in ten minutes** it gives up: the release is reported failed with its
+last lines, and the app answers nothing until the next release, a changed secret or a
+`pinecall deploy rollback`. Watch `deploy list`, or the console's Apps, after a deploy.
 
 ## The sandbox and production
 
@@ -197,11 +198,12 @@ the release before keeps answering.
 | `a release's sources are 10 MB at most packed` · `unpacks to 100 MB at most` · `holds 5000 files at most` | something large is being packed: build output or data that `.gitignore` does not exclude |
 | `… is a link or a device` · `… leaves the project's folder` | a symbolic link, or a path outside the folder: a release holds files and folders only |
 | `the org has used 1 of its 1 hosted apps in the production` | the plan's number of hosted apps is reached: a new name is refused, a new release of an app you have is not |
-| `… is no name for an app` | the name is not lower-case words and dashes: pass `--name` |
+| `… is no name for an app` · `an app's name is 40 characters at most` | the name is not lower-case words and dashes, or too long: pass `--name` |
 | `installing the dependencies failed:` | the install's last lines follow: a lockfile out of step with `package.json`, a package with no prebuilt binary, a registry that asked for credentials |
 | `the process exited before its agents registered:` | `pinecall start` refused the project, and its last lines say why — a class field that is the world's now, a tool with no docstring, a syntax error |
 | `agent <slug> belongs to another org: a slug is one org's` | an agent's slug is taken by another org: give the class a `static slug` of your own |
 | `no agent registered from this release within 120s` | the process started and never connected: its last lines follow |
+| `the process exited 5 times in 10 minutes and is not run again` | a release that went live keeps crashing: its last lines follow, and `deploy logs` has more |
 | `release N was replaced by release M before it went live` | somebody deployed again meanwhile: the newest release is the one the box runs |
 
 ## What it costs
