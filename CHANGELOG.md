@@ -6,6 +6,12 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.9.10] — `pinecall deploy`: the box runs the project
+
+The box runs the project for an org that has no server of its own: `pinecall deploy` uploads it,
+the box installs it and starts it in an isolated container, and a deploy cuts no call. Needs a
+gateway with hosted apps (runtime `fee2c7f` or later, what `box.pinecall.io` runs).
+
 ### Added
 
 - `pinecall deploy`: the project run by the box itself. It uploads the folder as a release (what git
