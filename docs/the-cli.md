@@ -1340,7 +1340,8 @@ acme-support: release 4 is live
 
 The box runs the project for you: the same `pinecall start` you would run on a server
 ([production.md](production.md), "(c)"), in a container of its own on Pinecall's machines, with
-nothing to keep up. What it takes:
+nothing to keep up. **The whole guide — preparing a project, secrets, limits, CI, every refusal —
+is [deploying.md](deploying.md)**; what follows is the verb's reference. What it takes:
 
 - **The project, packed.** What git would commit — or every file, outside a checkout — and never
   `node_modules`, `.git`, `dist` or any `.env`: the key in `.env` is yours, and the app gets one of

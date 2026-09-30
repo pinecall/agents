@@ -63,7 +63,7 @@ pnpm exec pinecall test      # run the goldens
 Other useful verbs: `pinecall prompt --state <file>` prints the exact prompt a state produces;
 `pinecall docs push` uploads a knowledge base and `pinecall docs attach <base>` gives it to the
 agent; `pinecall deploy` runs the project on the box instead of your own server, with
-`pinecall secrets` for what it is started with. Every verb runs against the sandbox unless `--prod` is given. The CLI reads `PINECALL_KEY`
+`pinecall secrets` for what it is started with ([docs/deploying.md](docs/deploying.md)). Every verb runs against the sandbox unless `--prod` is given. The CLI reads `PINECALL_KEY`
 and `PINECALL_URL` from the environment or the project's `.env`. Full reference:
 [docs/the-cli.md](docs/the-cli.md).
 

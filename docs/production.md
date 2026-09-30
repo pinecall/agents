@@ -111,7 +111,7 @@ It uploads the project (never `node_modules` or `.env`), installs it from the lo
 nothing above applies, no token to paste and no process manager to configure. What `.env` held for
 your own code — a CRM's URL, its key — goes in as the org's secrets, which every hosted app of the
 org starts with. A deploy is the next release: the one before answers until the new one's agents
-register, then drains. `pinecall deploy logs` shows what the process printed, `stop` and `start`
+register, then drains — [deploying.md](deploying.md) is the whole guide. `pinecall deploy logs` shows what the process printed, `stop` and `start`
 take it off and back; `list`, `releases`, `rollback <n>` and `rm` are the rest,
 and [the-cli.md](the-cli.md#deploy) says each. Your own code runs in an isolated sandbox that
 reaches the internet and nothing of Pinecall's. On Pinecall's cloud an app costs $5 a month,
