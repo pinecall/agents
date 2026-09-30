@@ -114,7 +114,8 @@ org starts with. A deploy is the next release: the one before answers until the 
 register, then drains. `pinecall deploy logs` shows what the process printed, `stop` and `start`
 take it off and back; `list`, `releases`, `rollback <n>` and `rm` are the rest,
 and [the-cli.md](the-cli.md#deploy) says each. Your own code runs in an isolated sandbox that
-reaches the internet and nothing of Pinecall's; an org's plan says how many apps it may host.
+reaches the internet and nothing of Pinecall's. On Pinecall's cloud an app costs $5 a month,
+prorated by the hours it runs, and the sandbox hosts one free; an org's plan says how many it may host.
 
 ## A deploy
 
