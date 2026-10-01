@@ -162,6 +162,25 @@ export const ErrorEventSchema = z.strictObject({
   recoverable: z.boolean(),
 });
 
+/** The org's calls cost more today than its own days usually do: written once a day, on the agent's log. */
+export const SpendUnusualSchema = z.strictObject({
+  org: z.string(),
+  day: z.string(),
+  today_usd: z.number(),
+  usual_usd: z.number(),
+  multiple: z.number(),
+});
+
+/** A stage's vendor failed or came back; `serving` is the vendor the stage runs on now. */
+export const VendorSwitchedSchema = z.strictObject({
+  stage: z.enum(["llm", "stt", "tts"]),
+  vendor: z.string(),
+  model: z.string(),
+  available: z.boolean(),
+  serving: z.string(),
+  serving_model: z.string(),
+});
+
 /**
  * The gateway refused to open a call because every worker of the fleet was full. Written into the
  * agent's own log, which is the org's, before the door says no — the caller was offered a call

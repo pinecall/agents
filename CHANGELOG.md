@@ -6,6 +6,19 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.9.13] — An app reads every entry the runtime writes since 0.1.3
+
+### Fixed
+
+- An app no longer loses a call because the runtime named the worker that runs it:
+  `call.started` (and `call.attached`'s copy of it) reads `worker`. On 0.9.12 the strict schema
+  refused the whole entry, the app never held the call, and every tool of that call answered
+  "this call is no longer being served".
+- `call.score` reads `judged_by` (the judge model and the hash of its questions); on 0.9.12 the
+  score at hang-up was an error in the app.
+- Two events the runtime writes are known: `spend.unusual` (an org spending three times its usual
+  day) and `vendor.switched` (a stage moving to its fallback vendor and back).
+
 ## [0.9.12] — A deploy that packs what is there, and a secret of several lines
 
 ### Fixed

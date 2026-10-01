@@ -86,6 +86,8 @@ export const CallStartedSchema = z.strictObject({
   caller: ContactSchema.nullable(),
   started_at: z.number(),
   env: EnvSchema.nullish(),
+  /** The worker that runs the call, by name; absent from a gateway before 0.1.3. */
+  worker: z.string().nullish(),
 });
 
 /** A call changed hands without ending. */
@@ -152,6 +154,13 @@ export const CallRingingSchema = z.strictObject({
  * The last entry of a call: what the judges said about it at hang-up, one row per judge. Written
  * after call.summary, and the entry the log seals on.
  */
+/** Who gave a score: the judge model (null when code alone settled the panel) and one hash of every question asked. */
+export const JudgedBySchema = z.strictObject({
+  provider: z.string().nullable(),
+  model: z.string().nullable(),
+  criteria: z.string(),
+});
+
 export const CallScoreSchema = z.strictObject({
   passed: z.boolean().nullish(),
   not_judged: z.string().nullish(),
@@ -159,6 +168,8 @@ export const CallScoreSchema = z.strictObject({
   panel: z.array(z.string()).nullish(),
   judge_calls: z.int(),
   judge_cost_usd: z.number().nullish(),
+  /** Absent on a score from before judges were named, or with nothing judged. */
+  judged_by: JudgedBySchema.nullish(),
 });
 
 export type CallScore = z.infer<typeof CallScoreSchema>;

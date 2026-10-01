@@ -55,6 +55,7 @@ import {
   MessageWaitingSchema,
   PongSchema,
   PromptChangedSchema,
+  SpendUnusualSchema,
   StateChangedSchema,
   SupervisorEndedSchema,
   SupervisorReleasedSchema,
@@ -67,6 +68,7 @@ import {
   UserStateChangedSchema,
   UserTranscriptSchema,
   UserTurnEndedSchema,
+  VendorSwitchedSchema,
 } from "./events.js";
 import {
   AgentConfiguredSchema,
@@ -165,6 +167,7 @@ export const EVENT_SCHEMAS = {
   "prompt.changed": PromptChangedSchema,
   "room.opened": RoomOpenedSchema,
   "room.sent": RoomSentSchema,
+  "spend.unusual": SpendUnusualSchema,
   "state.changed": StateChangedSchema,
   "supervisor.ended": SupervisorEndedSchema,
   "supervisor.released": SupervisorReleasedSchema,
@@ -181,6 +184,7 @@ export const EVENT_SCHEMAS = {
   "turn.user": UserTurnEndedSchema,
   "user.state": UserStateChangedSchema,
   "user.transcript": UserTranscriptSchema,
+  "vendor.switched": VendorSwitchedSchema,
 } as const;
 
 export type EventType = keyof typeof EVENT_SCHEMAS;
