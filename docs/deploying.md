@@ -211,5 +211,5 @@ the release before keeps answering.
 On Pinecall's cloud an app costs **$5 a month, prorated by the hours it runs**: the box counts the
 time each app serves, day by day, and a stopped app counts nothing. The sandbox hosts one app free.
 Its calls are billed as any call is ([pinecall.io/pricing](https://pinecall.io/pricing)). On a
-runtime you run yourself, the operator installs the runner ([the runtime's
-infra/apps](https://github.com/pinecall/runtime/tree/main/infra/apps)) and decides its own prices.
+runtime you run yourself, the operator runs the runner (`pinecall-runtime runner start`, on a
+machine of its own) and decides its own prices.
