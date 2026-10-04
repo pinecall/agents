@@ -87,8 +87,6 @@ changes. **Never add a `paths` mapping for `pinecall`**: the app resolves it thr
  * Todo lo que dices se lee en voz alta: sin listas, sin markdown, los números como se dicen.
  */
 export default class ClinicaNorte extends Agent {
-  language = "es";
-
   stage: Stages<"identify" | "choose" | "book" | "done"> = "identify";
   patient?: Patient | undefined;
   slots: Slot[] = [];
