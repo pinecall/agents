@@ -6,6 +6,21 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.9.14] — The org's carrier accounts from the CLI
+
+### Added
+
+- `pinecall carriers list | show | add | drop`: a Twilio account, a SIP peer or a WhatsApp number
+  at Meta is kept from a terminal, where before it was only the console's Numbers screen or a
+  curl at `PUT /v1/carrier`. Bringing a Twilio number to an agent is now two verbs,
+  `pinecall carriers add twilio …` and `pinecall numbers import …`.
+- Every secret is read on stdin and never from the command line, where `ps` and the shell's
+  history would keep it: typed with nothing echoed, or piped one per line (a SIP peer's password,
+  then its outbound password when `--outbound-username` is given). Nothing is printed back.
+- `show` says where each of a peer's networks stands with the box's operator (`waiting`,
+  `approved`, `refused`); `drop` forgets an account and leaves its numbers routed until each is
+  dropped. The verb is documented in the CLI reference (`docs/the-cli.md`, "carriers").
+
 ## [0.9.13] — An app reads every entry the runtime writes since 0.1.3
 
 ### Fixed

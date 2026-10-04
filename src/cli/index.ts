@@ -9,7 +9,7 @@ import { helpFor, PLANNED, plannedGroup, type Group } from "./groups.js";
 import { inTheWorld, withoutTheWorldFlag } from "./world.js";
 
 // Order is the help order: first-day verbs first.
-const BUILT = ["link", "start", "console", "chat", "prompt", "test", "simulate", "eval", "sessions", "runs", "agent", "lexicon", "pipeline", "line", "numbers", "personas", "judges", "docs", "memory", "remember", "supervise", "providers", "voices", "callbacks", "data", "deploy", "secrets", "login", "whoami"] as const;
+const BUILT = ["link", "start", "console", "chat", "prompt", "test", "simulate", "eval", "sessions", "runs", "agent", "lexicon", "pipeline", "line", "numbers", "carriers", "personas", "judges", "docs", "memory", "remember", "supervise", "providers", "voices", "callbacks", "data", "deploy", "secrets", "login", "whoami"] as const;
 
 /** Every group name, built and planned, in help order. */
 export function groupNames(): string[] {
@@ -82,6 +82,7 @@ export async function groupFor(name: string, out: NodeJS.WritableStream = proces
   if (name === "supervise") return (await import("./supervise.js")).group;
   if (name === "sessions") return (await import("./sessions.js")).group;
   if (name === "numbers") return (await import("./numbers.js")).group;
+  if (name === "carriers") return (await import("./carriers.js")).group;
   if (name === "providers") return (await import("./providers.js")).group;
   if (name === "voices") return (await import("./voices.js")).group;
   if (name === "callbacks") return (await import("./callbacks.js")).group;
@@ -114,6 +115,7 @@ export function usage(): string {
     "  pipeline  what the agent hears, decides and speaks with, and the knobs over it",
     "  line      which phone is yours, and whose terminal anybody else's call rings in",
     "  numbers   list | import | drop the numbers the org answers at",
+    "  carriers  list | show | add | drop the org's carrier accounts: Twilio, a SIP peer, WhatsApp",
     "  personas  list | show | add | edit | rm | try an agent's synthetic callers",
     "  judges    list | add | rm the org's judges and the agent's own: a question asked of calls at hang-up",
     "  docs      the documents the agent searches: push | list | drop | eval | attach",

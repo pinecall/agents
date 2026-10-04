@@ -41,6 +41,7 @@ path end to end, with every output under it.
 | [`pipeline`](#pipeline) | what it hears, decides and speaks with, as the next call would be built | yes |
 | [`line`](#line) | which phone is yours, and whose terminal a call from anybody else's rings in | yes |
 | [`numbers`](#numbers) | which number reaches which agent, at the instance it answers at | yes |
+| [`carriers`](#carriers) | the org's carrier accounts — a Twilio account, a SIP peer, a WhatsApp number — where its numbers live | yes |
 | [`personas`](#personas) | an agent's synthetic callers, kept by the gateway: list, show, add, edit, rm, try, push | yes |
 | [`judges`](#judges) | the org's judges and the agent's own, a question asked of calls at hang-up: list, add, rm | yes |
 | [`docs`](#docs) | the documents the agent searches: push, list, drop, eval, attach, detach, attached | yes |
@@ -944,6 +945,59 @@ what you read before letting the gateway touch a carrier account. `drop` forgets
 takes the number off the SFU trunk; the carrier account keeps it, so nobody is un-bought by a typo.
 Whose corner a ring lands in, once a world is answering it, is [`line`](#line).
 
+## `carriers`
+
+```
+pinecall carriers list
+pinecall carriers show [<account>]
+pinecall carriers add twilio --account-sid <AC…> --user <SK…> [--label <name>]
+pinecall carriers add sip --username <user> --address <ip or network>… [--outbound-host <host>]
+                      [--outbound-transport auto|udp|tcp|tls] [--outbound-username <user>] [--label <name>]
+pinecall carriers add whatsapp --phone-number-id <id> [--label <name>]
+pinecall carriers drop [<account>]
+```
+
+A carrier account is **where the org's numbers live**, and the org holds as many as it has: a
+Twilio account, a SIP peer (its own PBX, or a carrier with no API here), a WhatsApp number at
+Meta. An account is the org's, one for both worlds; a number it owns is routed to an agent with
+[`numbers import`](#numbers), in the world it should answer in. So bringing a Twilio number to an
+agent is two verbs:
+
+```console
+$ pinecall carriers add twilio --account-sid AC0123… --user SK4567… --label Clínica
+Twilio secret (the API key's, or the auth token):
+kept: AC0123… · twilio · Clínica
+  route one of its numbers: `pinecall numbers import <+34…> --agent <slug>`
+$ pinecall numbers import +34910000000 --agent clinica-norte
+```
+
+**Every secret is read on stdin, never from the command line**, where `ps` and the shell's history
+would keep it: typed with nothing echoed on a terminal, or piped one per line —
+`printf '%s\n' "$TWILIO_SECRET" | pinecall carriers add twilio …`. A SIP peer reads its password,
+and its outbound password on a second line when `--outbound-username` is given. Nothing is printed
+back: the gateway seals each secret under the box's vault key and answers the account by its id.
+
+- **Twilio.** `--user` is an API key SID (make one at Twilio → Account → API keys, and revoke it
+  there any time) or the account SID again, with the auth token as the secret. The pair is tried
+  against Twilio before anything is kept, so a pair Twilio refuses is `Twilio refused these
+  credentials` and exit 1. With a Twilio account the box finds the trunk that points at it, or
+  makes one, when a number is imported.
+- **A SIP peer.** `--address` is each network it calls from, repeated: an IPv4 address or a network
+  no wider than a `/24`, public. Each one **waits for the box's operator** to approve it before
+  5060 opens to it; `show` prints `waiting`, `approved` or `refused` beside each. The four
+  `--outbound-*` flags say where the box dials it; unsaid, the box dials with the pair it
+  registers with.
+- **WhatsApp.** `--phone-number-id` is the number's id at Meta, and the access token is the secret.
+
+`add` with an account the org already holds **replaces its secret**: that is how a key is rotated.
+An account's id is its own: Twilio's account SID, the peer's username, Meta's phone number id.
+`list` is every account, oldest first, one line each with its id; `show` is one, the org's only
+account or the one named; `drop` forgets one, and with several the id is required. **Its numbers
+stay routed** until each is let go with `numbers drop`, so forgetting an account never silences a
+line by surprise. The same accounts are the console's **Numbers** screen, *Add a number* —
+[the console](https://docs.pinecall.io/supervision/console/) — and the REST doors are
+[phone numbers](https://docs.pinecall.io/channels/phone-numbers/), "The accounts".
+
 ## `providers`
 
 ```
@@ -1431,6 +1485,7 @@ code can call — over HTTP, in any language, with the same key.
 | `memory` | `GET`·`DELETE /v1/contacts/{contact}/memory`, `POST /v1/contacts/memory/eval` |
 | `remember` | `POST /v1/agents/{slug}/memory/extraction` |
 | `numbers` | `GET`·`POST /v1/numbers`, `DELETE /v1/numbers/{number}` |
+| `carriers` | `GET /v1/carriers`, `GET`·`PUT`·`DELETE /v1/carrier[?account=]` |
 | `providers` | `GET /v1/providers` · `PUT`·`DELETE`·`GET /v1/provider-keys[/{vendor}]` |
 | `voices` | `GET /v1/voices` · `POST /v1/voices/sample` |
 | `callbacks` | `GET /v1/callbacks[?agent=&after=]` |
