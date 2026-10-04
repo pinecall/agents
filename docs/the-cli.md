@@ -934,6 +934,15 @@ pinecall numbers import <+34…> --agent <slug> [--channel phone|whatsapp] [--dr
 pinecall numbers drop <+34…>
 ```
 
+**Adding a number to the org from a terminal is `numbers import`**: the number is one an account of
+the org owns, and the account itself is kept first with [`carriers add`](#carriers) when the org
+does not hold it yet. A Twilio number reaching an agent is these two lines, and nothing else:
+
+```console
+$ pinecall carriers add twilio --account-sid AC0123… --user SK4567…   # once, the secret on stdin
+$ pinecall numbers import +34910000000 --agent clinica-norte          # the number, to the agent
+```
+
 A number is **one instance's** and reaches one agent: it is imported where it answers, and `list`
 shows this instance's — the sandbox's, or production's with `--prod`. Nothing moves a number
 between the two: there is no such door, because a number is a trunk on the SFU and a route in one
