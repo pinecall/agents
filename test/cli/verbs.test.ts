@@ -16,7 +16,7 @@ import { consoleLine, consoleUrl, whyNoConsole } from "../../src/cli/start-conso
 import { inTheWorld } from "../../src/cli/world.js";
 import { PRODUCTIONS_KEY, TwoInstances } from "./two-instances.js";
 
-const GATEWAY = "https://box.pinecall.io";
+const GATEWAY = "https://cloud.pinecall.io";
 
 /** A stream that keeps what was written, so a test can read output as a string. */
 function collected(): { stream: NodeJS.WritableStream; text(): string } {
@@ -30,7 +30,7 @@ describe("the line `pinecall start` prints when the socket is up", () => {
   it("names the agent, the gateway and the tools, and no page", () => {
     const line = connectedLine({ slug: "clinica-norte", url: GATEWAY, tools: 4 });
 
-    expect(line).toBe("clinica-norte · connected to https://box.pinecall.io · tools 4");
+    expect(line).toBe("clinica-norte · connected to https://cloud.pinecall.io · tools 4");
     expect(line).not.toContain("console");
   });
 
@@ -47,7 +47,7 @@ describe("the line `pinecall start` prints when the socket is up", () => {
     });
 
     expect(line).toBe(
-      "clinica-norte · acme · sandbox · connected to https://box.pinecall.io"
+      "clinica-norte · acme · sandbox · connected to https://cloud.pinecall.io"
         + " · key from credentials · tools 4",
     );
   });
@@ -55,7 +55,7 @@ describe("the line `pinecall start` prints when the socket is up", () => {
   it("says none of it rather than guessing when the gateway would not answer", () => {
     const line = connectedLine({ slug: "clinica-norte", url: GATEWAY, tools: 1, source: "env" });
 
-    expect(line).toBe("clinica-norte · connected to https://box.pinecall.io · key from env · tools 1");
+    expect(line).toBe("clinica-norte · connected to https://cloud.pinecall.io · key from env · tools 1");
   });
 
   // Doors are the org's rows, fetched after connecting; the class declares none. Web is always one.
@@ -76,10 +76,10 @@ describe("the line `pinecall start` prints when the socket is up", () => {
 describe("the console's URL `pinecall start` and `pinecall console` print", () => {
   // The browser signs in with a one-use code in the URL; the key never appears in it.
   it("is the console's page for this agent, with the code, and never a key", () => {
-    expect(consoleUrl("https://box.pinecall.io/", "clinica-norte", "lc_abc")).toBe(
-      "https://box.pinecall.io/a/clinica-norte?login=lc_abc",
+    expect(consoleUrl("https://cloud.pinecall.io/", "clinica-norte", "lc_abc")).toBe(
+      "https://cloud.pinecall.io/a/clinica-norte?login=lc_abc",
     );
-    expect(consoleUrl(GATEWAY, "tienda sur", "lc_a/b")).toBe("https://box.pinecall.io/a/tienda%20sur?login=lc_a%2Fb");
+    expect(consoleUrl(GATEWAY, "tienda sur", "lc_a/b")).toBe("https://cloud.pinecall.io/a/tienda%20sur?login=lc_a%2Fb");
   });
 
   it("is the org's floor when no agent was named", () => {

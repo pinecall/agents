@@ -452,7 +452,7 @@ that writes it.
 **Where the key comes from** (`cli/env.ts`, the one place that decides it, for every verb):
 `PINECALL_KEY` and `PINECALL_URL` from the process's environment — a server's secrets, a CI job's —
 else from the nearest `.env` walking up from the cwd (`cli/dotenv.ts`), which `pinecall link`
-wrote. `PINECALL_URL` is `https://box.pinecall.io` unless one of the two names another, and it is
+wrote. `PINECALL_URL` is `https://cloud.pinecall.io` unless one of the two names another, and it is
 **production's**: the identity, where a person signs in. A project folder is the org it was linked
 to; a second org is a second folder, and nothing is switched. With no key the verb stops on
 `NO_KEY`, naming `pinecall link`. Every verb that connects opens with `doorLine`: `gateway <url> ·

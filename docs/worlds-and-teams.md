@@ -88,10 +88,10 @@ and it is read at every request: switched off, the very next `--prod` is refused
 ```console
 ~/clinica-norte $ pinecall link
 open this to sign in:
-https://box.pinecall.io/cli?c=cli_…
+https://cloud.pinecall.io/cli?c=cli_…
 
 waiting…
-signed in to https://box.pinecall.io as Ana García
+signed in to https://cloud.pinecall.io as Ana García
 ▸ clinica · PINECALL_KEY written to .env
 ```
 

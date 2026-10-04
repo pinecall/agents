@@ -31,7 +31,7 @@ A token belongs to the instance it was made on, and its prefix says which world 
 on a server says `--prod`, and the CLI holds the two to each other before it knocks — a sandbox
 token pasted by mistake is refused out loud, ``this PINECALL_KEY is a sandbox server's token, made
 at <url>: run the verb without --prod``, and a production token without the flag the same way.
-`PINECALL_URL` goes beside the key only when the instance is not `https://box.pinecall.io`. A
+`PINECALL_URL` goes beside the key only when the instance is not `https://cloud.pinecall.io`. A
 gateway of one instance — your own runtime, with no sandbox beside it — makes only production
 tokens, and a person's verbs there run in production with or without `--prod`.
 Nothing is derived from a token and nothing else is read: no profile, no file in a home directory,
@@ -51,7 +51,7 @@ import { Pinecall } from "pinecall/client";
 
 import { Recepcion } from "./agents/recepcion/agent.js";
 
-const pc = new Pinecall({ url: "https://box.pinecall.io", apiKey: process.env.PINECALL_KEY });
+const pc = new Pinecall({ url: "https://cloud.pinecall.io", apiKey: process.env.PINECALL_KEY });
 mount(Recepcion, { pc, source: readFileSync(new URL("./agents/recepcion/agent.tsx", import.meta.url), "utf8") });
 await pc.connect();
 

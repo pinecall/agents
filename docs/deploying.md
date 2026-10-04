@@ -106,7 +106,7 @@ Your code reads them as it always did: `process.env.CRM_TOKEN`. What an app is s
 |---|---|
 | every secret of the org in that world | `pinecall secrets set`, or the console's Settings ▸ Secrets |
 | `PINECALL_KEY` | the box: the app's own server token, for this world |
-| `PINECALL_URL` | the box: the gateway of this world (`https://box.pinecall.io`, or the sandbox's) |
+| `PINECALL_URL` | the box: the gateway of this world (`https://cloud.pinecall.io`, or the sandbox's) |
 | `HOME=/tmp`, `NO_COLOR=1` | the box |
 
 A secret is the **org's, per world**: every hosted app of the org in that world starts with all of

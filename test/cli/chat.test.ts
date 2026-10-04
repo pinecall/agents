@@ -101,8 +101,8 @@ describe("naming an agent, as against naming a file", () => {
 describe("`pinecall chat <agent>` mounts nothing", () => {
   // Caller side only: the gateway hands the call to whichever process holds the slug, so no `app=`.
   it("opens the chat socket at the slug with no app of its own", () => {
-    expect(chatUrl("https://box.pinecall.io", "clinica-norte", undefined, "+34600123456")).toBe(
-      "wss://box.pinecall.io/v1/chat?agent=clinica-norte&contact=%2B34600123456",
+    expect(chatUrl("https://cloud.pinecall.io", "clinica-norte", undefined, "+34600123456")).toBe(
+      "wss://cloud.pinecall.io/v1/chat?agent=clinica-norte&contact=%2B34600123456",
     );
   });
 

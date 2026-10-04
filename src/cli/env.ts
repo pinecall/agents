@@ -11,7 +11,7 @@ import { refusal } from "./whoami.js";
 import { PRODUCTION, SANDBOX, theChosenWorld } from "./world.js";
 
 /** Pinecall's cloud: the default production gateway. */
-export const CLOUD_URL = "https://box.pinecall.io";
+export const CLOUD_URL = "https://cloud.pinecall.io";
 
 /** Environment variables for the key and the gateway URL. */
 export const KEY_VARIABLE = "PINECALL_KEY";

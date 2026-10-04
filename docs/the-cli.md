@@ -72,7 +72,7 @@ CLI is still a design, and a verb leaves that table in the commit that writes it
 **The project's, the way any app reads its own secrets** (`src/cli/env.ts`). Every verb reads
 `PINECALL_KEY` and `PINECALL_URL` from the process's environment — a server's secrets, a CI job's
 — else from the nearest `.env` walking up from the directory it runs in, which
-[`pinecall link`](#link) wrote. `PINECALL_URL` is `https://box.pinecall.io` unless one of the two
+[`pinecall link`](#link) wrote. `PINECALL_URL` is `https://cloud.pinecall.io` unless one of the two
 names another. Nothing else is read: v1's `PINECALL_API_KEY` never is, because a shell that still
 had v1's key exported once pointed every verb at another org with every line reading the same.
 
@@ -232,11 +232,11 @@ It binds no port and serves no page. One line per log entry on stdout, and under
 line where its console is — **and there are two consoles, one per world**, each served by its own
 instance at its own URL: the one this process registered at. In the sandbox the line reads
 `console  https://sandbox.pinecall.io/a/clinica-norte?login=lc_…` — the URL production named — and
-in production `console  https://box.pinecall.io/a/clinica-norte?login=lc_…`: a one-use code minted
+in production `console  https://cloud.pinecall.io/a/clinica-norte?login=lc_…`: a one-use code minted
 by that instance for the key this process holds there, dead in five minutes, which the page spends
 for a key of its own and never sees this process's. **Only in a terminal**: when stdout is not one —
 pm2, systemd, a container, a hosted app — the line is the console's address with no code
-(`console  https://box.pinecall.io/a/clinica-norte`) and none is minted, because that output is a log
+(`console  https://cloud.pinecall.io/a/clinica-norte`) and none is minted, because that output is a log
 somebody else reads later. Opening a console without one asks for an email, a password, and the org
 only when the person belongs to several.
 
@@ -1098,7 +1098,7 @@ One line each — when, the agent, the number, the channel, who took it — olde
 (`callback.requested`, on the agent's log); dialing back is your app's.
 
 ```
-gateway https://box.pinecall.io · key from .env
+gateway https://cloud.pinecall.io · key from .env
 2026-09-11 19:20  clinica-norte  +34600000000  phone  via overflow on call_9f2c…
 2026-09-11 19:22  clinica-norte  +34611111111  web    via the widget
 ```
@@ -1205,7 +1205,7 @@ machine in through the browser when it is not ([`login`](#login), the same dance
 (`GET /v1/login/orgs`), asks which one this project is — `--org` names it — and mints your key
 there (`POST /v1/login/org`), unless it is the org this machine is signed in to, whose key it
 already holds. The key goes into `./.env` as `PINECALL_KEY`, and `PINECALL_URL` beside it when the
-gateway is not `https://box.pinecall.io`; every other line of the file is left as it was. Both are
+gateway is not `https://cloud.pinecall.io`; every other line of the file is left as it was. Both are
 **production's** — where a person is kept — and nothing of the sandbox's is written: its URL is
 what production names, and its key is minted from this one by the first sandbox verb
 ([above](#where-the-gateway-and-the-key-come-from)).
@@ -1236,19 +1236,19 @@ does not change.
 
 ```console
 $ pinecall login
-gateway  https://box.pinecall.io   (the default — `pinecall login <url>` for your own)
+gateway  https://cloud.pinecall.io   (the default — `pinecall login <url>` for your own)
 
 open this to sign in:
-https://box.pinecall.io/cli?c=cli_…
+https://cloud.pinecall.io/cli?c=cli_…
 
 waiting…
-signed in to https://box.pinecall.io as Ana García
+signed in to https://cloud.pinecall.io as Ana García
 ```
 
 **It signs the machine in, and no verb runs on that.** The key is proved at `/v1/whoami` and kept
 in `~/.pinecall/session.json`; what a project runs on is the key [`link`](#link) mints from it into
 the project's `.env`. `link` signs in on its own when it has to, so this is rarely typed. With no
-URL it is `https://box.pinecall.io`, and it says so above the link, so a person who meant their
+URL it is `https://cloud.pinecall.io`, and it says so above the link, so a person who meant their
 own box sees the assumption before anything is kept. The URL is production's: a sandbox instance
 keeps no password and signs nobody in (it answers `404` naming where people sign in), and the
 sandbox's key is minted from this machine's projects, never logged in to. The word in the link
@@ -1272,7 +1272,7 @@ keys themselves are neither printed nor sent anywhere else.
 
 ```console
 $ pinecall whoami
-gateway https://box.pinecall.io · key from .env · production
+gateway https://cloud.pinecall.io · key from .env · production
   org clinica · key k_4f2a1d9c66b30e17 · production · ana-macbook · production: yes
 gateway https://sandbox.pinecall.io · key from session.json, minted from .env's · sandbox
   org clinica · key k_91c0e2aa5d7f3b48 · sandbox · ana-macbook · production: yes

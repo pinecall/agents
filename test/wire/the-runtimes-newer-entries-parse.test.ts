@@ -4,7 +4,7 @@ import { expect, it } from "vitest";
 
 import { decodeEntry, eventOf } from "../../src/wire/codec.js";
 
-// As box.pinecall.io writes them (2026-10-01). An app on 0.9.12 dropped call.started for its
+// As cloud.pinecall.io writes them (2026-10-01). An app on 0.9.12 dropped call.started for its
 // `worker`, so it never held the call and every tool answered "no longer being served".
 const entry = (type: string, data: Record<string, unknown>): unknown => ({
   seq: 2, ts: 1790878264.33, call: "call_1ee0", agent: "pinecall", type, ephemeral: false, data,
