@@ -7,6 +7,13 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ## [Unreleased]
 
 ### Changed
+
+- **A `pc_live_` key goes to the world asked.** The runtime mints a person's key `pc_live_` (it opens
+  both worlds), so the prefix cannot tell it from a production server's token: the CLI no longer
+  refused a person's key without `--prod` as "a production server's token" — every person was kept
+  out of the sandbox. Only `pc_test_` is checked before the request; a production token asked for
+  the sandbox is refused by the gateway, in its words. `whoami` says what a key is from the
+  gateway's answer, not its prefix.
 - **Breaking: one gateway serves both worlds, and the CLI discovers no sandbox.** `PINECALL_URL`
   is the one gateway for the sandbox and production alike (`https://cloud.pinecall.io` by default);
   a verb without `--prod` acts in the sandbox and with `--prod` in production, at the same URL with

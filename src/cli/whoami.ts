@@ -2,10 +2,10 @@
 
 import { parseArgs } from "node:util";
 
-import { aServersWorld, doorIn, doorLine, keyFrom, NO_KEY, type Open } from "./env.js";
+import { doorIn, doorLine, keyFrom, NO_KEY, type Open } from "./env.js";
 import type { Group } from "./groups.js";
 import { asked, type Door } from "./testing/gateway.js";
-import { PRODUCTION, theChosenWorld } from "./world.js";
+import { PRODUCTION, SANDBOX, theChosenWorld } from "./world.js";
 
 // Also used by `login`, through whoIs().
 const WHOAMI = "/v1/whoami";
@@ -56,7 +56,7 @@ export async function run(
   try {
     const door = doorIn(world, { ...held, apiKey, world });
     const who = await whoIs(door);
-    out.write(`${doorLine(door)}\n  ${describing(who)}\n  ${opening(door, who)}\n`);
+    out.write(`${doorLine(door)}\n  ${describing(who)}\n  ${opening(who)}\n`);
     return 0;
   } catch (refused) {
     err.write(`${world}: ${refusal(refused)}\n`);
@@ -82,10 +82,12 @@ export function describing(who: Who): string {
   return said.join(" · ");
 }
 
-/** Which worlds the key opens at this gateway, from the token's prefix or the person's switch. */
-export function opening(door: Open, who: Who): string {
-  const token = aServersWorld(door.apiKey);
-  if (token !== undefined) return `a ${token} server's token: that world alone${token === PRODUCTION ? ", with --prod" : ""}`;
+/** Which worlds the key opens at this gateway: a server's token its own, a person's by their switch. */
+export function opening(who: Who): string {
+  if (who.name === undefined || who.name === null) {
+    const token = who.env === PRODUCTION ? PRODUCTION : SANDBOX;
+    return `a ${token} server's token: that world alone${token === PRODUCTION ? ", with --prod" : ""}`;
+  }
   if (who.production) return "a person's key: the sandbox without --prod, production with it";
   return "a person's key: the sandbox; production is refused until an admin turns your switch on in Team";
 }

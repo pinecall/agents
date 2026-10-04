@@ -95,15 +95,20 @@ describe("a server's token", () => {
     expect(await inTheWorld("production", async () => (await theDoor(env("pc_live_the_orgs_token"), written().stream, project))?.world)).toBe("production");
   });
 
-  it("is refused in one sentence when --prod names the other world", async () => {
-    const live = written();
+  it("is refused in one sentence when --prod names the sandbox token's other world", async () => {
     const test = written();
 
-    expect(await theDoor(env("pc_live_the_orgs_token"), live.stream, project)).toBeUndefined();
     expect(await inTheWorld("production", async () => await theDoor(env("pc_test_the_orgs_token"), test.stream, project))).toBeUndefined();
 
-    expect(live.text()).toBe(`${anotherWorldsToken("production", BOX)}\n`);
-    expect(live.text()).toContain("run the verb with --prod");
+    expect(test.text()).toBe(`${anotherWorldsToken("sandbox", BOX)}\n`);
     expect(test.text()).toContain("run the verb without --prod");
+  });
+
+  // A person's key is minted pc_live_ too: only the gateway can tell it from a production token.
+  it("sends a pc_live_ key to the world asked, for the gateway to place", async () => {
+    const live = written();
+
+    expect((await theDoor(env("pc_live_the_orgs_token"), live.stream, project))?.world).toBe("sandbox");
+    expect(live.text()).toBe("");
   });
 });

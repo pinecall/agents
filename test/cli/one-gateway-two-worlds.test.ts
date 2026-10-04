@@ -91,11 +91,23 @@ describe("a server's token", () => {
     expect(gateway.heard).toEqual([]);
   });
 
-  it("is refused without --prod when it is production's", async () => {
+  // pc_live_ is a person's key's prefix too: the CLI sends it, and the gateway says what it is.
+  it("is refused by the gateway without --prod when it is production's", async () => {
+    gateway.tokens.add("pc_live_the_servers_token");
     const err = written();
 
-    expect(await theDoor(environment("pc_live_the_servers_token"), err.stream, home)).toBeUndefined();
-    expect(err.text()).toBe("this PINECALL_KEY is a production server's token, made at " + gateway.url + ": run the verb with --prod\n");
+    expect((await theDoor(environment("pc_live_the_servers_token"), err.stream, home))?.world).toBe("sandbox");
+    expect(await whoami([], written().stream, err.stream, environment("pc_live_the_servers_token"))).toBe(1);
+    expect(err.text()).toBe(
+      "sandbox: the gateway answered 403: this key is a production server's token, and this request is for sandbox: a server's token opens the world it was made in\n",
+    );
+  });
+
+  it("lets a person's key, minted pc_live_ as the runtime mints it, act in the sandbox", async () => {
+    const err = written();
+
+    expect((await theDoor(environment("pc_live_a_persons_key"), err.stream, home))?.world).toBe("sandbox");
+    expect(err.text()).toBe("");
   });
 });
 

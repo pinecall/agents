@@ -63,7 +63,12 @@ export class OneGateway {
     const token = knock.bearer !== undefined && this.tokens.has(knock.bearer);
     if (knock.bearer !== PERSONS_KEY && !token) return [401, { detail: "this door takes an API key" }];
     // A person's key acts in the world the header names, the sandbox when it names none.
-    const world = token ? (knock.bearer!.startsWith("pc_live_") ? "production" : "sandbox") : (knock.world ?? "sandbox");
+    const own = knock.bearer!.startsWith("pc_live_") ? "production" : "sandbox";
+    // A server's token acts in its own world; a header naming the other is refused, as the runtime does.
+    if (token && knock.world !== undefined && knock.world !== own) {
+      return [403, { detail: `this key is a ${own} server's token, and this request is for ${knock.world}: a server's token opens the world it was made in` }];
+    }
+    const world = token ? own : (knock.world ?? "sandbox");
     if (!token && world === "production" && !this.opensProduction) {
       return [403, { detail: "Berna has no production access: an admin gives it in Team" }];
     }

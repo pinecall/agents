@@ -51,9 +51,11 @@ export function keyFrom(env: NodeJS.ProcessEnv = process.env, from: string = pro
 }
 
 // Constants are read inside the function, not at module load: world.ts imports this file via whoami.ts.
-/** The world a server token's prefix names (`pc_live_`, `pc_test_`); undefined for a person's key. */
+/** The sandbox for a sandbox server's token (`pc_test_`); undefined for any other key, which the gateway places. */
 export function aServersWorld(key: string): World | undefined {
-  if (key.startsWith("pc_live_")) return PRODUCTION;
+  // A person's key is minted `pc_live_` too (it opens both worlds), so only the sandbox's prefix
+  // says a server's world before the request: a `pc_live_` key goes, and the gateway refuses a
+  // production server's token asked for the sandbox in its own sentence.
   if (key.startsWith("pc_test_")) return SANDBOX;
   return undefined;
 }

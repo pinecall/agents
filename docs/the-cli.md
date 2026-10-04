@@ -114,11 +114,13 @@ it in Team`.
 ```
 
 **A server's token** is the other kind of key: the org's, made in the console's Tokens screen of
-the world it is for, and put in the server's secrets as `PINECALL_KEY`. Its prefix fixes its
-world — `pc_live_` production, `pc_test_` the sandbox — and the header may only agree: `--prod`
-must say the same world the token does, or the verb stops before it knocks: ``this PINECALL_KEY is
-a production server's token, made at <url>: run the verb with --prod`` (and ``… without --prod``
-for a sandbox token). [production.md](production.md) is that path.
+the world it is for, and put in the server's secrets as `PINECALL_KEY`. It acts in its own world
+alone, and the header may only agree. A sandbox token (`pc_test_`) is caught before it knocks:
+``this PINECALL_KEY is a sandbox server's token, made at <url>: run the verb without --prod``. A
+production token starts `pc_live_` like a person's key, so the CLI cannot tell the two apart: a
+production token sent without `--prod` is refused by the gateway, in its words (``this key is a
+production server's token, and this request is for sandbox: a server's token opens the world it
+was made in``). [production.md](production.md) is that path.
 
 `whoami` and `callbacks` open by printing where they went: `gateway <url> · key from <where> ·
 <world>`. The rest get on with the answer. With no key anywhere every one of them is refused:
