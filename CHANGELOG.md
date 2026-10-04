@@ -6,6 +6,8 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.9.15] — One gateway serves both worlds
+
 ### Changed
 
 - **A `pc_live_` key goes to the world asked.** The runtime mints a person's key `pc_live_` (it opens
