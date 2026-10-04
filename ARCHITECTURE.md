@@ -107,17 +107,17 @@ a directory earns its place there by having a line in that table (§13).
 |---|---|
 | `index.ts` | the dispatcher: one lazy import per group, and the whole CLI on one screen |
 | `groups.ts` | the `Group` contract, and `PLANNED` — every verb the design declares that this tree has not written |
-| `env.ts` · `dotenv.ts` | where the CLI is pointed and what opens the door, for every verb: `PINECALL_KEY` and `PINECALL_URL` (production's — the identity) from the environment, else from the nearest `.env` up from the cwd — read, and written by `link`, as plain dotenv lines — then the door of the world asked: `PINECALL_URL` itself for `--prod`, the sandbox production names with a key minted there otherwise, and a server's token (`pc_live_`/`pc_test_`) at its own instance, refused when `--prod` names the other world; the `NO_KEY` refusal |
-| `elsewhere.ts` · `sandbox-key.ts` · `this-machine.ts` | the sandbox's door: where it answers — the `elsewhere` of production's `GET /.well-known/pinecall`, kept a day (null when production names none: the only instance, where every verb runs), and refused in one sentence when production names no world at all — and the person's key there, minted from a code production's key asked for (`POST /v1/login/codes` at production, `POST /v1/login {code, device}` at the sandbox), kept, and minted again once on a 401; the machine's name a key is labelled with |
+| `env.ts` · `dotenv.ts` | where the CLI is pointed and what opens the door, for every verb: `PINECALL_KEY` and `PINECALL_URL` (the one gateway, serving both worlds) from the environment, else from the nearest `.env` up from the cwd — read, and written by `link`, as plain dotenv lines — then the door of the world asked: the same URL and key, the world riding the request (`pinecall-env`); a server's token (`pc_live_`/`pc_test_`) has its prefix's world and is refused when `--prod` names the other; the `NO_KEY` refusal |
+| `this-machine.ts` | the machine's name a key is labelled with |
 | `linking.ts` | `pinecall link`: this project's folder tied to one of the person's orgs — signs the machine in if it is not, picks the org (`GET /v1/login/orgs`), mints the person's key there (`POST /v1/login/org`) and writes it into `./.env` |
-| `signed-in.ts` | `~/.pinecall/session.json` (0600, `PINECALL_HOME` moves it): the machine's sign-in per gateway, which only `link` mints from; where production's sandbox is and when that was read; the keys minted at the sandbox, one per production key by its fingerprint; and the phone `pinecall line from` kept |
+| `signed-in.ts` | `~/.pinecall/session.json` (0600, `PINECALL_HOME` moves it): the machine's sign-in per gateway, which only `link` mints from, and the phone `pinecall line from` kept |
 | `world.ts` | which of the two worlds a verb works in: `--prod`, taken out of argv before any group sees it, names production for that one command; nothing named is the sandbox |
 | `client-for.ts` | the SDK client a verb holds: the door's gateway, its key, and the world that gateway is — the one client every verb that opens a socket builds |
 | `connected.ts` | the one line `start` prints when the socket is up: who registered, whose org took it, which world, and where the key came from |
 | `load.ts` | a tenant's class loaded with tsx and handed its own source: the file named, else the one `agents/<name>/agent.tsx` (or `.ts`) of the project this terminal stands in — a project of several is told to name one with `--agent`. `instanceFor` is one instance with a line to answer on, for the pages that print a prompt |
 | `home.ts` | **the one layout**, and an agent's *home* in it: `agents/<name>/agent.ts` (with whatever only that class uses beside it), `lib/` for what agents share, `docs/<name>/` for the local folder `docs push` sends by default (never tracked: the base is on the gateway), `test/<name>/agent.test.ts`, `test/<name>/goldens/` (the conversations, and beside them `docs.json` and `memory.json`, the retrieval and recall goldens), `test/<name>/memory/`. No verb computes a path of its own; `--agent` resolves here. What the agent knows by heart is in no folder: it is a setting |
-| `console.ts` | `pinecall console`, the console of the world in a browser: a one-use code minted by that world's instance for the key this terminal holds there, and the page opened at that instance's URL. It binds nothing — **no code under `cli/` opens a port**, and `test/cli/verbs.test.ts` pins that |
-| `start-console.ts` · `start-screens.ts` | the `console` line `start` prints — the console at the door it registered through, with a one-use code that instance minted (`aLoginCode`, the one mint of a login code) — and the three ways `start` shows a log: plain, `--ui`, `--events` |
+| `console.ts` | `pinecall console`, the console of the world in a browser: a one-use code the gateway minted in that world for this terminal's key, and the page opened at the gateway's root for production or under `/sandbox` for the sandbox. It binds nothing — **no code under `cli/` opens a port**, and `test/cli/verbs.test.ts` pins that |
+| `start-console.ts` · `start-screens.ts` | the `console` line `start` prints — the console of the world it registered in, with a one-use code minted there (`aLoginCode`, the one mint of a login code) — and the three ways `start` shows a log: plain, `--ui`, `--events` |
 | `start.ts` · `chat.ts` · `prompt.ts` | the app, the app in this terminal — or a written call at an agent somebody else is holding, named by slug — and the prompt offline |
 | `test.ts` · `simulate.ts` · `eval.ts` · `runs/` | ring 1, a live persona, ring 3, and what the gateway has run |
 | `agent.ts` · `agent-lines.ts` · `agent-versions.ts` · `agent-files.ts` · `agent-knowledge.ts` · `agent-processes.ts` | **the settings**: what the org set over the class — yours, the team's, production's — on one page (`agent-lines.ts`, a row per field, `knowledge` as a count of characters and `bases` by name); the whole set written with the version it was read at, or fields cleared; the versions — history, diff, rollback — and a corner as a file for CI; `agent knowledge` prints what the agent knows by heart and `agent knowledge edit` opens it in `$EDITOR` and keeps what was written as the next version; `agent list` and `agent stop` are the processes holding the org's agents. `--prod` writes production's corner directly, while the person's org lets them act there: history and rollback are the safety, and the goldens run in CI before a deploy. `pipeline.ts` only reads now |
@@ -453,20 +453,18 @@ that writes it.
 `PINECALL_KEY` and `PINECALL_URL` from the process's environment — a server's secrets, a CI job's —
 else from the nearest `.env` walking up from the cwd (`cli/dotenv.ts`), which `pinecall link`
 wrote. `PINECALL_URL` is `https://cloud.pinecall.io` unless one of the two names another, and it is
-**production's**: the identity, where a person signs in. A project folder is the org it was linked
-to; a second org is a second folder, and nothing is switched. With no key the verb stops on
-`NO_KEY`, naming `pinecall link`. Every verb that connects opens with `doorLine`: `gateway <url> ·
-key from <the environment | the .env's path | session.json, minted from …> · <world>`.
+**the one gateway, for both worlds**: where a person signs in, and where every verb knocks. A
+project folder is the org it was linked to; a second org is a second folder, and nothing is
+switched. With no key the verb stops on `NO_KEY`, naming `pinecall link`. Every verb that connects
+opens with `doorLine`: `gateway <url> · key from <the environment | the .env's path> · <world>`.
 
-**Which world** is the command's, and each world is an instance of the runtime at a URL of its own:
-`--prod` anywhere on the line (`cli/world.ts`, taken out of argv before the group parses it) knocks
-at `PINECALL_URL` with the project's key; nothing named is the sandbox, which knocks where
-production's `/.well-known/pinecall` says (`cli/elsewhere.ts`) with a key minted there from a
-production code (`cli/sandbox-key.ts`), both kept in `session.json`. Every request and socket says
-the door's world in `pinecall-env` (`client/signed.ts`) — the assertion each instance checks, and
-refuses when it is the other. Production lets a person through only while their `production`
-switch is on — an admin's always is. A server's token is its own instance's: its prefix names the
-world, nothing is derived, and `--prod` must agree.
+**Which world** is the command's, and the gateway decides it from the key and the header, never
+from the name: `--prod` anywhere on the line (`cli/world.ts`, taken out of argv before the group
+parses it) names production for that one command; nothing named is the sandbox. Every request and
+socket says the door's world in `pinecall-env` (`client/signed.ts`): a person's key opens both
+worlds and the header picks one (absent, the sandbox); production lets a person through only while
+their `production` switch is on — an admin's always is. A server's token has the world its prefix
+names, nothing is derived, and `--prod` must agree (`cli/env.ts:doorIn`).
 
 It was four files, three variables and then a file of profiles, and each time the one that won was
 the one you had not chosen: v1's `PINECALL_API_KEY` beat what `pinecall login` had just kept, and a

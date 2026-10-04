@@ -183,7 +183,7 @@ jobs:
         with: { node-version: 24 }
       - run: npm ci
       - run: npx pinecall test                       # the goldens, on a sandbox token
-        env: { PINECALL_KEY: "${{ secrets.PINECALL_SANDBOX_TOKEN }}", PINECALL_URL: "https://sandbox.pinecall.io" }
+        env: { PINECALL_KEY: "${{ secrets.PINECALL_SANDBOX_TOKEN }}" }
       - run: npx pinecall deploy --prod --name support-line --note "${{ github.sha }}"
         env: { PINECALL_KEY: "${{ secrets.PINECALL_TOKEN }}" }
 ```

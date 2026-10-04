@@ -25,7 +25,7 @@ export const group: Group = {
   reaches your own agent — on the number your customers call, in production, as much as on a
   sandbox one: while you are running the agent your phone reaches your copy, and everybody else
   reaches production. No claim, no coordination, three of you testing at the same time. It is
-  said to the sandbox instance, kept in ~/.pinecall/session.json under its URL, and re-sent by
+  said in the sandbox, kept in ~/.pinecall/session.json under the gateway's URL, and re-sent by
   every \`pinecall start\`, each time it connects.
   \`forget\` undoes it.
 

@@ -22,8 +22,8 @@ export const group: Group = {
   purpose: "list | import | drop the numbers the org answers at",
   usage: `${USAGE}
 
-  A number is one instance's and reaches one agent: it is imported where it answers, and
-  \`list\` shows this instance's — the sandbox's, or production's with --prod. Nothing moves a
+  A number is one world's and reaches one agent: it is imported where it answers, and
+  \`list\` shows that world's — the sandbox's, or production's with --prod. Nothing moves a
   number between the two.
 
   \`import\` takes a number the org's carrier account already owns and points it here: the

@@ -6,6 +6,17 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Changed
+- **Breaking: one gateway serves both worlds, and the CLI discovers no sandbox.** `PINECALL_URL`
+  is the one gateway for the sandbox and production alike (`https://cloud.pinecall.io` by default);
+  a verb without `--prod` acts in the sandbox and with `--prod` in production, at the same URL with
+  the same key, and the `pinecall-env` header says which. Nothing is read at
+  `/.well-known/pinecall`, no sandbox key is minted or kept: `session.json` loses `elsewhere` and
+  `minted`. `pinecall console` opens the sandbox's console at `<url>/sandbox/` and production's at
+  `<url>/`, and `start`'s console line says the same; `pinecall whoami` prints one door, who the
+  key is in the world asked, and which worlds it opens. A server's token keeps the one world its
+  prefix names, and `--prod` must still agree. Needs the runtime of the same release.
+
 ## [0.9.14] — The org's carrier accounts from the CLI
 
 ### Added

@@ -24,18 +24,15 @@ The row lists it as *the org's · made by Ana*, with when it was last used, and 
 maker**: removing Ana from the org revokes every key of hers and none of the org's tokens.
 
 A sandbox token (`pc_test_…`) is the same thing for the other world: what CI runs the goldens on.
-It is made in the **sandbox's** console, because the sandbox is an instance of its own with its
-own keys, and CI puts the sandbox's URL beside it as `PINECALL_URL`.
+It is made in the **sandbox's** console — the same gateway under `/sandbox/` — and CI sets no URL
+beside it, because the gateway is the same one.
 
-A token belongs to the instance it was made on, and its prefix says which world that is: the verb
-on a server says `--prod`, and the CLI holds the two to each other before it knocks — a sandbox
-token pasted by mistake is refused out loud, ``this PINECALL_KEY is a sandbox server's token, made
-at <url>: run the verb without --prod``, and a production token without the flag the same way.
-`PINECALL_URL` goes beside the key only when the instance is not `https://cloud.pinecall.io`. A
-gateway of one instance — your own runtime, with no sandbox beside it — makes only production
-tokens, and a person's verbs there run in production with or without `--prod`.
-Nothing is derived from a token and nothing else is read: no profile, no file in a home directory,
-no `pinecall login`.
+A token's prefix fixes its world, and the verb must agree: on a server it says `--prod`, and the
+CLI holds the two to each other before it knocks — a sandbox token pasted by mistake is refused
+out loud, ``this PINECALL_KEY is a sandbox server's token, made at <url>: run the verb without
+--prod``, and a production token without the flag the same way. `PINECALL_URL` goes beside the key
+only when the gateway is not `https://cloud.pinecall.io`. Nothing is derived from a token and
+nothing else is read: no profile, no file in a home directory, no `pinecall login`.
 
 ## Three ways to run it
 

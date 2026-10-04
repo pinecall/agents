@@ -37,8 +37,8 @@ export const group: Group = {
   usage: `usage: pinecall start [agent.tsx] [--agent <name>] [--prod] [--ui] [--events] [--show-prompt]
 
   With nothing after it: the agent registered on the gateway, one line per log entry on stdout,
-  no port bound and no page served. Without --prod it registers at the sandbox instance — the
-  one production names — and answers that console; with --prod, at production and its console.
+  no port bound and no page served. Without --prod it registers in the sandbox and answers the
+  sandbox's console, at the gateway under /sandbox; with --prod, in production and its console.
 
   At the root of a project of several agents — agents/<name>.tsx — every agent at once, on one
   socket, each line prefixed by its slug; --agent <name> (or its slug) runs one of them.
@@ -112,8 +112,7 @@ export async function run(argv: string[]): Promise<number> {
   pc.onConnected(() => {
     if (lost && values.events !== true && values.ui !== true) process.stderr.write("gateway  back\n");
     lost = false;
-    // Sandbox, or a single-instance gateway.
-    if (door.world !== PRODUCTION || door.theOnlyInstance === true) void sayWhoCallsFromHere(door);
+    if (door.world !== PRODUCTION) void sayWhoCallsFromHere(door);
   });
   // Console dev.* requests that need this process's files or class. Registered before connect so
   // the first dev.request finds a handler. The socket is closed in `finally`: left open it keeps

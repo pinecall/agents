@@ -1,12 +1,12 @@
-// Request headers for the gateway: the API key and the expected world.
+// Request headers for the gateway: the API key and the world the request acts in.
 
-/** A runtime instance's world, as published at /.well-known/pinecall. */
+/** One of the gateway's two worlds. */
 export type World = "sandbox" | "production";
 
 /**
- * Header naming the world the client expects. It does not select one: an instance of the other
- * world refuses the request, and production refuses a person's key without it. Server tokens may
- * omit it.
+ * Header naming the world the request acts in. A person's key opens both worlds and this picks
+ * one (absent, the sandbox); a server token's world is fixed by its prefix, and the header may
+ * only agree.
  */
 export const ENV_HEADER = "pinecall-env";
 

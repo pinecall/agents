@@ -4,13 +4,10 @@ import { relative } from "node:path";
 
 import type { World } from "../client/signed.js";
 import { nearestDotenv, readDotenv } from "./dotenv.js";
-import { forgetTheSandbox, whereTheSandboxAnswers } from "./elsewhere.js";
-import { aSandboxKey } from "./sandbox-key.js";
-import { pinecallHome } from "./signed-in.js";
 import { refusal } from "./whoami.js";
 import { PRODUCTION, SANDBOX, theChosenWorld } from "./world.js";
 
-/** Pinecall's cloud: the default production gateway. */
+/** Pinecall's cloud: the default gateway, serving both worlds. */
 export const CLOUD_URL = "https://cloud.pinecall.io";
 
 /** Environment variables for the key and the gateway URL. */
@@ -31,8 +28,6 @@ export interface Open {
   apiKey: string;
   source: string;
   world: World;
-  /** True when a sandbox verb fell back to production because no sandbox instance exists. */
-  theOnlyInstance?: boolean;
 }
 
 /**
@@ -70,9 +65,8 @@ export function anotherWorldsToken(token: World, url: string): string {
 }
 
 /**
- * Resolve the gateway for the chosen world, or print why not and return undefined.
- * `--prod` uses PINECALL_URL with the project's key. The sandbox URL comes from production's
- * /.well-known/pinecall and its key is minted from the project's; both cached in ~/.pinecall/session.json.
+ * Resolve the gateway for the chosen world, or print why not and return undefined. One gateway
+ * serves both worlds: the URL and the key are the project's, and the world rides the request.
  */
 export async function theDoor(
   env: NodeJS.ProcessEnv = process.env,
@@ -86,7 +80,7 @@ export async function theDoor(
     return undefined;
   }
   try {
-    return await doorIn(world, { ...held, apiKey, world: PRODUCTION }, pinecallHome(env));
+    return doorIn(world, { ...held, apiKey, world });
   } catch (failed) {
     err.write(`${refusal(failed)}\n`);
     return undefined;
@@ -94,31 +88,13 @@ export async function theDoor(
 }
 
 /**
- * The gateway for a world, derived from the project's production gateway. When production names
- * no sandbox, it is the only instance and sandbox verbs run there.
+ * The project's door in a world. A person's key opens both, and the `pinecall-env` header says
+ * which; a server's token has the world its prefix names, and `--prod` must agree.
  */
-export async function doorIn(world: World, project: Open, home: string): Promise<Open> {
+export function doorIn(world: World, project: Open): Open {
   const token = aServersWorld(project.apiKey);
-  if (token !== undefined) {
-    if (token !== world) throw new Error(anotherWorldsToken(token, project.url));
-    return { ...project, world };
-  }
-  if (world === PRODUCTION) return project;
-  const found = await whereTheSandboxAnswers(project.url, home);
-  try {
-    return await theSandbox(project, found.url, home);
-  } catch (refused) {
-    // A cached sandbox URL may be stale: rediscover once.
-    if (!found.kept) throw refused;
-    forgetTheSandbox(project.url, home);
-    return await theSandbox(project, (await whereTheSandboxAnswers(project.url, home)).url, home);
-  }
-}
-
-async function theSandbox(production: Open, url: string | null, home: string): Promise<Open> {
-  if (url === null) return { ...production, theOnlyInstance: true };
-  const apiKey = await aSandboxKey(production, url, home);
-  return { url, apiKey, source: `session.json, minted from ${production.source}'s`, world: SANDBOX };
+  if (token !== undefined && token !== world) throw new Error(anotherWorldsToken(token, project.url));
+  return { ...project, world };
 }
 
 /** Error message when no key is found. */
@@ -127,6 +103,5 @@ export const NO_KEY =
 
 /** The first line a connecting verb prints: gateway, key source and world. */
 export function doorLine(door: Open): string {
-  const alone = door.theOnlyInstance === true ? " (the only instance)" : "";
-  return `gateway ${door.url} · key from ${door.source} · ${door.world}${alone}`;
+  return `gateway ${door.url} · key from ${door.source} · ${door.world}`;
 }

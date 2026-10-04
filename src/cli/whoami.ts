@@ -1,13 +1,11 @@
-/** `pinecall whoami`: the production and sandbox gateways this project uses, and who each key is. */
+/** `pinecall whoami`: the gateway this project uses, who the key is, and which worlds it opens. */
 
 import { parseArgs } from "node:util";
 
-import type { World } from "../client/signed.js";
 import { aServersWorld, doorIn, doorLine, keyFrom, NO_KEY, type Open } from "./env.js";
 import type { Group } from "./groups.js";
-import { pinecallHome } from "./signed-in.js";
 import { asked, type Door } from "./testing/gateway.js";
-import { PRODUCTION, SANDBOX } from "./world.js";
+import { PRODUCTION, theChosenWorld } from "./world.js";
 
 // Also used by `login`, through whoIs().
 const WHOAMI = "/v1/whoami";
@@ -19,7 +17,7 @@ export interface Who {
   slug?: string | null;
   key_id: string;
   label: string | null;
-  /** The world of the instance that answered. */
+  /** The world this request acted in. */
   env: string;
   /** The person the key was minted for; absent for a server token. */
   name?: string | null;
@@ -28,63 +26,41 @@ export interface Who {
 }
 
 export const group: Group = {
-  purpose: "which org and which key this terminal is holding, at production and at the sandbox",
-  usage: `usage: pinecall whoami
+  purpose: "which org and which key this terminal is holding, and which worlds it opens",
+  usage: `usage: pinecall whoami [--prod]
 
-  Prints both doors a verb may knock at: production's — PINECALL_URL, with the key from the
-  environment or the project's .env — and the sandbox's, the instance production names, with the
-  key minted there from yours (kept in ~/.pinecall/session.json). Under each, what that instance
-  says the key is: the org, the key's id, the world, the label it was issued under, and whether
-  you may act in production. A server's token opens its own instance alone, and a production
-  that names no sandbox is the only instance: each prints one door.
-  The keys themselves are neither printed nor sent anywhere else.`,
+  Prints the one door every verb knocks at — PINECALL_URL, with the key from the environment or
+  the project's .env — and what the gateway says the key is in the world asked: the org, the
+  key's id, the world, the label it was issued under, and whether you may act in production.
+  Then which worlds the key opens there: a person's key opens the sandbox without --prod and
+  production with it, while their production switch is on; a server's token opens the one world
+  its prefix names. The key itself is neither printed nor sent anywhere else.`,
   run,
 };
 
-/** Print each gateway the project's key opens and who the key is there. */
+/** Print the project's door, who the key is there, and the worlds it opens. */
 export async function run(
   argv: string[],
   out: NodeJS.WritableStream = process.stdout,
   err: NodeJS.WritableStream = process.stderr,
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<number> {
-  // Takes no flags; parsing with none rejects unknown ones such as --json.
+  // Takes no flags of its own; parsing with none rejects unknown ones such as --json.
   parseArgs({ args: argv, options: {} });
   const { apiKey, ...held } = keyFrom(env);
   if (apiKey === undefined) {
     err.write(`${NO_KEY}\n`);
     return 2;
   }
-  const project: Open = { ...held, apiKey, world: PRODUCTION };
-  const token = aServersWorld(apiKey);
-  // Only the project's own gateway decides the exit code; a sandbox failure is just printed.
-  const home = pinecallHome(env);
-  if (token !== undefined) return (await told(token, doorIn(token, project, home), out, err)) ? 0 : 1;
-  const sandbox = doorIn(SANDBOX, project, home);
-  // No sandbox configured: production is the only instance.
-  if (await sandbox.then((door) => door.theOnlyInstance === true, () => false)) {
-    return (await told(PRODUCTION, sandbox, out, err)) ? 0 : 1;
-  }
-  const answered = await told(PRODUCTION, doorIn(PRODUCTION, project, home), out, err);
-  await told(SANDBOX, sandbox, out, out);
-  return answered ? 0 : 1;
-}
-
-// Print one gateway's line and key description, or the refusal; returns success.
-async function told(
-  world: World,
-  opening: Promise<Open>,
-  out: NodeJS.WritableStream,
-  err: NodeJS.WritableStream,
-): Promise<boolean> {
+  const world = theChosenWorld();
   try {
-    const door = await opening;
+    const door = doorIn(world, { ...held, apiKey, world });
     const who = await whoIs(door);
-    out.write(`${doorLine(door)}\n  ${describing(who)}\n`);
-    return true;
+    out.write(`${doorLine(door)}\n  ${describing(who)}\n  ${opening(door, who)}\n`);
+    return 0;
   } catch (refused) {
     err.write(`${world}: ${refusal(refused)}\n`);
-    return false;
+    return 1;
   }
 }
 
@@ -104,6 +80,14 @@ export function describing(who: Who): string {
   if (who.label !== null) said.push(who.label);
   said.push(`production: ${who.production ? "yes" : "no"}`);
   return said.join(" · ");
+}
+
+/** Which worlds the key opens at this gateway, from the token's prefix or the person's switch. */
+export function opening(door: Open, who: Who): string {
+  const token = aServersWorld(door.apiKey);
+  if (token !== undefined) return `a ${token} server's token: that world alone${token === PRODUCTION ? ", with --prod" : ""}`;
+  if (who.production) return "a person's key: the sandbox without --prod, production with it";
+  return "a person's key: the sandbox; production is refused until an admin turns your switch on in Team";
 }
 
 /** The message of a refusal, without its JSON envelope. */

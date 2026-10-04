@@ -94,11 +94,12 @@ sentences; small methods; 150 lines is the norm. Tests read as sentences.
 - **The CLI reads `PINECALL_KEY` and `PINECALL_URL`, and nothing else.** From the process's
   environment, else from the nearest `.env` up from the cwd — the project's, which `pinecall link`
   wrote (`cli/env.ts`). v1's `PINECALL_API_KEY` is never read, and there are no profiles to switch:
-  another org is another folder. `PINECALL_URL` is production's; `--prod` on any verb knocks there
-  for that one command (refused unless the person's production switch is on), and without it a verb
-  knocks at the sandbox instance production names, with a key minted there and kept in
-  `~/.pinecall/session.json`. `pinecall whoami` prints both doors, which key each takes, and where
-  it was read.
+  another org is another folder. `PINECALL_URL` is the one gateway, serving both worlds; `--prod`
+  on any verb acts in production for that one command (refused unless the person's production
+  switch is on), and without it a verb acts in the sandbox — same URL, same key, the
+  `pinecall-env` header saying which. Nothing is discovered or minted for the sandbox.
+  `pinecall whoami` prints the one door, who the key is, which worlds it opens, and where it was
+  read.
 - **A tool with no docstring is refused,** because without one no model can choose it; and
   `@tool({ stage })` on a class with no `stage` field is refused too.
 - **The class docstring lives above the class,** where `toString()` cannot see it, and parameter

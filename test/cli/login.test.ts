@@ -43,8 +43,6 @@ class FakeGateway {
     if (request.url === `/v1/login/pairings/${A_WORD}/key`) {
       return this.approved ? said(response, 200, { key: A_KEY }) : said(response, 202, {});
     }
-    // A single-world instance with no sandbox.
-    if (request.url === "/.well-known/pinecall") return said(response, 200, { world: "production", elsewhere: null });
     if (request.headers.authorization !== `Bearer ${A_KEY}`) {
       return said(response, 401, { detail: "this door takes an API key" });
     }
@@ -54,7 +52,7 @@ class FakeGateway {
       slug: "clinica",
       key_id: "k_1",
       label: "the laptop",
-      env: "production",
+      env: request.headers["pinecall-env"] ?? "sandbox",
       name: "Berna",
       production: true,
     });
@@ -177,15 +175,16 @@ describe("which gateway a login is for", () => {
 });
 
 describe("whoami", () => {
-  it("prints the one door of a gateway of one instance, and whose key it takes", async () => {
+  it("prints the one door, whose key it takes, and the worlds the key opens there", async () => {
     const out = written();
 
     const code = await whoami([], out.stream, written().stream, { PINECALL_KEY: A_KEY, PINECALL_URL: gateway.url, PINECALL_HOME: home });
 
     expect(code).toBe(0);
     expect(out.text()).toBe(
-      `gateway ${gateway.url} · key from the environment · production (the only instance)\n`
-        + "  org clinica · key k_1 · production · the laptop · production: yes\n",
+      `gateway ${gateway.url} · key from the environment · sandbox\n`
+        + "  org clinica · key k_1 · sandbox · the laptop · production: yes\n"
+        + "  a person's key: the sandbox without --prod, production with it\n",
     );
     expect(out.text()).not.toContain("org_98889a61509c");
     expect(out.text()).not.toContain(A_KEY);
@@ -201,7 +200,7 @@ describe("whoami", () => {
     });
 
     expect(code).toBe(1);
-    expect(err.text()).toBe("production: the gateway answered 401: this door takes an API key\n");
+    expect(err.text()).toBe("sandbox: the gateway answered 401: this door takes an API key\n");
   });
 
   it("leaves a key with no label as two words rather than a dangling separator", () => {

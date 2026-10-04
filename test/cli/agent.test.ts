@@ -109,7 +109,7 @@ function environment(key: string = A_KEY): NodeJS.ProcessEnv {
   return pointingAt(gateway.url, key);
 }
 
-// A production server token: --prod uses it against the instance that minted it.
+// A production server token: its world is its prefix's, so the verb needs --prod.
 const A_LIVE_KEY = "pc_live_the_orgs_key";
 
 describe("the page", () => {

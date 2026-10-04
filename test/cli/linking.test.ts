@@ -99,9 +99,9 @@ describe("linking a project", () => {
     expect(gateway.minted).toEqual(["org_2"]);
   });
 
-  // A person signs in at production and their key is production's: link writes that, and nothing
-  // of the sandbox's — whose URL production names and whose key is minted from this one, per verb.
-  it("asks production, saying so on every request, and writes nothing of the sandbox's", async () => {
+  // A person is kept in production: link signs in and mints there, and writes the one key that
+  // opens both worlds — nothing of the sandbox's own, because the sandbox has nothing of its own.
+  it("asks production, saying so on every request, and writes the one key and the gateway", async () => {
     await linked(["--org", "cloudacio"]);
 
     expect(gateway.worlds).toEqual(["production", "production"]);
