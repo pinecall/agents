@@ -180,6 +180,23 @@ Mid-call the same two verbs are methods of the class, for when something happens
 should hear now: `this.say("Se ha liberado una hora a las diez y cuarto.")` and
 `this.reply("dile que acaba de liberarse una hora a las diez y cuarto")`.
 
+**An opening that depends on who calls** is the same two methods inside `onCall`, with nothing set
+in the world: no switch says "dynamic", the absence of `greeting` is it.
+
+```ts
+override async onCall(call: Call) {
+  this.patient = await this.agenda().byPhone(call.from ?? "");
+  void this.say(this.patient ? `Hola ${this.patient.name}, ¿en qué le ayudo?` : "Clínica Norte, buenos días.");
+}
+```
+
+Not awaited, on purpose: `say` resolves when the turn has been spoken, and what `onCall` wrote
+reaches the prompt and the console only once the hook returns — awaited, `this.patient` would wait
+for the whole sentence.
+
+If the world also sets a `greeting`, both are spoken: the world's first, then the hook's. To let
+the hook be the only opening, `pinecall agent clear greeting`.
+
 ### Knowledge: by heart, and searched
 
 Two different things, and the class holds neither.
@@ -402,6 +419,16 @@ override async onCall(call: Call) { this.patient = await this.agenda().byPhone(c
 override onEnd(call: Call) { … }
 override onMemory(ops: MemoryOp[], call: Call) { crmFor(this).apply(call.contact, ops); }
 ```
+
+| hook | runs | it gets |
+|---|---|---|
+| `onCall(call)` | when the call starts, with the world's `greeting`, if any, already under way | `call.id`, `contact`, `from`, `channel` |
+| `onEnd(call)` | when it ends | the same |
+| `onMemory(ops, call)` | when the agent remembers or forgets something about the contact | the operations |
+| `onEvent(name, data, meta)` | when an event the class declares arrives, from where it declared | the payload |
+
+Those four are all of them: a transfer, a hold or a keypress is a verb of `this.call` your tool
+calls ([contact-center.md](contact-center.md)), not a hook.
 
 Writes inside a hook are authored by the hook, which is why `onCall` may restore last week's
 conversation while a stray assignment elsewhere is refused.
