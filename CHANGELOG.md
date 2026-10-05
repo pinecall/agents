@@ -6,6 +6,8 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.9.16] — A chat whose input ends hangs up
+
 ### Fixed
 
 - **`pinecall chat` hangs up when its input ends.** Ctrl-D or the end of a pipe waits for the
