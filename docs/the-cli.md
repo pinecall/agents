@@ -984,6 +984,8 @@ back: the gateway seals each secret under the box's vault key and answers the ac
   `--outbound-*` flags say where the box dials it; unsaid, the box dials with the pair it
   registers with.
 - **WhatsApp.** `--phone-number-id` is the number's id at Meta, and the access token is the secret.
+  Meta is asked for that number with that token before anything is kept, so an id or a token Meta
+  does not open is `Meta does not open WhatsApp number <id> with this token: …` and exit 1.
 
 `add` with an account the org already holds **replaces its secret**: that is how a key is rotated.
 An account's id is its own: Twilio's account SID, the peer's username, Meta's phone number id.
