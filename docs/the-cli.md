@@ -1042,11 +1042,12 @@ pinecall voices play <voice> ["the words"] [--tts <vendor>] [--model <model>] [-
 ```
 
 ```console
-$ pinecall voices --tts elevenlabs --language es
-EXAVITQu4vr4xnSDxMaL  Sarah - Mature, Reassuring, Confident
-FGY2WhTYpPnrIDTdsKH5  Laura - Enthusiast, Quirky Attitude
-$ pinecall voices
-cartesia lists no voices: its voice is the vendor's own id, set as it is — these list theirs: elevenlabs, inworld, nvidia, speechify (--tts <vendor>)
+$ pinecall voices --language es --country ES
+a7beff01-8f8b-4809-bfe6-e2166e57e0c2  Iria - Thoughtful Communicator  feminine   ES castilian
+de38f545-c574-44e8-9b54-a7d6fec1c6b1  Marta - Friendly Guide          feminine   ES castilian
+35b2cfc1-e6fb-4d69-a598-c1780612be4a  Darío - Steady Operator         masculine  ES castilian
+$ pinecall voices --tts rime
+rime lists no voices: its voice is the vendor's own id, set as it is — these list theirs: cartesia, elevenlabs, inworld, nvidia, speechify (--tts <vendor>)
 $ pinecall voices play de38f545-c574-44e8-9b54-a7d6fec1c6b1 "Hola, soy la asistente de Clínica Norte." --language es
 de38f545-c574-44e8-9b54-a7d6fec1c6b1 · first audio 578 ms · whole sentence 915 ms · afplay
 ```
@@ -1056,11 +1057,12 @@ With nothing after it: the vendor's voices in that language, one per line — th
 accent is from. The country is the column that matters for Spanish: `ES` is Spain and `MX` is
 Mexico, and a language code does not tell them apart; `--country` keeps one. The vendor is `--tts`,
 or **the box's own voice** when none is named — `defaults.tts` of `GET /v1/providers`, what an
-agent that names no vendor speaks with. A vendor lists its voices when its livekit plugin does
-(`voices_listed` in the same catalogue, the one the console's picker reads): on this build
-ElevenLabs, Inworld, NVIDIA and Speechify. Cartesia's plugin lists none, so its voice is the id
-Cartesia gives it, taken as it is: `voices` says so, names the vendors that list theirs, and exits 1
-without asking for a list.
+agent that names no vendor speaks with. A vendor lists its voices when its livekit plugin does —
+ElevenLabs, Inworld, NVIDIA and Speechify — or when the box's providers row lists them for it, as
+data (`listed`, by vendor and language: on `cloud.pinecall.io`, Cartesia's in Spanish and English);
+`voices_listed` in the same catalogue says which, and it is what the console's picker reads too. A
+vendor listed by neither takes its voice as the id the vendor gives it: `voices` says so, names the
+vendors that list theirs, and exits 1 without asking for a list. Any id plays, listed or not.
 
 `play` says the words in that voice through the vendor's own plugin, exactly as a call would build
 it (`POST /v1/voices/sample`, the wire's `VoiceSample`), and plays the WAV on this machine with
