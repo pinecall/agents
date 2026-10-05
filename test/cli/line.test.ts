@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { calling, describing, forgotten } from "../../src/cli/line.js";
+import { calling, describing, forgotten, letGo } from "../../src/cli/line.js";
 import { type TheLine } from "../../src/wire/rest.js";
 
 const AGENT = "tienda-sur";
@@ -56,6 +56,12 @@ describe("the line, as a person reads it", () => {
     const line = said({ yours: false, holding: { holder: null, name: null } });
 
     expect(describing(line)).toContain("the terminal running the org's own key");
+  });
+
+  it("says, after a release nobody picked up, that the line rings nowhere — not that nothing runs", () => {
+    expect(letGo(AGENT)).toBe(
+      `let go, and nobody else is running ${AGENT}: a call from a number nobody said was theirs rings nowhere until a terminal claims it`,
+    );
   });
 
   it("says what to start when nobody is answering it at all", () => {

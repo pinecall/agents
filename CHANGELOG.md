@@ -6,6 +6,17 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`pinecall chat` hangs up when its input ends.** Ctrl-D or the end of a pipe waits for the
+  answer to the last line (a minute at most), then closes the call: `printf 'hola\n' | pinecall
+  chat` prints the answer and leaves a call ended `caller_hung_up`, not one left open.
+- **`pinecall voices` asks the box's own voice, not Cartesia.** With no `--tts` the vendor is
+  `defaults.tts` of the catalogue; a vendor whose plugin lists no voices — Cartesia's does not — is
+  said so in one line naming the vendors that list theirs, instead of the gateway's 404.
+- **`pinecall line release` says what happened.** Let go with nobody else running the agent, it
+  says the line rings nowhere until a terminal claims it, not "run `pinecall start`".
+
 ## [0.9.15] — One gateway serves both worlds
 
 ### Changed

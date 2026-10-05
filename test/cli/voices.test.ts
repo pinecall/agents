@@ -21,6 +21,15 @@ const VOICES = [
   { id: "2fc4f1ec", name: "Mateo - Friendly Host", language: "es", gender: "masculine", country: "MX", accent: "", description: "" },
 ];
 
+const A_CATALOGUE = {
+  providers: [
+    { name: "cartesia", voices_listed: true },
+    { name: "rime", voices_listed: false },
+    { name: "elevenlabs", voices_listed: true },
+  ],
+  defaults: { llm: "anthropic", stt: "deepgram", tts: "cartesia" },
+};
+
 /** One request as the gateway received it. */
 interface Heard {
   method: string;
@@ -35,6 +44,8 @@ class FakeGateway {
   /** The GET /v1/voices response; the default list unless a test overrides it. */
   listed: unknown = { tts: "cartesia", language: "es", voices: VOICES };
   timing: string | null = "first-audio;dur=210, total;dur=900";
+  /** GET /v1/providers: the box's voice, and which vendors list theirs. */
+  catalogue: unknown = A_CATALOGUE;
   #server!: Server;
   url = "";
 
@@ -61,7 +72,7 @@ class FakeGateway {
       response.end(A_WAV);
       return;
     }
-    this.#said(response, 200, this.listed);
+    this.#said(response, 200, request.url === "/v1/providers" ? this.catalogue : this.listed);
   }
 
   #said(response: ServerResponse, status: number, body: unknown): void {
@@ -78,6 +89,7 @@ beforeEach(async () => {
   gateway.refuse = undefined;
   gateway.listed = { tts: "cartesia", language: "es", voices: VOICES };
   gateway.timing = "first-audio;dur=210, total;dur=900";
+  gateway.catalogue = A_CATALOGUE;
   await gateway.open();
   env = pointingAt(gateway.url, A_KEY);
 });
@@ -95,17 +107,39 @@ function aPlayer(files: string[]): (file: string) => Played {
 }
 
 describe("listing", () => {
-  it("asks Cartesia when no vendor is named, and prints the id first in aligned columns", async () => {
+  it("asks the box's own voice when no vendor is named, and prints the id first in aligned columns", async () => {
     const out = written();
 
     const code = await run(["--language", "es"], { out: out.stream, env });
 
     expect(code).toBe(0);
-    expect(gateway.heard[0]!.path).toBe("/v1/voices?tts=cartesia&language=es");
+    expect(gateway.heard.map((one) => one.path)).toEqual(["/v1/providers", "/v1/voices?tts=cartesia&language=es"]);
     const lines = out.text().trimEnd().split("\n");
     expect(lines).toHaveLength(2);
     expect(lines[0]!.startsWith(`${MARTA}  Marta - Friendly Guide  feminine   ES castilian`)).toBe(true);
     expect(lines[1]!.indexOf("Mateo")).toBe(lines[0]!.indexOf("Marta"));
+  });
+
+  it("asks no list of a vendor whose plugin lists none, and names the vendors that do", async () => {
+    const err = written();
+
+    const code = await run(["--tts", "rime"], { err: err.stream, env });
+
+    expect(code).toBe(1);
+    expect(err.text()).toBe(
+      "rime lists no voices: its voice is the vendor's own id, set as it is — these list theirs: cartesia, elevenlabs (--tts <vendor>)\n",
+    );
+    expect(gateway.heard.map((one) => one.path)).toEqual(["/v1/providers"]);
+  });
+
+  it("says so when the box's own voice is one that lists none", async () => {
+    gateway.catalogue = { ...A_CATALOGUE, defaults: { tts: "rime" } };
+    const err = written();
+
+    const code = await run([], { err: err.stream, env });
+
+    expect(code).toBe(1);
+    expect(err.text()).toContain("rime lists no voices");
   });
 
   it("keeps only the voices from one country, whatever case it was typed in", async () => {
@@ -162,7 +196,7 @@ describe("playing", () => {
     const code = await run(["play", MARTA, "Hola", "--model", "sonic-3", "--language", "es"], { out: out.stream, env, play: aPlayer(files) });
 
     expect(code).toBe(0);
-    expect(gateway.heard[0]).toMatchObject({
+    expect(gateway.heard[1]).toMatchObject({
       method: "POST",
       path: "/v1/voices/sample",
       body: { tts: "cartesia", voice: MARTA, model: "sonic-3", language: "es", text: "Hola" },
@@ -175,7 +209,7 @@ describe("playing", () => {
   it("sends no words when none were given: the gateway reads a line in the language", async () => {
     await run(["play", MARTA, "--language", "es"], { out: written().stream, env, play: aPlayer([]) });
 
-    expect(gateway.heard[0]!.body).toEqual({ tts: "cartesia", voice: MARTA, model: null, language: "es", text: null });
+    expect(gateway.heard[1]!.body).toEqual({ tts: "cartesia", voice: MARTA, model: null, language: "es", text: null });
   });
 
   it("keeps the WAV where --save says, plays it from there, and says where", async () => {

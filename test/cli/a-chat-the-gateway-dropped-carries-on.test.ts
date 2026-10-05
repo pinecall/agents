@@ -5,7 +5,7 @@ import { PassThrough } from "node:stream";
 import { afterEach, expect, it, vi } from "vitest";
 import { WebSocketServer, type WebSocket } from "ws";
 
-import { talk } from "../../src/cli/chat.js";
+import { owing, talk } from "../../src/cli/chat.js";
 
 let server: WebSocketServer | null = null;
 
@@ -60,4 +60,37 @@ it("leaves when the gateway refuses the call in a sentence before it has one", a
   expect(ended).toBe(1);
   expect(door.asked).toHaveLength(1);
   expect(said.join("")).toContain("nobody is holding clinica");
+});
+
+it("waits, when the input ends, for the answer to the last line, then hangs up", async () => {
+  vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+  const heard: string[] = [];
+  let closedAt = -1;
+  const door = await aDoor((socket) => {
+    socket.send(entry("call.started", { channel: "web", direction: "inbound", from: "web_1", to: "clinica", caller: null, started_at: 0 }));
+    socket.send(entry("agent.state", { state: "listening" }));
+    socket.on("message", (frame) => {
+      heard.push(String(frame));
+      setTimeout(() => {
+        socket.send(entry("agent.state", { state: "thinking" }));
+        socket.send(entry("turn.agent", { text: "son nueve euros" }));
+        socket.send(entry("agent.state", { state: "listening" }));
+      }, 50);
+    });
+    socket.on("close", () => (closedAt = heard.length));
+  });
+  const typed = new PassThrough();
+  typed.end("cuánto cuesta\n");
+  const ended = await talk(() => door.url, { url: door.url, apiKey: "pk_test", source: "test", world: "sandbox" }, true, typed);
+  expect(ended).toBe(0);
+  expect(heard).toEqual([JSON.stringify({ text: "cuánto cuesta" })]);
+  await vi.waitFor(() => expect(closedAt).toBe(1));
+});
+
+it("says nothing is owed until the agent has thought about the line and listens again", () => {
+  expect(owing("sent", { type: "agent.state", data: { state: "listening" } })).toBe("sent");
+  expect(owing("sent", { type: "agent.state", data: { state: "thinking" } })).toBe("thinking");
+  expect(owing("thinking", { type: "turn.agent", data: {} })).toBe("thinking");
+  expect(owing("thinking", { type: "agent.state", data: { state: "listening" } })).toBe("nothing");
+  expect(owing("nothing", { type: "agent.state", data: { state: "thinking" } })).toBe("nothing");
 });

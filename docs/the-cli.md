@@ -377,6 +377,10 @@ A written call runs in the gateway, so a gateway that restarts drops the socket 
 call. `chat` says `the gateway went away — the call is kept, reconnecting…`, dials again naming
 the call, and the conversation goes on, history and state whole. It gives up after about a minute.
 
+When the input ends — Ctrl-D, or the end of a pipe — `chat` hangs up, once the agent has answered
+the last line (a minute at most): `printf 'hola\n' | pinecall chat` prints the answer and leaves a
+call that ended `caller_hung_up`, never one left open.
+
 ```console
 $ pinecall chat --as +34600000001
 ‹ hola, quería cambiar mi cita del jueves
@@ -800,7 +804,8 @@ again, so a process kept that way is stopped where it is supervised. An app on t
 **Git, for whoever wants it.** `pinecall agent pull > pinecall/clinica-norte.json` writes the corner's
 config as a file; `pinecall agent push pinecall/clinica-norte.json --team` sends it back as the next
 version, with no version check — it is what CI applies, and `push … --prod` is what a release
-applies to production.
+applies to production. A corner that set nothing has nothing to pull: `pull` says so on stderr,
+prints nothing and exits 1, so `pull > file` in a script fails rather than keeping an empty file.
 
 ### `agent knowledge`
 
@@ -1032,24 +1037,30 @@ secret and says so with a 503; the vault, and how to turn it on, is the gateway 
 ## `voices`
 
 ```
-pinecall voices [--tts cartesia] [--language es] [--country ES]
-pinecall voices play <voice> ["the words"] [--tts cartesia] [--model sonic-3] [--language es] [--save file.wav]
+pinecall voices [--tts <vendor>] [--language es] [--country ES]
+pinecall voices play <voice> ["the words"] [--tts <vendor>] [--model <model>] [--language es] [--save file.wav]
 ```
 
 ```console
-$ pinecall voices --language es --country ES
-de38f545-c574-44e8-9b54-a7d6fec1c6b1   Marta - Friendly Guide               feminine   ES castilian
-13ff5deb-2591-42ad-a356-63a04e524411   Marcos - Steady Advisor              masculine  ES castilian
+$ pinecall voices --tts elevenlabs --language es
+EXAVITQu4vr4xnSDxMaL  Sarah - Mature, Reassuring, Confident
+FGY2WhTYpPnrIDTdsKH5  Laura - Enthusiast, Quirky Attitude
+$ pinecall voices
+cartesia lists no voices: its voice is the vendor's own id, set as it is — these list theirs: elevenlabs, inworld, nvidia, speechify (--tts <vendor>)
 $ pinecall voices play de38f545-c574-44e8-9b54-a7d6fec1c6b1 "Hola, soy la asistente de Clínica Norte." --language es
-de38f545-c574-44e8-9b54-a7d6fec1c6b1 · first audio 271 ms · whole sentence 955 ms · afplay
+de38f545-c574-44e8-9b54-a7d6fec1c6b1 · first audio 578 ms · whole sentence 915 ms · afplay
 ```
 
 With nothing after it: the vendor's voices in that language, one per line — the id the agent's
-`voice` setting takes, then the name, the gender and where the accent is from. The country is the
-column that matters for Spanish: `ES` is Spain and `MX` is Mexico, and a language code does not
-tell them apart; `--country` keeps one. The vendor is **Cartesia** when none is named, the one
-whose catalogue is read from the vendor itself (`GET /v1/voices`); `--tts elevenlabs` lists the
-names this build curates, and any other vendor is refused by name — its voice is its own id.
+`voice` setting takes, then the name and, where the vendor says them, the gender and where the
+accent is from. The country is the column that matters for Spanish: `ES` is Spain and `MX` is
+Mexico, and a language code does not tell them apart; `--country` keeps one. The vendor is `--tts`,
+or **the box's own voice** when none is named — `defaults.tts` of `GET /v1/providers`, what an
+agent that names no vendor speaks with. A vendor lists its voices when its livekit plugin does
+(`voices_listed` in the same catalogue, the one the console's picker reads): on this build
+ElevenLabs, Inworld, NVIDIA and Speechify. Cartesia's plugin lists none, so its voice is the id
+Cartesia gives it, taken as it is: `voices` says so, names the vendors that list theirs, and exits 1
+without asking for a list.
 
 `play` says the words in that voice through the vendor's own plugin, exactly as a call would build
 it (`POST /v1/voices/sample`, the wire's `VoiceSample`), and plays the WAV on this machine with

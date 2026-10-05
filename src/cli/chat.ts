@@ -128,10 +128,19 @@ export function talk(
   const lines = createInterface({ input, output: process.stdout, prompt: PROMPT });
   // Entries can arrive after stdin closed (piped input), and readline throws on a closed prompt.
   let typing = true;
+  // The input ended; the call is left once nothing is owed.
+  let closed = false;
   let call: string | null = null;
   let over = false;
   let socket: WebSocket | null = null;
   let back = 0;
+  // A line sent is owed its answer until the agent, having thought, listens again: input that ends
+  // (a pipe) leaves only after that, so the last answer is printed and the call hung up whole.
+  let owed: "nothing" | "sent" | "thinking" = "nothing";
+  const leave = (): void => {
+    typing = false;
+    socket?.close();
+  };
   // `ws` throws on send before open, so input stays paused until the socket is up.
   lines.pause();
   return new Promise<number>((done) => {
@@ -140,23 +149,25 @@ export function talk(
       const opened = new WebSocket(url, { headers: signed(door.apiKey, door.world) });
       socket = opened;
       opened.on("open", () => {
-        if (!typing) return;
+        if (!typing || closed) return;
         lines.resume();
         lines.prompt();
       });
       opened.on("message", (frame: Buffer) => {
-        const entry = JSON.parse(frame.toString()) as { call?: string | null; type?: string };
+        const entry = JSON.parse(frame.toString()) as { call?: string | null; type?: string; data?: unknown };
         // Reset retries on the first message, not on open: the door may accept and then refuse.
         if (back > 0) process.stderr.write("\rthe gateway is back: the call goes on\n");
         back = 0;
         if (typeof entry.call === "string") call = entry.call;
         if (entry.type === "call.score") over = true;
+        owed = owing(owed, entry);
+        if (closed && owed === "nothing") leave();
         // --events prints raw JSON entries, as `run --events` does.
         const line = events ? frame.toString() : lineOf(frame.toString());
         if (line === null) return;
         // Redraw the prompt: an entry may land mid-typing.
         process.stdout.write(`\r${line}\n`);
-        if (typing) lines.prompt();
+        if (typing && !closed) lines.prompt();
       });
       // An error is followed by a close, and the close decides.
       opened.on("error", () => undefined);
@@ -183,15 +194,30 @@ export function talk(
       });
     };
     lines.on("line", (line) => {
-      if (line.trim() !== "" && socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ text: line.trim() }));
+      if (line.trim() !== "" && socket?.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ text: line.trim() }));
+        owed = "sent";
+      }
       lines.prompt();
     });
     lines.on("close", () => {
-      typing = false;
-      socket?.close();
+      closed = true;
+      if (owed === "nothing") return leave();
+      setTimeout(leave, LONGEST_ANSWER_MS).unref();
     });
     dial();
   });
+}
+
+// How long ended input waits for the answer it is owed before it hangs up anyway.
+export const LONGEST_ANSWER_MS = 60_000;
+
+/** What the last line is still owed, after one more entry of the call. */
+export function owing(owed: "nothing" | "sent" | "thinking", entry: { type?: string; data?: unknown }): "nothing" | "sent" | "thinking" {
+  if (entry.type !== "agent.state" || owed === "nothing") return owed;
+  const state = (entry.data as { state?: string } | undefined)?.state;
+  if (state === "thinking") return "thinking";
+  return state === "listening" && owed === "thinking" ? "nothing" : owed;
 }
 
 // Reconnect budget: about a minute in total, enough for a gateway restart.

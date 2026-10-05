@@ -15,20 +15,26 @@ import { asColumns } from "./providers.js";
 import { asked, knocked, type Door } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
 
-const USAGE = `usage: pinecall voices [--tts cartesia] [--language es] [--country ES]
-       pinecall voices play <voice> ["the words"] [--tts cartesia] [--model sonic-3] [--language es] [--save file.wav]`;
+const USAGE = `usage: pinecall voices [--tts <vendor>] [--language es] [--country ES]
+       pinecall voices play <voice> ["the words"] [--tts <vendor>] [--model <model>] [--language es] [--save file.wav]`;
 
-// Default vendor; its voice ids are uuids, hence this verb.
-const A_VENDOR = "cartesia";
+/** The catalogue as this verb reads it: the box's vendor per stage, and who lists its voices. */
+interface Catalogue {
+  providers: { name: string; voices_listed: boolean }[];
+  defaults: Record<string, string>;
+}
 
 export const group: Group = {
   purpose: "a voice vendor's voices, and any one of them heard on this machine before it is chosen",
   usage: `${USAGE}
 
+  The vendor is --tts, or the box's own voice when none is named (\`pinecall providers\` says which).
+
   With nothing after it: the vendor's voices in that language, one per line — the id the agent's
   voice setting takes, the name, gender, and where the accent is from (ES is Spain, MX Mexico), so
   a Spanish agent that should sound like Madrid is not given a voice from Monterrey. --country
-  keeps only the voices from there.
+  keeps only the voices from there. A vendor whose plugin lists no voices takes its own ids as
+  they are: the line says so and names the vendors that list theirs.
 
   play says the words in that voice, through the vendor's own plugin exactly as a call would, and
   plays them here — afplay, ffplay, play, aplay or pw-play, whichever this machine has — with how
@@ -36,7 +42,7 @@ export const group: Group = {
   language. It runs on the org's own key for the vendor when it brought one (pinecall providers
   add), and on the box's otherwise. --save keeps the WAV where you say.
 
-  The voice it plays is chosen with pinecall agent set --tts cartesia --tts-model <model> --voice
+  The voice it plays is chosen with pinecall agent set --tts <vendor> --tts-model <model> --voice
   <id>: the model you tried with --model is not kept unless --tts-model says it too.`,
   run,
 };
@@ -64,7 +70,7 @@ export async function run(argv: string[], how: Choosing = {}): Promise<number> {
   const parsed = playing ? aPlayParse(argv.slice(1)) : aListParse(argv);
   try {
     if (playing) return await play(door, parsed as PlayArgs, how.play ?? aSpeaker, out, err);
-    return await list(door, parsed as ListArgs, out);
+    return await list(door, parsed as ListArgs, out, err);
   } catch (refused) {
     err.write(`${refusal(refused)}\n`);
     return 1;
@@ -91,8 +97,15 @@ function aPlayParse(argv: string[]): PlayArgs {
   return { ...values, ...(voice === undefined ? {} : { voice }), ...(text === undefined ? {} : { text }), ...(extra === undefined ? {} : { extra }) };
 }
 
-async function list(door: Door, args: ListArgs, out: NodeJS.WritableStream): Promise<number> {
-  const query = new URLSearchParams({ tts: args.tts ?? A_VENDOR });
+async function list(door: Door, args: ListArgs, out: NodeJS.WritableStream, err: NodeJS.WritableStream): Promise<number> {
+  const catalogue = await asked<Catalogue>(door, "/v1/providers");
+  const vendor = args.tts ?? theBoxVoice(catalogue);
+  const listing = catalogue.providers.filter((one) => one.voices_listed).map((one) => one.name);
+  if (catalogue.providers.some((one) => one.name === vendor) && !listing.includes(vendor)) {
+    err.write(`${notListed(vendor, listing)}\n`);
+    return 1;
+  }
+  const query = new URLSearchParams({ tts: vendor });
   if (args.language !== undefined) query.set("language", args.language);
   // Validate, so a non-list 200 (a proxy page, an older gateway) fails instead of reading as empty.
   const listed = VoicesListedSchema.parse(await asked<unknown>(door, `/v1/voices?${query}`));
@@ -114,7 +127,7 @@ async function play(door: Door, args: PlayArgs, speaker: (file: string) => Playe
   }
   // Without text the gateway picks a sample line in the language.
   const body: VoiceSample = {
-    tts: args.tts ?? A_VENDOR,
+    tts: args.tts ?? theBoxVoice(await asked<Catalogue>(door, "/v1/providers")),
     voice: args.voice,
     model: args.model ?? null,
     language: args.language ?? null,
@@ -134,6 +147,19 @@ async function play(door: Door, args: PlayArgs, speaker: (file: string) => Playe
   if (kept === null) rmSync(file, { force: true });
   out.write(`${args.voice} · first audio ${wait} · whole sentence ${whole} · ${played.player}${kept === null ? "" : ` · saved ${kept}`}\n`);
   return 0;
+}
+
+// The box's own voice: what an agent that names no vendor speaks with.
+function theBoxVoice(catalogue: Catalogue): string {
+  const vendor = catalogue.defaults["tts"];
+  if (vendor === undefined) throw new Error("this box names no voice of its own: name one with --tts <vendor>");
+  return vendor;
+}
+
+/** What a vendor whose plugin lists no voices is told, with the vendors that list theirs. */
+export function notListed(vendor: string, listing: string[]): string {
+  const others = listing.length === 0 ? "no vendor of this box lists its voices" : `these list theirs: ${listing.join(", ")} (--tts <vendor>)`;
+  return `${vendor} lists no voices: its voice is the vendor's own id, set as it is — ${others}`;
 }
 
 /** A synthesized sample and its Server-Timing durations. */

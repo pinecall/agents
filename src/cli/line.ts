@@ -74,8 +74,13 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
       : verb === "release"
         ? await released(door, slug)
         : await theLine(door, slug);
-  out.write(`${describing(said)}\n`);
+  out.write(`${verb === "release" && !said.held ? letGo(said.agent) : describing(said)}\n`);
   return 0;
+}
+
+/** What a release says when nobody else was there to pick the line up. */
+export function letGo(agent: string): string {
+  return `let go, and nobody else is running ${agent}: a call from a number nobody said was theirs rings nowhere until a terminal claims it`;
 }
 
 /** Register your phone number so its calls reach your own running agents. */

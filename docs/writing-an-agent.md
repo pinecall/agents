@@ -53,7 +53,9 @@ does what.
 The file is `agent.tsx` because the class renders JSX. That is the only reason, and it changes
 nothing else: a class that writes no `render()` may stay in `agent.ts`, and the CLI finds either.
 
-Two files carry the toolchain, and they are the only ceremony:
+Two files carry the toolchain, and they are the only ceremony — beside `"type": "module"` in the
+project's `package.json`, because the class is an ES module (`npm init` writes a CommonJS package,
+and `tsc` then refuses every `import` of the class with TS1295):
 
 ```jsonc
 // tsconfig.json — everything the framework needs told to the compiler comes from the preset
