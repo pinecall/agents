@@ -931,17 +931,22 @@ $ pinecall carriers add twilio --account-sid AC0123… --user SK4567…   # once
 $ pinecall numbers import +34910000000 --agent clinica-norte          # the number, to the agent
 ```
 
-**Which number to import is `numbers available`** (`GET /v1/numbers/available`): every number the
-org's Twilio accounts own, every page of Twilio's, one per line with its name at the carrier and its
-account, and `free here` or `routed here` for the world asked. `--account` asks one account of
-several. Free is per world: a number production routes reads `free here` in the sandbox, so look
-with `--prod` before importing one there. A SIP peer owns what it owns and lists nothing; its import
-takes the number as typed.
+**Which numbers there are to import is `numbers available`** (`GET /v1/numbers/available`): every
+number the org's Twilio accounts own, every page of Twilio's, one per line with its name at the
+carrier and its account, and `routed here` or `not routed here` for the world asked. `--account` asks
+one account of several. It is per world: a number production routes reads `not routed here` in the
+sandbox, so look with `--prod` before importing one there.
+
+**`not routed here` is not `free`.** The list knows what **this org** routes in this world, and
+nothing about a number held on another org's trunk of the same Twilio account: that one is found out
+at import, as a `409` naming the trunk and asking for `move`. `numbers import <number> --agent <slug>
+--dry-run` is the check, and a `409` is a number to leave alone. A SIP peer owns what it owns and
+lists nothing; its import takes the number as typed.
 
 ```console
 $ pinecall numbers available --prod
-+13158182774 · (315) 818-2774 · AC5f7c… · free here
-+16194326516 · (619) 432-6516 · AC5f7c… · routed here
++13158182774 · (315) 818-2774 · AC5f7c… · routed here
++16814413619 · (681) 441-3619 · AC5f7c… · not routed here
 ```
 
 A number is **one world's** and reaches one agent: it is imported where it answers, and `list`

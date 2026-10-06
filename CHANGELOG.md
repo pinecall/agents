@@ -6,6 +6,15 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.9.18] — `numbers available` does not call a number free
+
+### Fixed
+
+- **`pinecall numbers available` says `not routed here`, not `free here`.** The list knows what the
+  org routes in this world, not a number held on another org's trunk of the same Twilio account,
+  which the gateway only refuses at import (`409`). The verb's help and `the-cli.md` say to check
+  with `numbers import --dry-run`.
+
 ## [0.9.17] — The numbers the org owns, and which are free
 
 ### Added

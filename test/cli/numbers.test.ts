@@ -53,9 +53,9 @@ describe("the verb's shape", () => {
 });
 
 describe("one owned number as a line", () => {
-  it("says a number this world routes nowhere is free here", () => {
+  it("says a number this world does not route is not routed here", () => {
     expect(anOwnedLine({ number: A_NUMBER, name: "Demos", imported: false, account: "AC1" })).toBe(
-      `${A_NUMBER} · Demos · AC1 · free here`,
+      `${A_NUMBER} · Demos · AC1 · not routed here`,
     );
   });
 
@@ -65,7 +65,7 @@ describe("one owned number as a line", () => {
 
   // Twilio names an unnamed number by the number itself; printing it twice says nothing.
   it("leaves out a name that is only the number again", () => {
-    expect(anOwnedLine({ number: A_NUMBER, name: A_NUMBER, imported: false })).toBe(`${A_NUMBER} · free here`);
+    expect(anOwnedLine({ number: A_NUMBER, name: A_NUMBER, imported: false })).toBe(`${A_NUMBER} · not routed here`);
   });
 });
 
@@ -98,7 +98,7 @@ describe("what the org's accounts own", () => {
     return { code, out: out.text() };
   }
 
-  it("prints every number the accounts own, one per line, free or routed", async () => {
+  it("prints every number the accounts own, one per line, routed here or not", async () => {
     owned = {
       kind: "twilio",
       numbers: [
@@ -111,7 +111,7 @@ describe("what the org's accounts own", () => {
 
     expect(code).toBe(0);
     expect(asked).toEqual(["/v1/numbers/available"]);
-    expect(out).toBe("+13610000001 · Demos · AC1 · free here\n+13610000002 · AC1 · routed here\n");
+    expect(out).toBe("+13610000001 · Demos · AC1 · not routed here\n+13610000002 · AC1 · routed here\n");
   });
 
   it("asks one account when --account names it", async () => {

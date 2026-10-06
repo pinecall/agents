@@ -41,8 +41,8 @@ export const group: Group = {
   \`list\` shows that world's — the sandbox's, or production's with --prod. Nothing moves a
   number between the two.
 
-  \`available\` is every number the org's Twilio accounts own, and whether this world routes it:
-  a \`free here\` line is one \`import\` can point at an agent of this world.
+  \`available\` is every number the org's Twilio accounts own, and whether this world routes it. A
+  number \`not routed here\` may still sit on another org's trunk: \`import --dry-run\` says.
 
   \`import\` takes a number the org's carrier account already owns and points it here: the
   carrier's trunk, the SFU's trunk, the route — \`--dry-run\` prints those steps and writes
@@ -119,12 +119,12 @@ async function owned(door: Door, out: NodeJS.WritableStream, account: string | u
   return 0;
 }
 
-/** Format an owned number: the number, its name at the carrier, the account, and whether it is free here. */
+/** Format an owned number: the number, its name at the carrier, the account, and whether this world routes it. */
 export function anOwnedLine(one: OwnedNumber): string {
   const said = [one.number];
   if (one.name !== "" && one.name !== one.number) said.push(one.name);
   if (one.account !== undefined) said.push(one.account);
-  said.push(one.imported ? "routed here" : "free here");
+  said.push(one.imported ? "routed here" : "not routed here");
   return said.join(" · ");
 }
 
