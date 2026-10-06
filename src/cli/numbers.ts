@@ -1,4 +1,4 @@
-/** `pinecall numbers list | import | drop`: manage which number reaches which agent. */
+/** `pinecall numbers list | available | import | drop`: manage which number reaches which agent. */
 
 import { parseArgs } from "node:util";
 
@@ -8,10 +8,25 @@ import { asked, type Door } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
 
 const USAGE = `usage: pinecall numbers list
+       pinecall numbers available [--account <id>]
        pinecall numbers import <+34…> --agent <slug> [--channel phone|whatsapp] [--dry-run]
        pinecall numbers drop <+34…>`;
 
 const NUMBERS = "/v1/numbers";
+
+/** `GET /v1/numbers/available`: what the org's Twilio accounts own; a SIP peer lists none. */
+interface Owned {
+  kind: string;
+  numbers: OwnedNumber[];
+}
+
+/** One number an account owns, and whether this world imported it. */
+export interface OwnedNumber {
+  number: string;
+  name: string;
+  imported: boolean;
+  account?: string | undefined;
+}
 
 /** One row of `GET /v1/numbers`. */
 interface Door_ {
@@ -19,12 +34,15 @@ interface Door_ {
 }
 
 export const group: Group = {
-  purpose: "list | import | drop the numbers the org answers at",
+  purpose: "list | available | import | drop the numbers the org answers at",
   usage: `${USAGE}
 
   A number is one world's and reaches one agent: it is imported where it answers, and
   \`list\` shows that world's — the sandbox's, or production's with --prod. Nothing moves a
   number between the two.
+
+  \`available\` is every number the org's Twilio accounts own, and whether this world routes it:
+  a \`free here\` line is one \`import\` can point at an agent of this world.
 
   \`import\` takes a number the org's carrier account already owns and points it here: the
   carrier's trunk, the SFU's trunk, the route — \`--dry-run\` prints those steps and writes
@@ -46,10 +64,12 @@ export async function run(argv: string[], how: Numbering = {}): Promise<number> 
   const verb = argv[0] ?? "list";
   const door = await theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
-  // Reject unknown flags on `list`; parsed outside the try so the dispatcher reports exit 2.
+  // Flags are parsed outside the try, so the dispatcher reports an unknown one as exit 2.
   if (verb === "list") parseArgs({ args: argv.slice(1), options: {} });
+  const account = verb === "available" ? theAccount(argv.slice(1)) : undefined;
   try {
     if (verb === "list") return await list(door, out);
+    if (verb === "available") return await owned(door, out, account);
     if (verb === "import") return await brought(argv.slice(1), door, out, err);
     if (verb === "drop") return await dropped(argv[1], door, out, err);
   } catch (refused) {
@@ -75,6 +95,36 @@ async function list(door: Door, out: NodeJS.WritableStream): Promise<number> {
 export function aLine(one: Door_): string {
   const said = [one.route.number ?? "—", one.route.channel, `→ ${one.route.agent}`, one.route.env];
   if (one.route.managed) said.push("bought here");
+  return said.join(" · ");
+}
+
+/** `--account <id>`: one account of several; unsaid, every account the org holds. */
+function theAccount(args: string[]): string | undefined {
+  return parseArgs({ args, options: { account: { type: "string" } } }).values.account;
+}
+
+/** Print every number the org's accounts own, and whether this world routes it. */
+async function owned(door: Door, out: NodeJS.WritableStream, account: string | undefined): Promise<number> {
+  const path = account === undefined ? `${NUMBERS}/available` : `${NUMBERS}/available?account=${encodeURIComponent(account)}`;
+  const found = await asked<Owned>(door, path);
+  if (found.numbers.length === 0) {
+    out.write(
+      found.kind === "sip"
+        ? "a SIP peer lists nothing here: `pinecall numbers import <+34…> --agent <slug>` takes its number as typed\n"
+        : "the org's accounts own no number: buy one at the carrier, then `pinecall numbers available` again\n",
+    );
+    return 0;
+  }
+  for (const one of found.numbers) out.write(`${anOwnedLine(one)}\n`);
+  return 0;
+}
+
+/** Format an owned number: the number, its name at the carrier, the account, and whether it is free here. */
+export function anOwnedLine(one: OwnedNumber): string {
+  const said = [one.number];
+  if (one.name !== "" && one.name !== one.number) said.push(one.name);
+  if (one.account !== undefined) said.push(one.account);
+  said.push(one.imported ? "routed here" : "free here");
   return said.join(" · ");
 }
 

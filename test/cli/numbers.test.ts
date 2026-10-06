@@ -1,9 +1,12 @@
-// `pinecall numbers`: the org's doors, one per line, and the verb that moves the org's single
-// number between the two worlds.
+// `pinecall numbers`: the org's doors, one per line, what its accounts own and which of it is free,
+// and the verbs that route and forget a number.
 
-import { describe, expect, it } from "vitest";
+import { createServer, type Server } from "node:http";
+import type { AddressInfo } from "node:net";
 
-import { group, aLine, run } from "../../src/cli/numbers.js";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
+import { group, aLine, anOwnedLine, run } from "../../src/cli/numbers.js";
 import { pointingAt } from "./home.js";
 import { written } from "./said.js";
 
@@ -27,7 +30,8 @@ describe("one door as a line", () => {
 
 describe("the verb's shape", () => {
   // A number belongs to one instance; the runtime has no door to move it, so the verb has none.
-  it("names three sub-verbs, and none moves a number between the worlds", () => {
+  it("names its sub-verbs, and none moves a number between the worlds", () => {
+    expect(group.usage).toContain("pinecall numbers available [--account <id>]");
     expect(group.usage).toContain("pinecall numbers drop <+34…>");
     expect(group.usage).not.toContain("numbers move");
   });
@@ -45,5 +49,84 @@ describe("the verb's shape", () => {
 
     expect(await run(["drop", A_NUMBER], { err: err.stream, env: {} })).toBe(2);
     expect(err.text()).toContain("`pinecall link`");
+  });
+});
+
+describe("one owned number as a line", () => {
+  it("says a number this world routes nowhere is free here", () => {
+    expect(anOwnedLine({ number: A_NUMBER, name: "Demos", imported: false, account: "AC1" })).toBe(
+      `${A_NUMBER} · Demos · AC1 · free here`,
+    );
+  });
+
+  it("says a number this world already routes is routed here", () => {
+    expect(anOwnedLine({ number: A_NUMBER, name: "", imported: true })).toBe(`${A_NUMBER} · routed here`);
+  });
+
+  // Twilio names an unnamed number by the number itself; printing it twice says nothing.
+  it("leaves out a name that is only the number again", () => {
+    expect(anOwnedLine({ number: A_NUMBER, name: A_NUMBER, imported: false })).toBe(`${A_NUMBER} · free here`);
+  });
+});
+
+describe("what the org's accounts own", () => {
+  const A_KEY = "pc_test_the_orgs_own_key";
+  let server: Server;
+  let url = "";
+  let asked: string[] = [];
+  let owned: unknown = { kind: "twilio", numbers: [] };
+
+  beforeEach(async () => {
+    asked = [];
+    server = createServer((request, response) => {
+      asked.push(request.url ?? "");
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify(owned));
+    });
+    await new Promise<void>((bound) => server.listen(0, "127.0.0.1", bound));
+    url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  });
+
+  afterEach(async () => {
+    server.closeAllConnections();
+    await new Promise<void>((closed) => server.close(() => closed()));
+  });
+
+  async function available(argv: string[] = []) {
+    const out = written();
+    const code = await run(["available", ...argv], { out: out.stream, env: pointingAt(url, A_KEY) });
+    return { code, out: out.text() };
+  }
+
+  it("prints every number the accounts own, one per line, free or routed", async () => {
+    owned = {
+      kind: "twilio",
+      numbers: [
+        { number: "+13610000001", name: "Demos", imported: false, account: "AC1" },
+        { number: "+13610000002", name: "", imported: true, account: "AC1" },
+      ],
+    };
+
+    const { code, out } = await available();
+
+    expect(code).toBe(0);
+    expect(asked).toEqual(["/v1/numbers/available"]);
+    expect(out).toBe("+13610000001 · Demos · AC1 · free here\n+13610000002 · AC1 · routed here\n");
+  });
+
+  it("asks one account when --account names it", async () => {
+    await available(["--account", "AC1"]);
+
+    expect(asked).toEqual(["/v1/numbers/available?account=AC1"]);
+  });
+
+  it("says a SIP peer lists nothing, and that its number is imported as typed", async () => {
+    owned = { kind: "sip", numbers: [] };
+
+    expect((await available()).out).toContain("takes its number as typed");
+  });
+
+  it("lets a flag it does not take reach the dispatcher", async () => {
+    await expect(available(["--bogus"])).rejects.toThrow("Unknown option '--bogus'");
   });
 });

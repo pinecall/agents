@@ -40,7 +40,7 @@ path end to end, with every output under it.
 | [`lexicon`](#lexicon) | an agent's words: how the voice says them and what the ears must know | yes |
 | [`pipeline`](#pipeline) | what it hears, decides and speaks with, as the next call would be built | yes |
 | [`line`](#line) | which phone is yours, and whose terminal a call from anybody else's rings in | yes |
-| [`numbers`](#numbers) | which number reaches which agent, in the world it answers in | yes |
+| [`numbers`](#numbers) | which number reaches which agent, in the world it answers in, and which the org's accounts own free | yes |
 | [`carriers`](#carriers) | the org's carrier accounts — a Twilio account, a SIP peer, a WhatsApp number — where its numbers live | yes |
 | [`personas`](#personas) | an agent's synthetic callers, kept by the gateway: list, show, add, edit, rm, try, push | yes |
 | [`judges`](#judges) | the org's judges and the agent's own, a question asked of calls at hang-up: list, add, rm | yes |
@@ -917,6 +917,7 @@ no prompt drawn, and the desk leaves when the lines run out.
 
 ```
 pinecall numbers list
+pinecall numbers available [--account <id>]
 pinecall numbers import <+34…> --agent <slug> [--channel phone|whatsapp] [--dry-run]
 pinecall numbers drop <+34…>
 ```
@@ -928,6 +929,19 @@ does not hold it yet. A Twilio number reaching an agent is these two lines, and 
 ```console
 $ pinecall carriers add twilio --account-sid AC0123… --user SK4567…   # once, the secret on stdin
 $ pinecall numbers import +34910000000 --agent clinica-norte          # the number, to the agent
+```
+
+**Which number to import is `numbers available`** (`GET /v1/numbers/available`): every number the
+org's Twilio accounts own, every page of Twilio's, one per line with its name at the carrier and its
+account, and `free here` or `routed here` for the world asked. `--account` asks one account of
+several. Free is per world: a number production routes reads `free here` in the sandbox, so look
+with `--prod` before importing one there. A SIP peer owns what it owns and lists nothing; its import
+takes the number as typed.
+
+```console
+$ pinecall numbers available --prod
++13158182774 · (315) 818-2774 · AC5f7c… · free here
++16194326516 · (619) 432-6516 · AC5f7c… · routed here
 ```
 
 A number is **one world's** and reaches one agent: it is imported where it answers, and `list`

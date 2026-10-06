@@ -6,6 +6,14 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.9.17] — The numbers the org owns, and which are free
+
+### Added
+
+- **`pinecall numbers available [--account <id>]`** lists every number the org's Twilio accounts
+  own, with `free here` or `routed here` for the world asked, so the number to `import` is found
+  from the terminal instead of the console's Numbers screen.
+
 ## [0.9.16] — A chat whose input ends hangs up
 
 ### Fixed
