@@ -16,7 +16,8 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 - **`@pinecall/agents/serve`**, the entry the CLI starts an agent with: `start --file --slug [--console]
   [--events]` holds the agents (the door from `PINECALL_URL`, `PINECALL_KEY`, `PINECALL_ENV`
   only; leaves draining on a signal or the end of its stdin; answers `view.render` alone) and
-  `prompt --file --slug [--state field=json]…` prints a prompt.
+  `prompt --file --slug [--state field=json]…` prints a prompt. A class it refuses — a field the
+  world sets, a tool with no docstring — is one sentence and exit 2, never a stack.
 - `pinecall chat --inspect[=host:port]` and `--inspect-brk` open the agent's process to a debugger.
 
 ### Changed

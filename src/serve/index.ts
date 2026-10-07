@@ -3,6 +3,8 @@
 import { realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
+import { DeclarationRefused } from "../agent/tools.js";
+
 import { processIo, type Io } from "./io.js";
 import { CannotServe } from "./load.js";
 import { prompt } from "./prompt.js";
@@ -21,7 +23,7 @@ export async function main(argv: string[], io: Io = processIo()): Promise<number
     if (verb === "start") return await start(rest, io);
     if (verb === "prompt") return await prompt(rest, io);
   } catch (failed) {
-    if (!(failed instanceof CannotServe) && !isAFlag(failed)) throw failed;
+    if (!(failed instanceof CannotServe) && !(failed instanceof DeclarationRefused) && !isAFlag(failed)) throw failed;
     io.err.write(`${failed.message}\n`);
     return 2;
   }

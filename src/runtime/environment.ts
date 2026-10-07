@@ -1,5 +1,7 @@
 /** Environment fields a class may not declare, each with the CLI verb that sets it instead. */
 
+import { DeclarationRefused } from "../agent/tools.js";
+
 // These are per-world settings changed without a deploy. The class is refused at load, and the
 // error names the verb that replaces the field.
 export const THE_WORLDS: Readonly<Record<string, string>> = {
@@ -25,6 +27,6 @@ export function movedToTheWorld(field: string): string {
 /** Throw on the first environment field the instance declares. */
 export function refuseTheEnvironment(probe: object): void {
   for (const field of Object.keys(THE_WORLDS)) {
-    if (Object.hasOwn(probe, field)) throw new Error(movedToTheWorld(field));
+    if (Object.hasOwn(probe, field)) throw new DeclarationRefused(movedToTheWorld(field));
   }
 }

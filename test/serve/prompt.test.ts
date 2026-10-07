@@ -1,6 +1,9 @@
 // `serve prompt`: the prompt a state produces, offline, opened in the state its pairs name.
 
 import { EventEmitter } from "node:events";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { PassThrough, Writable } from "node:stream";
 import { fileURLToPath } from "node:url";
 
@@ -52,5 +55,14 @@ describe("serve prompt", () => {
     const said = await printed();
     expect(said.code).toBe(2);
     expect(said.err).toContain("takes the agent's --file");
+  });
+
+  it("refuses a class that declares what the world sets, in the sentence that names the verb, exit 2", async () => {
+    const file = join(mkdtempSync(join(tmpdir(), "serve-")), "agent.ts");
+    const agent = fileURLToPath(new URL("../../src/agent/agent.ts", import.meta.url));
+    writeFileSync(file, `import { Agent } from ${JSON.stringify(agent)};\n/** Una. */\nexport default class Una extends Agent {\n  language = "es";\n}\n`);
+    const refused = await printed("--file", file, "--slug", "una");
+    expect(refused.code).toBe(2);
+    expect(refused.err).toBe("`language` is the world's now, not the class's: pinecall agent set --language <tag> — remove it from the class\n");
   });
 });

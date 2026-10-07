@@ -110,7 +110,7 @@ writes nowhere else and a test hands in its own.
 
 | file | what it is |
 |---|---|
-| `index.ts` | `main`: `start` or `prompt`, a refusal (`CannotServe`, a flag `parseArgs` refused) is its sentence and exit 2; the is-entry guard |
+| `index.ts` | `main`: `start` or `prompt`, a refusal (`CannotServe`, a class's `DeclarationRefused`, a flag `parseArgs` refused) is its sentence and exit 2; the is-entry guard |
 | `start.ts` | `start --file <f> --slug <s> [--file --slug]… [--console] [--events]`: the door from `PINECALL_URL`, `PINECALL_KEY`, `PINECALL_ENV` and nothing else; each class loaded and mounted under its slug (`--console`: `takesUnclaimed: false`); its socket answers `view.render` and refuses every other dev verb, which are the CLI's |
 | `prompt.ts` | `prompt --file <f> --slug <s> [--state field=json]… [--channel] [--medium] [--show-machine]`: the class opened in the state the pairs name, its prompt printed, and its machine under it when asked |
 | `load.ts` | a tenant's class loaded with tsx and handed its own source (`loadAgent`); `loadServed` refuses a class whose `static slug` is not the one it is served as; `instanceFor` is one instance with a line to answer on, for the pages that print a prompt |
