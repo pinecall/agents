@@ -13,7 +13,7 @@ import type { Remembering } from "./remembering.js";
 import type { Reproducing } from "./reproducing.js";
 import type { Simulating } from "./simulating.js";
 import type { Testing } from "./testing.js";
-import type { Viewing } from "./viewing.js";
+import type { Viewing } from "../../serve/viewing.js";
 
 /** Doors `pinecall start` provides, one per console screen. */
 export interface Own {

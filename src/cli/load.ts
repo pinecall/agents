@@ -1,65 +1,22 @@
-/** Load a tenant's agent file: register the TypeScript loader, import the class, read its source. */
+/** Find a tenant's agent file in the project, and load it through the serve entry's loader. */
 
 import { cannotRun } from "./cannot-run.js";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { basename, dirname, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
 
-import { type Medium } from "../wire/defs.js";
-
-import { Agent, setCall } from "../agent/agent.js";
-import { describe } from "../agent/docstrings.js";
-import { CallWorld } from "../call/call.js";
 import { type MountOptions, slugOf } from "../runtime/connect.js";
-import { refuseTheEnvironment } from "../runtime/environment.js";
-
-/** A loaded agent class with its file path and source text. */
-export interface Loaded {
-  ctor: new () => Agent;
-  file: string;
-  source: string;
-}
+import { CannotServe, loadAgent, type Loaded } from "../serve/load.js";
 
 /** Accepted agent file names, in lookup order; the first that exists wins. */
 export const AGENT_FILES = ["agent.tsx", "agent.ts"] as const;
 
-let registered = false;
-
-/** Register tsx once per process, lazily, so tenant .ts/.tsx files load without a build step. */
-export async function useTypeScript(): Promise<void> {
-  if (registered) return;
-  const { register } = await import("tsx/esm/api");
-  register();
-  registered = true;
-}
-
-/**
- * Load an agent file and pass its source to `describe`. The source is required: the class
- * docstring and tool parameter types are not recoverable from the compiled module.
- */
+/** Load the agent file named, or this directory's one. A file that cannot be served cannot run. */
 export async function load(file?: string): Promise<Loaded> {
-  const path = file === undefined ? theAgentHere() : resolve(file);
-  if (!existsSync(path)) throw cannotRun(`no agent at ${path}`);
-  await useTypeScript();
-  const module_ = (await import(pathToFileURL(path).href)) as { default?: unknown };
-  const ctor = module_.default;
-  if (typeof ctor !== "function") throw cannotRun(`${path} has no default-exported Agent class`);
-  const source = readFileSync(path, "utf8");
-  describe(ctor, source, path);
-  // Refuse environment-owned fields (voice, model, ...) here, since `pinecall prompt` never mounts.
-  refuseTheEnvironment(new (ctor as new () => Agent)());
-  return { ctor: ctor as new () => Agent, file: path, source };
-}
-
-/**
- * Instantiate the class with a stub call, since `render()` may read `this.call`. Without a
- * medium, the call's is the one its channel implies.
- */
-export function instanceFor(loaded: Loaded, channel = "web", medium?: Medium): Agent {
-  const agent = new loaded.ctor();
-  const line = medium === undefined ? { id: "", contact: "", channel } : { id: "", contact: "", channel, medium };
-  setCall(agent, new CallWorld(line, () => undefined));
-  return agent;
+  try {
+    return await loadAgent(file ?? theAgentHere());
+  } catch (failed) {
+    throw failed instanceof CannotServe ? cannotRun(failed.message) : failed;
+  }
 }
 
 /** Build `mount` options for a loaded agent. */

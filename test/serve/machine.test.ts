@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 
 import { Agent, seal, tool, withAuthor, type Stages } from "../../src/index.js";
-import { showMachine } from "../../src/cli/machine.js";
+import { showMachine } from "../../src/serve/machine.js";
 
 /** Una recepción de dos fases, para leer la página que el desarrollador mira. */
 class TwoPhases extends Agent {

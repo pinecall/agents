@@ -2,11 +2,11 @@
 
 import { describe, expect, it } from "vitest";
 
-import { Agent } from "../../../src/agent/agent.js";
-import { view, type Who } from "../../../src/agent/view.js";
-import { viewingFrom } from "../../../src/cli/ui/viewing.js";
-import { Refusal } from "../../../src/cli/ui/refusal.js";
-import { Panel, Row } from "../../../src/views/panels.js";
+import { Agent } from "../../src/agent/agent.js";
+import { view, type Who } from "../../src/agent/view.js";
+import { DevRefused } from "../../src/client/index.js";
+import { viewingFrom } from "../../src/serve/viewing.js";
+import { Panel, Row } from "../../src/views/panels.js";
 
 const WHO = { contact: "+34600000001", call: "CA_1" };
 
@@ -67,8 +67,8 @@ describe("view.render", () => {
     const failed = await viewingFrom(Rota, "rota")
       .render(WHO)
       .catch((refused: unknown) => refused);
-    expect(failed).toBeInstanceOf(Refusal);
-    expect((failed as Refusal).message).toContain("the CRM is down");
-    expect((failed as Refusal).status).toBe(502);
+    expect(failed).toBeInstanceOf(DevRefused);
+    expect((failed as DevRefused).detail).toContain("the CRM is down");
+    expect((failed as DevRefused).status).toBe(502);
   });
 });

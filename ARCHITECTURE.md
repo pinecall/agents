@@ -34,7 +34,7 @@ kept here in `src/wire/` (§14).
 
 ## 2. The tree
 
-`src/` is the package: six directories, and `test/the-imports.test.ts` is what keeps them apart —
+`src/` is the package: seven directories, and `test/the-imports.test.ts` is what keeps them apart —
 a directory earns its place there by having a line in that table (§13).
 
 ### `src/agent/` — the class a tenant extends
@@ -101,6 +101,22 @@ a directory earns its place there by having a line in that table (§13).
 | `dispatch.ts` | an outside fact off the wire, gated by the declaration and handed to `onEvent` — one at a time, in order |
 | `run-tool.ts` | one tool call: the args checked against the spec, the method run through the instance, the result cut to its `preview` |
 
+### `src/serve/` — the entry the CLI starts an agent with
+
+`pinecall/serve`, a library entry and no bin: `main(argv, io)` with two verbs. Everything it
+touches outside itself is an `Io` (two streams out, its environment, its stdin, its signals), so it
+writes nowhere else and a test hands in its own.
+
+| file | what it is |
+|---|---|
+| `index.ts` | `main`: `start` or `prompt`, a refusal (`CannotServe`, a flag `parseArgs` refused) is its sentence and exit 2; the is-entry guard |
+| `start.ts` | `start --file <f> --slug <s> [--file --slug]… [--console] [--events]`: the door from `PINECALL_URL`, `PINECALL_KEY`, `PINECALL_ENV` and nothing else; each class loaded and mounted under its slug (`--console`: `takesUnclaimed: false`); its socket answers `view.render` and refuses every other dev verb, which are the CLI's |
+| `prompt.ts` | `prompt --file <f> --slug <s> [--state field=json]… [--channel] [--medium] [--show-machine]`: the class opened in the state the pairs name, its prompt printed, and its machine under it when asked |
+| `load.ts` | a tenant's class loaded with tsx and handed its own source (`loadAgent`); `loadServed` refuses a class whose `static slug` is not the one it is served as; `instanceFor` is one instance with a line to answer on, for the pages that print a prompt |
+| `lines.ts` | `--events`: one line per wire entry, `{type, agent, call, data}` as the gateway wrote it, `agent.registered` first; without it a few lines for a person; `aLostSocket` |
+| `leaving.ts` | asked to leave — SIGINT or SIGTERM, the end of its stdin, a stop from the org — then a drain unless a second signal says now, and the line that says where the calls went |
+| `viewing.ts` · `machine.ts` | `view.render`: the class's view drawn as panel nodes; the state machine on one page |
+
 ### `src/cli/` — `pinecall <verb>`, and the page the gateway serves at both its names
 
 | file | what it is |
@@ -114,7 +130,7 @@ a directory earns its place there by having a line in that table (§13).
 | `world.ts` | which of the two worlds a verb works in: `--prod`, taken out of argv before any group sees it, names production for that one command; nothing named is the sandbox |
 | `client-for.ts` | the SDK client a verb holds: the door's gateway, its key, and the world that gateway is — the one client every verb that opens a socket builds |
 | `connected.ts` | the one line `start` prints when the socket is up: who registered, whose org took it, which world, and where the key came from |
-| `load.ts` | a tenant's class loaded with tsx and handed its own source: the file named, else the one `agents/<name>/agent.tsx` (or `.ts`) of the project this terminal stands in — a project of several is told to name one with `--agent`. `instanceFor` is one instance with a line to answer on — a channel, and a medium when one is named — for the pages that print a prompt |
+| `load.ts` | the agent file of the project this terminal stands in — the file named, else the one `agents/<name>/agent.tsx` (or `.ts`); a project of several is told to name one with `--agent` — loaded through `serve/load.ts` |
 | `home.ts` | **the one layout**, and an agent's *home* in it: `agents/<name>/agent.ts` (with whatever only that class uses beside it), `lib/` for what agents share, `docs/<name>/` for the local folder `docs push` sends by default (never tracked: the base is on the gateway), `test/<name>/agent.test.ts`, `test/<name>/goldens/` (the conversations, and beside them `docs.json` and `memory.json`, the retrieval and recall goldens), `test/<name>/memory/`. No verb computes a path of its own; `--agent` resolves here. What the agent knows by heart is in no folder: it is a setting |
 | `console.ts` | `pinecall console`, the console of the world in a browser: a one-use code the gateway minted in that world for this terminal's key, and the page opened at the gateway's root for production or under `/sandbox` for the sandbox. It binds nothing — **no code under `cli/` opens a port**, and `test/cli/verbs.test.ts` pins that |
 | `start-console.ts` · `start-screens.ts` | the `console` line `start` prints — the console of the world it registered in, with a one-use code minted there (`aLoginCode`, the one mint of a login code) — and the three ways `start` shows a log: plain, `--ui`, `--events` |
@@ -127,7 +143,7 @@ a directory earns its place there by having a line in that table (§13).
 | `providers.ts` | the provider keys this org brought of its own: one added from stdin, one taken back, the vendors read by name — never a value |
 | `voices.ts` | a vendor's voices in a language, the id first; and one said by the gateway — the wire's `VoiceSample`, no words means the gateway's own line — played on this machine from a file, kept where `--save` says, with its first-audio time when the gateway timed it |
 | `players.ts` | the audio players a machine might have, once: how each takes raw samples (`--listen`) and how it takes a file (`voices play`), and the first one on the PATH |
-| `personas.ts` · `machine.ts` · `view.ts` | the ORG's synthetic callers — listed, written, renamed, dropped and tried against the class here, all of them kept by the gateway, one list whichever agent answers them (`--agent` is only `try` and `push`, the two that need the class; `push` is the one-time migration for a project that still has the files) — the state machine on one page, the terminal view as a pure function |
+| `personas.ts` · `view.ts` | the ORG's synthetic callers — listed, written, renamed, dropped and tried against the class here, all of them kept by the gateway, one list whichever agent answers them (`--agent` is only `try` and `push`, the two that need the class; `push` is the one-time migration for a project that still has the files) — the terminal view as a pure function |
 | `deploy.ts` · `deploy-logs.ts` · `packed.ts` · `org-secrets.ts` | `pinecall deploy`: the project packed as a release — what git would commit, never `node_modules`, `.git`, `dist` or a `.env`, written as gzipped ustar by hand (`packed.ts`) — uploaded to `POST /v1/hosted/{name}/releases`, and followed on `GET /v1/hosted` until it is live, failed or replaced; `list`, `releases`, `rollback` (the gateway keeps an old release's sources as the next), `stop`, `start`, `rm`, and `logs` (`deploy-logs.ts`: asked, waited for until the box sends lines read after the ask, and followed by printing what a newer read adds). `pinecall secrets`: the org's secrets per world, set from a silent prompt or stdin, never read back |
 | `judges.ts` | the agent's own judges — a question about its job, asked of its calls at hang-up beside the runtime's panel — listed, written and dropped at the agent's door; the agent is the project's one, or `--agent` |
 | `login.ts` · `browser.ts` · `whoami.ts` · `secret.ts` | the browser dance that signs this machine in (a word asked for, a link opened, the key collected once — kept for `link` to mint from, never run on), how a URL is put in front of a person, which key a verb would use and whether it acts in production, and the one place a terminal is read |
@@ -254,7 +270,7 @@ code:
   reaches a snapshot. A `render()` may read it — `this.call.channel` is how one class answers a
   phone call and a chat differently, `this.call.medium` whether the call is spoken or written —
   and it throws outside a call, so the pages that print a prompt give their instance a line of
-  its own (`cli/load.ts:instanceFor`).
+  its own (`serve/load.ts:instanceFor`).
 - **`render()` and `remembers()` are methods of the base,** so neither is state either. `render()`
   returns nothing by default; `remembers(text)` answers from what the runtime has recalled about
   this caller in this call, and false before anything has.
@@ -520,7 +536,8 @@ line the test deletes.
 | `call/` | `agent`, `wire` |
 | `views/` | `agent`, `wire` |
 | `runtime/` | `agent`, `call`, `views`, `client`, `wire` |
-| `cli/` | `agent`, `call`, `views`, `runtime`, `client`, `wire`, `ws`, `tsx`, `@livekit/rtc-node` |
+| `serve/` | `agent`, `call`, `views`, `runtime`, `client`, `wire`, `tsx` |
+| `cli/` | `agent`, `views`, `runtime`, `serve`, `client`, `wire`, `ws`, `@livekit/rtc-node` |
 | `src/index.ts` | `agent`, `call`, `views`, `runtime` |
 
 `test/the-wire.test.ts` holds the SDK to its wire: every command of the registry is sent by the

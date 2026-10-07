@@ -27,9 +27,10 @@ its own that the runtime builds into the gateway.
 
 ## Structure
 
-- `src/` — six directories, kept apart by the import table in `test/the-imports.test.ts`
+- `src/` — seven directories, kept apart by the import table in `test/the-imports.test.ts`
   - `agent/` the class · `views/` JSX→text · `call/` the live call as a value
   - `client/` `pinecall/client`: the socket, and nothing above it · `runtime/` the bridge
+  - `serve/` `pinecall/serve`: the entry the CLI starts an agent with — `start`, `prompt`
   - `cli/` `pinecall <verb>`, and nothing under it binds a port; `cli/ui/*.ts` is what `start`
     ANSWERS a console with, by the wire's verb (`doors.ts`) — the page that asks is `../console`
 - `test/` mirrors `src/`; `the-tree`, `the-imports`, `index` and `client/index` are the tree's rules

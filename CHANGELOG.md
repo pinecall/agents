@@ -12,6 +12,10 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   and `agent.register` may carry `answers_dev`. `pc.agent(slug, { answersDev: true })` registers
   a socket that answers the console's dev verbs and declares nothing; `pc.onEntries` hands over
   every entry as the gateway wrote it.
+- **`pinecall/serve`**, the entry the CLI starts an agent with: `start --file --slug [--console]
+  [--events]` holds the agents (the door from `PINECALL_URL`, `PINECALL_KEY`, `PINECALL_ENV`
+  only; leaves draining on a signal or the end of its stdin; answers `view.render` alone) and
+  `prompt --file --slug [--state field=json]…` prints a prompt. Nothing starts it yet.
 
 ### Changed
 

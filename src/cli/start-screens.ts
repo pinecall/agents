@@ -1,6 +1,7 @@
 /** `pinecall start` output modes: plain log, JSON lines, and the full-screen view. */
 
 import type { CamelEvent, Drained, Pinecall } from "../client/index.js";
+import { drainLine } from "../serve/leaving.js";
 import { absorb, draw, screenFor, type Screen } from "./view.js";
 
 // Repaint at most 10 times a second; per-event redraws flicker.
@@ -176,20 +177,4 @@ export function signalled(): Promise<"signalled"> {
 // stderr, so `--events` stdout stays pure JSON lines.
 async function drained(pc: Pinecall): Promise<void> {
   process.stderr.write(drainLine(await pc.drain()) + "\n");
-}
-
-/** Summarize a drain: live calls handed over or kept, tools finished or cut. */
-export function drainLine(done: Drained): string {
-  const calls = done.handed + done.parked;
-  if (calls === 0 && done.tools === 0) return "draining · no live calls";
-  const parts = ["draining"];
-  if (done.handed > 0) parts.push(`${plural(done.handed, "live call")} handed over`);
-  if (done.parked > 0) parts.push(`${plural(done.parked, "live call")} kept for the next process`);
-  if (done.finished > 0) parts.push(`${plural(done.finished, "tool")} finished`);
-  if (done.tools > done.finished) parts.push(`${plural(done.tools - done.finished, "tool")} cut`);
-  return parts.join(" · ");
-}
-
-function plural(count: number, noun: string): string {
-  return `${count} ${noun}${count === 1 ? "" : "s"}`;
 }

@@ -6,7 +6,8 @@ import type { Pinecall } from "../../client/index.js";
 
 import type { Agent } from "../../agent/agent.js";
 import { mount, type Mounted } from "../../runtime/connect.js";
-import { type Loaded, mountOptions } from "../load.js";
+import { mountOptions } from "../load.js";
+import type { Loaded } from "../../serve/load.js";
 import { aRun, entriesOf, Refused, theRuns, type Door, type Entry, type EvalRun, type Wanted } from "./gateway.js";
 import type { Golden } from "./goldens.js";
 import { mediansOf } from "./latency.js";

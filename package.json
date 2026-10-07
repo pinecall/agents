@@ -35,6 +35,11 @@
       "import": "./src/client/testing/index.ts",
       "default": "./src/client/testing/index.ts"
     },
+    "./serve": {
+      "types": "./src/serve/index.ts",
+      "import": "./src/serve/index.ts",
+      "default": "./src/serve/index.ts"
+    },
     "./views/jsx-runtime": {
       "types": "./src/views/jsx-runtime.ts",
       "import": "./src/views/jsx-runtime.ts",
@@ -91,6 +96,10 @@
       "./client/testing": {
         "types": "./dist/client/testing/index.d.ts",
         "import": "./dist/client/testing/index.js"
+      },
+      "./serve": {
+        "types": "./dist/serve/index.d.ts",
+        "import": "./dist/serve/index.js"
       },
       "./views/jsx-runtime": {
         "types": "./dist/views/jsx-runtime.d.ts",

@@ -4,7 +4,7 @@ import { readdir, stat } from "node:fs/promises";
 import { basename, extname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { useTypeScript } from "../load.js";
+import { useTypeScript } from "../../serve/load.js";
 
 /** A persona file: `test/<agent>/personas/<name>.ts`, default-exporting this object. */
 export interface Persona {

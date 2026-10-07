@@ -6,7 +6,8 @@ import { describe, expect, it } from "vitest";
 
 import { docOf } from "../../src/agent/tools.js";
 import { showPrompt } from "../../src/views/render.js";
-import { instanceFor, load } from "../../src/cli/load.js";
+import { load } from "../../src/cli/load.js";
+import { instanceFor } from "../../src/serve/load.js";
 import { main } from "../../src/cli/index.js";
 import { firstState, run } from "../../src/cli/prompt.js";
 

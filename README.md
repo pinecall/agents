@@ -91,10 +91,11 @@ so tests and the example run from sources with no build step.
 | `call/` | the live call as a value, reduced from log entries |
 | `client/` | `pinecall/client`: the WebSocket client and the wire, nothing else |
 | `runtime/` | the bridge between the class and the wire |
+| `serve/` | `pinecall/serve`: the entry the CLI starts an agent with, `start` and `prompt` |
 | `cli/` | the `pinecall` CLI |
 
 `test/the-imports.test.ts` enforces which directory may import which. The public exports are
-`pinecall`, `pinecall/client` and `pinecall/tsconfig.tenant.json`, pinned by
+`pinecall`, `pinecall/client`, `pinecall/serve` and `pinecall/tsconfig.tenant.json`, pinned by
 `test/index.test.ts` and `test/client/index.test.ts`.
 
 The wire is the runtime's, kept in `src/wire/`; the runtime's golden call log, in

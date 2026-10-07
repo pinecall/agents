@@ -6,7 +6,7 @@ import { parseArgs } from "node:util";
 import { showPrompt } from "../views/render.js";
 import { mount, slugOf, type Mounted } from "../runtime/connect.js";
 import type { Agent as AgentClass } from "../agent/agent.js";
-import { showMachine } from "./machine.js";
+import { showMachine } from "../serve/machine.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { callsFrom, describing, doorsOfTheOrg, theLine, type Door_ } from "./line.js";
@@ -15,7 +15,8 @@ import { cannotTell, PRODUCTION, standing } from "./world.js";
 import { orgOf, type Who } from "./whoami.js";
 import { callingFrom } from "./signed-in.js";
 import { pinecallFor } from "./client-for.js";
-import { agentFilesOfTheProject, instanceFor, load, mountOptions } from "./load.js";
+import { agentFilesOfTheProject, load, mountOptions } from "./load.js";
+import { instanceFor } from "../serve/load.js";
 import { AGENT_FLAG, homesFor } from "./home.js";
 import { goldensOf } from "./testing/goldens.js";
 import type { Door } from "./testing/gateway.js";
@@ -23,7 +24,8 @@ import { chattingFrom, linesFromThisProcess, type Chatting } from "./ui/chatting
 import { devHandler, ownVerbs } from "./ui/doors.js";
 import { driftingFrom } from "./ui/drifting.js";
 import { hereOf, knowingFrom } from "./ui/knowing.js";
-import { viewingFrom } from "./ui/viewing.js";
+import { viewingFrom } from "../serve/viewing.js";
+import { aLostSocket } from "../serve/lines.js";
 import { promotingFrom } from "./ui/promoting.js";
 import { rememberingFrom, rememberingPiecesFor } from "./ui/remembering.js";
 import { reproducingFrom } from "./ui/reproducing.js";
@@ -209,14 +211,6 @@ async function theDoors(door: Door): Promise<Door_[]> {
   } catch {
     return [];
   }
-}
-
-// `ws` and network errors for an unreachable gateway, including a proxy answering during a restart.
-const LOST = /^(Unexpected server response|WebSocket|socket hang up|connect |getaddrinfo |read ECONN|write E)/;
-
-/** Whether the error is an unreachable gateway (reconnect handles it) rather than an app error. */
-export function aLostSocket(failed: Error): boolean {
-  return typeof (failed as NodeJS.ErrnoException).code === "string" || LOST.test(failed.message);
 }
 
 /** Re-send the phone number saved by `pinecall line from`; failures are silent. */

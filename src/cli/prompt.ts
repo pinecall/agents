@@ -9,8 +9,9 @@ import { showPrompt } from "../views/render.js";
 import { cannotRun } from "./cannot-run.js";
 import { AGENT_FLAG, oneHome } from "./home.js";
 import type { Group } from "./groups.js";
-import { instanceFor, load } from "./load.js";
-import { showMachine } from "./machine.js";
+import { load } from "./load.js";
+import { instanceFor } from "../serve/load.js";
+import { showMachine } from "../serve/machine.js";
 import { readNamedJson } from "./named-file.js";
 
 /** One case of a goldens file; only its starting state is read here. */

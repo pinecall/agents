@@ -21,7 +21,9 @@ const MAY_IMPORT: Record<string, string[]> = {
   "views": ["agent", "wire"],
   "runtime": ["agent", "call", "views", "client", "wire"],
   // `tsx` and `@livekit/rtc-node` (for `simulate --listen`) are imported lazily.
-  "cli": ["agent", "call", "views", "runtime", "client", "wire", "ws", "tsx", "@livekit/rtc-node"],
+  // The entry the CLI starts an agent with; `tsx` is imported lazily, for a tenant's .ts.
+  "serve": ["agent", "call", "views", "runtime", "client", "wire", "tsx"],
+  "cli": ["agent", "views", "runtime", "serve", "client", "wire", "ws", "@livekit/rtc-node"],
   // src/index.ts: the public surface.
   "": ["agent", "call", "views", "runtime"],
 };

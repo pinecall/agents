@@ -1,10 +1,10 @@
-// A gateway restart under `pinecall start`: one line, a redial, and socket-scoped state re-sent.
+// A gateway restart under the serve entry: one line, a redial, and socket-scoped state re-sent.
 
 import { describe, expect, it } from "vitest";
 
 import { FakeGateway } from "../../src/client/testing/index.js";
 import { Pinecall } from "../../src/client/index.js";
-import { aLostSocket } from "../../src/cli/start.js";
+import { aLostSocket } from "../../src/serve/lines.js";
 
 const KEY = "pk_test_key";
 

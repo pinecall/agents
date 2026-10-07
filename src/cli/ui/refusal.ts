@@ -1,5 +1,7 @@
 /** HTTP-style refusals raised by the console's local doors. */
 
+import { DevRefused } from "../../client/index.js";
+
 import { Refused } from "../testing/gateway.js";
 import { refusal } from "../whoami.js";
 
@@ -16,11 +18,12 @@ export class Refusal extends Error {
 }
 
 /**
- * Map an error to `{status, detail}`: a local `Refusal` keeps its status, a gateway `Refused` keeps
+ * Map an error to `{status, detail}`: a local `Refusal` or a `DevRefused` keeps its status, a gateway `Refused` keeps
  * the gateway's status and message, anything else is a 500.
  */
 export function refusedAs(failed: unknown): { status: number; detail: string } {
   if (failed instanceof Refusal) return { status: failed.status, detail: failed.message };
+  if (failed instanceof DevRefused) return { status: failed.status, detail: failed.detail };
   if (failed instanceof Refused) return { status: failed.status, detail: refusal(failed) };
   return { status: 500, detail: failed instanceof Error ? failed.message : String(failed) };
 }
