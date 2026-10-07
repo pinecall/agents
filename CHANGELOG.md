@@ -6,6 +6,12 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Added
+
+- The wire reads `call.started.state`, the state a call opens in when its opener asked for one,
+  and `agent.register` may carry `answers_dev`, a socket that answers the console's dev verbs.
+  Nothing sends or reads either yet.
+
 ## [0.9.19] — the language is the world's, and the prompt writes for the channel
 
 ### Changed

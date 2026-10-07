@@ -91,6 +91,8 @@ export const CallStartedSchema = z.strictObject({
   worker: z.string().nullish(),
   /** Whether the call is spoken or written; absent from a gateway before 0.1.6. */
   medium: MediumSchema.nullish(),
+  /** The state the call opens in, when whoever opened it asked for one (a golden, a persona, `?state=`); absent otherwise. */
+  state: z.record(z.string(), z.unknown()).nullish(),
 });
 
 /** A call changed hands without ending. */

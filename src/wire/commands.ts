@@ -31,6 +31,8 @@ export const AgentRegisterSchema = z.strictObject({
   sdk: z.string().nullish(),
   host: z.string().nullish(),
   takes_unclaimed: z.boolean().nullish(),
+  /** This socket answers the console's dev verbs for the agent; `view.render` still goes to the one serving the call. */
+  answers_dev: z.boolean().nullish(),
 });
 
 /**
