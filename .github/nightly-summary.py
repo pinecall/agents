@@ -67,12 +67,12 @@ def judged(path):
         lines.append(f"| {golden} | {marks} |")
 
     # The same last line the terminal prints, from the same fields: how many held, how many
-    # questions were put to a model, and what the calls cost in the summary's euros.
+    # questions were put to a model, and what the calls cost in the summary's dollars.
     cells = len(matrix["runs"])
     held = cells - len({(one["model"], one["golden"]) for one in matrix["failures"]})
-    cost = sum((one["summary"] or {}).get("cost", {}).get("eur", 0) for one in matrix["runs"])
+    cost = sum((one["summary"] or {}).get("cost", {}).get("usd", 0) for one in matrix["runs"])
     seconds = round((run["finished_at"] or run["started_at"]) - run["started_at"])
-    lines += ["", f"`{held}/{cells} · {matrix['judge_calls']} judge calls · {cost:.4f} EUR · {seconds}s`"]
+    lines += ["", f"`{held}/{cells} · {matrix['judge_calls']} judge calls · {cost:.4f} USD · {seconds}s`"]
 
     # What broke, with the sentence the judge wrote — for a hard policy that is the evidence, seqs
     # and all — and never a verdict on its own.

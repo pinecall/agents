@@ -574,15 +574,16 @@ moves `src/wire/` and these two files by hand, in the same change.
 | ring | what it asks | where it runs |
 |---|---|---|
 | 0 | does the class behave? | `vitest`, in the tenant's own repo. No network, no key, no model — `pinecall/client/testing` gives it a gateway that is not there |
-| 1 | does the agent hold its goldens? | `pinecall test`: the class mounted **in this terminal's process**, the conversations driven and judged by the gateway (the judges, the keys and the log are its) |
+| 1 | does the agent hold its goldens? | `pinecall test`: the class served by a process this terminal starts (its language's serve entry), the conversations driven and judged by the gateway (the judges, the keys and the log are its) |
 | 2 | does it hold on a real line? | `pinecall simulate --voice`: a model plays a persona in a room, read out in an ElevenLabs voice the agent does not have, in the agent's language, and waiting for the greeting before it says anything. `pinecall test --voice` sends the same goldens spoken, to `POST /v1/evals/run` with `voice: true` |
 | 3 | what does one real call score? | `pinecall eval <call-id>`: one call re-evaluated by the runtime's code checks |
 | 4 | what did every call score? | `call.score`, written by the runtime at hang-up with nobody watching; read here by `runs drift`, `runs promote` and the console's Evals screen |
 
-The nightly (`.github/workflows/nightly.yml`) is rings 1 and 4 on real money: the example,
-two models, all three repositories checked out, a throwaway Postgres the schema is migrated into,
-a gateway and a `pinecall-runtime init` — and two gates, the baseline model's goldens and each
-judge's drift.
+The nightly (`.github/workflows/nightly.yml`) is rings 1 and 4 on real money, against
+`https://cloud.pinecall.io` on a sandbox server token (`PINECALL_NIGHTLY_KEY`): the example in
+TypeScript and the Ruby SDK's same example, two models each, the documents pushed as the base —
+and two gates, the baseline model's goldens and each judge's drift. No runtime, database or
+provider key of its own: those are the gateway's.
 
 ## 16. Packaging: one distribution, no build between a change and a test
 
