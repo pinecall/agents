@@ -16,6 +16,7 @@ const PUBLIC = [
   "Pinecall",
   "PinecallError",
   "Refused",
+  "aLostSocket",
   "agentLogUrl",
   "appsUrl",
   "callLogUrl",

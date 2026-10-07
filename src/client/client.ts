@@ -54,6 +54,8 @@ export interface PinecallOptions {
    * it. Required for a person's key on production; not needed for a server token.
    */
   env?: World;
+  /** How this app names itself in the org's list of processes; `pinecall/<version>` otherwise. */
+  sdk?: string;
   pingMs?: number;
   backoff?: Partial<Backoff>;
 }
@@ -65,7 +67,7 @@ export interface PinecallOptions {
  * `PINECALL_API_KEY` (also used by the v1 SDK) can never select the wrong org.
  */
 export class Pinecall implements AgentGateway {
-  readonly sdk = `pinecall/${version}`;
+  readonly sdk: string;
   /** This machine's hostname, shown by the gateway next to the app. */
   readonly host = hostname();
   /** The gateway this client talks to. */
@@ -90,6 +92,7 @@ export class Pinecall implements AgentGateway {
     this.url = url;
     this.apiKey = apiKey;
     this.env = options.env;
+    this.sdk = options.sdk ?? `pinecall/${version}`;
     this.#listeners = new Listeners<Call | null>((error) => this.onError(error));
     const dial: ConnectionOptions = { url, apiKey, ...(options.env === undefined ? {} : { env: options.env }) };
     if (options.pingMs !== undefined) {

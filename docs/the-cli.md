@@ -176,7 +176,7 @@ or on the one `--agent <name>` names — by its folder's name, which is its slug
 
 | at the root | does |
 |---|---|
-| `pinecall start` | every agent at once, **on one socket, in one process**; each line prefixed by the slug, one console URL each. `--show-prompt` prints every agent's prompt under its slug |
+| `pinecall start` | every agent at once, **in one process of their language**; each line prefixed by the slug, one console URL each. `--show-prompt` prints every agent's prompt under its slug |
 | `pinecall test` | each agent's goldens through its own class, one after another; the exit code is the worst. Paths and `--watch` are for one agent, so they need `--agent` |
 | `pinecall docs push` · `eval` | every agent that has `docs/<name>/` · `test/<name>/goldens/docs.json`; the rest are named and skipped |
 | `pinecall personas` | every verb, since a caller is one agent's: `--agent <name>` when the project holds several |
@@ -198,10 +198,20 @@ class to find. `--file` is always a file.
 
 ```
 pinecall start [agent.tsx] [--agent <name>] [--prod] [--ui] [--events] [--show-prompt]
+               [--inspect[=host:port] | --inspect-brk]
 ```
 
-At a project's root with no file named, every `agents/<name>/agent.tsx` is held at once, on one
-socket: see [The project](#the-project).
+At a project's root with no file named, every `agents/<name>/agent.tsx` is held at once, in one
+process: see [The project](#the-project). They must be in one language, as one process serves
+them; a project with a Ruby agent and a TypeScript one is told to name one with `--agent`.
+
+**Two processes, two sockets.** `start` never loads your class. It starts the agent's language's
+serve entry — `@pinecall/agents`'s for TypeScript, `Pinecall::Serve` for Ruby, through bundler when
+the project has a `Gemfile` — which holds the agents and serves their calls, and it watches that
+process: its lines are what `start` prints. Beside it, `start` holds a socket of its own that
+takes no call and answers the console's screens (`answers_dev`); the panel beside a conversation is
+drawn by the class's process. `pinecall agent list` shows both, the second named
+`pinecall-cli/<version>`. `--inspect` opens the agent's process to a debugger.
 
 The app registered on the gateway and answering: **this is the process you deploy**, the same one
 on a laptop and on a server. With nothing said it holds the **sandbox** agent — at `PINECALL_URL`,
@@ -237,11 +247,13 @@ goes away is one line — `gateway  … — reconnecting`, then `gateway  back` 
 redial.
 
 **A signal drains before it leaves.** `SIGTERM` (a deploy) or `SIGINT` (Ctrl-C, or `q` in `--ui`)
-sends `agent.drain` for every agent: the gateway hands the live calls to another process holding
-the agent, or keeps them for the next one that registers, and the tools running now are let finish,
-up to 30 s. One line on stderr says what happened — `draining · 1 live call kept for the next
-process · 1 tool finished` — and then the process exits. A second signal leaves at once. Give the
-process that long under its manager ([production.md](production.md#a-deploy)).
+is passed to the agent's process once, which sends `agent.drain` for every agent: the gateway hands
+the live calls to another process holding the agent, or keeps them for the next one that
+registers, and the tools running now are let finish, up to 30 s. One line on stderr says what
+happened — `draining · 1 live call kept for the next process · 1 tool finished` — and then both
+processes exit. A second signal kills the agent's process at once, and so does one it has not left
+by in 40 s. If `start` itself is killed, the agent's process sees its stdin close and drains on its
+own. Give it that long under its manager ([production.md](production.md#a-deploy)).
 
 ```console
 $ pinecall start
@@ -258,16 +270,18 @@ line     rings in this terminal · also running: carla@clinica.test
 | flag | |
 |---|---|
 | `--prod` | production's agent, at `PINECALL_URL`: a production server's token, or a person's key while their switch is on |
-| `--ui` | the full-screen terminal view. `p` pause · `c` clear · `e` events · `s` prompt · `q` quit |
-| `--events` | one JSON line per log entry instead of the lines, for a pipe |
-| `--show-prompt` | the prompt a fresh instance would produce, then exit. No key, no gateway |
+| `--ui` | the full-screen terminal view. `p` pause · `c` clear · `e` events · `q` quit. The prompt a call is in is not on screen: the gateway keeps a hash of each block, not its text — `pinecall prompt` prints the page a state produces |
+| `--events` | the agent's process's own lines: one JSON object per wire entry, `{"type","agent","call","data"}` with `data` as the gateway wrote it (snake_case), `agent.registered` first, for a pipe |
+| `--show-prompt` | the prompt a fresh instance would produce, through the agent's serve entry, then exit. No key, no gateway |
+| `--inspect` · `--inspect-brk` | Node's own flag, given to the agent's process; a Ruby agent runs no Node and is refused it |
 
 **It answers the console for this directory.** What a screen needs of the agent's directory — a
-written call to the class here, a simulation, the goldens and a suite, the
+written call to the agent here, a simulation, the goldens and a suite, the
 documents pushed and their golden asked, the memory goldens, a call promoted to a candidate,
 the drift, a reproduction a broken run left — the console asks the gateway, and the gateway asks
-THIS process over the socket it already holds (`dev.request` → `dev.answer`; the runtime's
-`docs/protocol/dev-verbs.md`). The lines those verbs print land here, as if you had typed them.
+THIS process over its companion socket (`dev.request` → `dev.answer`; the runtime's
+`docs/protocol/dev-verbs.md`), which reaches the agent's process by its app id when a call is
+needed. The lines those verbs print land here, as if you had typed them.
 A `pinecall start` in another agent's directory answers `simulate` with a sentence saying so.
 
 ## `console`
@@ -1521,7 +1535,7 @@ code can call — over HTTP, in any language, with the same key.
 
 | verb | doors |
 |---|---|
-| `start` | `WS /v1/apps` — the class is mounted in the process that typed the verb |
+| `start` | `WS /v1/apps` twice: the agent's serve entry, a process it starts, and its own companion socket (`answers_dev`); `GET /v1/agents/{slug}/config` for the tools on the connected line |
 | `chat` · `test` · `simulate` · `remember` · `personas try` | `WS /v1/apps` from the agent's serve entry, a process the verb starts and stops |
 | `start`, once connected | `POST /v1/login/codes` (the console's URL, at the instance it registered at), `PUT /v1/line/from` (the kept phone, on every connect in the sandbox), `GET /v1/routes` (the doors it answers at), `GET /v1/agents/{slug}/line` (when one of them is a number) |
 | `chat` | `WS /v1/chat?agent=&app=&contact=` |

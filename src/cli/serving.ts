@@ -30,7 +30,7 @@ export interface Served {
 }
 
 /** Long enough for tsx to compile a class and a socket to register it on a slow machine. */
-export const REGISTERS_WITHIN_MS = 30_000;
+const REGISTERS_WITHIN_MS = 30_000;
 
 /**
  * Read a serve entry's lines. A line that is no JSON entry is passed to `err` as it came; a later

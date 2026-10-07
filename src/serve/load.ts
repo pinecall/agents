@@ -26,7 +26,7 @@ export interface Loaded {
 let registered = false;
 
 /** Register tsx once per process, lazily, so tenant .ts/.tsx files load without a build step. */
-export async function useTypeScript(): Promise<void> {
+async function useTypeScript(): Promise<void> {
   if (registered) return;
   const { register } = await import("tsx/esm/api");
   register();

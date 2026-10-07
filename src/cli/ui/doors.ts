@@ -13,7 +13,6 @@ import type { Remembering } from "./remembering.js";
 import type { Reproducing } from "./reproducing.js";
 import type { Simulating } from "./simulating.js";
 import type { Testing } from "./testing.js";
-import type { Viewing } from "../../serve/viewing.js";
 
 /** Doors `pinecall start` provides, one per console screen. */
 export interface Own {
@@ -25,7 +24,6 @@ export interface Own {
   promoting?: Promoting | undefined;
   drifting?: Drifting | undefined;
   reproducing?: Reproducing | undefined;
-  viewing?: Viewing | undefined;
 }
 
 /** Handlers keyed by wire verb. */
@@ -34,7 +32,7 @@ export type Verbs = Partial<Record<DevVerb, (asked: unknown) => Promise<unknown>
 /** Build the verb table `pinecall start` answers `dev.request` from. A new screen adds one row here. */
 export function ownVerbs(own: Own): Verbs {
   const verbs: Verbs = {};
-  const { simulating, testing, chatting, knowing, remembering, promoting, drifting, reproducing, viewing } = own;
+  const { simulating, testing, chatting, knowing, remembering, promoting, drifting, reproducing } = own;
   if (simulating !== undefined) {
     verbs["simulate.start"] = (asked) => simulating.start(asked);
   }
@@ -64,9 +62,6 @@ export function ownVerbs(own: Own): Verbs {
   }
   if (drifting !== undefined) {
     verbs["drift.read"] = (asked) => drifting.read(asked);
-  }
-  if (viewing !== undefined) {
-    verbs["view.render"] = (asked) => viewing.render(asked);
   }
   if (reproducing !== undefined) {
     verbs["reproductions.roster"] = (asked) => reproducing.roster(asked);

@@ -130,12 +130,12 @@ writes nowhere else and a test hands in its own.
 | `world.ts` | which of the two worlds a verb works in: `--prod`, taken out of argv before any group sees it, names production for that one command; nothing named is the sandbox |
 | `client-for.ts` | the SDK client a verb holds: the door's gateway, its key, and the world that gateway is — the one client every verb that opens a socket builds |
 | `connected.ts` | the one line `start` prints when the socket is up: who registered, whose org took it, which world, and where the key came from |
-| `load.ts` | the class loaded into this process through `serve/load.ts`, for `start`, which still mounts it here, served as its folder's name |
 | `language.ts` | an agent's language by its file (`agent.tsx`/`.ts`, `.rb`, `.py`), and what its serve entry is started with (`startedWith`): this Node on `serve/index` (tsx in a checkout) with `--inspect…` passed on, `ruby -r pinecall -e 'exit Pinecall::Serve.main(ARGV)'` through bundler when there is a `Gemfile`, Python refused; the door in the environment, never in the argv |
 | `serving.ts` · `child.ts` | what a serve entry's `--events` stdout says, read off any stream: the app each agent registered as (a later registration replaces it), every entry after, a line that is no entry passed to stderr. `child.ts` is the process: spawned detached with its stdin a pipe, the first SIGINT or SIGTERM passed on as one SIGTERM, killed after a 40 s grace or on a second signal; `runOnce` for `prompt` |
 | `home.ts` | **the one layout**, and an agent's *home* in it: `agents/<name>/agent.ts` (with whatever only that class uses beside it), `lib/` for what agents share, `docs/<name>/` for the local folder `docs push` sends by default (never tracked: the base is on the gateway), `test/<name>/agent.test.ts`, `test/<name>/goldens/` (the conversations, and beside them `docs.json` and `memory.json`, the retrieval and recall goldens), `test/<name>/memory/`. No verb computes a path of its own; `--agent` resolves here. What the agent knows by heart is in no folder: it is a setting |
 | `console.ts` | `pinecall console`, the console of the world in a browser: a one-use code the gateway minted in that world for this terminal's key, and the page opened at the gateway's root for production or under `/sandbox` for the sandbox. It binds nothing — **no code under `cli/` opens a port**, and `test/cli/verbs.test.ts` pins that |
-| `start-console.ts` · `start-screens.ts` | the `console` line `start` prints — the console of the world it registered in, with a one-use code minted there (`aLoginCode`, the one mint of a login code) — and the three ways `start` shows a log: plain, `--ui`, `--events` |
+| `start.ts` · `companion.ts` | `pinecall start`: the agents' serve entry started and watched (signals passed on once, its lines printed), and beside it the companion socket — `answersDev`, `takesUnclaimed: false`, no declaration, `sdk` `pinecall-cli/<version>` — that answers the console's verbs for every agent, reaching the agent's process by its app id |
+| `start-console.ts` · `start-screens.ts` | the `console` line `start` prints — the console of the world it registered in, with a one-use code minted there (`aLoginCode`, the one mint of a login code) — and the two screens over the agent's process: the plain log and `--ui`, both ending when it does |
 | `start.ts` · `chat.ts` · `prompt.ts` | the app, the app in this terminal — or a written call at an agent somebody else is holding, named by slug — and the prompt offline |
 | `test.ts` · `simulate.ts` · `eval.ts` · `runs/` | ring 1, a live persona, ring 3, and what the gateway has run |
 | `agent.ts` · `agent-lines.ts` · `agent-versions.ts` · `agent-files.ts` · `agent-knowledge.ts` · `agent-processes.ts` | **the settings**: what the org set over the class — yours, the team's, production's — on one page (`agent-lines.ts`, a row per field, `knowledge` as a count of characters and `bases` by name); the whole set written with the version it was read at, or fields cleared; the versions — history, diff, rollback — and a corner as a file for CI; `agent knowledge` prints what the agent knows by heart and `agent knowledge edit` opens it in `$EDITOR` and keeps what was written as the next version; `agent list` and `agent stop` are the processes holding the org's agents. `--prod` writes production's corner directly, while the person's org lets them act there: history and rollback are the safety, and the goldens run in CI before a deploy. `pipeline.ts` only reads now |
@@ -443,7 +443,7 @@ prompt` must not pay for a websocket client.
 | verb | what it is | needs a gateway |
 |---|---|---|
 | `link` | this project's folder tied to one of the person's orgs: their key for it, written to `./.env` | yes |
-| `start` | the app registered and answering: **the process you deploy**. Binds no port, serves no page. `--prod` for production | yes |
+| `start` | the agent's serve entry started and watched, and a companion socket that answers the console: **the process you deploy**. Binds no port, serves no page. `--prod` for production | yes |
 | `console` | the box's console in a browser, signed in as this project's key through a one-use code: the sandbox's, or production's with `--prod`. It serves nothing itself | yes |
 | `line` | which phone is yours — it reaches your sandbox copy on the production number too — and whose terminal anybody else's call rings in; `claim` takes it | yes |
 | `chat` | the agent served by a process this terminal starts (`serve start --console --events`), and a written caller against it | yes |
@@ -506,9 +506,10 @@ here while `pinecall serve` put it on a laptop; that verb is gone and so is the 
 screen by screen, is `../console/docs/the-console.md`, and how it is built is that repo's
 `CLAUDE.md`.
 
-What stays in THIS repo is the other half of the console: `cli/ui/*.ts`, what `pinecall start`
-ANSWERS a console with when the gateway relays a dev verb to the process standing in the agent's
-directory (`cli/ui/doors.ts`, one module per verb family). Those are node modules, never a browser
+What stays in THIS repo is the other half of the console: `cli/ui/*.ts`, what `pinecall start`'s
+companion socket ANSWERS a console with when the gateway relays a dev verb to the process standing
+in the agent's directory (`cli/ui/doors.ts`, one module per verb family); `view.render` alone is
+answered by the agent's serve entry, whose class draws the panel. Those are node modules, never a browser
 one — and the page never imports them either: it asks the gateway, and the gateway asks the app.
 
 ## 12. LiveKit: where it is, and where it is not
@@ -539,7 +540,7 @@ line the test deletes.
 | `views/` | `agent`, `wire` |
 | `runtime/` | `agent`, `call`, `views`, `client`, `wire` |
 | `serve/` | `agent`, `call`, `views`, `runtime`, `client`, `wire`, `tsx` |
-| `cli/` | `agent`, `views`, `runtime`, `serve`, `client`, `wire`, `ws`, `@livekit/rtc-node` |
+| `cli/` | `client`, `wire`, `ws`, `tsx`, `@livekit/rtc-node` — never the framework: a class runs in its serve entry |
 | `src/index.ts` | `agent`, `call`, `views`, `runtime` |
 
 `test/the-wire.test.ts` holds the SDK to its wire: every command of the registry is sent by the

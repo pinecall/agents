@@ -2,11 +2,11 @@
 
 import { parseArgs } from "node:util";
 
-import { DevRefused, Pinecall, type World } from "../client/index.js";
+import { aLostSocket, DevRefused, Pinecall, type World } from "../client/index.js";
 
 import { mount, type Mounted } from "../runtime/connect.js";
 import { drainLine, askedToLeave, drainedUnlessSignalledAgain } from "./leaving.js";
-import { aLostSocket, eventLine, personLine } from "./lines.js";
+import { eventLine, personLine } from "./lines.js";
 import { CannotServe, loadServed } from "./load.js";
 import type { Io } from "./io.js";
 import { viewingFrom } from "./viewing.js";
@@ -19,7 +19,7 @@ const NO_DOOR = "serve start reads PINECALL_URL and PINECALL_KEY from its enviro
 const WORLDS: readonly World[] = ["sandbox", "production"];
 
 /** One agent file and the slug it is served as. */
-export interface Served {
+interface Served {
   file: string;
   slug: string;
 }
@@ -52,7 +52,7 @@ export async function start(argv: string[], io: Io): Promise<number> {
 }
 
 /** Every `--file` with the `--slug` at its place. */
-export function paired(files: string[], slugs: string[]): Served[] {
+function paired(files: string[], slugs: string[]): Served[] {
   if (files.length === 0 || files.length !== slugs.length) {
     throw new CannotServe("serve start takes one --slug for each --file, and at least one of each");
   }

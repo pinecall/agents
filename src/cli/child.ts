@@ -15,7 +15,7 @@ export interface Child extends Serving {
 }
 
 /** Longer than a drain: the gateway's answer, then the tools still running, 30 s at most. */
-export const LEAVES_WITHIN_MS = 40_000;
+const LEAVES_WITHIN_MS = 40_000;
 
 /** What starting a child may be given instead of the process's own. */
 export interface Spawning {

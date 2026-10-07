@@ -20,10 +20,11 @@ const MAY_IMPORT: Record<string, string[]> = {
   // Uses the wire's rule for block names.
   "views": ["agent", "wire"],
   "runtime": ["agent", "call", "views", "client", "wire"],
-  // `tsx` and `@livekit/rtc-node` (for `simulate --listen`) are imported lazily.
   // The entry the CLI starts an agent with; `tsx` is imported lazily, for a tenant's .ts.
   "serve": ["agent", "call", "views", "runtime", "client", "wire", "tsx"],
-  "cli": ["agent", "views", "runtime", "serve", "client", "wire", "ws", "@livekit/rtc-node"],
+  // Never the framework: a class runs in its serve entry. `tsx` (legacy persona files) and
+  // `@livekit/rtc-node` (`simulate --listen`) are imported lazily.
+  "cli": ["client", "wire", "ws", "tsx", "@livekit/rtc-node"],
   // src/index.ts: the public surface.
   "": ["agent", "call", "views", "runtime"],
 };

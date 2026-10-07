@@ -29,6 +29,14 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   on the gateway, whatever its class is called; a class whose `static slug` says another is refused
   when it is served. A project whose folders were named apart from their classes renames them.
   `--agent` takes that name. `agent.rb` and `agent.py` count as agents of a project too.
+- **Breaking: `pinecall start` runs the agent in a process of its own and answers the console
+  from another socket.** It starts the agent's language's serve entry, prints its lines, and passes
+  it one SIGTERM on a signal (a second, or 40 s, kills it); beside it a socket named
+  `pinecall-cli/<version>` registers with `answers_dev` and takes no call. `pinecall agent list`
+  shows both. `--events` prints the entry's own lines, `{type, agent, call, data}` with the data
+  in snake_case as the gateway wrote it, instead of the camelCase `{type, data}`. The `s` key of
+  `--ui` is gone: the gateway keeps a hash of each block, not its text. A project's agents are in
+  one language, or `--agent` names one. A process manager's kill timeout is 45 s.
 - `pinecall chat`, `prompt`, `test`, `simulate`, `remember` and `personas try` run the agent in a
   process of their own, its language's serve entry, stopped when the verb is done; `chat`, `test`
   and `simulate` take `--inspect` for it. The console's Chat, Tests, Simulations and Memory screens

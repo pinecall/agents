@@ -27,6 +27,10 @@ Miss one and either the help lies or the test that pins the design's verb list g
 - **Never import a group at the top of `index.ts`.** Every group is imported lazily inside
   `groupFor()`: `pinecall prompt` must not pay for a websocket client, and a planned stub must
   pay for nothing at all.
+- **Never import `agent/`, `views/`, `runtime/`, `call/` or `serve/` from `cli/`.** The CLI never
+  loads a class: a verb that needs it starts the agent's language's serve entry
+  (`servingOne` + `whileServing`, or `runOnce` for an offline print) and talks to it through the
+  gateway by its app id. `test/the-imports.test.ts` holds the line; a Ruby agent has no other way in.
 - **Never bind a port.** `test/cli/verbs.test.ts` greps every file under `src/cli/` for
   `createServer` and `.listen(` and allows no exception: the box serves both consoles itself, and
   the CLI's job is to open a browser at one. The app opens one outbound socket and listens on nothing.

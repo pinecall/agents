@@ -104,7 +104,7 @@ sentences; small methods; 150 lines is the norm. Tests read as sentences.
 - **A tool with no docstring is refused,** because without one no model can choose it; and
   `@tool({ stage })` on a class with no `stage` field is refused too.
 - **The class docstring lives above the class,** where `toString()` cannot see it, and parameter
-  types are gone after compilation. `describe(ctor, source)` in `cli/load.ts` and `mount({source})`
+  types are gone after compilation. `describe(ctor, source)` in `serve/load.ts` and `mount({source})`
   are the only reason the `identity` block has a first line and the tools have typed arguments.
 - **Only a `dynamic` block may differ between two turns.** Re-sending identical text is a cache
   miss for nothing, and reordering the blocks breaks the prefix cache. A tenant's static block is

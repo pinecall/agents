@@ -78,7 +78,12 @@ line, a second container of the app's image with it as the command: the verb is 
 binds no port and serves no page, so there is nothing to route to it. It prints one line per log
 entry on stdout — the manager's logs — and under the connected line, the gateway's console URL for
 the agent. `--events` prints JSON lines instead, for a log shipper. A project of several agents
-runs them all on one socket, or one per process with `--agent <name>`.
+runs them all in one process, or one per process with `--agent <name>`.
+
+`pinecall start` is the CLI, a Node program, whatever the agent is written in: it starts the
+agent's language's serve entry as a process of its own and watches it, and holds beside it the
+socket that answers the console. The manager sees one process, `pinecall start`; signals reach the
+agent's process through it. Node on a server is that verb's price; (a) is the way without it.
 
 A gateway that restarts is one line, `gateway … — reconnecting`, then `gateway back`: the client
 redials on its own, the manager has nothing to restart, and every call in progress goes on — the
@@ -126,8 +131,9 @@ its own timeout.
 between the signal and the kill: ten for the gateway to answer, and
 thirty for the slowest tool. Give it that under whatever runs it:
 
-- pm2: `pm2 start "pinecall start --prod" --name agent --kill-timeout 40000` (its default is 1.6 s,
-  which cuts every tool in flight). shipway: `restart.kill_timeout: 40000`.
+- pm2: `pm2 start "pinecall start --prod" --name agent --kill-timeout 45000` (its default is 1.6 s,
+  which cuts every tool in flight; `pinecall start` itself gives its agent's process 40 s before it
+  kills it). shipway: `restart.kill_timeout: 45000`.
 - systemd: `TimeoutStopSec=45` and `KillSignal=SIGTERM` (the default).
 - A platform with a fixed grace (Heroku's 30 s) still drains the calls; a tool longer than about
   twenty seconds may be cut, and the model reads its timeout.

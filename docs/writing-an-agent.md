@@ -44,7 +44,7 @@ whoever runs the business adds, edits and removes them in the console's Settings
 at a time. There is no `docs/` in the project: see [Knowledge](#knowledge-by-heart-and-searched).
 
 A second agent is a second folder under `agents/`, and the same folders under its name. At the root
-`pinecall start` holds every agent on one socket, and every verb acts on each agent against its own
+`pinecall start` holds every agent in one process, and every verb acts on each agent against its own
 folders, or on the one `--agent <name>` names; a verb about one agent — `chat`, `simulate`, `prompt`,
 `remember`, `line`, among others — needs `--agent` when there are several. A folder nobody has
 written yet is empty, not an error. The CLI's page, [the-cli.md](the-cli.md), says which verb

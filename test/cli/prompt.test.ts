@@ -4,10 +4,6 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { docOf } from "../../src/agent/tools.js";
-import { showPrompt } from "../../src/views/render.js";
-import { load } from "../../src/cli/load.js";
-import { instanceFor } from "../../src/serve/load.js";
 import { main } from "../../src/cli/index.js";
 import { firstState, run } from "../../src/cli/prompt.js";
 
@@ -19,38 +15,6 @@ function collected(): { stream: NodeJS.WritableStream; text(): string } {
   const stream = { write: (chunk: string) => written.push(chunk) } as unknown as NodeJS.WritableStream;
   return { stream, text: () => written.join("") };
 }
-
-describe("loading an agent from disk", () => {
-  it("hands the class its own source, so the docstring above it survives the import", async () => {
-    const loaded = await load(AGENT);
-
-    // Ctor.toString() cannot see a comment above the class; only describe(Ctor, source) can.
-    expect(docOf(new loaded.ctor())).toContain("recepción de Clínica Norte");
-  });
-
-  it("hands back an instance with a line to answer on, so a render may read this.call", async () => {
-    const loaded = await load(AGENT);
-    const agent = instanceFor(loaded);
-
-    expect(agent.call.channel).toBe("web");
-    expect(agent.render()).toContain("Saluda y pide nombre");
-  });
-
-  it("says where it looked when there is no agent there", async () => {
-    await expect(load("does/not/exist.ts")).rejects.toThrow(/no agent at/);
-  });
-
-  // No file named: the project's single agent is used.
-  it("finds the one agent of the project this terminal stands in", async () => {
-    const was = process.cwd();
-    try {
-      process.chdir(fileURLToPath(new URL("./clinic", import.meta.url)));
-      expect((await load()).file).toBe(AGENT);
-    } finally {
-      process.chdir(was);
-    }
-  });
-});
 
 describe("the goldens file a state comes from", () => {
   it("takes the first case unless --case names another", () => {
@@ -138,17 +102,5 @@ describe("the prompt a state would produce", () => {
 
     expect(await run([AGENT], collected().stream, err.stream)).toBe(2);
     expect(err.text()).toContain("--state <file> is required");
-  });
-});
-
-describe("the same blocks on the class the loader brought", () => {
-  it("puts a goldens case into the instance and renders its view at the end", async () => {
-    const agent = instanceFor(await load(AGENT));
-    agent.startIn(firstState(GOLDENS, "1"));
-
-    const page = showPrompt(agent);
-
-    expect(page.indexOf("── identity (static) ──")).toBeLessThan(page.indexOf("── view (dynamic) ──"));
-    expect(page).toContain("Ofrece 1 horas");
   });
 });

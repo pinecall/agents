@@ -5,7 +5,8 @@ import type { Door_ } from "./line.js";
 export interface Connected {
   slug: string;
   url: string;
-  tools: number;
+  /** How many tools it declares; absent when the gateway would not say. */
+  tools?: number;
   /** The org and world that took it; absent when the gateway does not say. */
   org?: string;
   env?: string;
@@ -24,7 +25,7 @@ export function connectedLine(agent: Connected): string {
   if (agent.env !== undefined) said.push(agent.env);
   said.push(`connected to ${agent.url}`);
   if (agent.source !== undefined) said.push(`key from ${agent.source}`);
-  said.push(`tools ${agent.tools}`);
+  if (agent.tools !== undefined) said.push(`tools ${agent.tools}`);
   return said.join(" · ");
 }
 
