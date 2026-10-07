@@ -51,6 +51,16 @@ jobs:
         with:
           repository: pinecall/runtime
           path: runtime
+      # The Ruby SDK's example, the same agent and goldens in Ruby: ring 1 across languages.
+      - uses: actions/checkout@v4
+        with:
+          repository: pinecall/ruby
+          path: ruby
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          working-directory: ruby
+          bundler-cache: true
 
       # A golden is a real call, and a real call needs a provider key. Without one the suites run,
       # make no call, and the gate three minutes later says "the run did not finish" — true, and
@@ -160,12 +170,22 @@ jobs:
             --model haiku --model openai/gpt-4.1-mini \
             --json > "$RUNNER_TEMP/clinica-norte.json" || true
 
+      # The same goldens through the Ruby class: the one CLI starts the gem's serve entry, from
+      # ruby/lib, for each call. Written down beside the TypeScript run and gated the same way.
+      - name: pinecall test — the Ruby clinica-norte
+        working-directory: ruby/examples/clinica_norte
+        run: |
+          RUBYLIB="$GITHUB_WORKSPACE/ruby/lib" node "$GITHUB_WORKSPACE/agents/bin/pinecall.js" test \
+            --json > "$RUNNER_TEMP/clinica-norte-ruby.json" || true
+
       # The matrix as a person reads it, and the one gate: a golden that does not hold on the
       # BASELINE model fails the night. A golden two models disagree about is the whole reason
       # there are two of them, so it is written into the summary as a finding and fails nothing —
       # the answer to a divergence is a fix, never a softened golden.
       - name: the matrix, and the gate on the baseline model
-        run: python3 agents/.github/nightly-summary.py "$RUNNER_TEMP/clinica-norte.json"
+        run: |
+          python3 agents/.github/nightly-summary.py "$RUNNER_TEMP/clinica-norte.json"
+          python3 agents/.github/nightly-summary.py "$RUNNER_TEMP/clinica-norte-ruby.json"
 
       # The second gate, and it reads nothing new: each judge's held-rate is a count over the
       # `call.score` verdicts this gateway's own log already carries, and the delta between two
