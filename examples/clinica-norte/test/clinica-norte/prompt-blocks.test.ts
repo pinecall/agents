@@ -44,7 +44,7 @@ function at(index: number): ClinicaNorte {
 
 // Una instancia con una llamada a la que contestar, que es lo que `pinecall prompt` le da: un
 // `promptOf()` puede leer `this.call`, y una página sobre una llamada que no existe no sería la
-// página del prompt. Por escrito, como imprime el CLI cuando nadie dice otra cosa.
+// página del prompt. Por la web y con voz, que es lo que `pinecall prompt --channel web` imprime.
 function fresh(): ClinicaNorte {
   const agent = seal(new ClinicaNorte());
   setCall(agent, new CallWorld({ id: "", contact: "", channel: "web" }, () => undefined));

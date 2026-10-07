@@ -1,6 +1,6 @@
-// La clase declara el contrato — las puertas, el idioma, las tools, el render() — y nada del
-// entorno: la voz, el modelo, el saludo, las palabras, la memoria, lo sabido de memoria y la base
-// son del mundo, y una clase que todavía los declara es rechazada al cargar nombrando el verbo.
+// La clase declara el contrato — las tools, el render() — y nada del entorno: la voz, el modelo,
+// el idioma, el saludo, las palabras, la memoria, lo sabido de memoria y la base son del mundo,
+// y una clase que todavía los declara es rechazada al cargar nombrando el verbo.
 // Anillo 0: sin red, sin clave, sin modelo.
 
 import { fileURLToPath } from "node:url";
@@ -13,13 +13,12 @@ import ClinicaNorte from "../../agents/clinica-norte/agent.js";
 const AGENT = fileURLToPath(new URL("../../agents/clinica-norte/agent.tsx", import.meta.url));
 
 describe("la declaración que recibe el gateway", () => {
-  it("lleva el idioma y las tools, y nada del entorno ni de las puertas", () => {
+  it("lleva las tools, y nada del entorno ni de las puertas", () => {
     const options = optionsFor(ClinicaNorte, [], new ClinicaNorte(), AGENT);
 
     // Una puerta es una fila de la org (`pinecall numbers import`), nunca un campo de la clase.
     expect("routes" in options).toBe(false);
-    expect(options.language).toBe("es");
-    for (const field of ["voice", "llm", "stt", "greeting", "says", "hears", "memory", "docs", "knowledge"]) {
+    for (const field of ["voice", "llm", "stt", "language", "greeting", "says", "hears", "memory", "docs", "knowledge"]) {
       expect((options as Record<string, unknown>)[field]).toBeUndefined();
     }
   });

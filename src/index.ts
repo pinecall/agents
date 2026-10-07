@@ -28,4 +28,3 @@ export * from "./agent/accepts.js";
 export * from "./call/room.js";
 export * from "./call/history.js";
 export * from "./call/call.js";
-export * from "./views/lang.js";

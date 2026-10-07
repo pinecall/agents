@@ -20,13 +20,14 @@ import { refusal } from "./whoami.js";
 const USAGE = [
   "usage: pinecall agent [--agent <slug>] [--json]",
   "       pinecall agent list · stop <app>",
-  "       pinecall agent set [--voice x] [--tts x] [--tts-model x] [--stt x] [--llm x] [--greeting '…' | --reply '…']",
+  "       pinecall agent set [--voice x] [--tts x] [--tts-model x] [--stt x] [--llm x] [--language en|es|pt-BR…]",
+  "                          [--greeting '…' | --reply '…']",
   "                          [--hangup '…'] [--endpointing-ms n] [--min-interruption-words n] [--record on|off]",
   "                          [--max-duration 1-60|off]",
   "                          [--eot-threshold 0.5-0.9] [--eager-eot-threshold 0.3-0.9]",
   "                          [--remember '…' …] [--forget '…' …] [--team] [--note '…']",
   "       pinecall agent knowledge [--team] · knowledge edit [--team] [--note '…']",
-  "       pinecall agent clear [voice|tts|tts-model|stt|llm|greeting|hangup|turn|memory|record|max-duration|knowledge|bases …] [--team]",
+  "       pinecall agent clear [voice|tts|tts-model|stt|llm|language|greeting|hangup|turn|memory|record|max-duration|knowledge|bases …] [--team]",
   "       pinecall agent history [--team] · diff [--against team|production] · rollback <version> [--team]",
   "       pinecall agent pull [--team] · push <file> [--team]",
 ].join("\n");
@@ -46,9 +47,12 @@ export const group: Group = {
   knob reads four ways — \`--llm anthropic/claude-haiku-4-5\`, \`--llm cartesia\` (a vendor, its own
   model), \`--llm claude-haiku-4-5\` (a model, the vendor in use), and \`--llm haiku\` (a tier, which
   is expanded here to the id its provider answers to, as \`pinecall test --model\` expands it). A
-  name that means no model at all is refused rather than written. --greeting sets the words said as
-  the call opens; --reply what the model reads before it finds its own. --remember and --forget
-  replace those lists whole. A field nobody names is left as it stands.
+  name that means no model at all is refused rather than written. --language is the tag the voice
+  and the ears are set to — \`en\`, \`es\`, \`pt-BR\` — and a blank one is refused; the prompt's
+  own rules are English either way, and the agent answers in the language the caller speaks.
+  --greeting sets the words said as the call opens; --reply what the model reads before it finds
+  its own. --remember and --forget replace those lists whole. A field nobody names is left as it
+  stands.
 
   knowledge is what the agent knows by heart — the business as the org describes it, in Markdown,
   read whole on every call. Alone it prints the corner's text; \`edit\` opens it in $EDITOR and
@@ -86,6 +90,9 @@ function switched(said: string | undefined): boolean | undefined {
 const NOT_A_LIMIT = (said: string): string => `--max-duration ${said} is not 1 to 60 minutes, or off`;
 const LONGEST_MINUTES = 60;
 
+// A blank tag would read as set while leaving every vendor on its own default; `clear` says that.
+const NO_LANGUAGE = "--language needs a tag, such as en, es or pt-BR: pinecall agent clear language takes it out";
+
 function limitOf(said: string | undefined): number | undefined {
   if (said === undefined) return undefined;
   if (said === "off") return 0;
@@ -119,6 +126,7 @@ export const OPTIONS = {
   "tts-model": { type: "string" },
   stt: { type: "string" },
   llm: { type: "string" },
+  language: { type: "string" },
   greeting: { type: "string" },
   reply: { type: "string" },
   hangup: { type: "string" },
@@ -158,6 +166,10 @@ export async function run(argv: string[], how: Setting = {}): Promise<number> {
   }
   if (values["max-duration"] !== undefined && limitOf(values["max-duration"]) === undefined) {
     err.write(`${NOT_A_LIMIT(values["max-duration"])}\n`);
+    return 2;
+  }
+  if (values.language !== undefined && values.language.trim() === "") {
+    err.write(`${NO_LANGUAGE}\n`);
     return 2;
   }
   const door = await theDoor(how.env ?? process.env, err);
@@ -220,7 +232,7 @@ async function clear(door: Door, agent: string, named: string[], team: boolean):
 /** The fields this command line sets, under wire names, merged over the current row where nested. */
 export function typed(values: Typed, standing: TuningBody): Partial<TuningBody> {
   const wanted: Partial<TuningBody> = {};
-  for (const field of ["voice", "tts", "tts-model", "stt", "llm"] as const) {
+  for (const field of ["voice", "tts", "tts-model", "stt", "llm", "language"] as const) {
     const value = values[field];
     if (typeof value === "string") (wanted as Record<string, unknown>)[WIRE[field]] = value;
   }

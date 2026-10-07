@@ -12,8 +12,9 @@ import type { Call, MemoryOp } from "./lifecycle.js";
 import { collapse, restore, snapshot, type LastCall, type Snapshot } from "./state.js";
 
 // Fields that configure the agent instead of holding state: never diffed, never snapshotted.
-// Every other setting (voice, models, opening, memory) belongs to the world and is refused at load.
-export const CONFIG_FIELDS = ["phone", "whatsapp", "web", "language"] as const;
+// Every other setting (voice, models, language, opening, memory) belongs to the world and is
+// refused at load.
+export const CONFIG_FIELDS = ["phone", "whatsapp", "web", "channelRules"] as const;
 
 // state.ts derives `ConfigName` from CONFIG_FIELDS, so a name added here is dropped from snapshots.
 const CONFIG = new Set<string>(CONFIG_FIELDS);
@@ -116,6 +117,12 @@ export class Agent {
 
   /** The class description, as an alternative to a JSDoc comment. */
   static doc?: string;
+
+  /**
+   * `false` leaves the `<channel>` block out of the prompt: how to write for a voice, a website's
+   * chat or WhatsApp. A config field, never state.
+   */
+  declare channelRules?: boolean;
 
   /**
    * Knowledge bases attached to this agent (`pinecall docs attach`), searched from a tool:

@@ -95,6 +95,26 @@ describe("the prompt a state would produce", () => {
     expect(err.text()).toContain("has no case 99");
   });
 
+  it("shows the channel block a phone call gets, unless --channel and --medium name another call", async () => {
+    const byPhone = collected();
+    const onAPage = collected();
+
+    await run([AGENT, "--state", GOLDENS], byPhone.stream);
+    await run([AGENT, "--state", GOLDENS, "--channel", "web", "--medium", "text"], onAPage.stream);
+
+    expect(byPhone.text()).toContain("<channel>\nYou are on a phone call.");
+    expect(onAPage.text()).toContain("<channel>\nYou are in a written chat on a website.");
+    expect(onAPage.text()).not.toContain("You are on a phone call.");
+  });
+
+  it("refuses a channel or a medium no call has", async () => {
+    const err = collected();
+
+    expect(await run([AGENT, "--state", GOLDENS, "--channel", "fax"], collected().stream, err.stream)).toBe(2);
+    expect(await run([AGENT, "--state", GOLDENS, "--medium", "video"], collected().stream, err.stream)).toBe(2);
+    expect(err.text()).toContain("--channel is phone, web or whatsapp, and --medium is voice or text");
+  });
+
   it("asks for the state file rather than guessing one", async () => {
     const err = collected();
 

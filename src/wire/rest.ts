@@ -131,6 +131,8 @@ export const TuningBodySchema = z.strictObject({
   tts_model: z.string().nullish(),
   stt: z.string().nullish(),
   llm: z.string().nullish(),
+  /** A language tag (`en`, `pt-BR`) the voice and the ears are set to; unset, each vendor's own. */
+  language: z.string().nullish(),
   greeting: GreetingConfigSchema.nullish(),
   hangup: HangupConfigSchema.nullish(),
   turn: TurnConfigSchema.nullish(),

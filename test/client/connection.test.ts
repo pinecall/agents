@@ -28,10 +28,7 @@ async function connected(options: Partial<ConstructorParameters<typeof Pinecall>
 describe("connecting", () => {
   it("claims the slug and sends its declaration, naming the sdk, and claims no door", async () => {
     const pc = await connected();
-    pc.agent("clinica-norte", {
-      language: "es",
-      greeting: { say: "Clínica Norte, ¿en qué puedo ayudarte?" },
-    });
+    pc.agent("clinica-norte", { greeting: { say: "Clínica Norte, ¿en qué puedo ayudarte?" } });
     await pc.connect();
 
     const [register] = gateway.commandsOf("agent.register");
@@ -42,7 +39,7 @@ describe("connecting", () => {
     expect(register?.data["host"]).toBe(hostname());
 
     const [configure] = gateway.commandsOf("agent.configure");
-    expect(configure?.data["config"]).toMatchObject({ language: "es", greeting: { say: "Clínica Norte, ¿en qué puedo ayudarte?" } });
+    expect(configure?.data["config"]).toMatchObject({ greeting: { say: "Clínica Norte, ¿en qué puedo ayudarte?" } });
   });
 
   // Never reads env, so an unrelated exported key (e.g. v1's SDK) cannot be picked up.

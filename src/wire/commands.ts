@@ -12,7 +12,7 @@ import {
 import { VerbSchema } from "./verbs.js";
 
 /**
- * Declare or change what the agent is: voice, models, language, greeting, the full tool list. Only
+ * Declare or change what the agent is: voice, models, greeting, the full tool list. Only
  * the fields sent change.
  */
 export const AgentConfigureSchema = z.strictObject({

@@ -21,11 +21,14 @@ and what the example already paid for. The long form is `docs/writing-an-agent.m
 - **Never ask the model for a record.** `book(chosen: string)` and resolve it against what is on
   the table. Asked for a whole `Slot`, a model invents one and the agenda gets a slot nobody
   offered — a golden caught exactly this.
-- **Never declare the world on the class.** `voice`, `llm`, `stt`, `greeting`, `hangup`, `says`,
-  `hears`, `memory`, `knowledge`, `docs` are refused at load with the verb that sets each: they
-  are settings, per world and corner, versioned (`pinecall agent`, `pinecall lexicon`, `pinecall
-  memory policy`, `pinecall docs attach`). The class declares the contract — `language`, the
-  state, the tools, `render()` — and nothing else.
+- **Never declare the world on the class.** `voice`, `llm`, `stt`, `language`, `greeting`,
+  `hangup`, `says`, `hears`, `memory`, `knowledge`, `docs` are refused at load with the verb that
+  sets each: they are settings, per world and corner, versioned (`pinecall agent`, `pinecall
+  lexicon`, `pinecall memory policy`, `pinecall docs attach`). The class declares the contract —
+  the state, the tools, `render()` — and nothing else. The framework's rules are English and tell
+  the model to answer in the caller's language; the language the voice and the ears are set to is
+  `pinecall agent set --language <tag>`. How to write for the channel is the framework's
+  `<channel>` block, on unless the class sets `channelRules = false`.
 - **Never declare a door either.** `phone`, `whatsapp` and `web` are read by nobody: a number is a
   row the org keeps (`pinecall numbers import <+34…> --agent <slug>`, or the console's Numbers
   screen), moved and reassigned with no deploy, and every agent is on the web without being told.
@@ -103,9 +106,11 @@ Read in this order. Each line is a real diagnosis from the example:
   the conversation and the view carries the operator's authority
   (`runtime/docs/security/prompt-injection.md`). What the class may ask is
   `this.remembers("médico habitual")` — a question about this call, never the fact's text.
-- `this.call.channel` is how one class says two hours out loud and five in writing. It throws
+- `this.call.channel` is how one class says two hours out loud and five in writing, and
+  `this.call.medium` (`voice` · `text`) whether a web call is spoken or written. It throws
   outside a call, so a ring-0 test gives one:
-  `setCall(agent, new CallWorld({ id, contact, channel }, () => {}))`.
+  `setCall(agent, new CallWorld({ id, contact, channel, medium }, () => {}))` — without `medium`,
+  the one the channel implies.
 - Say what to do **in this turn**, not in general. A rule that is true of the whole call belongs
   in `<Rules>`; a rule about the turn the state is in belongs in a branch.
 

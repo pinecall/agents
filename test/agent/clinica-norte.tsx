@@ -38,7 +38,6 @@ export default class ClinicaNorte extends Agent {
   phone = "+34 910 000 000";
   whatsapp = "clinica-norte";
   web = true;
-  language = "es";
 
   // state: assigning re-renders, writes state.changed, updates the console
   // `| undefined` for exactOptionalPropertyTypes: findPatient clears it on a mismatch.

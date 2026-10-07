@@ -123,15 +123,14 @@ export const MemoryConfigSchema = z.strictObject({
 });
 
 /**
- * What an app declares about its agent: the prompt's layout, the language, the tools, whether it
- * searches its bases itself, and who may see and send what. Every field is optional so a configure
- * can change one thing. The environment — voice, models, greeting, hangup, turn, says, hears,
+ * What an app declares about its agent: the prompt's layout, the tools, whether it searches its
+ * bases itself, and who may see and send what. Every field is optional so a configure can change
+ * one thing. The environment — voice, models, language, greeting, hangup, turn, says, hears,
  * knowledge, docs, memory — is the world's, set in the agent's settings, and no longer read off
  * this declaration.
  */
 export const AgentConfigSchema = z.strictObject({
   prompt: z.array(PromptBlockSpecSchema).nullish(),
-  language: z.string().nullish(),
   greeting: GreetingConfigSchema.nullish(),
   voice: VoiceConfigSchema.nullish(),
   llm: ModelConfigSchema.nullish(),

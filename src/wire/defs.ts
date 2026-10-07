@@ -10,6 +10,11 @@ export const ChannelSchema = z.enum(["phone", "web", "whatsapp"]);
 
 export type Channel = z.infer<typeof ChannelSchema>;
 
+/** How a call is had: spoken (`voice`) or written (`text`). A web call can be either. */
+export const MediumSchema = z.enum(["voice", "text"]);
+
+export type Medium = z.infer<typeof MediumSchema>;
+
 /** Inbound: the public reached the agent. Outbound: the agent reached out (a dial). */
 export const DirectionSchema = z.enum(["inbound", "outbound"]);
 

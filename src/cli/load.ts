@@ -5,6 +5,8 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
+import { type Medium } from "../wire/defs.js";
+
 import { Agent, setCall } from "../agent/agent.js";
 import { describe } from "../agent/docstrings.js";
 import { CallWorld } from "../call/call.js";
@@ -49,10 +51,14 @@ export async function load(file?: string): Promise<Loaded> {
   return { ctor: ctor as new () => Agent, file: path, source };
 }
 
-/** Instantiate the class with a stub call, since `render()` may read `this.call`. */
-export function instanceFor(loaded: Loaded, channel = "web"): Agent {
+/**
+ * Instantiate the class with a stub call, since `render()` may read `this.call`. Without a
+ * medium, the call's is the one its channel implies.
+ */
+export function instanceFor(loaded: Loaded, channel = "web", medium?: Medium): Agent {
   const agent = new loaded.ctor();
-  setCall(agent, new CallWorld({ id: "", contact: "", channel }, () => undefined));
+  const line = medium === undefined ? { id: "", contact: "", channel } : { id: "", contact: "", channel, medium };
+  setCall(agent, new CallWorld(line, () => undefined));
   return agent;
 }
 

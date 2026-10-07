@@ -12,7 +12,6 @@ const PUBLIC = [
     "Agent",
     "CONFIG_FIELDS",
     "CallWorld",
-    "DEFAULT_LANGUAGE",
     "DeclarationRefused",
     "Example",
     "Fragment",
@@ -47,7 +46,6 @@ const PUBLIC = [
     "jsx",
     "jsxDEV",
     "jsxs",
-    "languages",
     "logOf",
     "methodDoc",
     "methodParams",
@@ -87,7 +85,6 @@ const PUBLIC = [
     "visibleToolsOf",
     "withAuthor",
     "withAuthorAsync",
-    "wordsFor",
 ];
 
 describe("the package's public surface", () => {

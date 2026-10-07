@@ -6,8 +6,6 @@ current turn.
 
 ```tsx
 export default class ClinicaNorte extends Agent {
-  language = "es";
-
   stage: Stages<"identify" | "choose" | "book"> = "identify";
   patient?: Patient | undefined;
   slot?: Slot | undefined;
@@ -60,7 +58,8 @@ pnpm exec pinecall console   # open the sandbox console
 pnpm exec pinecall test      # run the goldens
 ```
 
-Other useful verbs: `pinecall prompt --state <file>` prints the exact prompt a state produces;
+Other useful verbs: `pinecall prompt --state <file>` prints the exact prompt a state produces
+(`--channel web --medium text` for the one a written chat gets);
 `pinecall docs push` uploads a knowledge base and `pinecall docs attach <base>` gives it to the
 agent; `pinecall deploy` runs the project on the box instead of your own server, with
 `pinecall secrets` for what it is started with ([docs/deploying.md](docs/deploying.md)). Every verb runs against the sandbox unless `--prod` is given. The CLI reads `PINECALL_KEY`
@@ -68,8 +67,9 @@ and `PINECALL_URL` from the environment or the project's `.env`. Full reference:
 [docs/the-cli.md](docs/the-cli.md).
 
 A project holds one or more agents: `agents/<name>/agent.tsx` and their tests in
-`test/<name>/`. Voice, model, greeting, knowledge and the documents an agent searches are
-per-world settings, not class fields or files in the repository. Running in production on your own server:
+`test/<name>/`. Voice, model, language, greeting, knowledge and the documents an agent searches
+are per-world settings, not class fields or files in the repository: `pinecall agent set
+--language es` is how the agent's calls come to be in Spanish. Running in production on your own server:
 [docs/production.md](docs/production.md).
 
 ## Development

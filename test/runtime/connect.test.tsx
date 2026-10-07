@@ -46,15 +46,12 @@ async function connected(ctor: typeof ClinicaNorte = ClinicaNorte): Promise<void
   await settled();
 }
 
-function started(from = KNOWN): void {
-  gateway.emit(SLUG, CALL, "call.started", {
-    channel: "phone",
-    direction: "inbound",
-    from,
-    to: "+34 910 000 000",
-    caller: null,
-    started_at: Date.now() / 1000,
-  });
+function line(from: string): Record<string, unknown> {
+  return { channel: "phone", direction: "inbound", from, to: "+34 910 000 000", caller: null, started_at: Date.now() / 1000 };
+}
+
+function started(from = KNOWN, over: Record<string, unknown> = {}): void {
+  gateway.emit(SLUG, CALL, "call.started", { ...line(from), ...over });
 }
 
 function calls(name: string, args: Record<string, unknown>, id = `t${name}`): void {
@@ -237,11 +234,36 @@ it.each(Object.keys(THE_WORLDS))("refuses a class that still declares %s, naming
   expect(movedToTheWorld(field)).toContain("pinecall ");
 });
 
-it("sends the language, and none of the environment, in the configure", async () => {
+it("sends none of the environment in the configure, the language among it", async () => {
   await connected();
   const config = commands("agent.configure")[0]?.["config"] as Record<string, unknown>;
-  expect(config["language"]).toBe("es");
+  expect(THE_WORLDS).toHaveProperty("language");
   for (const field of Object.keys(THE_WORLDS)) expect(config[field]).toBeUndefined();
+});
+
+it("refuses a class that still declares its language, saying the world sets it now", () => {
+  /** Recepción que todavía dice su idioma. */
+  class EnEspanol extends ClinicaNorte {
+    language = "es";
+  }
+  expect(() => optionsFor(EnEspanol, [], new EnEspanol(), FILE)).toThrow(
+    "`language` is the world's now, not the class's: pinecall agent set --language <tag> — remove it from the class",
+  );
+});
+
+it("reads the medium off call.started, and takes the channel's when the gateway does not say", async () => {
+  await connected();
+  started(KNOWN, { channel: "web", medium: "text" });
+  await settled();
+  const written = mounted.instanceOf(CALL)!;
+  expect(written.call.medium).toBe("text");
+  expect(String(commands("prompt.set").find((data) => data["name"] === "identity")?.["text"])).toContain(
+    "You are in a written chat on a website.",
+  );
+
+  gateway.emit(SLUG, "CA_2", "call.started", { ...line(KNOWN), channel: "whatsapp" });
+  await settled();
+  expect(mounted.instanceOf("CA_2")!.call.medium).toBe("text");
 });
 
 // `this.call.today` must come from the call, not the machine clock (a different timezone on a box).

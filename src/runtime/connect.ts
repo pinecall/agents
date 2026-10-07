@@ -86,8 +86,8 @@ function stateFieldsOf(ctor: Function): AgentOptions["stateFields"] {
 }
 
 /**
- * Build the declaration sent to the gateway: tools, language, prompt layout, knowledge use, state
- * fields, events and view. Environment fields are refused. `instance` is a throwaway probe;
+ * Build the declaration sent to the gateway: tools, prompt layout, knowledge use, state fields,
+ * events and view. Environment fields are refused. `instance` is a throwaway probe;
  * knowledge use is detected from `source` (or the class body).
  */
 export function optionsFor(ctor: Ctor, tools: Tool[], instance: Agent = new ctor(), file?: string, source?: string): AgentOptions {
@@ -96,8 +96,6 @@ export function optionsFor(ctor: Ctor, tools: Tool[], instance: Agent = new ctor
   // Phone numbers are org rows managed with `pinecall numbers`, so a `phone` field is never sent.
   const options: AgentOptions = { tools };
   if (searchesKnowledge(source ?? ctor.toString(), file)) options.usesKnowledge = true;
-  const language = probe["language"];
-  if (typeof language === "string") options.language = language;
   // Always sent whole, so the runtime and console name blocks the same way.
   options.prompt = [...PROMPT_BLOCKS];
   const stateFields = stateFieldsOf(ctor);
@@ -294,6 +292,7 @@ function hookCall(call: SdkCall): HookCall {
   const hook: HookCall = { id: call.id, contact: call.contact?.id ?? call.from ?? "" };
   if (call.from !== null) hook.from = call.from;
   if (call.channel !== null) hook.channel = call.channel;
+  if (call.medium !== null) hook.medium = call.medium;
   return hook;
 }
 

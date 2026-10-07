@@ -4,8 +4,6 @@ import { Agent } from "../../../../../src/agent/agent.js";
 
 /** Eres la recepción de Clínica Norte. Hablas de usted, con frases cortas. */
 export default class ClinicaNorte extends Agent {
-  language = "es";
-
   patient?: { name: string };
   slots: { when: string }[] = [];
 

@@ -2,6 +2,8 @@
 
 import { parseArgs } from "node:util";
 
+import { ChannelSchema, MediumSchema } from "../wire/defs.js";
+
 import type { Snapshot } from "../agent/state.js";
 import { showPrompt } from "../views/render.js";
 import { cannotRun } from "./cannot-run.js";
@@ -20,6 +22,7 @@ export const group: Group = {
   purpose: "the exact prompt a state would produce, offline",
   offline: true,
   usage: `usage: pinecall prompt [agent.tsx] --state <file> [--case n] [--agent <name>]
+                       [--channel phone|web|whatsapp] [--medium voice|text]
 
   The three regions of the prompt as the model would receive them — the static prefix, the
   history, the dynamic blocks at the end — and under them the stage and the tools that stage
@@ -28,7 +31,9 @@ export const group: Group = {
 
   --agent <name>  which agent of a project of several, by its file's name or its slug
   --state file    a goldens file: an array of cases, each with its own \`state\`, or one object
-  --case n        which case of that file, when it holds several (default 0)`,
+  --case n        which case of that file, when it holds several (default 0)
+  --channel name  the call the prompt is for, which picks its <channel> block (default phone)
+  --medium how    voice or text; without it, the one the channel implies (whatsapp is text)`,
   run,
 };
 
@@ -41,14 +46,26 @@ export async function run(
   const { values, positionals } = parseArgs({
     args: argv,
     allowPositionals: true,
-    options: { state: { type: "string" }, case: { type: "string" }, ...AGENT_FLAG },
+    options: {
+      state: { type: "string" },
+      case: { type: "string" },
+      channel: { type: "string", default: "phone" },
+      medium: { type: "string" },
+      ...AGENT_FLAG,
+    },
   });
   if (values.state === undefined) {
     err.write("pinecall prompt: --state <file> is required\n");
     return 2;
   }
+  const channel = ChannelSchema.safeParse(values.channel);
+  const medium = MediumSchema.optional().safeParse(values.medium);
+  if (!channel.success || !medium.success) {
+    err.write("pinecall prompt: --channel is phone, web or whatsapp, and --medium is voice or text\n");
+    return 2;
+  }
   const loaded = await load((await oneHome("prompt", positionals[0], values.agent)).file);
-  const agent = instanceFor(loaded);
+  const agent = instanceFor(loaded, channel.data, medium.data);
   agent.startIn(firstState(values.state, values.case));
   out.write(`${showPrompt(agent)}\n\n${showMachine(agent)}\n`);
   return 0;

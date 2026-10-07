@@ -10,6 +10,7 @@ import {
   EndedBySchema,
   EndReasonSchema,
   EnvSchema,
+  MediumSchema,
   RouteSchema,
   TransferModeSchema,
 } from "./defs.js";
@@ -88,6 +89,8 @@ export const CallStartedSchema = z.strictObject({
   env: EnvSchema.nullish(),
   /** The worker that runs the call, by name; absent from a gateway before 0.1.3. */
   worker: z.string().nullish(),
+  /** Whether the call is spoken or written; absent from a gateway before 0.1.6. */
+  medium: MediumSchema.nullish(),
 });
 
 /** A call changed hands without ending. */

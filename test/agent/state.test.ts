@@ -125,7 +125,7 @@ describe("last(contact)", () => {
 describe("the fields a class declares with @state", () => {
   /** Una tienda que dice cuáles de sus campos son el estado. */
   class Declarada extends Agent {
-    language = "es";
+    override channelRules = false;
 
     @state stage = "browse";
     @state({ pii: true }) customer?: { name: string };
@@ -181,7 +181,7 @@ describe("the fields a class declares with @state", () => {
   it("keeps every own field for a class that declares none, as it always did", () => {
     /** Una clase que no decora nada. */
     class SinDecorar extends Agent {
-      language = "es";
+      override channelRules = false;
       stage = "browse";
       catalogue: string[] = [];
     }

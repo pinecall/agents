@@ -65,10 +65,11 @@ describe("the layout", () => {
     for (const name of names(before, "static")) expect(block(after, name)).toBe(block(before, name));
   });
 
-  it("opens identity with the class docstring, then the rules and the protocols", () => {
+  it("opens identity with the class docstring, then the rules, the protocols and the channel", () => {
     const identity = block(promptOf(clinica()), "identity");
     expect(identity.startsWith("Agenda de la Clínica Norte.")).toBe(true);
     expect(identity.indexOf("<rules>")).toBeLessThan(identity.indexOf("<protocols>"));
+    expect(identity.indexOf("<protocols>")).toBeLessThan(identity.indexOf("<channel>"));
     expect(identity).not.toContain("<tools>");
   });
 
@@ -110,9 +111,7 @@ describe("the view", () => {
 
   it("is empty for a class that renders nothing at all", () => {
     /** Agenda que no dice nada de este turno. */
-    class Callada extends Agent {
-      language = "es";
-    }
+    class Callada extends Agent {}
 
     expect(block(promptOf(seal(new Callada())), "view")).toBe("");
   });
@@ -172,29 +171,10 @@ describe("the printed page", () => {
   });
 });
 
-describe("the framework's own words", () => {
-  it("speaks the language the agent declares, and falls back to Spanish", () => {
-    /** Agenda que habla en inglés. */
-    class InEnglish extends Agent {
-      language = "en";
-    }
-    /** Agenda que habla marciano. */
-    class OnMars extends Agent {
-      language = "mar";
-    }
-
-    expect(block(promptOf(clinica()), "identity")).toContain("Una sola pregunta por turno");
-    expect(block(promptOf(seal(new InEnglish())), "identity")).toContain("One question per turn");
-    expect(block(promptOf(seal(new InEnglish())), "identity")).not.toContain("Una sola pregunta");
-    expect(block(promptOf(seal(new OnMars())), "identity")).toContain("Una sola pregunta por turno");
-  });
-});
-
 // Every tool is listed in the static `tools` block; visibility is enforced on the wire.
 describe("a class with one tool and no view", () => {
   /** Agenda con preguntas frecuentes. */
   class ConUnaTool extends Agent {
-    language = "es";
     slots: string[] = [];
 
     /** Horas libres. */
@@ -225,14 +205,12 @@ describe("a prompt declared with @render", () => {
   /** Soporte de Tienda Sur. */
   @render(SoportePrompt)
   class Soporte extends Agent {
-    language = "es";
     stage = "identify";
     order?: string | undefined;
   }
 
   /** El mismo soporte, escrito como método. */
   class ConMetodo extends Agent {
-    language = "es";
     stage = "identify";
     order?: string | undefined;
 

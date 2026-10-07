@@ -20,7 +20,7 @@ const TEAM = {
   author: "m_bruno",
   note: "cleaner on the phone",
   set_at: 1758300000,
-  config: { voice: "carolina", llm: "anthropic/claude-haiku-4-5", greeting: { say: "Clínica Norte, buenas." }, memory: { remember: ["allergies"], forget: [] } },
+  config: { voice: "carolina", llm: "anthropic/claude-haiku-4-5", language: "es", greeting: { say: "Clínica Norte, buenas." }, memory: { remember: ["allergies"], forget: [] } },
 };
 const YOURS = { holder: "m_ana", version: 3, author: "m_ana", note: null, set_at: 1758310000, config: { voice: "amelia" } };
 
@@ -118,6 +118,7 @@ describe("the page", () => {
 
     expect(lines[0]).toBe("clinica-norte · sandbox");
     expect(lines.find((line) => line.startsWith("  voice"))).toMatch(/voice\s+amelia\s+carolina\s+—/);
+    expect(lines.find((line) => line.startsWith("  language"))).toMatch(/language\s+—\s+es\s+—/);
     expect(lines.find((line) => line.startsWith("  greeting"))).toContain('"Clínica Norte, buenas."');
     expect(lines.find((line) => line.startsWith("  memory"))).toContain("remember 1 · forget 0");
     expect(lines.at(-1)).toContain("yours: v3 · m_ana");
@@ -231,7 +232,7 @@ describe("setting", () => {
   });
 
   it("clears named fields and keeps the rest; with none, everything", async () => {
-    await run(["clear", "voice", "--agent", AGENT, "--team"], { out: written().stream, env: environment() });
+    await run(["clear", "voice", "language", "--agent", AGENT, "--team"], { out: written().stream, env: environment() });
     expect((gateway.written as { config: Record<string, unknown> }).config).toEqual({ llm: "anthropic/claude-haiku-4-5", greeting: { say: "Clínica Norte, buenas." }, memory: { remember: ["allergies"], forget: [] } });
 
     await run(["clear", "--agent", AGENT], { out: written().stream, env: environment() });
@@ -329,6 +330,18 @@ describe("the versions", () => {
     const code = await run(["set", "--agent", AGENT, "--max-duration", "90"], { out: written().stream, err: said.stream, env: environment() });
     expect(code).toBe(2);
     expect(said.text()).toContain("is not 1 to 60 minutes, or off");
+  });
+
+  it("sets the language the voice and the ears are set to, and refuses a blank one before anything is written", async () => {
+    gateway.yours = null;
+    gateway.team = null;
+    await run(["set", "--agent", AGENT, "--language", "pt-BR"], { out: written().stream, env: environment() });
+    expect(gateway.written).toEqual({ config: { language: "pt-BR" }, if_version: null, note: null, team: false });
+
+    const said = written();
+    const code = await run(["set", "--agent", AGENT, "--language", " "], { out: written().stream, err: said.stream, env: environment() });
+    expect(code).toBe(2);
+    expect(said.text()).toContain("--language needs a tag");
   });
 
   it("says what changes between two configs, field by field", () => {

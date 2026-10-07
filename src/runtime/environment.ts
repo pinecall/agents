@@ -6,6 +6,7 @@ export const THE_WORLDS: Readonly<Record<string, string>> = {
   voice: "pinecall agent set --voice <name>",
   llm: "pinecall agent set --llm <vendor/model>",
   stt: "pinecall agent set --stt <vendor>",
+  language: "pinecall agent set --language <tag>",
   greeting: "pinecall agent set --greeting '…' (or --reply '…')",
   hangup: "pinecall agent set --hangup '…'",
   says: "pinecall lexicon add <word> --say '…'",

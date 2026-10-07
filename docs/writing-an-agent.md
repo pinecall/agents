@@ -104,12 +104,18 @@ The class is the **default export** of `agents/<name>/agent.tsx`. Its name gives
 
 ### Config, and state
 
-Four field names configure the agent instead of remembering something. They are never diffed,
+A few field names configure the agent instead of remembering something. They are never diffed,
 never rendered, never in a snapshot:
 
 | field | what it means |
 |---|---|
-| `language` | which standing rules the framework contributes (`es`, `en`). The prompt is written in it |
+| `channelRules` | `false` leaves the `<channel>` block out of the prompt — how to write for a voice, a website's chat or WhatsApp ([the-prompt.md](the-prompt.md)). On unless set |
+
+The language is not one of them. The framework's own rules are English for every agent, and one of
+them is to answer in the language the caller speaks; the class's docstring and `render()` are in
+whatever language you write them; and the language the voice and the ears are set to is the
+world's, below. Clínica Norte speaks Spanish because its prompt is Spanish and its world says
+`pinecall agent set --language es`.
 
 **The doors are not here.** A number is bought, pointed at an agent and moved by whoever answers
 the telephone, not by whoever deploys: it is a row the org keeps — `pinecall numbers import
@@ -135,6 +141,7 @@ verb that sets it now:
 | `voice` | a voice **by name** — the platform resolves it to a vendor and an id | `pinecall agent set --voice` |
 | `llm` | `haiku`, `sonnet`, `opus`, or `vendor/model` | `pinecall agent set --llm` |
 | `stt` | the ears: `deepgram` (Flux), `soniox`, or `vendor/model`. Unsaid, the runtime's own | `pinecall agent set --stt` |
+| `language` | the language the calls are in, as a tag (`en`, `es`, `pt-BR`): what the voice and the ears are set to. Unsaid, each vendor's own | `pinecall agent set --language es` |
 | `greeting` | how the call opens: the words, or what the model reads before finding its own | `pinecall agent set --greeting '…'` · `--reply '…'` |
 | `hangup` | whether the model may end the call itself, and when, in your words | `pinecall agent set --hangup '…'` |
 | `max duration` | the longest a voice call runs — ten minutes unless set, `off` for none, an hour at most | `pinecall agent set --max-duration 15` |
@@ -405,7 +412,9 @@ the conversation so far, `turns`, `last`, `length` and `summary`, for a tool tha
 already said.
 
 A `render()` reads it too — `this.call.channel` is how the same class says two of these hours out
-loud and five of them in writing. It is only there while a call is being served: `pinecall prompt`
+loud and five of them in writing, and `this.call.medium` (`voice` or `text`) is whether the call is
+spoken or written, which a web call can be either of: the gateway says which, and a gateway that
+does not leaves the one the channel implies — `whatsapp` is `text`, `phone` and `web` are `voice`. It is only there while a call is being served: `pinecall prompt`
 and `pinecall start --show-prompt` give the instance they print a line of their own, and a test that
 renders gives one with `setCall(agent, new CallWorld(line, () => {}))`.
 
@@ -422,7 +431,7 @@ override onMemory(ops: MemoryOp[], call: Call) { crmFor(this).apply(call.contact
 
 | hook | runs | it gets |
 |---|---|---|
-| `onCall(call)` | when the call starts, with the world's `greeting`, if any, already under way | `call.id`, `contact`, `from`, `channel` |
+| `onCall(call)` | when the call starts, with the world's `greeting`, if any, already under way | `call.id`, `contact`, `from`, `channel`, `medium` |
 | `onEnd(call)` | when it ends | the same |
 | `onMemory(ops, call)` | when the agent remembers or forgets something about the contact | the operations |
 | `onEvent(name, data, meta)` | when an event the class declares arrives, from where it declared | the payload |

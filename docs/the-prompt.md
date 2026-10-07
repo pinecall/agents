@@ -4,7 +4,7 @@ The prompt is `render()`, and `this` is the state. It is a list of **named block
 order, and the cut between the regions is where the cache is cut:
 
 ```
-── identity (static) ──      the class docstring · <rules> · <protocols>
+── identity (static) ──      the class docstring · <rules> · <protocols> · <channel>
 ── knowledge (static) ──     what the world says the agent knows by heart, whole, once per call
 ── tools (static) ──         every tool the class declares, name and docstring, visible or not
 ── history ──                the runtime's turns, what a lookup answered, and the sentences a collapse() left
@@ -57,9 +57,29 @@ is in with the tools that stage shows.
 
 ## What the framework puts there for you
 
-**`identity`** is the class docstring, then `<rules>` and `<protocols>` in the class's `language`
-(`views/lang.ts` — invent nothing, one question per turn, talk like a person on the phone; to act
-call a tool, read back an irreversible action, offer a person when you cannot help).
+**`identity`** is the class docstring, then `<rules>` and `<protocols>`, then `<channel>`
+(`views/built-in-rules.ts`). The rules and protocols are English for every agent — invent nothing,
+one question per turn, answer in the language the caller speaks; to act call a tool, read back an
+irreversible action, offer a person when you cannot help — because a model follows English
+instructions and answers in any language. The language the voice and the ears are set to is a
+setting of the world (`pinecall agent set --language es`), never a field of the class.
+
+`<channel>` is how to write for the call in hand, by its channel and its **medium** — `voice` or
+`text`, which the gateway says on `call.started` and the class reads as `this.call.medium`:
+
+| the call | `<channel>` says |
+|---|---|
+| a phone call, or a web call by voice | You are on a phone call. Everything you write is read aloud by a voice: short spoken sentences, no lists, no bold, no symbols, no links. Say an email or a web address the way a person says it out loud. |
+| a web call in text | You are in a written chat on a website. Markdown is fine: short paragraphs, a list when there are steps, bold for the one thing that matters. |
+| WhatsApp | You are on WhatsApp. Use its formatting: *bold*, _italic_, no headings, no tables, short messages. |
+
+A gateway that does not say the medium leaves the one the channel implies: `whatsapp` is `text`,
+`phone` and `web` are `voice`; with no call at all, a phone call's. `pinecall prompt` prints a phone
+call's page unless `--channel` and `--medium` name another (`--channel web --medium text`). The block is still static: a call
+never changes its channel or its medium, so it is rendered once per call and the cached prefix
+holds. A class that writes its own formatting rules turns it off with a config field —
+`channelRules = false` — and then no call gets a `<channel>` block; `this.call.medium` is there
+either way, for a `render()` that branches on it.
 
 **`knowledge`** is what the agent knows by heart — the page the org wrote in the console's Settings
 tab or with `pinecall agent knowledge edit` — once per call, in the cached prefix. It is the world's,

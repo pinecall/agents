@@ -1,5 +1,7 @@
 /** `this.call`: the live call an agent instance serves — its room, turns and verbs. */
 
+import { type Medium } from "../wire/defs.js";
+
 import type { Call as HookCall } from "../agent/lifecycle.js";
 import { History } from "./history.js";
 import { ParticipantHandle, Room, type Commander, type ParticipantKind } from "./room.js";
@@ -71,6 +73,8 @@ export class CallWorld implements HookCall {
   readonly contact: string;
   readonly from?: string;
   readonly channel?: string;
+  /** Spoken (`voice`) or written (`text`). A gateway that does not say gets it from the channel. */
+  readonly medium: Medium;
   /** The day this call opened, `YYYY-MM-DD`. */
   readonly today?: string;
   /** The page code this call claimed, or null. */
@@ -97,6 +101,7 @@ export class CallWorld implements HookCall {
     this.contact = line.contact;
     if (line.from !== undefined) this.from = line.from;
     if (line.channel !== undefined) this.channel = line.channel;
+    this.medium = line.medium ?? (line.channel === "whatsapp" ? "text" : "voice");
     if (line.today !== undefined) this.today = line.today;
     if (line.claimed !== undefined) this.claimed = line.claimed;
     this.room = new Room(out);

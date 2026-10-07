@@ -6,6 +6,29 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking: the language is the world's, not the class's.** A class that still declares
+  `language` is refused at load (`` `language` is the world's now, not the class's: pinecall agent
+  set --language <tag> ``), and the declaration no longer carries one. The framework's rules and
+  protocols are English for every agent, with one more rule: answer in the language the caller
+  speaks. The always-on "talk like a person on the phone" rule moved into the `<channel>` block.
+  `wordsFor`, `languages` and `DEFAULT_LANGUAGE` are no longer exported.
+
+### Added
+
+- **`<channel>` at the end of `identity`:** how to write on a voice call, in a website's written
+  chat, or on WhatsApp, picked by the call's channel and medium; `channelRules = false` on the
+  class leaves it out on every channel.
+- **`this.call.medium`** (`voice` · `text`), read off `call.started`'s `medium`; from a gateway that
+  does not send it, the one the channel implies (`whatsapp` is `text`, `phone` and `web` `voice`).
+  The client's `Call` has `medium` too.
+- **`pinecall agent set --language <tag>`** writes the language in the corner, `pinecall agent clear
+  language` takes it out, and a blank tag is refused before anything is written.
+- **`pinecall prompt --channel phone|web|whatsapp --medium voice|text`** prints the page a given
+  call would get; without them, a phone call's — it used to print a web call's, so a `render()`
+  that branches on `this.call.channel` prints its phone branch now.
+
 ## [0.9.18] — `numbers available` does not call a number free
 
 ### Fixed

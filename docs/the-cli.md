@@ -405,12 +405,20 @@ agent, while your org lets you act there; nothing said is the sandbox.
 
 ```
 pinecall prompt [agent.tsx] --state <file> [--case n] [--agent <name>]
+                [--channel phone|web|whatsapp] [--medium voice|text]
 ```
 
 The exact prompt a state would produce, offline: **no gateway, no key, no call**. The three
 regions in the order the model receives them, then the stage and the tools that stage shows. The
 verb you run while writing a `render()`, and it answers in the time it takes to save the file.
 Because it asks nobody anything, `--prod` is refused here rather than taken and ignored.
+
+The page is a phone call's unless `--channel` and `--medium` name another, and they change what a
+call on that line would change: the `<channel>` block at the end of `identity`
+([the-prompt.md](the-prompt.md)), and whatever a `render()` says on `this.call.channel` or
+`this.call.medium`. Without `--medium` the call has the one its channel implies — `whatsapp` is
+`text`, `phone` and `web` are `voice` — so `--channel web --medium text` is the page a written chat
+on the widget gets.
 
 ```console
 $ pinecall prompt --state test/clinica-norte/goldens/identifica-al-paciente.json
@@ -691,13 +699,13 @@ call_5b1f0e9d2c7a4e8f9a1b3c5d7e9f1a2b
 ```
 pinecall agent [--agent <slug>] [--json]
 pinecall agent list · stop <app>
-pinecall agent set [--voice x] [--tts x] [--tts-model x] [--stt x] [--llm x] [--greeting '…' | --reply '…']
-                   [--hangup '…'] [--endpointing-ms n] [--min-interruption-words n]
+pinecall agent set [--voice x] [--tts x] [--tts-model x] [--stt x] [--llm x] [--language en|es|pt-BR…]
+                   [--greeting '…' | --reply '…'] [--hangup '…'] [--endpointing-ms n] [--min-interruption-words n]
                    [--eot-threshold 0.5-0.9] [--eager-eot-threshold 0.3-0.9] [--record on|off]
                    [--max-duration 1-60|off]
                    [--remember '…' …] [--forget '…' …] [--team] [--note '…']
 pinecall agent knowledge [--team] · knowledge edit [--team] [--note '…']
-pinecall agent clear [voice|tts|tts-model|stt|llm|greeting|hangup|turn|memory|record|max-duration|knowledge|bases …] [--team]
+pinecall agent clear [voice|tts|tts-model|stt|llm|language|greeting|hangup|turn|memory|record|max-duration|knowledge|bases …] [--team]
 pinecall agent history [--team] · diff [--against team|production] · rollback <version> [--team]
 pinecall agent pull [--team] · push <file> [--team]
                                         … and any of them with --prod, in production
@@ -713,6 +721,7 @@ clinica-norte · sandbox
   tts model     —               —                           —
   stt           —               deepgram                    deepgram
   llm           —               anthropic/claude-haiku-4-5  anthropic/claude-haiku-4-5
+  language      —               es                          es
   greeting      —               "Thanks for calling Clíni…  "Thanks for calling Clíni…
   hangup        —               when the person has what…   when the person has what…
   turn          —               —                           —
@@ -726,7 +735,7 @@ clinica-norte · sandbox
 
 **What an agent runs on is the org's, not the class's** — per world, per corner, a version a row
 (the runtime's `docs/protocol/settings-api.md`). The class declares the contract: its tools, its
-state, its `render()`, its language. The doors, the voice, the models, the opening, how a call
+state, its `render()`. The language, the doors, the voice, the models, the opening, how a call
 ends, how a turn is cut, what is remembered, what is known by heart and which bases are searched
 are **settings**, kept by the gateway and laid over the class at the one place every session is
 built. A class that still declares one of them is refused at load — before a prompt is printed or
@@ -763,6 +772,14 @@ call ends after the sentence being said — `timeout` by the `platform` in the c
 no limit. It holds on the phone and on the widget's voice, never on a written conversation, and a
 supervisor on the line does not stop the clock. `pinecall agent clear max-duration` gives it back
 to the corner below.
+
+**`--language <tag>` is the language the agent's calls are in** — `en`, `es`, `pt-BR` — and what
+the voice, the ears and the turn-taking are set to; unset anywhere, each vendor keeps its own
+default. It is not a field of the class, and a class that still declares `language` is refused at
+load with this verb. The prompt does not follow it: the framework's own rules are English for
+every agent, one of them is to answer in the language the caller speaks, and the class's docstring
+and `render()` are in whatever language the tenant wrote them. A blank tag is refused with exit 2
+and nothing is written; `pinecall agent clear language` takes it out of the corner.
 
 **A model knob takes a tier by its short name.** `--llm haiku` · `sonnet` · `opus` are expanded
 here to the model id the provider answers to — the same table `pinecall test --model` reads — so

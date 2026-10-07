@@ -41,7 +41,7 @@ a directory earns its place there by having a line in that table (§13).
 
 | file | what it is |
 |---|---|
-| `agent.ts` | the `Agent` base: the Proxy that turns an assignment into an authored change, the internals kept off the instance, `seal`, `collapse`, `restore`, `startIn`, `log`, `say`/`reply`, `this.call`, `this.knowledge`, `render()`, `remembers()`, the four hooks. `CONFIG_FIELDS` is the four names that configure and are not state: `language`, and the three door names a class no longer declares, kept on the list so an old class's `phone` stays out of the state |
+| `agent.ts` | the `Agent` base: the Proxy that turns an assignment into an authored change, the internals kept off the instance, `seal`, `collapse`, `restore`, `startIn`, `log`, `say`/`reply`, `this.call`, `this.knowledge`, `render()`, `remembers()`, the four hooks. `CONFIG_FIELDS` is the names that configure and are not state: `channelRules`, and the three door names a class no longer declares, kept on the list so an old class's `phone` stays out of the state |
 | `knowledge.ts` | `Knowledge`: what a class reaches its bases through — `this.knowledge.search(query, {k})`, one verb the gateway answers for the call in hand |
 | `searching.ts` | whether a class searches at all: its source read with oxc for a `this.knowledge` member expression — never a regex, because the words inside a string or a comment are not a search. What it answers travels as `uses_knowledge` in the declaration |
 | `decorators.ts` | `@tool({…})`, which registers a method and wraps it so every write inside it carries its name, and `@render(Prompt)`, which gives the class a prompt written beside it. `Prompt<T> = (agent: T) => Child` |
@@ -63,7 +63,7 @@ a directory earns its place there by having a line in that table (§13).
 | `jsx-dev-runtime.ts` | the same factory under the name a dev-mode transform imports |
 | `components.ts` | the tags a view is written in: `Rule`, `Rules`, `Protocols`, `Section`, `Example`, `p`, and `tagged` |
 | `layout.ts` | the prompt as named blocks in two regions: `PROMPT_BLOCKS` (the four, in send order) and `layout` → `Blocks` |
-| `lang.ts` | the framework's own words — the standing rules and the protocols, `es` and `en`, chosen by the class's `language` |
+| `built-in-rules.ts` | the framework's own words, in English for every agent: the standing rules (one is to answer in the caller's language), the protocols, and `channelRulesFor(channel, medium)` — how to write on a voice call, in a website's chat, or on WhatsApp |
 | `render.ts` | `promptOf()`, `headerFor()`, `showPrompt()` (what `--show-prompt` prints) |
 | `nodes.ts` | the OTHER destination of the same JSX: `renderToNodes` folds a tree of tags into `ViewNode[]` — a closed list of named nodes a console draws — for the panel beside a conversation |
 | `panels.ts` | the tags that panel is written in, `pinecall/panels`: `Panel`, `Rows`, `Row`, `Stat`, `Table`, `Badge`, `Text`. One of them inside a `render()` is refused by name |
@@ -95,7 +95,7 @@ a directory earns its place there by having a line in that table (§13).
 
 | file | what it is |
 |---|---|
-| `connect.ts` | `mount()`: the class registered once, one live instance per call, and the sync that sends only what changed. `optionsFor` is the declaration read off a probe instance — the routes, the tools, the language, whether it searches, the state fields, the events — and the first thing it does is refuse a field of the world's. Also `slugOf` |
+| `connect.ts` | `mount()`: the class registered once, one live instance per call, and the sync that sends only what changed. `optionsFor` is the declaration read off a probe instance — the routes, the tools, whether it searches, the state fields, the events — and the first thing it does is refuse a field of the world's. Also `slugOf` |
 | `recall.ts` | a `memory.ops` entry → the words this call has been told about the caller, which is what `remembers()` answers from |
 | `environment.ts` | `THE_WORLDS`: the fields a class may no longer declare — `voice`, `llm`, `stt`, `greeting`, `hangup`, `says`, `hears`, `memory`, `knowledge`, `docs` — each with the verb that sets it in the world, and `refuseTheEnvironment`, which stops a class still carrying one at load, naming that verb |
 | `dispatch.ts` | an outside fact off the wire, gated by the declaration and handed to `onEvent` — one at a time, in order |
@@ -114,7 +114,7 @@ a directory earns its place there by having a line in that table (§13).
 | `world.ts` | which of the two worlds a verb works in: `--prod`, taken out of argv before any group sees it, names production for that one command; nothing named is the sandbox |
 | `client-for.ts` | the SDK client a verb holds: the door's gateway, its key, and the world that gateway is — the one client every verb that opens a socket builds |
 | `connected.ts` | the one line `start` prints when the socket is up: who registered, whose org took it, which world, and where the key came from |
-| `load.ts` | a tenant's class loaded with tsx and handed its own source: the file named, else the one `agents/<name>/agent.tsx` (or `.ts`) of the project this terminal stands in — a project of several is told to name one with `--agent`. `instanceFor` is one instance with a line to answer on, for the pages that print a prompt |
+| `load.ts` | a tenant's class loaded with tsx and handed its own source: the file named, else the one `agents/<name>/agent.tsx` (or `.ts`) of the project this terminal stands in — a project of several is told to name one with `--agent`. `instanceFor` is one instance with a line to answer on — a channel, and a medium when one is named — for the pages that print a prompt |
 | `home.ts` | **the one layout**, and an agent's *home* in it: `agents/<name>/agent.ts` (with whatever only that class uses beside it), `lib/` for what agents share, `docs/<name>/` for the local folder `docs push` sends by default (never tracked: the base is on the gateway), `test/<name>/agent.test.ts`, `test/<name>/goldens/` (the conversations, and beside them `docs.json` and `memory.json`, the retrieval and recall goldens), `test/<name>/memory/`. No verb computes a path of its own; `--agent` resolves here. What the agent knows by heart is in no folder: it is a setting |
 | `console.ts` | `pinecall console`, the console of the world in a browser: a one-use code the gateway minted in that world for this terminal's key, and the page opened at the gateway's root for production or under `/sandbox` for the sandbox. It binds nothing — **no code under `cli/` opens a port**, and `test/cli/verbs.test.ts` pins that |
 | `start-console.ts` · `start-screens.ts` | the `console` line `start` prints — the console of the world it registered in, with a one-use code minted there (`aLoginCode`, the one mint of a login code) — and the three ways `start` shows a log: plain, `--ui`, `--events` |
@@ -168,14 +168,14 @@ Beside `src/`:
 | `StateFieldSpec` | `agent/visibility.ts` | `name`, `visibility` (`public` · `tenant` · `pii`) |
 | `EventSpec` / `EventDecl` | `agent/accepts.ts` | `name`, `from: ("app"|"participant")[]` |
 | `EventMeta` | `agent/accepts.ts` | `source`, `identity?`, `seq` — `seq` numbered by **this call's** stream of events, not by the wire |
-| `Call` (hook) | `agent/lifecycle.ts` | `id`, `contact`, `from?`, `channel?` |
+| `Call` (hook) | `agent/lifecycle.ts` | `id`, `contact`, `from?`, `channel?`, `medium?` |
 | `MemoryOp` | `agent/lifecycle.ts` | `op: "remember"|"forget"`, `key`, `value?` |
 
 ### The call
 
 | entity | where | fields |
 |---|---|---|
-| `CallWorld` | `call/call.ts` | `id`, `contact`, `from?`, `channel?`, `today?`, `claimed`, `room`, `history`, `cause`, `numbered()`, `search()`, `claim()` |
+| `CallWorld` | `call/call.ts` | `id`, `contact`, `from?`, `channel?`, `medium` (`voice` or `text`: the gateway's, else the one the channel implies), `today?`, `claimed`, `room`, `history`, `cause`, `numbered()`, `search()`, `claim()` |
 | `Found` | `call/call.ts` | one chunk a search found, as the model reads it: where it came from, and its text |
 | `Transferred` · `Attended` | `call/call.ts` | what a transfer and an ask for a person came to: `ok`, and who or why not |
 | `Knowledge` | `agent/knowledge.ts` | `search(query, {k?})` — what `this.knowledge` is |
@@ -199,20 +199,20 @@ Beside `src/`:
 |---|---|---|
 | `Pinecall` | `client/client.ts` | `sdk`, `host`, `url`, `apiKey`, `env`, `agent()`, `connect()`, `close()`, `connected`, `on`/`onAny`/`onErrors`/`onStopped`, `observe`, `history` |
 | `Agent` (client) | `client/agent.ts` | `slug`, `calls`, `config`, `app`, `open()`, `configure()`, `declare(tools)`, `command()`, `take(entry)`, `ping()` |
-| `Call` (client) | `client/calls.ts` | `id`, `status`, `channel`, `from`, `to`, `contact`, `claimed`, `state`, `today`, and one method per command |
+| `Call` (client) | `client/calls.ts` | `id`, `status`, `channel`, `medium`, `from`, `to`, `contact`, `claimed`, `state`, `today`, and one method per command |
 | `CallBook` | `client/calls.ts` | `live`, `of(id, at)`, `forget(call)` |
 
 ## 4. The class a tenant writes
 
 Two kinds of field live on the instance, and the difference is the whole model.
 
-**Config** — the names in `CONFIG_FIELDS` (`agent/agent.ts`): `phone`, `whatsapp`, `web` and
-`language`. They configure the agent; they are not state. They are never diffed, never rendered by
+**Config** — the names in `CONFIG_FIELDS` (`agent/agent.ts`): `channelRules`, `phone`, `whatsapp`
+and `web`. They configure the agent; they are not state. They are never diffed, never rendered by
 a view, never in a snapshot, and assigning one does not go through the change recorder.
 
 | field | becomes |
 |---|---|
-| `language` | which of `views/lang.ts`'s two word-sets the `identity` block carries |
+| `channelRules` | whether the `identity` block ends in `<channel>` (`views/built-in-rules.ts`): on unless the class sets it `false` |
 | `phone`, `whatsapp`, `web` | **nothing.** A door is a row the org keeps (`pinecall numbers import`), never a field: `agent.register` sends `routes: []`. The three names stay on `CONFIG_FIELDS` so an old class's `phone` is still kept out of the state rather than becoming an authored change |
 
 **The class is code; the world is environment.** Everything else an agent runs on is not the
@@ -225,6 +225,7 @@ refused at load, before a prompt is printed or a gateway is knocked at, with the
 | field | is now | set by |
 |---|---|---|
 | `voice`, `llm`, `stt` | the settings' vendors and models | `pinecall agent set --voice · --llm · --stt`, or the Settings tab |
+| `language` | the settings' `language`, the tag the voice and the ears are set to; the prompt's own rules are English either way | `pinecall agent set --language <tag>` |
 | `greeting`, `hangup` | how the call opens and whether the model may end it | `pinecall agent set --greeting · --reply · --hangup` |
 | `says`, `hears` | the agent's lexicon | `pinecall lexicon add <word> --say`, `pinecall lexicon hear` |
 | `memory` | what is remembered about a caller and what never is | `pinecall memory policy --remember · --forget` |
@@ -251,8 +252,9 @@ code:
   accessors never leak into the tenant's state.
 - **`this.call` is a getter on the base class,** not a field: it never looks like state and never
   reaches a snapshot. A `render()` may read it — `this.call.channel` is how one class answers a
-  phone call and a chat differently — and it throws outside a call, so the pages that print a
-  prompt give their instance a line of its own (`cli/load.ts:instanceFor`).
+  phone call and a chat differently, `this.call.medium` whether the call is spoken or written —
+  and it throws outside a call, so the pages that print a prompt give their instance a line of
+  its own (`cli/load.ts:instanceFor`).
 - **`render()` and `remembers()` are methods of the base,** so neither is state either. `render()`
   returns nothing by default; `remembers(text)` answers from what the runtime has recalled about
   this caller in this call, and false before anything has.
@@ -297,7 +299,7 @@ text. Nothing may reorder them; the cut between the regions is where the cache i
 
 | block | region | what is in it | when it changes |
 |---|---|---|---|
-| `identity` | static | the class docstring · `<rules>` and `<protocols>` from `views/lang.ts` | never during a call — it is the cached prefix |
+| `identity` | static | the class docstring · `<rules>` and `<protocols>` · `<channel>` for the call's channel and medium, all but the docstring from `views/built-in-rules.ts` | never during a call — a call's channel and medium never change, and it is the cached prefix |
 | `knowledge` | static | nothing from the app: the runtime writes what the world says the agent knows by heart — the settings' `knowledge`, whole | never |
 | `tools` | static | every tool's name and docstring, visible or not | never |
 | — | the history | the runtime's turns and what a lookup answered; on the printed page, the summaries a `collapse()` left. Never sent by the app | when the app collapses |
@@ -350,7 +352,7 @@ the class and the socket know about each other.
 1. **At mount** — `describe(ctor, source, file)` gives the class its own text back (a docstring sits
    *above* the class, where `toString()` cannot see it, and parameter types are gone after
    compilation; the file name is what says whether that text is `.ts` or `.tsx`). One **probe** instance is built, refused if it still carries a field of the world's
-   (`runtime/environment.ts`), read for its language, its tools, its state fields and its
+   (`runtime/environment.ts`), read for its tools, its state fields and its
    events, and thrown away; the source is read once more for `this.knowledge`, so the declaration
    says whether the class searches (`uses_knowledge`).
    `pc.agent(slug, options)` declares it. Nothing is sent until `pc.connect()`.

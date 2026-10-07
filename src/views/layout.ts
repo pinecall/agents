@@ -2,10 +2,10 @@
 
 import { type PromptBlockSpec } from "../wire/defs.js";
 
-import { changes, type Agent } from "../agent/agent.js";
+import { changes, internalsOf, type Agent } from "../agent/agent.js";
 import { docOf, toolsOf } from "../agent/tools.js";
 import { tagged } from "./components.js";
-import { wordsFor } from "./lang.js";
+import { channelRulesFor, PROTOCOLS, RULES } from "./built-in-rules.js";
 import { renderToText } from "./jsx-runtime.js";
 
 /** A rendered prompt block: name, region and text. */
@@ -40,10 +40,17 @@ export function layout(agent: Agent): Blocks {
   return { blocks, history: collapsedHistory(agent) };
 }
 
-/** Class docstring plus built-in rules and protocols. Reads no state. */
+/** Class docstring, built-in rules and protocols, and the channel's. Reads no state. */
 function identityBlock(agent: Agent): string {
-  const words = wordsFor(agent);
-  return paragraphs([docOf(agent) ?? "", tagged("rules", words.rules), tagged("protocols", words.protocols)]);
+  return paragraphs([docOf(agent) ?? "", tagged("rules", RULES), tagged("protocols", PROTOCOLS), channelBlock(agent)]);
+}
+
+// Static because a call never changes its channel or medium. With no call (an offline prompt), a
+// phone call's.
+function channelBlock(agent: Agent): string {
+  if (agent.channelRules === false) return "";
+  const call = internalsOf(agent).call;
+  return tagged("channel", channelRulesFor(call?.channel, call?.medium ?? "voice"));
 }
 
 // Lists every declared tool, visible or not, so this block stays static. Schemas go on the wire.

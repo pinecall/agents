@@ -55,6 +55,17 @@ describe("a call", () => {
     expect(call.today).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
+  it("knows whether it is spoken or written once call.started says, and null when it does not", async () => {
+    const call = await serving();
+    expect(call.medium).toBeNull();
+    const started = { channel: "web", direction: "inbound", from: "web", to: AGENT, caller: null, started_at: Date.now() / 1000 };
+
+    gateway.emit(AGENT, CALL, "call.started", { ...started, medium: "text" });
+    await vi.waitFor(() => expect(call.medium).toBe("text"));
+    gateway.emit(AGENT, CALL, "call.started", started);
+    await vi.waitFor(() => expect(call.medium).toBeNull());
+  });
+
   it("writes the wire's own key names, never the app's", async () => {
     const call = await serving();
     call.say("Un momento");

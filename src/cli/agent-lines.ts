@@ -63,7 +63,7 @@ export function theCornerCalled(standing: TuningAnswer, team: boolean): string {
 }
 
 /** Settings fields in display order, as typed on the command line. */
-export const FIELDS = ["voice", "tts", "tts-model", "stt", "llm", "greeting", "hangup", "turn", "memory", "record", "max-duration", "knowledge", "bases"] as const;
+export const FIELDS = ["voice", "tts", "tts-model", "stt", "llm", "language", "greeting", "hangup", "turn", "memory", "record", "max-duration", "knowledge", "bases"] as const;
 export type Field = (typeof FIELDS)[number];
 
 /** Command-line field name to wire field name. */
@@ -73,6 +73,7 @@ export const WIRE: Record<Field, keyof TuningBody> = {
   "tts-model": "tts_model",
   stt: "stt",
   llm: "llm",
+  language: "language",
   greeting: "greeting",
   hangup: "hangup",
   turn: "turn",

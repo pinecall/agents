@@ -1,7 +1,7 @@
 // A live call as the app holds it: its known fields and the commands it can send.
 
 import { type Camel, type CommandData } from "../wire/codec.js";
-import { type Channel, type Contact, type ToolResult, type ToolSpec } from "../wire/defs.js";
+import { type Channel, type Contact, type Medium, type ToolResult, type ToolSpec } from "../wire/defs.js";
 import { type CommandType, type EventType } from "../wire/registry.js";
 import type { AnyListener, CamelEvent, Listener } from "./listeners.js";
 import { Listeners } from "./listeners.js";
@@ -25,6 +25,8 @@ export type CallStatus = "ringing" | "dialing" | "active" | "ended";
 export class Call {
   status: CallStatus = "ringing";
   channel: Channel | null = null;
+  /** Spoken or written, as `call.started` says; null before it, and from a gateway that does not say. */
+  medium: Medium | null = null;
   from: string | null = null;
   to: string | null = null;
   contact: Camel<Contact> | null = null;
@@ -140,6 +142,7 @@ export class Call {
       case "call.started":
         this.status = "active";
         this.#line(event.data);
+        this.medium = event.data.medium ?? null;
         return;
       case "call.ended":
         this.status = "ended";
@@ -148,6 +151,7 @@ export class Call {
       case "call.attached":
         this.status = "active";
         this.#line(event.data.started);
+        this.medium = event.data.started.medium ?? null;
         this.state = { ...event.data.state };
         this.today = dayOf(event.data.started.startedAt);
         // `claimed` is absent from gateways before protocol 0.6.11.

@@ -1,5 +1,7 @@
 /** Lifecycle hooks: call start, call end, memory writes and external events. */
 
+import { type Medium } from "../wire/defs.js";
+
 import { withAuthorAsync } from "./authors.js";
 import type { EventMeta } from "./accepts.js";
 
@@ -9,6 +11,8 @@ export interface Call {
   contact: string;
   from?: string;
   channel?: string;
+  /** Spoken or written, when the gateway says. */
+  medium?: Medium;
 }
 
 /** A memory write: remember or forget a key about the contact. */
