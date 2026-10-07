@@ -17,7 +17,7 @@ import { ONLY_THE_VIEW } from "../../src/serve/start.js";
 
 const KEY = "pk_test";
 const SLUG = "clinica-norte";
-const AGENT = fileURLToPath(new URL("../cli/clinic/agents/clinica-norte/agent.tsx", import.meta.url));
+const AGENT = fileURLToPath(new URL("./clinic/agents/clinica-norte/agent.tsx", import.meta.url));
 
 let gateway: FakeGateway | null = null;
 

@@ -1,4 +1,4 @@
-# El tag ES la publicación. `git push origin vX.Y.Z` y esto publica `pinecall` en npm solo.
+# El tag ES la publicación. `git push origin vX.Y.Z` y esto publica `@pinecall/agents` en npm solo.
 name: release
 
 on:
@@ -83,9 +83,9 @@ jobs:
       # Empaqueta pnpm y publica npm, y cada mitad está acá por un motivo distinto.
       #
       # `npm pack` NO aplica `publishConfig` — comprobado: el manifiesto que arma sigue diciendo
-      # `main: ./src/index.ts` y `bin: ./bin/pinecall.js`, y `files: ["dist"]` no manda ninguno de
-      # los dos. Un `npm publish` directo publicaría un paquete cuyo `pinecall` no arranca, en un
-      # número que ya no se puede reusar. `pnpm pack` sí lo aplica (dist/cli/index.js).
+      # `main: ./src/index.ts` y `exports` a `src/`, y `files: ["dist"]` no manda `src/`. Un
+      # `npm publish` directo publicaría un paquete que no importa, en un número que ya no se puede
+      # reusar. `pnpm pack` sí lo aplica (dist/index.js).
       #
       # Y publica npm porque es npm quien habla OIDC con el registro. El tarball viaja tal cual:
       # `npm publish <tgz>` no reempaqueta nada.
@@ -98,8 +98,8 @@ jobs:
         working-directory: agents
         run: |
           version="${{ needs.guard.outputs.version }}"
-          if npm view "pinecall@$version" version >/dev/null 2>&1; then
-            echo "pinecall@$version is already on npm: nothing to publish, the tag records it"
+          if npm view "@pinecall/agents@$version" version >/dev/null 2>&1; then
+            echo "@pinecall/agents@$version is already on npm: nothing to publish, the tag records it"
             exit 0
           fi
           npm publish --provenance --access public /tmp/pkg/*.tgz

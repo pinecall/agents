@@ -16,7 +16,7 @@ export interface Who {
   call: string;
 }
 
-/** Draws a panel for one conversation with `pinecall/panels` tags. May be async. */
+/** Draws a panel for one conversation with `@pinecall/agents/panels` tags. May be async. */
 export type View = (who: Who) => Child | Promise<Child>;
 
 /** A class's declared panel: its title and draw function. */

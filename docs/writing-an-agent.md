@@ -24,7 +24,7 @@ test/clinica-norte/
                       docs.json, the retrieval golden, and memory.json, the recall golden
   memory/             the extraction cases `pinecall remember` runs: one written call each
   prompts/            the states `pinecall prompt` is checked against
-tsconfig.json         { "extends": "pinecall/tsconfig.tenant.json" }
+tsconfig.json         { "extends": "@pinecall/agents/tsconfig.tenant.json" }
 ```
 
 **The synthetic callers are not in the repository either.** A persona — a goal, a way of speaking,
@@ -47,7 +47,7 @@ A second agent is a second folder under `agents/`, and the same folders under it
 `pinecall start` holds every agent in one process, and every verb acts on each agent against its own
 folders, or on the one `--agent <name>` names; a verb about one agent — `chat`, `simulate`, `prompt`,
 `remember`, `line`, among others — needs `--agent` when there are several. A folder nobody has
-written yet is empty, not an error. The CLI's page, [the-cli.md](the-cli.md), says which verb
+written yet is empty, not an error. The CLI's page, [the-cli.md](https://github.com/pinecall/cli/blob/main/docs/the-cli.md), says which verb
 does what.
 
 The file is `agent.tsx` because the class renders JSX. That is the only reason, and it changes
@@ -59,7 +59,7 @@ and `tsc` then refuses every `import` of the class with TS1295):
 
 ```jsonc
 // tsconfig.json — everything the framework needs told to the compiler comes from the preset
-{ "extends": "pinecall/tsconfig.tenant.json", "compilerOptions": { "noEmit": true, "types": ["node"] },
+{ "extends": "@pinecall/agents/tsconfig.tenant.json", "compilerOptions": { "noEmit": true, "types": ["node"] },
   "include": ["agents", "test"] }
 ```
 
@@ -70,15 +70,15 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   oxc: {
     decorator: { legacy: true },
-    jsx: { runtime: "automatic", importSource: "pinecall/views" },
+    jsx: { runtime: "automatic", importSource: "@pinecall/agents/views" },
   },
   test: { include: ["test/**/*.test.ts", "test/**/*.test.tsx"] },
 });
 ```
 
 `experimentalDecorators` is in the preset because oxc implements only the legacy decorators today.
-The day it ships the TC39 ones, the flag leaves `pinecall/tsconfig.tenant.json` and no tenant file
-changes. **Never add a `paths` mapping for `pinecall`**: the app resolves it through
+The day it ships the TC39 ones, the flag leaves `@pinecall/agents/tsconfig.tenant.json` and no tenant file
+changes. **Never add a `paths` mapping for `@pinecall/agents`**: the app resolves it through
 `node_modules` like any package, and a mapping hands `pinecall start` a second copy of the framework.
 
 ## The class
@@ -487,8 +487,8 @@ the customer's file, their orders, the balance, the next appointment.
 
 ```tsx
 // agents/clinica-norte/view.tsx
-import { type Who } from "pinecall";
-import { Badge, Panel, Row, Rows, Stat, Table } from "pinecall/panels";
+import { type Who } from "@pinecall/agents";
+import { Badge, Panel, Row, Rows, Stat, Table } from "@pinecall/agents/panels";
 import { crm } from "../../lib/crm";
 
 /** La ficha del cliente, al lado del hilo. */
@@ -528,7 +528,7 @@ with a different destination: `render()` renders to text, a view renders to a cl
 — panel, rows, row, stat, table, badge, text — which the console draws with its own parts, in the
 theme the person reading it chose. A panel written today matches the console a year from now, and
 nothing a tenant writes can reach the page's styling, its scripts or its key. The catalogue is
-`pinecall/panels` and it is a door of its own: a tag of it inside a `render()` is refused by name,
+`@pinecall/agents/panels` and it is a door of its own: a tag of it inside a `render()` is refused by name,
 because there it would silently become the bare text of its children.
 
 **The declaration is one word.** The gateway is told the panel's NAME when the class registers, so

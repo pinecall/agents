@@ -1,4 +1,4 @@
-// pinecall/client: register agents over the gateway socket, answer tool calls, and read logs.
+// @pinecall/agents/client: register agents over the gateway socket, answer tool calls, and read logs.
 // Socket layer only, with no dependency on the Agent framework, views or CLI.
 
 export { Agent } from "./agent.js";
@@ -16,4 +16,5 @@ export type { AnyListener, CamelEvent, Listener, Payload } from "./listeners.js"
 export { aLostSocket } from "./lost.js";
 export { history, observe } from "./observe.js";
 export type { LogTarget, Observation, Page, ReadOptions } from "./observe.js";
+export { signed } from "./signed.js";
 export type { World } from "./signed.js";

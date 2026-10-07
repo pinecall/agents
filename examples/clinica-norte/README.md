@@ -22,7 +22,7 @@ test/clinica-norte/
 ## El tsconfig
 
 ```json
-{ "extends": "pinecall/tsconfig.tenant.json" }
+{ "extends": "@pinecall/agents/tsconfig.tenant.json" }
 ```
 
 Eso es todo lo que el tenant escribe. El preset trae el runtime JSX del `render()` y
@@ -44,6 +44,9 @@ pnpm --filter @pinecall/example-clinica-norte lint    # tsc --noEmit
 siempre.
 
 ## Ejecutarlo
+
+Con el CLI, que es su propio paquete (`npm i -g pinecall`, o `node ../../../cli/bin/pinecall.js`
+desde un checkout de [pinecall/cli](https://github.com/pinecall/cli) al lado de este):
 
 ```bash
 pinecall link               # una vez: inicia sesión y escribe PINECALL_KEY en .env

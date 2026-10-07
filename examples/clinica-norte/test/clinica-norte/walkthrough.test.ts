@@ -6,9 +6,9 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, expect, it } from "vitest";
-import { Pinecall } from "pinecall/client";
-import { FakeGateway } from "pinecall/client/testing";
-import { mount, type Mounted } from "pinecall";
+import { Pinecall } from "@pinecall/agents/client";
+import { FakeGateway } from "@pinecall/agents/client/testing";
+import { mount, type Mounted } from "@pinecall/agents";
 
 import ClinicaNorte from "../../agents/clinica-norte/agent.js";
 import { hourOf, REFUSED_HOUR, type Slot } from "../../agents/clinica-norte/agenda.js";

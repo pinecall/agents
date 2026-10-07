@@ -4,7 +4,7 @@ What answers the org's customers is an ordinary process — the same `pinecall s
 runs on a laptop, holding production's agent instead of a sandbox copy — on the org's own server,
 or on Pinecall's with `pinecall deploy --prod` ([(c)](#c-on-the-box-pinecall-deploy)). It runs on a **server's token**, it restarts with every deploy like the rest of the app, and
 nothing on the server logs in. Who may do what in production, and the team walked through it, is
-[worlds-and-teams.md](worlds-and-teams.md); the verbs are [the-cli.md](the-cli.md).
+[worlds-and-teams.md](worlds-and-teams.md); the verbs are [the-cli.md](https://github.com/pinecall/cli/blob/main/docs/the-cli.md).
 
 ## The server's token
 
@@ -43,8 +43,8 @@ startup, and every deploy that restarts the server restarts the agent.
 
 ```ts
 import { readFileSync } from "node:fs";
-import { mount } from "pinecall";
-import { Pinecall } from "pinecall/client";
+import { mount } from "@pinecall/agents";
+import { Pinecall } from "@pinecall/agents/client";
 
 import { Recepcion } from "./agents/recepcion/agent.js";
 
@@ -113,9 +113,9 @@ It uploads the project (never `node_modules` or `.env`), installs it from the lo
 nothing above applies, no token to paste and no process manager to configure. What `.env` held for
 your own code — a CRM's URL, its key — goes in as the org's secrets, which every hosted app of the
 org starts with. A deploy is the next release: the one before answers until the new one's agents
-register, then drains — [deploying.md](deploying.md) is the whole guide. `pinecall deploy logs` shows what the process printed, `stop` and `start`
+register, then drains — [deploying.md](https://github.com/pinecall/cli/blob/main/docs/deploying.md) is the whole guide. `pinecall deploy logs` shows what the process printed, `stop` and `start`
 take it off and back; `list`, `releases`, `rollback <n>` and `rm` are the rest,
-and [the-cli.md](the-cli.md#deploy) says each. Your own code runs in an isolated sandbox that
+and [the-cli.md](https://github.com/pinecall/cli/blob/main/docs/the-cli.md#deploy) says each. Your own code runs in an isolated sandbox that
 reaches the internet and nothing of Pinecall's. On Pinecall's cloud an app costs $5 a month,
 prorated by the hours it runs, and the sandbox hosts one free; an org's plan says how many it may host.
 

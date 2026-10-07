@@ -1,4 +1,4 @@
-// Fixture agent loaded through tsx by the CLI loader. Imports src/agent directly: no dist exists yet.
+// Fixture agent loaded through tsx by the serve entry. Imports src/agent directly: no dist exists yet.
 
 import { Agent } from "../../../../../src/agent/agent.js";
 

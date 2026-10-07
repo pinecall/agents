@@ -1,7 +1,7 @@
 # Two worlds, one team
 
 From the invitation to the deploy, and what changes when there are five of you. The verbs are
-[the-cli.md](the-cli.md); running the agent on a server is [production.md](production.md); the
+[the-cli.md](https://github.com/pinecall/cli/blob/main/docs/the-cli.md); running the agent on a server is [production.md](production.md); the
 doors are the runtime's `docs/protocol/gateway-api.md` and `docs/protocol/people.md`; the model
 from the operator's side is the runtime's `docs/multi-tenancy.md`. This page is the same model as
 you walk it from a laptop.
@@ -22,7 +22,7 @@ There are two worlds — `production` and `sandbox` — and **one gateway serves
 there once, and the key in the project's `.env` opens both worlds. Which one a command acts in is
 decided by the gateway from the key and the `pinecall-env` header every request and every socket
 carries, never from the name: a command with `--prod` says `production`, every other command says
-`sandbox` ([the-cli.md](the-cli.md#where-the-gateway-and-the-key-come-from)). Nothing is
+`sandbox` ([the-cli.md](https://github.com/pinecall/cli/blob/main/docs/the-cli.md#where-the-gateway-and-the-key-come-from)). Nothing is
 discovered, minted or kept for the sandbox. Every agent a command holds, every call it takes, every
 fact and every base it writes is that world's. Nothing you do in the sandbox reaches production,
 and nothing production does reaches you.
@@ -42,7 +42,7 @@ in to — shows production and only production: what is deployed, its calls, the
 tokens, people and usage; a person without production access who signs in there is shown **No
 production access** and the way to the sandbox's. The sandbox's console is the same gateway under
 `<url>/sandbox/` — the same origin, the same sign-in — looking at your corner; `pinecall console`
-opens it signed in, without the key leaving your terminal ([the-cli.md](the-cli.md#console)). One
+opens it signed in, without the key leaving your terminal ([the-cli.md](https://github.com/pinecall/cli/blob/main/docs/the-cli.md#console)). One
 gateway, two worlds, and a page tells the world it is in from its path.
 
 Yours to hold, not yours to hide: **an admin, and whoever runs the gateway, see every corner of

@@ -1,6 +1,6 @@
 /** Clínica Norte: la clase entera del tenant — estado, herramientas, las tres puertas y su prompt. */
 
-import { Agent, tool, type Call, type MemoryOp, type Stages } from "pinecall";
+import { Agent, tool, type Call, type MemoryOp, type Stages } from "@pinecall/agents";
 
 import {
   NotADay,

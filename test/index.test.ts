@@ -1,4 +1,4 @@
-// Pins the public exports of `pinecall` so internals cannot leak onto the surface unnoticed.
+// Pins the public exports of `@pinecall/agents` so internals cannot leak onto the surface unnoticed.
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";

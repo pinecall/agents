@@ -1,4 +1,4 @@
-/** Panel components for views (`pinecall/panels`), drawn by the console. */
+/** Panel components for views (`@pinecall/agents/panels`), drawn by the console. */
 
 import type { Props } from "./jsx-runtime.js";
 import { said, type Panels, type Tone, type ViewNode } from "./nodes.js";

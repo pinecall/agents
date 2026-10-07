@@ -6,7 +6,7 @@
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
-import { Agent, optionsFor, promptOf, seal } from "pinecall";
+import { Agent, optionsFor, promptOf, seal } from "@pinecall/agents";
 
 import ClinicaNorte from "../../agents/clinica-norte/agent.js";
 

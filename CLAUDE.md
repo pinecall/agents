@@ -1,7 +1,9 @@
-# pinecall/agents
+# @pinecall/agents
 
 The framework a tenant writes an agent in — a class whose fields are the state and whose `@tool`
-methods are the model's verbs — its CLI, and the console that CLI serves. Reply to the human in
+methods are the model's verbs — and the serve entry the CLI starts it with. The CLI is
+`../cli` (npm `pinecall`), a repo of its own that never imports this one but through
+`@pinecall/agents/client` and `@pinecall/agents/wire`. Reply to the human in
 Spanish; code, comments, commit messages and this file in English. What it is:
 [ARCHITECTURE.md](ARCHITECTURE.md). How to build an agent with it: [docs/](docs/). Procedures with
 traps in them are skills under `.claude/skills/`.
@@ -10,15 +12,13 @@ traps in them are skills under `.claude/skills/`.
 
 ```bash
 pnpm install                     # the workspace, and the wire from the repo next door
-pnpm test                        # the framework and its CLI — from the sources
+pnpm test                        # the framework — from the sources
 pnpm lint                        # tsc over src and test
 pnpm -r test                     # the example, and the wire's own suite
 scripts/build                    # what is published: the wire's build, then dist/ (tsc) — no console in it
 scripts/check                    # build → lint → test, in that order — what CI runs
 pnpm vitest run test/agent       # one directory; `-t "a sentence"` for one test
-cd examples/clinica-norte && pnpm exec pinecall link     # once: your key for the org, in ./.env
-cd examples/clinica-norte && pnpm exec pinecall chat     # the agent in this terminal
-cd examples/clinica-norte && pnpm exec pinecall prompt --state test/clinica-norte/prompts/states.json
+cd examples/clinica-norte && node ../../../cli/bin/pinecall.js chat     # the example, through the CLI's checkout
 ```
 
 Nothing has to be built to lint or test: every package in the workspace exports its sources, and
@@ -29,10 +29,9 @@ its own that the runtime builds into the gateway.
 
 - `src/` — seven directories, kept apart by the import table in `test/the-imports.test.ts`
   - `agent/` the class · `views/` JSX→text · `call/` the live call as a value
-  - `client/` `pinecall/client`: the socket, and nothing above it · `runtime/` the bridge
-  - `serve/` `pinecall/serve`: the entry the CLI starts an agent with — `start`, `prompt`
-  - `cli/` `pinecall <verb>`, and nothing under it binds a port; `cli/ui/*.ts` is what `start`
-    ANSWERS a console with, by the wire's verb (`doors.ts`) — the page that asks is `../console`
+  - `client/` `@pinecall/agents/client`: the socket, and nothing above it · `runtime/` the bridge
+  - `serve/` `@pinecall/agents/serve`: the entry the CLI starts an agent with — `start`, `prompt`
+  - `wire/` `@pinecall/agents/wire`: the runtime's shapes, which the CLI reads too
 - `test/` mirrors `src/`; `the-tree`, `the-imports`, `index` and `client/index` are the tree's rules
 - `examples/` one tenant written the way a customer writes one — and what the nightly drives
 - `docs/` how to build an agent · `docs/decisions/` the maintainer's notebook, **git-ignored**:
@@ -48,7 +47,7 @@ it. What to edit, by what you touched:
 | you changed | edit |
 |---|---|
 | a module, a directory, an entity or its fields, a line of the import table, the path something takes between two parts | `ARCHITECTURE.md` — the section, and any table that lists the file |
-| a command, a flag, an install step, an export | `README.md`, and `docs/the-cli.md` for a verb |
+| an install step, an export | `README.md` |
 | what a tenant writes, renders or tests | `docs/writing-an-agent.md` · `docs/the-prompt.md` · `docs/testing-an-agent.md` |
 | a procedure with a trap in it — a NEVER, an order of steps, a refusal | the skill under `.claude/skills/` |
 | anything a tenant would notice | `CHANGELOG.md`, one line under `Unreleased` |
@@ -67,7 +66,7 @@ happened and the doc is the bug.
 - `test/index.test.ts` and `test/client/index.test.ts` pin the two public surfaces by name —
   never a CLI module, never a bridge internal, never a test helper.
 - `package.json` exports point at `src/` and `publishConfig` swaps in `dist/`. The example
-  resolves `pinecall` through `node_modules` like a customer; nothing is aliased or path-mapped.
+  resolves `@pinecall/agents` through `node_modules` like a customer; nothing is aliased or path-mapped.
 - The wire is `src/wire/`, the runtime's shapes this package uses and no more; its golden call
   log is `test/wire/golden/`, copied from the runtime's `tests/wire/golden/`, so a log folded here
   is the one the runtime folds. A change of the runtime's wire moves both by hand.
@@ -92,15 +91,9 @@ sentences; small methods; 150 lines is the norm. Tests read as sentences.
 
 ## Traps — each one cost an afternoon
 
-- **The CLI reads `PINECALL_KEY` and `PINECALL_URL`, and nothing else.** From the process's
-  environment, else from the nearest `.env` up from the cwd — the project's, which `pinecall link`
-  wrote (`cli/env.ts`). v1's `PINECALL_API_KEY` is never read, and there are no profiles to switch:
-  another org is another folder. `PINECALL_URL` is the one gateway, serving both worlds; `--prod`
-  on any verb acts in production for that one command (refused unless the person's production
-  switch is on), and without it a verb acts in the sandbox — same URL, same key, the
-  `pinecall-env` header saying which. Nothing is discovered or minted for the sandbox.
-  `pinecall whoami` prints the one door, who the key is, which worlds it opens, and where it was
-  read.
+- **The serve entry reads its door from `PINECALL_URL`, `PINECALL_KEY` and `PINECALL_ENV`**, and
+  from nothing else: no `.env`, no flag. The CLI resolved them and set them on the child; a serve
+  entry that read a file would serve another org than the one the CLI showed.
 - **A tool with no docstring is refused,** because without one no model can choose it; and
   `@tool({ stage })` on a class with no `stage` field is refused too.
 - **The class docstring lives above the class,** where `toString()` cannot see it, and parameter
@@ -112,9 +105,6 @@ sentences; small methods; 150 lines is the norm. Tests read as sentences.
 - **A view says what to do in THIS turn.** Two facts the examples paid for: a rule that lives only
   in the static prefix is read once and generically, and the rule for "the caller just named a
   slot" is the opposite of the one for "the caller just said yes".
-- `pinecall test --voice` is ring 2: the CLI sends the same goldens to `POST /v1/evals/run` with
-  `voice: true` (and `--background-noise` · `--packet-loss` as `interferer_db` · `packet_loss`);
-  whether a spoken line answers is the gateway's, and nothing on this side checks it.
 - A release is a `v*` tag: `release.yml` publishes it. The last number goes up (0.8.0 → 0.8.1), the CHANGELOG
   section moves from Unreleased to it in the same commit.
 

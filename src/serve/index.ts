@@ -1,4 +1,4 @@
-/** `pinecall/serve`: the entry the CLI starts an agent with — `start` holds it, `prompt` prints it. */
+/** `@pinecall/agents/serve`: the entry the CLI starts an agent with — `start` holds it, `prompt` prints it. */
 
 import { realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";

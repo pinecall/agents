@@ -16,7 +16,7 @@ import {
   showPrompt,
   toolNamed,
   type Blocks,
-} from "pinecall";
+} from "@pinecall/agents";
 
 import ClinicaNorte from "../../agents/clinica-norte/agent.js";
 

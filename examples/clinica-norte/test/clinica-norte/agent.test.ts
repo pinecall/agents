@@ -16,7 +16,7 @@ import {
   tool,
   toolNamed,
   type ToolDeclaration,
-} from "pinecall";
+} from "@pinecall/agents";
 
 import ClinicaNorte from "../../agents/clinica-norte/agent.js";
 import { agendaFor, hourOf, REFUSED_HOUR, type Slot } from "../../agents/clinica-norte/agenda.js";

@@ -44,11 +44,12 @@ sentence that says what to start.
 
 ## 2. The class
 
-A new directory, a `package.json` with `pinecall` as a dependency, and a `tsconfig.json` that
-extends the preset the package ships:
+A new directory, a `package.json` with two dependencies — `@pinecall/agents`, the framework the
+class is written in, and `pinecall`, the CLI that starts it (`npm i @pinecall/agents pinecall`) —
+and a `tsconfig.json` that extends the preset the framework ships:
 
 ```json
-{ "extends": "pinecall/tsconfig.tenant.json",
+{ "extends": "@pinecall/agents/tsconfig.tenant.json",
   "compilerOptions": { "noEmit": true, "types": ["node"] },
   "include": ["agents", "test"] }
 ```
@@ -72,7 +73,7 @@ the console's Tokens screen ([production.md](production.md)).
 Then `agents/clinica-norte/agent.tsx`. This is the whole thing:
 
 ```tsx
-import { Agent, tool, state, type Stages } from "pinecall";
+import { Agent, tool, state, type Stages } from "@pinecall/agents";
 
 /** Eres la recepción de Clínica Norte. Hablas de usted, con frases cortas. */
 export default class ClinicaNorte extends Agent {
@@ -400,7 +401,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { expect, test } from "vitest";
-import { describe as describeClass, runTool, seal, toolNamed, promptOf } from "pinecall";
+import { describe as describeClass, runTool, seal, toolNamed, promptOf } from "@pinecall/agents";
 import ClinicaNorte from "../../agents/clinica-norte/agent.js";
 
 // El fuente de la clase, para que los tipos de los parámetros sobrevivan al transpilador: sin él,
@@ -442,7 +443,7 @@ is for.
 | every declaration a class may carry | [writing-an-agent.md](writing-an-agent.md) |
 | the three regions, and what goes in each | [the-prompt.md](the-prompt.md) |
 | the five rings, and how a golden is written | [testing-an-agent.md](testing-an-agent.md) |
-| every verb | [the-cli.md](the-cli.md) |
+| every verb | [the-cli.md](https://github.com/pinecall/cli/blob/main/docs/the-cli.md) |
 | working with a team: one key each, the production switch | [worlds-and-teams.md](worlds-and-teams.md) |
 | putting the agent on your own server | [production.md](production.md) |
 | why retrieval is shaped this way | `runtime/docs/security/prompt-injection.md` |

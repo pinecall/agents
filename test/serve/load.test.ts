@@ -5,12 +5,10 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { docOf } from "../../src/agent/tools.js";
-import { firstState } from "../../src/cli/prompt.js";
 import { instanceFor, loadAgent } from "../../src/serve/load.js";
 import { showPrompt } from "../../src/views/render.js";
 
-const AGENT = fileURLToPath(new URL("../cli/clinic/agents/clinica-norte/agent.tsx", import.meta.url));
-const GOLDENS = fileURLToPath(new URL("../cli/choose.json", import.meta.url));
+const AGENT = fileURLToPath(new URL("./clinic/agents/clinica-norte/agent.tsx", import.meta.url));
 
 describe("loading an agent from disk", () => {
   it("hands the class its own source, so the docstring above it survives the import", async () => {
@@ -33,7 +31,7 @@ describe("loading an agent from disk", () => {
 
   it("puts a goldens case into the instance and renders its view at the end", async () => {
     const agent = instanceFor(await loadAgent(AGENT));
-    agent.startIn(firstState(GOLDENS, "1"));
+    agent.startIn({ patient: { name: "Ana García" }, slots: [{ when: "martes 16:00" }] });
 
     const page = showPrompt(agent);
 

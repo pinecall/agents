@@ -18,7 +18,7 @@ example's is `examples/clinica-norte/test/clinica-norte/`:
 
 ```ts
 // the class in the hand: call a tool, read the state
-import { describe as describeClass, seal } from "pinecall";
+import { describe as describeClass, seal } from "@pinecall/agents";
 
 // Once per suite: a transpiler strips comments and parameter types, so the class is handed its own
 // source. Without this line the first tool spec built refuses — `tool findPatient: without a
@@ -38,7 +38,7 @@ const pc = new Pinecall({ url: gateway.url, apiKey: KEY });
 const mounted = mount(ClinicaNorte, { pc, source: SOURCE });
 ```
 
-`pinecall/client/testing` is that fake: a gateway that answers the app socket, and a log nobody
+`@pinecall/agents/client/testing` is that fake: a gateway that answers the app socket, and a log nobody
 stored. An app's own suite needs neither a network nor a key.
 
 **Rendering in a test.** `promptOf(agent)` gives the blocks and `showPrompt(agent)` the printed page.
@@ -227,7 +227,7 @@ agent's own.
 
 Every judge above but the agent's own is the runtime's, the same for every agent. **The agent's own are yours**: a
 question about this agent's job — *the agent offered the next free slot before the caller asked
-twice* — written with [`pinecall judges add`](the-cli.md#judges) or the console's Judges, kept by
+twice* — written with [`pinecall judges add`](https://github.com/pinecall/cli/blob/main/docs/the-cli.md#judges) or the console's Judges, kept by
 the gateway for both worlds, and answered under its own name in `call.score`. `--on simulations`
 keeps one off real traffic: it reads only the calls a persona played.
 
@@ -276,7 +276,8 @@ What this repository's own CI runs:
   0 only: no key, no model, no money. Both retrieval goldens belong here too when the gateway is
   reachable: `pinecall docs eval` and `pinecall memory eval` cost one embedding per question and
   no model at all.
-- **The nightly** (`.github/workflows/nightly.yml`): rings 1 and 4 on real money, weekday nights.
+- **The nightly** ([the CLI's](https://github.com/pinecall/cli/blob/main/.github/workflows/nightly.yml), which drives this
+  repository's example): rings 1 and 4 on real money, weekday nights.
   `pinecall remember` belongs here too — one model call per case is real money, and the extraction
   prompt is exactly the kind of thing that drifts without anybody touching the class.
   Against `https://cloud.pinecall.io`, on a sandbox server token kept as `PINECALL_NIGHTLY_KEY`:

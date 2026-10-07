@@ -1,4 +1,4 @@
-// Pins the exports of `pinecall/client` and `pinecall/client/testing`.
+// Pins the exports of `@pinecall/agents/client` and `@pinecall/agents/client/testing`.
 
 import { describe, expect, it } from "vitest";
 
@@ -26,12 +26,13 @@ const PUBLIC = [
   "lookupUrl",
   "nextId",
   "observe",
+  "signed",
 ];
 
 // Test doubles; never imported by a published app at runtime.
 const TESTING = ["FakeGateway", "FakeLog"];
 
-describe("pinecall/client", () => {
+describe("@pinecall/agents/client", () => {
   it("exports exactly what is listed here", () => {
     expect(Object.keys(client).sort()).toEqual(PUBLIC);
   });

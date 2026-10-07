@@ -21,7 +21,7 @@ export interface Viewing {
 
 /**
  * Bind `view.render` to a class. The view may be async; its output is rendered to
- * `pinecall/panels` nodes, so only data reaches the browser.
+ * `@pinecall/agents/panels` nodes, so only data reaches the browser.
  */
 export function viewingFrom(ctor: object, slug: string): Viewing {
   return {

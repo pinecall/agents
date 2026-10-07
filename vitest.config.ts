@@ -2,7 +2,7 @@
 
 import { defineConfig } from "vitest/config";
 
-// One program lives in this repo now: the framework and its CLI. The console — a browser page
+// One program lives in this repo now: the framework. The CLI is ../cli, a repo of its own. The console — a browser page
 // whose JSX compiles against React's — is a repo of its own (../console), and it took its two
 // directories of tests with it, which is why this config has no projects in it any more.
 //
@@ -16,7 +16,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   oxc: {
     decorator: { legacy: true },
-    jsx: { runtime: "automatic", importSource: "pinecall/views" },
+    jsx: { runtime: "automatic", importSource: "@pinecall/agents/views" },
   },
   test: {
     name: "pinecall",

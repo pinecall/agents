@@ -1,6 +1,6 @@
 /** El CRM de la clínica: donde se guarda lo que el agente decide recordar de un paciente. */
 
-import type { MemoryOp } from "pinecall";
+import type { MemoryOp } from "@pinecall/agents";
 
 /** Lo que el CRM sabe de un contacto: clave y valor, tal y como el agente lo recordó. */
 export type Notes = Record<string, unknown>;

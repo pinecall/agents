@@ -22,9 +22,6 @@ const MAY_IMPORT: Record<string, string[]> = {
   "runtime": ["agent", "call", "views", "client", "wire"],
   // The entry the CLI starts an agent with; `tsx` is imported lazily, for a tenant's .ts.
   "serve": ["agent", "call", "views", "runtime", "client", "wire", "tsx"],
-  // Never the framework: a class runs in its serve entry. `tsx` (legacy persona files) and
-  // `@livekit/rtc-node` (`simulate --listen`) are imported lazily.
-  "cli": ["client", "wire", "ws", "tsx", "@livekit/rtc-node"],
   // src/index.ts: the public surface.
   "": ["agent", "call", "views", "runtime"],
 };

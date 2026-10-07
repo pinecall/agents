@@ -1,6 +1,7 @@
 # Changelog
 
-All notable changes to `pinecall`, the package a tenant writes an agent in. The format is
+All notable changes to `@pinecall/agents`, the package a tenant writes an agent in — published as
+`pinecall`, with the CLI inside it, up to 0.9. The format is
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version numbers and tags are the
 maintainer's call, so everything sits under Unreleased until one is cut.
 
@@ -12,7 +13,7 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   and `agent.register` may carry `answers_dev`. `pc.agent(slug, { answersDev: true })` registers
   a socket that answers the console's dev verbs and declares nothing; `pc.onEntries` hands over
   every entry as the gateway wrote it.
-- **`pinecall/serve`**, the entry the CLI starts an agent with: `start --file --slug [--console]
+- **`@pinecall/agents/serve`**, the entry the CLI starts an agent with: `start --file --slug [--console]
   [--events]` holds the agents (the door from `PINECALL_URL`, `PINECALL_KEY`, `PINECALL_ENV`
   only; leaves draining on a signal or the end of its stdin; answers `view.render` alone) and
   `prompt --file --slug [--state field=json]…` prints a prompt.
@@ -20,6 +21,13 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ### Changed
 
+- **Breaking: the package is `@pinecall/agents`, and the CLI is a package of its own.** Imports
+  move from `pinecall`, `pinecall/client`, `pinecall/panels`, `pinecall/views` and
+  `pinecall/tsconfig.tenant.json` to `@pinecall/agents`, `@pinecall/agents/client`, … with the
+  same names under them. This package has no bin: `pinecall` on npm is now the CLI alone
+  ([pinecall/cli](https://github.com/pinecall/cli)), which starts a project's agents through
+  `@pinecall/agents/serve` and never loads the framework itself — so a project depends on both.
+  The CLI's own changes below ship in it. `@pinecall/agents/wire` exports the runtime's shapes.
 - **Breaking: a call opens in the state its `call.started` carries.** A golden's state, a persona's
   and `pinecall chat --state` ride the call to the gateway, and the class applies them after
   `onCall` and before the first render. `mount`'s `opening` option is gone, and so is the suite's

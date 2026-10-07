@@ -9,7 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "pinecall": "workspace:*"
+    "@pinecall/agents": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^26.4.1",

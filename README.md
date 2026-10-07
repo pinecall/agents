@@ -1,4 +1,4 @@
-# pinecall
+# @pinecall/agents
 
 Build voice and chat agents as TypeScript classes. Fields are the agent's state, `@tool`
 methods are what the model can call, docstrings are the prompt, and `render()` describes the
@@ -38,11 +38,12 @@ WebSocket.
 ## Install
 
 ```bash
-npm i -g pinecall   # the CLI
-npm i pinecall      # as a dependency, to write an agent in your project
+npm i @pinecall/agents pinecall   # the framework, and the CLI that runs what you write in it
 ```
 
-The CLI needs a gateway: use Pinecall's hosted one, or run your own with
+The CLI is its own package, [`pinecall`](https://github.com/pinecall/cli): it never loads this
+one, it starts the agents of your project through `@pinecall/agents/serve`, which is why both are
+dependencies of the project. It needs a gateway: use Pinecall's hosted one, or run your own with
 [`pip install pinecall`](https://github.com/pinecall/runtime) (see
 [from-zero](https://github.com/pinecall/runtime/blob/main/docs/from-zero.md)).
 
@@ -50,21 +51,22 @@ The CLI needs a gateway: use Pinecall's hosted one, or run your own with
 
 ```bash
 pnpm install
+npm i -g pinecall            # the CLI; the example takes the framework from this checkout
 cd examples/clinica-norte
-pnpm exec pinecall link      # sign in through the browser; writes your key to ./.env
-pnpm exec pinecall chat      # talk to the agent in this terminal
-pnpm exec pinecall start     # run the agent (this is the process you deploy)
-pnpm exec pinecall console   # open the sandbox console
-pnpm exec pinecall test      # run the goldens
+pinecall link                # sign in through the browser; writes your key to ./.env
+pinecall chat                # talk to the agent in this terminal
+pinecall start               # run the agent (this is the process you deploy)
+pinecall console             # open the sandbox console
+pinecall test                # run the goldens
 ```
 
 Other useful verbs: `pinecall prompt --state <file>` prints the exact prompt a state produces
 (`--channel web --medium text` for the one a written chat gets);
 `pinecall docs push` uploads a knowledge base and `pinecall docs attach <base>` gives it to the
 agent; `pinecall deploy` runs the project on the box instead of your own server, with
-`pinecall secrets` for what it is started with ([docs/deploying.md](docs/deploying.md)). Every verb runs against the sandbox unless `--prod` is given. The CLI reads `PINECALL_KEY`
+`pinecall secrets` for what it is started with ([docs/deploying.md](https://github.com/pinecall/cli/blob/main/docs/deploying.md)). Every verb runs against the sandbox unless `--prod` is given. The CLI reads `PINECALL_KEY`
 and `PINECALL_URL` from the environment or the project's `.env`. Full reference:
-[docs/the-cli.md](docs/the-cli.md).
+[docs/the-cli.md](https://github.com/pinecall/cli/blob/main/docs/the-cli.md).
 
 A project holds one or more agents: `agents/<name>/agent.tsx` and their tests in
 `test/<name>/`. Voice, model, language, greeting, knowledge and the documents an agent searches
@@ -75,7 +77,7 @@ are per-world settings, not class fields or files in the repository: `pinecall a
 ## Development
 
 ```bash
-pnpm test          # the framework and CLI, from sources
+pnpm test          # the framework, from sources
 pnpm lint          # tsc over src and test
 scripts/build      # the published build (dist/)
 scripts/check      # build, lint, test — what CI runs
@@ -89,13 +91,13 @@ so tests and the example run from sources with no build step.
 | `agent/` | the `Agent` class, `@tool`, `@render`, `@state`, stages, hooks |
 | `views/` | JSX-to-text rendering and the prompt's named blocks |
 | `call/` | the live call as a value, reduced from log entries |
-| `client/` | `pinecall/client`: the WebSocket client and the wire, nothing else |
+| `client/` | `@pinecall/agents/client`: the WebSocket client and the wire, nothing else |
 | `runtime/` | the bridge between the class and the wire |
-| `serve/` | `pinecall/serve`: the entry the CLI starts an agent with, `start` and `prompt` |
-| `cli/` | the `pinecall` CLI |
+| `serve/` | `@pinecall/agents/serve`: the entry the CLI starts an agent with, `start` and `prompt` |
 
 `test/the-imports.test.ts` enforces which directory may import which. The public exports are
-`pinecall`, `pinecall/client`, `pinecall/serve` and `pinecall/tsconfig.tenant.json`, pinned by
+`@pinecall/agents`, `@pinecall/agents/client`, `@pinecall/agents/serve`, `@pinecall/agents/wire` and
+`@pinecall/agents/tsconfig.tenant.json`, pinned by
 `test/index.test.ts` and `test/client/index.test.ts`.
 
 The wire is the runtime's, kept in `src/wire/`; the runtime's golden call log, in
@@ -109,7 +111,7 @@ The wire is the runtime's, kept in `src/wire/`; the runtime's golden call log, i
 | [docs/writing-an-agent.md](docs/writing-an-agent.md) | state, tools, stages, channels, knowledge, memory, hooks |
 | [docs/the-prompt.md](docs/the-prompt.md) | how the prompt is built and cached |
 | [docs/testing-an-agent.md](docs/testing-an-agent.md) | unit tests, goldens, personas, replays, scores |
-| [docs/the-cli.md](docs/the-cli.md) | every CLI verb |
+| [the CLI](https://github.com/pinecall/cli/blob/main/docs/the-cli.md) | every verb, in the `pinecall` repo |
 | [docs/worlds-and-teams.md](docs/worlds-and-teams.md) | keys, sandbox and production, teams |
 | [docs/production.md](docs/production.md) | running an agent on your own server |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | the package file by file |

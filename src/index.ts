@@ -1,5 +1,5 @@
 // pinecall: the public entry point — the Agent class, the JSX prompt runtime, the call and the bridge.
-// test/index.test.ts pins this list. The bare socket client is exported separately as `pinecall/client`.
+// test/index.test.ts pins this list. The bare socket client is exported separately as `@pinecall/agents/client`.
 
 export * from "./agent/agent.js";
 export * from "./agent/knowledge.js";
@@ -17,7 +17,7 @@ export * from "./views/components.js";
 // `layout` is exposed as `promptOf`.
 export { PROMPT_BLOCKS, type Block, type Blocks } from "./views/layout.js";
 export * from "./views/render.js";
-// The panel tags themselves are exported from `pinecall/panels`.
+// The panel tags themselves are exported from `@pinecall/agents/panels`.
 export { renderToNodes, said, type Panels, type Tone, type ViewNode } from "./views/nodes.js";
 // `runTool` lets a tenant's unit tests run a tool as the bridge would; the rest of run-tool.ts is internal.
 

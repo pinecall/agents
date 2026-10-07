@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 import { main } from "../../src/serve/index.js";
 import { stateOf } from "../../src/serve/prompt.js";
 
-const AGENT = fileURLToPath(new URL("../cli/clinic/agents/clinica-norte/agent.tsx", import.meta.url));
+const AGENT = fileURLToPath(new URL("./clinic/agents/clinica-norte/agent.tsx", import.meta.url));
 
 async function printed(...argv: string[]): Promise<{ code: number; out: string; err: string }> {
   let out = "";
