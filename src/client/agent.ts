@@ -22,6 +22,11 @@ export interface AgentOptions extends Omit<Camel<AgentConfig>, "tools"> {
    * socket. Defaults to true; a console such as `pinecall chat` passes false.
    */
   takesUnclaimed?: boolean;
+  /**
+   * Whether this socket answers the console's dev verbs for the agent, beside the process serving
+   * its calls. Such a socket declares nothing: it never sends `agent.configure`.
+   */
+  answersDev?: boolean;
 }
 
 /** The client-side socket an agent sends frames through. */
@@ -62,6 +67,7 @@ export class Agent implements CallGateway {
   readonly #running = new Set<Promise<void>>();
   #config: Camel<AgentConfig>;
   #takesUnclaimed: boolean;
+  #answersDev: boolean;
   #app: string | undefined;
   #dev: DevHandler | undefined;
 
@@ -70,9 +76,10 @@ export class Agent implements CallGateway {
     options: AgentOptions,
     private readonly gateway: AgentGateway,
   ) {
-    const { tools = [], takesUnclaimed = true, ...config } = options;
+    const { tools = [], takesUnclaimed = true, answersDev = false, ...config } = options;
     this.#config = config;
     this.#takesUnclaimed = takesUnclaimed;
+    this.#answersDev = answersDev;
     this.declare(tools);
     this.calls = new CallBook(this);
     this.#listeners = new Listeners<Call | null>((error) => gateway.onError(error));
@@ -132,10 +139,12 @@ export class Agent implements CallGateway {
       sdk: this.gateway.sdk,
       host: this.gateway.host,
       takesUnclaimed: this.#takesUnclaimed,
+      ...(this.#answersDev ? { answersDev: true } : {}),
     });
     // Each reconnect mints a new app id.
     this.#app = registered.app;
-    await this.configure();
+    // A registration inherits the newest holder's declaration; one sent from here would replace it.
+    if (!this.#answersDev) await this.configure();
   }
 
   // ── the socket's side ───────────────────────────────────────────────────────

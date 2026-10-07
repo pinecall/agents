@@ -35,11 +35,6 @@ export interface MountOptions {
   last?: LastCall;
   /** False for a console, which serves only calls it opened itself. */
   takesUnclaimed?: boolean;
-  /**
-   * State a test case opens the call in. Applied after `onCall` (which would overwrite it) and
-   * before the first render (so the model never sees intermediate states).
-   */
-  opening?: (call: SdkCall) => Snapshot | undefined;
 }
 
 /** A mounted agent: its registered SDK agent and the instances serving live calls. */
@@ -114,7 +109,7 @@ export function optionsFor(ctor: Ctor, tools: Tool[], instance: Agent = new ctor
  */
 export function mount(
   ctor: Ctor,
-  { pc, source, file, slug, last, opening, takesUnclaimed = true }: MountOptions,
+  { pc, source, file, slug, last, takesUnclaimed = true }: MountOptions,
 ): Mounted {
   if (source !== undefined) describe(ctor, source, file);
   const name = slug ?? slugOf(ctor);
@@ -127,11 +122,11 @@ export function mount(
   const options = { ...optionsFor(ctor, tools, probe, file, source), takesUnclaimed };
   const agent = pc.agent(name, options);
 
-  agent.on("call.started", (_payload, call) => {
+  agent.on("call.started", (started, call) => {
     if (call !== null) {
       const send: Send = (type, id, data) => agent.command(type, id, data);
       const searching: Searching = (query, k) => pc.search(call.id, query, k);
-      void start(ctor, live, call, send, searching, last, opening);
+      void start(ctor, live, call, send, searching, last, started.state ?? undefined);
     }
   });
   // A call handed over mid-conversation. If already served here (the gateway restarted), keep the
@@ -168,7 +163,9 @@ async function call_(
   return runTool(serving.agent, declaration, args);
 }
 
-// Subscribe to changes only after the first sync, so onCall's writes go out as one prompt.
+// Subscribe to changes only after the first sync, so onCall's writes go out as one prompt. The
+// state the opener asked for is applied after onCall, which would overwrite it, and before the
+// first render, so the model never sees the class's own state first.
 async function start(
   ctor: Ctor,
   live: Map<string, Live>,
@@ -176,12 +173,11 @@ async function start(
   send: Send,
   searching: Searching,
   last?: LastCall,
-  opening?: (call: SdkCall) => Snapshot | undefined,
+  openedIn?: Snapshot,
 ): Promise<void> {
   const link = serve(ctor, live, call, send, searching, last);
   await runHook(link.agent, "onCall", hookCall(call));
-  const wanted = opening?.(call);
-  if (wanted !== undefined) link.agent.startIn(wanted);
+  if (openedIn !== undefined) link.agent.startIn(openedIn);
   call.setState(snapshot(link.agent));
   sync(link, call);
   follow(link, call);

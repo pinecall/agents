@@ -9,8 +9,17 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 ### Added
 
 - The wire reads `call.started.state`, the state a call opens in when its opener asked for one,
-  and `agent.register` may carry `answers_dev`, a socket that answers the console's dev verbs.
-  Nothing sends or reads either yet.
+  and `agent.register` may carry `answers_dev`. `pc.agent(slug, { answersDev: true })` registers
+  a socket that answers the console's dev verbs and declares nothing; `pc.onEntries` hands over
+  every entry as the gateway wrote it.
+
+### Changed
+
+- **Breaking: a call opens in the state its `call.started` carries.** A golden's state, a persona's
+  and `pinecall chat --state` ride the call to the gateway, and the class applies them after
+  `onCall` and before the first render. `mount`'s `opening` option is gone, and so is the suite's
+  order-matched seeding. `pinecall chat <slug> --state` now works against a colleague's agent.
+  Update the CLI with the runtime that writes `call.started.state`.
 
 ## [0.9.19] — the language is the world's, and the prompt writes for the channel
 

@@ -90,7 +90,7 @@ about memory needs no contact in a database and leaves nothing behind.
 
 | field | means |
 |---|---|
-| `state` | the state the call opens in — written over the class's own, not instead of it |
+| `state` | the state the call opens in — written over the class's own, not instead of it, after `onCall` and before the first render; it rides the call's `call.started` |
 | `memory` | what memory already holds about this caller, in the words a fact is written in. The facts are answered to the `recall` tool for this call and nothing is written down — this is how you test that the agent USES what it remembered |
 | `input` | the caller's turns, in order |
 | `events` | facts from the backend, injected mid-conversation: `{ after_turn, name, data }` |

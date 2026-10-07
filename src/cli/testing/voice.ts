@@ -28,11 +28,18 @@ export function aCallId(): string {
   return `call_${randomBytes(12).toString("hex")}`;
 }
 
+/** What a spoken call is placed with; `state` is the one the agent opens it in. */
+export interface VoiceCall {
+  call: string;
+  agent: string;
+  persona: Persona;
+  turns: number;
+  degraded?: Degraded;
+  state?: Record<string, unknown>;
+}
+
 /** Start a spoken call in the runtime, which holds the LiveKit and provider credentials. */
-export async function aVoiceCall(
-  door: Door,
-  wanted: { call: string; agent: string; persona: Persona; turns: number; degraded?: Degraded },
-): Promise<Called> {
+export async function aVoiceCall(door: Door, wanted: VoiceCall): Promise<Called> {
   return await asked<Called>(door, "/v1/evals/voice", {
     method: "POST",
     body: {
@@ -41,6 +48,7 @@ export async function aVoiceCall(
       persona: wanted.persona,
       turns: wanted.turns,
       ...(wanted.degraded ?? {}),
+      ...(wanted.state === undefined ? {} : { state: wanted.state }),
     },
   });
 }

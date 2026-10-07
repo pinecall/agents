@@ -96,6 +96,20 @@ it("sends every block that has text, in send order, and the visible tools when a
   ]);
 });
 
+// onCall finds nobody at this number; the opening state names the patient, so the first render does.
+it("opens a call in the state call.started carries, between onCall and the first render", async () => {
+  await connected();
+  const patient = { id: "p9", name: "Marta", phone: "+34 600 000 009" };
+  started("+34 000 000 000", { state: { patient } });
+  await settled();
+  const sets = commands("state.set");
+  expect(sets).toHaveLength(1);
+  expect(sets[0]?.["state"]).toMatchObject({ patient });
+  expect(commands("prompt.set").map((data) => data["name"])).toEqual(["identity", "tools", "view"]);
+  const [tools] = commands("tools.set");
+  expect((tools?.["tools"] as { name: string }[]).map((tool) => tool.name)).not.toContain("findPatient");
+});
+
 /** A view that does not read `slots`. */
 class SoloDosCosas extends ClinicaNorte {
   override render() {

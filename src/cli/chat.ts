@@ -27,8 +27,7 @@ export const group: Group = {
   caller against it. The tools run here, so a breakpoint in a @tool is reachable.
 
   With an agent's slug: a written call at the agent somebody is already holding — your own
-  \`pinecall start\` in another terminal, or a colleague's. Nothing is mounted here, so --state,
-  which opens a call in a class this process built, is refused.
+  \`pinecall start\` in another terminal, or a colleague's. Nothing is mounted here.
 
   --agent <name>  which agent of a project of several, by its file's name or its slug
   --file <path>   which class to mount, by its path
@@ -39,11 +38,6 @@ export const group: Group = {
   --events        one JSON line per log entry instead of the lines, for a pipe`,
   run,
 };
-
-// --state needs mount's `opening` seam, which a remote agent does not have; refuse, don't drop.
-const NOT_YOURS_TO_OPEN =
-  "--state opens a call in a class this process mounted, and `pinecall chat <agent>` mounts none:"
-  + " drop the slug to chat the agent of this directory.";
 
 /**
  * Without a slug: mount this directory's agent in this process and open `WS /v1/chat` as the
@@ -69,50 +63,60 @@ export async function run(argv: string[]): Promise<number> {
     process.stderr.write(`${aFile}\n`);
     return 2;
   }
-  if (reach !== undefined && values.state !== undefined) {
-    process.stderr.write(`${NOT_YOURS_TO_OPEN}\n`);
-    return 2;
-  }
   const door = await theDoor();
   if (door === undefined) return 2;
   const url = door.url;
+  // The gateway puts it on the call's call.started; the class applies it before the first render.
+  const state = values.state === undefined ? undefined : firstState(values.state, values.case);
+  const opened: Opened = {
+    ...(values.as === undefined ? {} : { contact: values.as }),
+    ...(state === undefined ? {} : { state }),
+  };
   if (reach !== undefined) {
-    return await talk(() => chatUrl(url, reach, undefined, values.as), door, values.events === true);
+    return await talk(() => chatUrl(url, reach, opened), door, values.events === true);
   }
   const loaded = await load((await oneHome("chat", values.file, values.agent)).file);
   const pc = pinecallFor(door);
   // takesUnclaimed: false, or a real phone call could be routed to this terminal.
-  // --state goes through `opening`: after onCall, before the first render.
-  const preload = values.state === undefined ? undefined : firstState(values.state, values.case);
-  const mounted = mount(loaded.ctor, {
-    ...mountOptions(loaded, pc),
-    takesUnclaimed: false,
-    opening: () => preload,
-  });
+  const mounted = mount(loaded.ctor, { ...mountOptions(loaded, pc), takesUnclaimed: false });
 
   // Close the app socket on exit, or it keeps node alive and the agent registered.
   try {
     await pc.connect();
     // The app id exists only after connect() has registered.
-    const address = (): string => chatUrl(url, mounted.slug, mounted.agent.app, values.as);
+    const address = (): string => {
+      const app = mounted.agent.app;
+      return chatUrl(url, mounted.slug, app === undefined ? opened : { ...opened, app });
+    };
     return await talk(address, door, values.events === true);
   } finally {
     pc.close();
   }
 }
 
+/** How a written call opens: which process serves it, who calls, who plays them, in what state. */
+export interface Opened {
+  /** Pin the serving process; otherwise the gateway picks the newest socket holding the agent. */
+  app?: string;
+  /** The contact memory files the call under. */
+  contact?: string;
+  /** The simulated persona; the gateway records it on `call.started` for attribution. */
+  persona?: string;
+  /** The state the call opens in, carried on its `call.started`. */
+  state?: Record<string, unknown>;
+}
+
 /** The `/v1/chat` WebSocket URL for a gateway base URL. */
-export function chatUrl(base: string, agent: string, app?: string, contact?: string, persona?: string): string {
+export function chatUrl(base: string, agent: string, opened: Opened = {}): string {
   const url = new URL(base);
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
   url.pathname = `${url.pathname.replace(/\/$/, "")}/v1/chat`;
   url.searchParams.set("agent", agent);
-  // Pin the serving process; otherwise the gateway picks the newest socket holding the agent.
-  if (app !== undefined) url.searchParams.set("app", app);
-  // The contact memory files the call under. searchParams encodes it: a raw `+` would arrive as a space.
-  if (contact !== undefined) url.searchParams.set("contact", contact);
-  // The simulated persona; the gateway records it on `call.started` for attribution.
-  if (persona !== undefined) url.searchParams.set("persona", persona);
+  // searchParams encodes each value: a raw `+` in a contact would arrive as a space.
+  if (opened.app !== undefined) url.searchParams.set("app", opened.app);
+  if (opened.contact !== undefined) url.searchParams.set("contact", opened.contact);
+  if (opened.persona !== undefined) url.searchParams.set("persona", opened.persona);
+  if (opened.state !== undefined) url.searchParams.set("state", JSON.stringify(opened.state));
   return url.toString();
 }
 

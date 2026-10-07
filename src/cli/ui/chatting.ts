@@ -5,8 +5,8 @@ import WebSocket from "ws";
 import type { CamelEvent, Pinecall } from "../../client/index.js";
 import { signed } from "../../client/signed.js";
 
-import { mount } from "../../runtime/connect.js";
-import { BACK_TRIES, chatUrl, waitBack } from "../chat.js";
+import { mount, type Mounted } from "../../runtime/connect.js";
+import { BACK_TRIES, chatUrl, waitBack, type Opened } from "../chat.js";
 import { pinecallFor } from "../client-for.js";
 import { load, mountOptions } from "../load.js";
 import type { Door } from "../testing/gateway.js";
@@ -147,38 +147,33 @@ async function theStateOf(
 }
 
 /**
- * Mount the class once for the console's lifetime and open one socket per call.
- * `takesUnclaimed: false` keeps real phone calls from ringing in a browser tab.
+ * Mount the class once for the console's lifetime and open one socket per call; the state a call
+ * opens in rides its socket's URL. `takesUnclaimed: false` keeps real phone calls from ringing in
+ * a browser tab.
  */
 export function linesFromThisProcess(door: Door, out: NodeJS.WritableStream, file?: string): Lines {
-  let mounting: Promise<{ pc: Pinecall; url: () => string }> | undefined;
-  const mounted = async (opening?: Record<string, unknown> | undefined): Promise<{ pc: Pinecall; url: () => string }> => {
+  let mounting: Promise<{ pc: Pinecall; mounted: Mounted }> | undefined;
+  const mountedOnce = async (): Promise<{ pc: Pinecall; mounted: Mounted }> => {
     const loaded = await load(file);
     const pc = pinecallFor(door);
-    const app = mount(loaded.ctor, {
-      ...mountOptions(loaded, pc),
-      takesUnclaimed: false,
-      ...(opening === undefined ? {} : { opening: () => opening }),
-    });
+    const mounted = mount(loaded.ctor, { ...mountOptions(loaded, pc), takesUnclaimed: false });
     await pc.connect();
-    // Naming the app id routes the call to this process, not the last `pinecall start`. Read lazily:
-    // the id changes when the gateway restarts.
-    return { pc, url: () => chatUrl(door.url, app.slug, app.agent.app) };
+    return { pc, mounted };
   };
   return {
     async open(contact: string | undefined, opening?: Record<string, unknown> | undefined): Promise<Line> {
-      // A stateful opening needs its own mount; sharing the console's mount would race.
-      const its = opening === undefined ? undefined : await mounted(opening);
-      const { url } = its ?? (await (mounting ??= mounted()));
-      const address = (): string => {
-        const at = new URL(url());
-        if (contact !== undefined) at.searchParams.set("contact", contact);
-        return at.toString();
+      const { mounted } = await (mounting ??= mountedOnce());
+      const opened: Opened = {
+        ...(contact === undefined ? {} : { contact }),
+        ...(opening === undefined ? {} : { state: opening }),
       };
-      const line = await aLine(address, door, out);
-      if (its === undefined) return line;
-      const end = line.end;
-      return { ...line, end: () => { end(); its.pc.close(); } };
+      // Naming the app id routes the call to this process, not the last `pinecall start`. Read
+      // lazily: the id changes when the gateway restarts.
+      const address = (): string => {
+        const app = mounted.agent.app;
+        return chatUrl(door.url, mounted.slug, app === undefined ? opened : { ...opened, app });
+      };
+      return await aLine(address, door, out);
     },
     async close(): Promise<void> {
       const held = mounting;

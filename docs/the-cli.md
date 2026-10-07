@@ -397,8 +397,8 @@ name the class to mount by its path, and it is the same word in every verb that 
 project of several, by its name or its slug, and is required there because a chat talks to one.
 
 `--as` is who is calling — the id memory files the call under. `--state file [--case n]` opens the
-call in a state: the same goldens file `prompt` reads, and it is refused beside a slug, because
-nothing is mounted here to open. `--events` prints the wire instead. `--prod` talks to production's
+call in a state: the same goldens file `prompt` reads. It rides the call's socket (`?state=`) and
+the gateway puts it on the call's `call.started`, so it opens a call in a colleague's agent too. `--events` prints the wire instead. `--prod` talks to production's
 agent, while your org lets you act there; nothing said is the sandbox.
 
 ## `prompt`

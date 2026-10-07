@@ -79,6 +79,7 @@ export class Pinecall implements AgentGateway {
   readonly #errors = new Set<(error: Error) => void>();
   readonly #connects = new Set<() => void>();
   readonly #stops = new Set<(why: string) => void>();
+  readonly #entries = new Set<(entry: Entry) => void>();
   readonly #connection: Connection;
 
   constructor(options: PinecallOptions = {}) {
@@ -189,6 +190,17 @@ export class Pinecall implements AgentGateway {
     };
   }
 
+  /**
+   * Every entry the socket receives, as the gateway wrote it (snake_case), before any agent takes
+   * it — other agents' entries and the client's own errors included.
+   */
+  onEntries(listener: (entry: Entry) => void): () => void {
+    this.#entries.add(listener);
+    return () => {
+      this.#entries.delete(listener);
+    };
+  }
+
   /** Receive errors no caller awaits (bad frames, listener throws, socket loss). Defaults to `console.error`. */
   onErrors(listener: (error: Error) => void): () => void {
     this.#errors.add(listener);
@@ -247,6 +259,13 @@ export class Pinecall implements AgentGateway {
   }
 
   #take(entry: Entry): void {
+    for (const listener of this.#entries) {
+      try {
+        listener(entry);
+      } catch (failed) {
+        this.onError(asError(failed));
+      }
+    }
     if (entry.type === "error" && entry.agent === "") {
       const said = eventOf(entry);
       if (said.type === "error" && said.data.code === STOPPED) return this.#stopped(said.data.message);

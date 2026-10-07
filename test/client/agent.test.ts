@@ -32,6 +32,41 @@ describe("the socket an agent is held on", () => {
 
     expect(agent.app).toBe("app_1");
   });
+
+  // It holds the agent beside the process serving the class, and must not replace its declaration.
+  it("says it answers the console and declares nothing when it is the CLI's companion", async () => {
+    pc.agent(AGENT, { takesUnclaimed: false, answersDev: true });
+
+    await pc.connect();
+
+    expect(gateway.commandsOf("agent.register")[0]?.data).toMatchObject({ takes_unclaimed: false, answers_dev: true });
+    expect(gateway.commandsOf("agent.configure")).toEqual([]);
+  });
+
+  it("says nothing about the console when it serves calls, and sends its declaration", async () => {
+    pc.agent(AGENT);
+
+    await pc.connect();
+
+    expect(gateway.commandsOf("agent.register")[0]?.data).not.toHaveProperty("answers_dev");
+    expect(gateway.commandsOf("agent.configure")).toHaveLength(1);
+  });
+});
+
+describe("every entry the socket receives, as the gateway wrote it", () => {
+  it("reaches onEntries in snake_case, before any agent takes it, other agents' too", async () => {
+    pc.agent(AGENT);
+    const seen: { type: string; agent: string; data: Record<string, unknown> }[] = [];
+    pc.onEntries((entry) => seen.push({ type: entry.type, agent: entry.agent, data: entry.data }));
+    await pc.connect();
+
+    gateway.emit("tienda-sur", null, "agent.configured", { changed: ["tools"] });
+    for (let tries = 0; tries < 200 && seen.length < 3; tries += 1) await new Promise((wake) => setTimeout(wake, 5));
+
+    expect(seen.map((entry) => entry.type)).toEqual(["agent.registered", "agent.configured", "agent.configured"]);
+    expect(seen[0]?.data).toHaveProperty("app", "app_1");
+    expect(seen[2]).toMatchObject({ agent: "tienda-sur", data: { changed: ["tools"] } });
+  });
 });
 
 describe("a console's ask, relayed by the gateway as dev.request", () => {

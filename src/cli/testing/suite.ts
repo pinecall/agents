@@ -13,22 +13,15 @@ import { mediansOf } from "./latency.js";
 import { reportOf, type Latencies } from "./matrix.js";
 import { followed } from "./progress.js";
 import { whereTheyAre, writtenOut } from "./reproduction.js";
-import { Openings } from "./seeding.js";
 
 // Shown on a 409 (one run per agent at a time).
 const BUSY = "a run is already going on {agent} ({id}) — pinecall runs show {id} to watch it";
-
-/** The mounted class and its per-call state seeding. */
-export interface ForASuite {
-  mounted: Mounted;
-  openings: Openings;
-}
 
 /** Everything needed to run one suite. */
 export interface Suite {
   door: Door;
   loaded: Loaded;
-  held: ForASuite;
+  held: Mounted;
   goldens: Golden[];
   models: Camel<ModelConfig>[];
   /** Ring 2 fields for a spoken suite; empty for a written one. */
@@ -39,35 +32,28 @@ export interface Suite {
 
 /**
  * Mount the class for a suite. `takesUnclaimed: false` keeps real calls out of this process; each
- * call's golden state is injected through mount's `opening` seam.
+ * call opens in its golden's state, which the gateway sends on `call.started`.
  */
-export function mountedForASuite(loaded: Loaded, pc: Pinecall): ForASuite {
-  const openings = new Openings();
-  const mounted = mount(loaded.ctor, {
-    ...mountOptions(loaded, pc),
-    takesUnclaimed: false,
-    opening: (call) => openings.opening(call),
-  });
-  return { mounted, openings };
+export function mountedForASuite(loaded: Loaded, pc: Pinecall): Mounted {
+  return mount(loaded.ctor, { ...mountOptions(loaded, pc), takesUnclaimed: false });
 }
 
 /**
- * Run the suite, show progress, check seeding, write reproductions and print the report.
+ * Run the suite, show progress, write reproductions and print the report.
  * @returns Exit code: 1 if any golden failed or the gateway was busy.
  */
 export async function ranSuite(suite: Suite): Promise<number> {
   const { door, held, goldens, models, out } = suite;
-  held.openings.expects(goldens, models.length);
   const declaredAs = declaredBy(suite.loaded.ctor);
   const pending = aRun(door, {
-    agent: held.mounted.slug,
+    agent: held.slug,
     goldens,
     ...(models.length > 0 ? { models } : {}),
-    ...(held.mounted.agent.app === undefined ? {} : { app: held.mounted.agent.app }),
+    ...(held.agent.app === undefined ? {} : { app: held.agent.app }),
     ...suite.line,
   });
   const watched = {
-    agent: held.mounted.slug,
+    agent: held.slug,
     goldens: goldens.length,
     models: models.length > 0 ? models.map((model) => `${model.provider}/${model.model}`) : [declaredAs],
     declaredAs,
@@ -77,11 +63,9 @@ export async function ranSuite(suite: Suite): Promise<number> {
     run = await followed(door, watched, pending, out, suite.json);
   } catch (refused) {
     if (!(refused instanceof Refused) || refused.status !== 409) throw refused;
-    process.stderr.write(`${await busy(door, held.mounted.slug, refused)}\n`);
+    process.stderr.write(`${await busy(door, held.slug, refused)}\n`);
     return 1;
   }
-  const wrong = held.openings.mismatched(run);
-  if (wrong !== undefined) process.stderr.write(`${wrong}\n`);
   return await reported(door, run, goldens, declaredAs, suite.json, out);
 }
 

@@ -131,7 +131,7 @@ a directory earns its place there by having a line in that table (§13).
 | `deploy.ts` · `deploy-logs.ts` · `packed.ts` · `org-secrets.ts` | `pinecall deploy`: the project packed as a release — what git would commit, never `node_modules`, `.git`, `dist` or a `.env`, written as gzipped ustar by hand (`packed.ts`) — uploaded to `POST /v1/hosted/{name}/releases`, and followed on `GET /v1/hosted` until it is live, failed or replaced; `list`, `releases`, `rollback` (the gateway keeps an old release's sources as the next), `stop`, `start`, `rm`, and `logs` (`deploy-logs.ts`: asked, waited for until the box sends lines read after the ask, and followed by printing what a newer read adds). `pinecall secrets`: the org's secrets per world, set from a silent prompt or stdin, never read back |
 | `judges.ts` | the agent's own judges — a question about its job, asked of its calls at hang-up beside the runtime's panel — listed, written and dropped at the agent's door; the agent is the project's one, or `--agent` |
 | `login.ts` · `browser.ts` · `whoami.ts` · `secret.ts` | the browser dance that signs this machine in (a word asked for, a link opened, the key collected once — kept for `link` to mint from, never run on), how a URL is put in front of a person, which key a verb would use and whether it acts in production, and the one place a terminal is read |
-| `testing/` | what those verbs need: the gateway's eval doors, goldens off disk, latency, the matrix, the model a short name means, for `test --model` and for `agent set --llm` alike (`models.ts`), the progress screen, the score, the seeding check — which golden's state a starting call opens in — the voice door, the callers as the gateway keeps them (`personas.ts`) and the files a project pushed them from, read once (`caller.ts`) |
+| `testing/` | what those verbs need: the gateway's eval doors, goldens off disk, latency, the matrix, the model a short name means, for `test --model` and for `agent set --llm` alike (`models.ts`), the progress screen, the score, the voice door, the callers as the gateway keeps them (`personas.ts`) and the files a project pushed them from, read once (`caller.ts`) |
 | `ui/` | what `pinecall start` answers a console with, by the wire's verb (`doors.ts`, one module per verb family: a chat, a simulation, a suite, the docs and memory goldens, a promotion, drift, a reproduction) — and beside those node modules the two directories that are the BROWSER: `ui/shared/` and `ui/console/`, never imported by anything here — the gateway serves that build, at both of its names |
 
 Beside `src/`:
@@ -346,7 +346,7 @@ waiting on a `say`; `call.claimed` sets `claimed`.
 
 ## 8. The bridge, step by step
 
-`mount(Class, { pc, source, file, slug, last, opening, takesUnclaimed })` is the only place
+`mount(Class, { pc, source, file, slug, last, takesUnclaimed })` is the only place
 the class and the socket know about each other.
 
 1. **At mount** — `describe(ctor, source, file)` gives the class its own text back (a docstring sits
@@ -357,9 +357,9 @@ the class and the socket know about each other.
    says whether the class searches (`uses_knowledge`).
    `pc.agent(slug, options)` declares it. Nothing is sent until `pc.connect()`.
 2. **`call.started`** → `start()`: a fresh instance, `seal`ed; `setLast` and `setCall` hand it the
-   store and its `CallWorld`; `runHook(onCall)`; then `opening?.(call)` applies the state a golden
-   or `--state` asked for — after `onCall` so it is not overwritten, before the first render so the
-   model never reads a state the call was not in.
+   store and its `CallWorld`; `runHook(onCall)`; then `startIn()` applies `call.started.state`, the
+   state a golden, a persona or `?state=` asked for — after `onCall` so it is not overwritten,
+   before the first render so the model never reads a state the call was not in.
 3. **The opening send** — `call.setState(snapshot)`, then `sync()`. Only after that does the bridge
    start listening, so `onCall` writing five fields is one prompt and not five.
 4. **On every change** — `state.set` with the field that moved; when the write came from an event,
@@ -400,6 +400,11 @@ class, no view, no CLI. It knows two things — the wire (`src/wire/`) and `ws`.
   pressed Stop (`POST /v1/apps/{app}/stop`) — closes the connection for good and is handed to
   `onStopped`; `pinecall start` prints it and exits. `agent.register` names the machine (`host`),
   so the gateway's list of processes (`GET /v1/apps`) says where each one runs.
+- **A socket may answer the console instead of serving calls.** `answersDev: true` registers it as
+  the one the console's dev verbs go to (with `takesUnclaimed: false` it takes no call), and it
+  sends no `agent.configure`: a registration inherits the newest holder's declaration, which one
+  sent from here would replace. `pc.onEntries` hands over every entry as the gateway wrote it, in
+  snake_case and before any agent takes it.
 - **Three commands are awaited** (`agent.register` → `agent.registered`, `agent.configure` →
   `agent.configured`, `agent.drain` → `agent.draining`), each answered by the event it lands as or by an `error` naming its id.
   Everything else is fire-and-read-the-log.
@@ -517,6 +522,11 @@ line the test deletes.
 | `runtime/` | `agent`, `call`, `views`, `client`, `wire` |
 | `cli/` | `agent`, `call`, `views`, `runtime`, `client`, `wire`, `ws`, `tsx`, `@livekit/rtc-node` |
 | `src/index.ts` | `agent`, `call`, `views`, `runtime` |
+
+`test/the-wire.test.ts` holds the SDK to its wire: every command of the registry is sent by the
+file its table names (or is said to be nobody's here: dialling, the desk's verbs, the gateway's
+own), and every event is folded by the file its table names or ignored with a reason. A wire entry
+added without a row fails there, by name.
 
 `test/the-tree.test.ts`, over `src/`, `test/` and `examples/`: no `.ts` at the repo root, no file
 over **400 lines**, every file opens with a line saying what it is, and no two names in one

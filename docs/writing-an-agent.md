@@ -603,8 +603,8 @@ way the bridge would, `ToolFailed` is what it throws; `snapshot(agent)` is the s
 carries, with `diff(before, after)` and `changes(agent)` over it; `logOf(agent)` and
 `onLog(agent, …)` are what the class wrote; `agent.on("state" | "event", …)` watches it in process;
 and `static doc` is the class's description for a build that strips comments. `mount` takes `slug`,
-`file`, `opening` and `takesUnclaimed` besides `pc` and `source` — `opening` is the seam
-`pinecall chat --state` opens a call in a declared state through.
+`file` and `takesUnclaimed` besides `pc` and `source`; a call opens in the state its `call.started`
+carries, when its opener asked for one.
 
 Next: [the-prompt.md](the-prompt.md) for the view, and [testing-an-agent.md](testing-an-agent.md)
 for the goldens.

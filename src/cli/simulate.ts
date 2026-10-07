@@ -8,7 +8,7 @@ import { signed } from "../client/signed.js";
 import WebSocket from "ws";
 
 import { mount } from "../runtime/connect.js";
-import { chatUrl } from "./chat.js";
+import { chatUrl, type Opened } from "./chat.js";
 import { pinecallFor } from "./client-for.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
@@ -161,17 +161,13 @@ export async function aSimulation(persona: Persona, how: Simulation): Promise<Si
   const pc = pinecallFor(door);
   // A spoken call arrives via the worker, which names no app (worker/entry.py:82), so a --voice
   // run must take unclaimed calls; a written call names the app in its socket URL.
-  const mounted = mount(loaded.ctor, {
-    ...mountOptions(loaded, pc),
-    takesUnclaimed: how.voice,
-    opening: () => persona.state,
-  });
+  const mounted = mount(loaded.ctor, { ...mountOptions(loaded, pc), takesUnclaimed: how.voice });
   how.out.write(`${persona.name} · ${persona.goal}\n`);
   try {
     await pc.connect();
     const call = how.voice
       ? await outLoud(door, mounted.slug, persona, how)
-      : await inWriting(chatUrl(url, mounted.slug, mounted.agent.app, undefined, persona.name), door, persona, how);
+      : await inWriting(chatUrl(url, mounted.slug, writtenAs(persona, mounted.agent.app)), door, persona, how);
     return { call, ...(await theEnding(door, call, how)) };
   } finally {
     pc.close();
@@ -228,6 +224,7 @@ async function outLoud(
     persona: callingAs(persona),
     turns: how.turns,
     ...(how.degraded === undefined ? {} : { degraded: how.degraded }),
+    ...(persona.state === undefined ? {} : { state: persona.state }),
   });
   await watching(door, call, held, (entry) => {
     if (!told) {
@@ -310,4 +307,13 @@ function once(socket: WebSocket, event: string): Promise<void> {
     socket.on(event, () => done());
     socket.on("error", failed);
   });
+}
+
+// The persona's name and the state it opens the call in ride the socket's URL to call.started.
+function writtenAs(persona: Persona, app: string | undefined): Opened {
+  return {
+    persona: persona.name,
+    ...(app === undefined ? {} : { app }),
+    ...(persona.state === undefined ? {} : { state: persona.state }),
+  };
 }

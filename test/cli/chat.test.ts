@@ -20,14 +20,14 @@ describe("the caller socket chat opens", () => {
 
   // With a `pinecall start` running, an unnamed chat would be served by that process's tools.
   it("asks to be served by this process's own app socket when it has one", () => {
-    expect(chatUrl("http://127.0.0.1:8080", "clinica-norte", "app_7c1e")).toBe(
+    expect(chatUrl("http://127.0.0.1:8080", "clinica-norte", { app: "app_7c1e" })).toBe(
       "ws://127.0.0.1:8080/v1/chat?agent=clinica-norte&app=app_7c1e",
     );
   });
 
   // The gateway writes the persona into `call.started`; without it the run cannot be attributed.
   it("names the persona a written simulation is playing", () => {
-    expect(chatUrl("http://127.0.0.1:8080", "clinica-norte", "app_7c1e", undefined, "office manager")).toBe(
+    expect(chatUrl("http://127.0.0.1:8080", "clinica-norte", { app: "app_7c1e", persona: "office manager" })).toBe(
       "ws://127.0.0.1:8080/v1/chat?agent=clinica-norte&app=app_7c1e&persona=office+manager",
     );
   });
@@ -35,14 +35,20 @@ describe("the caller socket chat opens", () => {
   // `--as` sets the caller id that memory files the call under. `+` must be encoded or it arrives
   // as a space.
   it("says who is calling when --as named a contact, encoded", () => {
-    expect(chatUrl("http://127.0.0.1:8080", "clinica-norte", undefined, "+34600123456")).toBe(
+    expect(chatUrl("http://127.0.0.1:8080", "clinica-norte", { contact: "+34600123456" })).toBe(
       "ws://127.0.0.1:8080/v1/chat?agent=clinica-norte&contact=%2B34600123456",
     );
   });
 
+  // The gateway puts it on the call's call.started, and the class opens in it before rendering.
+  it("carries the state the call opens in as JSON", () => {
+    const url = new URL(chatUrl("http://127.0.0.1:8080", "clinica-norte", { state: { stage: "book", patient: { id: "p-1" } } }));
+    expect(JSON.parse(url.searchParams.get("state") ?? "")).toEqual({ stage: "book", patient: { id: "p-1" } });
+  });
+
   // Without --as the runtime names an anonymous visitor, so memory keeps nothing.
   it("claims no contact at all when nobody said who is calling", () => {
-    expect(chatUrl("http://127.0.0.1:8080", "clinica-norte", "app_7c1e")).not.toContain("contact");
+    expect(chatUrl("http://127.0.0.1:8080", "clinica-norte", { app: "app_7c1e" })).not.toContain("contact");
   });
 
   it("says in one line that the app runs here", () => {
@@ -101,15 +107,9 @@ describe("naming an agent, as against naming a file", () => {
 describe("`pinecall chat <agent>` mounts nothing", () => {
   // Caller side only: the gateway hands the call to whichever process holds the slug, so no `app=`.
   it("opens the chat socket at the slug with no app of its own", () => {
-    expect(chatUrl("https://cloud.pinecall.io", "clinica-norte", undefined, "+34600123456")).toBe(
+    expect(chatUrl("https://cloud.pinecall.io", "clinica-norte", { contact: "+34600123456" })).toBe(
       "wss://cloud.pinecall.io/v1/chat?agent=clinica-norte&contact=%2B34600123456",
     );
-  });
-
-  it("is refused --state, which opens a call in a class this process built", async () => {
-    const code = await run(["clinica-norte", "--state", "test/prompts/states.json"]);
-
-    expect(code).toBe(2);
   });
 
   it("refuses a file where the slug goes, before it looks for a gateway", async () => {
