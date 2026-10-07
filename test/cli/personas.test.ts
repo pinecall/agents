@@ -115,35 +115,35 @@ afterEach(async () => {
 });
 
 describe("whose callers", () => {
-  // A persona is one agent's: the path names the class's slug, not its folder.
-  it("asks for the project's one agent's list, by the slug its class says", async () => {
+  // A persona is one agent's: the path names its slug, which is its folder's name, whatever the class is called.
+  it("asks for the project's one agent's list, by its folder's name", async () => {
     process.chdir(BIDFIRE);
 
     expect(await run(["list"], { out: written().stream, env })).toBe(0);
 
-    expect(gateway.pathsAsked).toEqual(["/v1/agents/bidfire-sales/personas"]);
+    expect(gateway.pathsAsked).toEqual(["/v1/agents/sales/personas"]);
   });
 
-  it("asks for the agent --agent names, by its folder or by its slug, from every verb", async () => {
+  it("asks for the agent --agent names, by its folder, from every verb", async () => {
     process.chdir(BIDFIRE);
     gateway.personas = [APURADO];
 
     for (const argv of [
       ["list", "--agent", "sales"],
-      ["show", "apurado", "--agent", "bidfire-sales"],
+      ["show", "apurado", "--agent", "sales"],
       ["edit", "apurado", "--agent", "sales", "--style", "seco"],
       ["rm", "apurado", "--agent", "sales"],
     ]) {
       expect(await run(argv, { out: written().stream, env })).toBe(0);
     }
 
-    expect(gateway.pathsAsked).toEqual(["/v1/agents/bidfire-sales/personas", "/v1/agents/bidfire-sales/personas/apurado"]);
+    expect(gateway.pathsAsked).toEqual(["/v1/agents/sales/personas", "/v1/agents/sales/personas/apurado"]);
   });
 
   it("asks for the class --file names by its path, as --agent names it", async () => {
     expect(await run(["list", "--file", join(BIDFIRE, "agents", "sales", "agent.tsx")], { out: written().stream, env })).toBe(0);
 
-    expect(gateway.pathsAsked).toEqual(["/v1/agents/bidfire-sales/personas"]);
+    expect(gateway.pathsAsked).toEqual(["/v1/agents/sales/personas"]);
   });
 
   it("refuses an agent the project does not have, before the gateway is asked", async () => {

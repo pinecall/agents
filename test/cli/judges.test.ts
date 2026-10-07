@@ -94,12 +94,12 @@ describe("whose judges", () => {
     expect(gateway.heard.map((one) => `${one.method} ${one.path}`)).toEqual(["GET /v1/agents/clinica-norte/judges"]);
   });
 
-  it("asks the door of the agent --agent names by its folder, spelled as the class's slug", async () => {
+  it("asks the door of the agent --agent names, by its folder's name, whatever the class is called", async () => {
     process.chdir(BIDFIRE);
 
     expect(await run(["list", "--agent", "sales"], { out: written().stream, env })).toBe(0);
 
-    expect(gateway.heard.map((one) => one.path)).toEqual(["/v1/agents/bidfire-sales/judges"]);
+    expect(gateway.heard.map((one) => one.path)).toEqual(["/v1/agents/sales/judges"]);
   });
 
   it("asks the org's door with --org, from anywhere and with no class in sight", async () => {

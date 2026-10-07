@@ -1,4 +1,4 @@
-/** `pinecall chat [agent]`: chat with this directory's agent in-process, or with a running one. */
+/** `pinecall chat [agent]`: chat with this directory's agent in a process of its own, or with a running one. */
 
 import { createInterface } from "node:readline";
 import { parseArgs } from "node:util";
@@ -7,46 +7,51 @@ import type { CamelEvent } from "../client/index.js";
 import { signed } from "../client/signed.js";
 import WebSocket from "ws";
 
-import { mount } from "../runtime/connect.js";
-import { pinecallFor } from "./client-for.js";
+import { spawnServing, type Child } from "./child.js";
 import { theDoor, type Open } from "./env.js";
 import type { Group } from "./groups.js";
-import { load, mountOptions, notASlug } from "./load.js";
-import { AGENT_FLAG, oneHome } from "./home.js";
+import { AGENT_FLAG, notASlug, oneHome } from "./home.js";
+import { inspectOf, startedWith, type Started } from "./language.js";
 import { BROKE, CALLER, lineFor } from "./view.js";
 import { firstState } from "./prompt.js";
 
 const PROMPT = `${CALLER} `;
 
 export const group: Group = {
-  purpose: "the app in this terminal's own process, and a prompt against it",
+  purpose: "the agent served from this terminal, and a written caller against it",
   usage: `usage: pinecall chat [agent] [--agent <name>] [--file agent.tsx] [--prod] [--as <contact>]
-                     [--state file [--case n]] [--events]
+                     [--state file [--case n]] [--events] [--inspect[=host:port] | --inspect-brk]
 
-  With nothing after it: the agent of this directory, mounted in THIS process, and a written
-  caller against it. The tools run here, so a breakpoint in a @tool is reachable.
+  With nothing after it: the agent of this directory, served by a process of its own that this
+  one starts, and a written caller against it. The tools run on this machine, so a breakpoint in
+  a @tool is reachable: --inspect or --inspect-brk opens that process to a debugger.
 
   With an agent's slug: a written call at the agent somebody is already holding — your own
   \`pinecall start\` in another terminal, or a colleague's. Nothing is mounted here.
 
-  --agent <name>  which agent of a project of several, by its file's name or its slug
+  --agent <name>  which agent of a project of several, by its folder's name
   --file <path>   which class to mount, by its path
   --prod          production's agent, if your org lets you act there; the sandbox otherwise
   --as <contact>  who is calling: the id memory files this call under (a phone number, a customer id)
   --state file    the state the call opens in — the same goldens file \`pinecall prompt\` reads
   --case n        which case of that file, when it holds several
-  --events        one JSON line per log entry instead of the lines, for a pipe`,
+  --events        one JSON line per log entry instead of the lines, for a pipe
+  --inspect       Node's own flag, given to the agent's process (a TypeScript agent's alone)`,
   run,
 };
 
+/** What `chat` starts the agent's process with; a test hands in its own. */
+export type Spawns = (started: Started) => Child;
+
 /**
- * Without a slug: mount this directory's agent in this process and open `WS /v1/chat` as the
- * caller, naming this process's app id so the call is served here (tools run locally). With a
- * slug: mount nothing and chat with whichever process holds that agent.
+ * Without a slug: start this directory's agent as a console's process (it takes no call it did not
+ * open) and open `WS /v1/chat` as the caller, naming that process's app id so the call is served
+ * there. With a slug: start nothing and chat with whichever process holds that agent.
  */
-export async function run(argv: string[]): Promise<number> {
+export async function run(argv: string[], spawns: Spawns = spawnServing): Promise<number> {
+  const { inspect, rest } = inspectOf(argv);
   const { values, positionals } = parseArgs({
-    args: argv,
+    args: rest,
     allowPositionals: true,
     options: {
       state: { type: "string" },
@@ -75,22 +80,21 @@ export async function run(argv: string[]): Promise<number> {
   if (reach !== undefined) {
     return await talk(() => chatUrl(url, reach, opened), door, values.events === true);
   }
-  const loaded = await load((await oneHome("chat", values.file, values.agent)).file);
-  const pc = pinecallFor(door);
-  // takesUnclaimed: false, or a real phone call could be routed to this terminal.
-  const mounted = mount(loaded.ctor, { ...mountOptions(loaded, pc), takesUnclaimed: false });
-
-  // Close the app socket on exit, or it keeps node alive and the agent registered.
+  const home = await oneHome("chat", values.file, values.agent);
+  // --console: a real phone call is never routed to this terminal's process.
+  const args = ["--file", home.file, "--slug", home.name, "--console", "--events"];
+  const child = spawns(startedWith(door, home.file, "start", args, { root: home.root, inspect }));
+  // Stopped on the way out, or it keeps the agent registered after this terminal is done.
   try {
-    await pc.connect();
-    // The app id exists only after connect() has registered.
+    await child.registered(home.name);
+    // Read on every dial: a gateway restart registers the process under a new app id.
     const address = (): string => {
-      const app = mounted.agent.app;
-      return chatUrl(url, mounted.slug, app === undefined ? opened : { ...opened, app });
+      const app = child.app(home.name);
+      return chatUrl(url, home.name, app === undefined ? opened : { ...opened, app });
     };
     return await talk(address, door, values.events === true);
   } finally {
-    pc.close();
+    await child.stop();
   }
 }
 

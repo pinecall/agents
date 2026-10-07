@@ -4,8 +4,7 @@ import { parseArgs } from "node:util";
 
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
-import { AGENT_FLAG, homeOf, oneHome, type Home } from "./home.js";
-import { agentFilesOfTheProject, slugOfAgentFile } from "./load.js";
+import { AGENT_FLAG, agentFilesOfTheProject, type Home, homeOf, oneHome, slugOfAgentFile } from "./home.js";
 import { asATable, linesOf, theFacts } from "./persona-lines.js";
 import { aSimulation, TURNS } from "./simulate.js";
 import { NOT_A_MODEL, theModelNamed } from "./testing/models.js";
@@ -19,7 +18,7 @@ const USAGE =
   "       pinecall personas edit <name> [--goal '…'] [--style '…'] [--about '…'] [--fact 'what=said']… [--rename <name>]\n" +
   "       … add and edit also take [--llm x] [--tts x] [--voice x] [--accepts-when '…'] [--declines-when '…']\n" +
   "       pinecall personas rm <name> · pinecall personas push [--from test/<agent>/personas]\n" +
-  "       … any of them with --json, --prod for production's, and --agent <name|slug> or\n" +
+  "       … any of them with --json, --prod for production's, and --agent <name> or\n" +
   "       --file agent.tsx when the project holds more than one agent\n";
 
 export const group: Group = {
@@ -43,7 +42,7 @@ export const group: Group = {
                        runtime's: its default model, a voice the agent does not have
   --accepts-when '…'   when they hang up satisfied, and --declines-when when not: a judge named
                        persona reads every call of theirs against it at hang-up. '' clears one
-  --agent <name|slug>  whose callers: an agent of this project by its folder name or its slug.
+  --agent <name>  whose callers: an agent of this project by its folder name or its slug.
                        The project's one agent when it holds one; push reads that agent's files
   --file agent.tsx     which class, when the directory holds more than one
   --json               what the gateway answered — the caller for show, the roster for the rest.
@@ -127,7 +126,7 @@ export async function run(argv: string[], how: Setting = {}): Promise<number> {
   }
   // A persona is one agent's: every verb names it, the project's one when it holds one.
   const home = await oneHome("personas", values.file, values.agent);
-  const whose: Whose = { door, agent: await slugOfAgentFile(home.file) };
+  const whose: Whose = { door, agent: slugOfAgentFile(home.file) };
   if (verb === "list") return await listed(whose, asJson, out);
   if (verb === "push") return await pushed(whose, values.from ?? home.personas, asJson, out, err);
   if (name === undefined) {

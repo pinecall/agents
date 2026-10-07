@@ -8,13 +8,11 @@ import { type KnowledgeFile } from "../wire/agent-config.js";
 import { type TuningAnswer } from "../wire/rest.js";
 import { type KnowledgeList, type KnowledgePushed, type KnowledgeScore } from "../wire/rest-retrieval.js";
 
-import { slugOf } from "../runtime/connect.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { readSettings, theCornerRead } from "./agent-lines.js";
 import { attach, attached, attachingOf, detach } from "./docs-attach.js";
-import { agentOfThisDirectory, load, notASlug } from "./load.js";
-import { AGENT_FLAG, homeOf, homesFor, oneHome, type Home } from "./home.js";
+import { AGENT_FLAG, agentOfThisDirectory, type Home, homeOf, homesFor, notASlug, oneHome, theAgentHere } from "./home.js";
 import { asked, type Door } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
 
@@ -94,7 +92,7 @@ export async function run(argv: string[], how: Pushing = {}): Promise<number> {
         err.write(`${aFile}\n`);
         return 2;
       }
-      const agent = values.agent ?? (await agentOfThisDirectory());
+      const agent = values.agent ?? agentOfThisDirectory();
       if (agent === null || agent === undefined) {
         err.write(`${USAGE}\n  name the agent, or run this beside an agent file\n`);
         return 2;
@@ -138,7 +136,7 @@ export async function run(argv: string[], how: Pushing = {}): Promise<number> {
   return 2;
 }
 
-// Dir and base default to the agent's `docs/<name>/` and slug; the class is loaded only if one is missing.
+// Dir and base default to the agent's `docs/<name>/` and slug.
 async function push(
   door: Door,
   dir: string | undefined,
@@ -147,9 +145,9 @@ async function push(
   out: NodeJS.WritableStream,
   err: NodeJS.WritableStream,
 ): Promise<number> {
-  const loaded = dir === undefined || base === undefined ? await load(agent) : undefined;
-  const directory = resolve(dir ?? homeOf(loaded!.file).docs);
-  const name = base ?? slugOf(loaded!.ctor);
+  const home = dir === undefined || base === undefined ? homeOf(agent ?? theAgentHere()) : undefined;
+  const directory = resolve(dir ?? home!.docs);
+  const name = base ?? home!.name;
   if (!existsSync(directory) || !statSync(directory).isDirectory()) {
     err.write(`${NO_DIRECTORY(directory)}\n`);
     return 2;
@@ -192,10 +190,10 @@ async function evaluate(
   // The agent whose attachment supplies k when none is given.
   readBy?: string,
 ): Promise<number> {
-  const loaded = file === undefined || base === undefined ? await load(agent) : undefined;
-  const golden = resolve(file ?? homeOf(loaded!.file).docsGolden);
-  const name = base ?? slugOf(loaded!.ctor);
-  const reader = readBy ?? (loaded === undefined ? undefined : slugOf(loaded.ctor));
+  const home = file === undefined || base === undefined ? homeOf(agent ?? theAgentHere()) : undefined;
+  const golden = resolve(file ?? home!.docsGolden);
+  const name = base ?? home!.name;
+  const reader = readBy ?? home?.name;
   if (!existsSync(golden)) {
     err.write(`${NO_GOLDEN(golden)}\n`);
     return 2;
@@ -284,8 +282,7 @@ export function dayAndTime(seconds: number): string {
 
 /** Push one agent's docs to the base named by its slug. */
 async function pushHome(door: Door, home: Home, out: NodeJS.WritableStream, err: NodeJS.WritableStream): Promise<number> {
-  const loaded = await load(home.file);
-  return await push(door, home.docs, slugOf(loaded.ctor), home.file, out, err);
+  return await push(door, home.docs, home.name, home.file, out, err);
 }
 
 /** Evaluate one agent's golden against its base. */
@@ -296,7 +293,5 @@ async function evaluateHome(
   out: NodeJS.WritableStream,
   err: NodeJS.WritableStream,
 ): Promise<number> {
-  const loaded = await load(home.file);
-  const slug = slugOf(loaded.ctor);
-  return await evaluate(door, home.docsGolden, slug, k, home.file, out, err, slug);
+  return await evaluate(door, home.docsGolden, home.name, k, home.file, out, err, home.name);
 }

@@ -15,7 +15,8 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 - **`pinecall/serve`**, the entry the CLI starts an agent with: `start --file --slug [--console]
   [--events]` holds the agents (the door from `PINECALL_URL`, `PINECALL_KEY`, `PINECALL_ENV`
   only; leaves draining on a signal or the end of its stdin; answers `view.render` alone) and
-  `prompt --file --slug [--state field=json]…` prints a prompt. Nothing starts it yet.
+  `prompt --file --slug [--state field=json]…` prints a prompt.
+- `pinecall chat --inspect[=host:port]` and `--inspect-brk` open the agent's process to a debugger.
 
 ### Changed
 
@@ -24,6 +25,12 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   `onCall` and before the first render. `mount`'s `opening` option is gone, and so is the suite's
   order-matched seeding. `pinecall chat <slug> --state` now works against a colleague's agent.
   Update the CLI with the runtime that writes `call.started.state`.
+- **Breaking: an agent's slug is its folder's name.** `agents/sales/agent.tsx` is the agent `sales`
+  on the gateway, whatever its class is called; a class whose `static slug` says another is refused
+  when it is served. A project whose folders were named apart from their classes renames them.
+  `--agent` takes that name. `agent.rb` and `agent.py` count as agents of a project too.
+- `pinecall chat` and `pinecall prompt` run the agent in a process of its own, its language's serve
+  entry, which `chat` stops when it leaves.
 
 ## [0.9.19] — the language is the world's, and the prompt writes for the channel
 

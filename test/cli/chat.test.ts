@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 
 import { chatUrl, group, lineOf, run } from "../../src/cli/chat.js";
-import { notASlug } from "../../src/cli/load.js";
+import { notASlug } from "../../src/cli/home.js";
 
 describe("the caller socket chat opens", () => {
   it("flips the scheme and names the agent on the gateway's own host", () => {
@@ -51,8 +51,8 @@ describe("the caller socket chat opens", () => {
     expect(chatUrl("http://127.0.0.1:8080", "clinica-norte", { app: "app_7c1e" })).not.toContain("contact");
   });
 
-  it("says in one line that the app runs here", () => {
-    expect(group.purpose).toContain("own process");
+  it("says in one line that the agent is served from this terminal", () => {
+    expect(group.purpose).toContain("served from this terminal");
   });
 });
 

@@ -3,10 +3,8 @@
 import { existsSync, statSync } from "node:fs";
 import { type KnowledgePushed, type KnowledgeScore } from "../../wire/rest-retrieval.js";
 
-import { slugOf } from "../../runtime/connect.js";
 import { AN_EMPTY_GOLDEN, markdownUnder, NO_DIRECTORY, NO_GOLDEN, NO_MARKDOWN, pushedTo, scoredOn, theQuestionsIn } from "../docs.js";
-import { homeOf, type Home } from "../home.js";
-import { load } from "../load.js";
+import { homeOf, theAgentHere, type Home } from "../home.js";
 import type { Door } from "../testing/gateway.js";
 import { anObject, aString, maybeNumber, someWords } from "./asked.js";
 import { Refusal } from "./refusal.js";
@@ -96,12 +94,11 @@ function documents(directory: string): ReturnType<typeof markdownUnder> {
   return existsSync(directory) && statSync(directory).isDirectory() ? markdownUnder(directory) : [];
 }
 
-/** This directory's class slug and paths, or nulls when there is no class. */
+/** This directory's agent and paths, or nulls when there is no agent. */
 async function theDirectory(): Promise<Here> {
   try {
-    const loaded = await load();
-    const home = homeOf(loaded.file);
-    return { agent: slugOf(loaded.ctor), directory: home.docs, golden: home.docsGolden };
+    const home = homeOf(theAgentHere());
+    return { agent: home.name, directory: home.docs, golden: home.docsGolden };
   } catch {
     return { agent: null, directory: null, golden: null };
   }

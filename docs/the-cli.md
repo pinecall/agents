@@ -147,7 +147,8 @@ One layout, whether the repository holds one agent or five. Every folder a verb 
 project's root, by the agent's name (`src/cli/home.ts`):
 
 ```
-agents/<name>/agent.tsx          the class — and beside it only what this agent uses (callbacks.ts)
+agents/<name>/agent.tsx          the class — and beside it only what this agent uses (callbacks.ts);
+                                 agent.ts, agent.rb or agent.py for a class in another language
 lib/                             what two or more agents share
 test/<name>/agent.test.ts        ring 0: the class as software
 test/<name>/goldens/             ring 1: the conversations `test` runs; beside them `docs.json`,
@@ -155,6 +156,10 @@ test/<name>/goldens/             ring 1: the conversations `test` runs; beside t
                                  the questions `memory eval` asks recall
 test/<name>/memory/              the extraction cases `remember` runs
 ```
+
+**The agent's slug is its folder's name.** `agents/sales/agent.tsx` is the agent `sales` on the
+gateway — its settings, its numbers, its callers and judges — whatever its class is called. A class
+whose `static slug` says another is refused when it is served, naming both: rename the folder.
 
 **The business is not in the repository.** What the agent knows by heart — hours, prices, what
 needs an authorisation — is one field of its settings, per world and corner, written in the
@@ -167,8 +172,7 @@ refused at load, and the refusal names the verb that sets it now
 ([writing-an-agent.md](writing-an-agent.md)).
 
 At the root, every verb that reads a class acts on **every agent**, each against its own folders,
-or on the one `--agent <name>` names — by its folder's name (`sales`) or by its slug
-(`bidfire-sales`):
+or on the one `--agent <name>` names — by its folder's name, which is its slug (`sales`):
 
 | at the root | does |
 |---|---|
@@ -185,8 +189,8 @@ typed the verb in by mistake, and the refusal says where it looked. A folder the
 nobody has written yet is empty, not an error: an agent with no `goldens/` has no goldens, the
 console's roster says so, and `pinecall test` names the folder to write one in.
 
-`--agent` means two things, one per kind of verb. In a verb that loads a class it names an agent of
-this project, by name or by slug. In a verb that only asks the gateway — `sessions`, `pipeline`,
+`--agent` means two things, one per kind of verb. In a verb that reads a class it names an agent
+of this project, by its folder's name. In a verb that only asks the gateway — `sessions`, `pipeline`,
 `runs drift`, `numbers import`, `callbacks`, `docs attach` — it is a slug, because there is no
 class to find. `--file` is always a file.
 
@@ -365,13 +369,16 @@ agent that declares a number.
 
 ```
 pinecall chat [agent] [--agent <name>] [--file agent.tsx] [--prod] [--as <contact>]
-             [--state file [--case n]] [--events]
+             [--state file [--case n]] [--events] [--inspect[=host:port] | --inspect-brk]
 ```
 
-With nothing after it: the agent of this directory mounted in **this** process, and a written
-caller against it in the same terminal. This is `rails console`: the tools run here, so a
-breakpoint in a `@tool` is reachable. It works with no `pinecall start` up and with three of them,
-because the caller socket names this process.
+With nothing after it: the agent of this directory, served by a process this terminal starts —
+the agent's own language's serve entry, which takes no call it did not open — and a written
+caller against it in the same terminal. This is `rails console`: the tools run on this machine,
+and `--inspect` or `--inspect-brk` opens that process to a debugger, so a breakpoint in a `@tool`
+is reachable (a TypeScript agent's; a Ruby agent runs no Node, and the flag is refused). It works
+with no `pinecall start` up and with three of them, because the caller socket names that process.
+Leaving the chat stops it.
 
 A written call runs in the gateway, so a gateway that restarts drops the socket — and keeps the
 call. `chat` says `the gateway went away — the call is kept, reconnecting…`, dials again naming
@@ -389,12 +396,12 @@ $ pinecall chat --as +34600000001
 $ pinecall chat clinica-norte
 ```
 
-**The positional is an agent's slug, never a file.** Named one, `chat` mounts nothing and is only
+**The positional is an agent's slug, never a file.** Named one, `chat` starts nothing and is only
 the caller's side: a written call at whatever is already holding that slug — your own `pinecall
 start` in the other terminal, or a colleague's, in the corner your key reaches. `--file` is how you
-name the class to mount by its path, and it is the same word in every verb that loads a file
+name the class to serve by its path, and it is the same word in every verb that loads a file
 (`test`, `simulate`, `remember`, `personas`, `docs`, `memory`); `--agent` names one agent of a
-project of several, by its name or its slug, and is required there because a chat talks to one.
+project of several, by its folder's name, and is required there because a chat talks to one.
 
 `--as` is who is calling — the id memory files the call under. `--state file [--case n]` opens the
 call in a state: the same goldens file `prompt` reads. It rides the call's socket (`?state=`) and
@@ -410,7 +417,9 @@ pinecall prompt [agent.tsx] --state <file> [--case n] [--agent <name>]
 
 The exact prompt a state would produce, offline: **no gateway, no key, no call**. The three
 regions in the order the model receives them, then the stage and the tools that stage shows. The
-verb you run while writing a `render()`, and it answers in the time it takes to save the file.
+verb you run while writing a `render()`, and it answers in the time it takes to save the file. The
+CLI reads the goldens file and hands the case's state, field by field, to the agent's own serve
+entry, which loads the class and prints the page.
 Because it asks nobody anything, `--prod` is refused here rather than taken and ignored.
 
 The page is a phone call's unless `--channel` and `--medium` name another, and they change what a
@@ -510,7 +519,7 @@ pinecall personas add <name> --goal '…' --style '…' [--about '…'] [--fact 
 pinecall personas edit <name> [--goal '…'] [--style '…'] [--about '…'] [--fact 'what=said']… [--rename <name>]
                 … add and edit also take [--llm x] [--tts x] [--voice x] [--accepts-when '…'] [--declines-when '…']
 pinecall personas rm <name> · pinecall personas push [--from test/<agent>/personas]
-                … any of them with --json, --prod in production, and --agent <name|slug> or
+                … any of them with --json, --prod in production, and --agent <name> or
                 --file agent.tsx when the project holds more than one agent
 ```
 
@@ -543,7 +552,7 @@ travels. A caller nobody wrote is the same sentence and the same **exit 2** from
 `rm` and `try`.
 
 Every verb names the agent whose callers it reads and writes: the project's one agent, by the
-slug its class says, or the one `--agent` names by its folder or its slug (`--file` names the class
+slug its folder's name, or the one `--agent` names (`--file` names the class
 by its path). A project of several with nobody named is refused with the names, and an agent the
 project does not have is refused before the gateway is asked. `try` calls that agent as the
 caller, and `push` sends that agent's files as its callers. `--json` prints what
@@ -561,9 +570,9 @@ undone, and pushing again once it is fixed finishes the migration.
 ## `judges`
 
 ```
-pinecall judges [list] [--org | --agent <name|slug>] [--json]
-pinecall judges add <name> --asks '…' [--on every-call|simulations] [--org | --agent <name|slug>] [--json]
-pinecall judges rm <name> [--org | --agent <name|slug>] [--json]
+pinecall judges [list] [--org | --agent <name>] [--json]
+pinecall judges add <name> --asks '…' [--on every-call|simulations] [--org | --agent <name>] [--json]
+pinecall judges rm <name> [--org | --agent <name>] [--json]
 ```
 
 The runtime judges every finished call on its own panel — `consent`, `grounded`, `promises`, the
@@ -597,7 +606,7 @@ nothing on real traffic. Each judge is one more request to the judge model per c
 under the box's judging ceiling. Its verdict lands in `call.score` beside the panel's, under the
 judge's name; `sessions <call>` and `simulate --judge` print it.
 
-The agent is the project's one, or the one `--agent` names by its folder or its slug; `--org`
+The agent is the project's one, or the one `--agent` names by its folder's name; `--org`
 names the org's list instead, needs no project, and beside `--agent` is refused. A panel's name
 (`consent`…), a name the org and an agent would share, or a question left blank is the gateway's
 refusal. A name is

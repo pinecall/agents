@@ -5,6 +5,7 @@ import { extname } from "node:path";
 import type { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
 
+import { theLoaderFor } from "./language.js";
 import { aPlayerFor, PLAYERS } from "./players.js";
 import { asked, type Door } from "./testing/gateway.js";
 
@@ -88,11 +89,6 @@ export async function aSeatIn(door: Door, call: string): Promise<Seat> {
 
 // `ear.ts` in a checkout, `ear.js` in dist: follows this module's own extension.
 export const EAR = fileURLToPath(new URL(`ear${extname(fileURLToPath(import.meta.url))}`, import.meta.url));
-
-/** Node flags to run the ear: tsx for TypeScript, none otherwise. */
-function theLoaderFor(entry: string): string[] {
-  return extname(entry) === ".ts" ? ["--import", "tsx"] : [];
-}
 
 /** Throw if `@livekit/rtc-node` is not resolvable, without loading it. */
 function theRoomLibrary(): void {

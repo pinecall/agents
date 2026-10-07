@@ -116,6 +116,23 @@ describe("the prompt a state would produce", () => {
     expect(err.text()).toContain("--channel is phone, web or whatsapp, and --medium is voice or text");
   });
 
+  // The CLI reads the goldens file; the agent's process is handed the state field by field.
+  it("starts the agent's serve entry with the case's state as pairs, the slug its folder's name", async () => {
+    const asked: string[][] = [];
+    const code = await run([AGENT, "--state", GOLDENS, "--case", "1"], collected().stream, collected().stream, async (started) => {
+      asked.push(started.command);
+      return 0;
+    });
+
+    expect(code).toBe(0);
+    const command = asked[0]!;
+    expect(command.slice(command.indexOf("prompt"))).toEqual([
+      "prompt", "--file", AGENT, "--slug", "clinica-norte",
+      ...Object.entries(firstState(GOLDENS, "1")).flatMap(([field, value]) => ["--state", `${field}=${JSON.stringify(value)}`]),
+      "--channel", "phone", "--show-machine",
+    ]);
+  });
+
   it("asks for the state file rather than guessing one", async () => {
     const err = collected();
 

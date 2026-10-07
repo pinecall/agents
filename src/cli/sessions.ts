@@ -9,7 +9,7 @@ import { CannotRun } from "./cannot-run.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { asked, type Door } from "./testing/gateway.js";
-import { agentOfThisDirectory, notASlug } from "./load.js";
+import { agentOfThisDirectory, notASlug } from "./home.js";
 import { BROKEN, HELD } from "./testing/score.js";
 import { standingOf } from "./the-call.js";
 import { refusal } from "./whoami.js";
@@ -85,7 +85,7 @@ async function listed(
     err.write(`${aFile}\n`);
     return null;
   }
-  const agent = values.agent ?? (await agentOfThisDirectory());
+  const agent = values.agent ?? agentOfThisDirectory();
   if (agent === null || agent === undefined) {
     err.write(`${USAGE}\n  name the agent, or run this beside an agent file\n`);
     return null;

@@ -6,15 +6,14 @@ import { RunsOnSchema, type Judge, type JudgeList, type JudgePut, type RunsOn } 
 
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
-import { AGENT_FLAG, oneHome } from "./home.js";
-import { slugOfAgentFile } from "./load.js";
+import { AGENT_FLAG, oneHome, slugOfAgentFile } from "./home.js";
 import { asked } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
 
 const USAGE = [
-  "usage: pinecall judges [list] [--org | --agent <name|slug>] [--json]",
-  "       pinecall judges add <name> --asks '…' [--on every-call|simulations] [--org | --agent <name|slug>] [--json]",
-  "       pinecall judges rm <name> [--org | --agent <name|slug>] [--json]",
+  "usage: pinecall judges [list] [--org | --agent <name>] [--json]",
+  "       pinecall judges add <name> --asks '…' [--on every-call|simulations] [--org | --agent <name>] [--json]",
+  "       pinecall judges rm <name> [--org | --agent <name>] [--json]",
 ].join("\n");
 
 export const group: Group = {
@@ -38,7 +37,7 @@ export const group: Group = {
   --on every-call      every call the org judges at hang-up (the default); simulations: only a
                        call a persona played, so it costs nothing on real traffic
   --org                the org's judges, asked of every agent's calls
-  --agent <name|slug>  which agent's own, when the project holds more than one; the project's one
+  --agent <name>  which agent's own, when the project holds more than one; the project's one
                        agent when neither is given
   --json               the list as the gateway answered it`,
   run,
@@ -99,7 +98,7 @@ export async function run(argv: string[], how: Judging = {}): Promise<number> {
   }
   const door = await theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
-  const whose: Whose = values.org ? null : await slugOfAgentFile((await oneHome("judges", undefined, values.agent)).file);
+  const whose: Whose = values.org ? null : slugOfAgentFile((await oneHome("judges", undefined, values.agent)).file);
   const asJson = values.json === true;
   try {
     if (verb === "list") return listed(whose, await asked<JudgeList>(door, judgesOf(whose)), asJson, out);

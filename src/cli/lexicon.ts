@@ -8,8 +8,7 @@ import { theCornerRead, theCornerWritten } from "./agent-lines.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { dayAndTime } from "./docs.js";
-import { AGENT_FLAG } from "./home.js";
-import { agentOfThisDirectory, notASlug } from "./load.js";
+import { AGENT_FLAG, agentOfThisDirectory, notASlug } from "./home.js";
 import { asked, type Door } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
 
@@ -66,7 +65,7 @@ export async function run(argv: string[], how: Wording = {}): Promise<number> {
   }
   const door = await theDoor(how.env ?? process.env, err);
   if (door === undefined) return 2;
-  const agent = values.agent ?? (await agentOfThisDirectory());
+  const agent = values.agent ?? agentOfThisDirectory();
   if (agent === null) {
     err.write(`${USAGE}\n  name the agent, or run this beside an agent file\n`);
     return 2;

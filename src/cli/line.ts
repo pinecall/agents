@@ -5,9 +5,7 @@ import { type TheLine } from "../wire/rest.js";
 import { keepCalling } from "./signed-in.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
-import { load } from "./load.js";
 import { oneHome } from "./home.js";
-import { slugOf } from "../runtime/connect.js";
 import { asked, type Door } from "./testing/gateway.js";
 
 const USAGE = "usage: pinecall line [from <+number> | forget | claim | release] [agent.tsx] [--agent <name>]";
@@ -67,7 +65,7 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
   const flag = rest.indexOf("--agent");
   const named = flag === -1 ? undefined : rest[flag + 1];
   const file = (flag === -1 ? rest : [...rest.slice(0, flag), ...rest.slice(flag + 2)])[0];
-  const slug = slugOf((await load((await oneHome("line", file, named)).file)).ctor);
+  const slug = (await oneHome("line", file, named)).name;
   const said =
     verb === "claim"
       ? await claimed(door, slug)

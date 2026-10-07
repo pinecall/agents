@@ -6,8 +6,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { homeOf, homesFor } from "../../src/cli/home.js";
-import { agentFilesOfTheProject, load } from "../../src/cli/load.js";
+import { agentFilesOfTheProject, homeOf, homesFor, theAgentHere } from "../../src/cli/home.js";
 
 function aProject(files: string[]): string {
   const root = mkdtempSync(join(tmpdir(), "a-project-"));
@@ -65,9 +64,9 @@ describe("an agent's home", () => {
     const was = process.cwd();
     try {
       process.chdir(two);
-      await expect(load()).rejects.toThrow("this project has 2 agents: name one with --agent dispatch or --agent sales");
+      expect(() => theAgentHere()).toThrow("this project has 2 agents: name one with --agent dispatch or --agent sales");
       process.chdir(none);
-      await expect(load()).rejects.toThrow(/no agent here: looked for agents\/<name>\/agent\.tsx or agent\.ts in /);
+      expect(() => theAgentHere()).toThrow(/no agent here: looked for agents\/<name>\/agent\.tsx or agent\.ts or agent\.rb or agent\.py in /);
     } finally {
       process.chdir(was);
     }

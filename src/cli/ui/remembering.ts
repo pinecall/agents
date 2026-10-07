@@ -5,7 +5,7 @@ import { existsSync } from "node:fs";
 import { type ExtractionGolden, type ExtractionRun, type MemoryScore } from "../../wire/rest-retrieval.js";
 
 import { pinecallFor } from "../client-for.js";
-import { mount, slugOf } from "../../runtime/connect.js";
+import { mount } from "../../runtime/connect.js";
 
 import { theQuestionsIn } from "../docs.js";
 import { load, mountOptions } from "../load.js";
@@ -13,7 +13,7 @@ import { AN_EMPTY_GOLDEN, NO_GOLDEN, recalledOn } from "../memory.js";
 import { CASES, extracted, NO_CASES } from "../remember.js";
 import type { Door } from "../testing/gateway.js";
 import { casesIn } from "../testing/goldens.js";
-import { homeOf, MEMORY_GOLDEN, type Home } from "../home.js";
+import { homeOf, MEMORY_GOLDEN, theAgentHere, type Home } from "../home.js";
 import { anObject, aString, maybeNumber } from "./asked.js";
 import { Refusal } from "./refusal.js";
 
@@ -111,11 +111,11 @@ async function inThisProcess(door: Door, cases: ExtractionGolden[], file?: strin
   }
 }
 
-/** Recall golden path and class slug for this directory, or nulls when there is no class. */
+/** Recall golden path and agent slug for this directory, or nulls when there is no agent. */
 async function theGolden(): Promise<{ agent: string | null; golden: string | null }> {
   try {
-    const loaded = await load();
-    return { agent: slugOf(loaded.ctor), golden: homeOf(loaded.file).memoryGolden };
+    const home = homeOf(theAgentHere());
+    return { agent: home.name, golden: home.memoryGolden };
   } catch {
     return { agent: null, golden: null };
   }

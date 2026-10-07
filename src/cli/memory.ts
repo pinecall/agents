@@ -10,8 +10,7 @@ import { type ContactFact, type ContactMemory, type Forgotten, type MemoryScore 
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { dayAndTime, theQuestionsIn } from "./docs.js";
-import { load } from "./load.js";
-import { AGENT_FLAG, homeOf, oneHome } from "./home.js";
+import { AGENT_FLAG, homeOf, oneHome, theAgentHere } from "./home.js";
 import { asked, type Door } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
 
@@ -129,7 +128,7 @@ async function evaluate(
   out: NodeJS.WritableStream,
   err: NodeJS.WritableStream,
 ): Promise<number> {
-  const golden = resolve(file ?? homeOf((await load(agent)).file).memoryGolden);
+  const golden = resolve(file ?? homeOf(agent ?? theAgentHere()).memoryGolden);
   if (!existsSync(golden)) {
     err.write(`${NO_GOLDEN(golden)}\n`);
     return 2;

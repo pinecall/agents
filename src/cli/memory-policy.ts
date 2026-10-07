@@ -6,7 +6,7 @@ import { type TuningAnswer } from "../wire/rest.js";
 
 import { readSettings, theCornerToWrite } from "./agent-lines.js";
 import { theDoor } from "./env.js";
-import { agentOfThisDirectory, notASlug } from "./load.js";
+import { agentOfThisDirectory, notASlug } from "./home.js";
 import { asked } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
 
@@ -40,7 +40,7 @@ export async function policy(argv: string[], how: Keeping = {}): Promise<number>
     err.write(`${aFile}\n`);
     return 2;
   }
-  const agent = values.agent ?? (await agentOfThisDirectory());
+  const agent = values.agent ?? agentOfThisDirectory();
   if (agent === null || agent === undefined) {
     err.write(`${USAGE}\n  name the agent, or run this beside an agent file\n`);
     return 2;

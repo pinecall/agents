@@ -1,22 +1,17 @@
-/** `pinecall prompt [agent.tsx] --state file`: render the prompt for a given state, offline. */
+/** `pinecall prompt [agent.tsx] --state file`: the prompt a state produces, printed by the agent's serve entry. */
 
 import { parseArgs } from "node:util";
 
-import { ChannelSchema, MediumSchema } from "../wire/defs.js";
-
-import type { Snapshot } from "../agent/state.js";
-import { showPrompt } from "../views/render.js";
 import { cannotRun } from "./cannot-run.js";
+import { runOnce } from "./child.js";
 import { AGENT_FLAG, oneHome } from "./home.js";
 import type { Group } from "./groups.js";
-import { load } from "./load.js";
-import { instanceFor } from "../serve/load.js";
-import { showMachine } from "../serve/machine.js";
+import { startedWith, type Started } from "./language.js";
 import { readNamedJson } from "./named-file.js";
 
 /** One case of a goldens file; only its starting state is read here. */
 interface Case {
-  state?: Snapshot;
+  state?: Record<string, unknown>;
 }
 
 export const group: Group = {
@@ -27,10 +22,10 @@ export const group: Group = {
 
   The three regions of the prompt as the model would receive them — the static prefix, the
   history, the dynamic blocks at the end — and under them the stage and the tools that stage
-  shows. No gateway, no key, no call: the class is loaded here and put in the state the file
-  describes, so this answers in the time it takes to save the file.
+  shows. No gateway, no key, no call: the agent's own serve entry loads the class and puts it in
+  the state the file describes, so this answers in the time it takes to save the file.
 
-  --agent <name>  which agent of a project of several, by its file's name or its slug
+  --agent <name>  which agent of a project of several, by its folder's name
   --state file    a goldens file: an array of cases, each with its own \`state\`, or one object
   --case n        which case of that file, when it holds several (default 0)
   --channel name  the call the prompt is for, which picks its <channel> block (default phone)
@@ -38,11 +33,15 @@ export const group: Group = {
   run,
 };
 
-/** Load the class, apply the case's state, and print the prompt, stage and visible tools. No gateway needed. */
+/** What `prompt` runs the serve entry with; a test hands in its own. */
+export type RunOnce = (started: Started, out: NodeJS.WritableStream, err: NodeJS.WritableStream) => Promise<number>;
+
+/** Print the prompt the case's state produces, through the agent's serve entry. No gateway needed. */
 export async function run(
   argv: string[],
   out: NodeJS.WritableStream = process.stdout,
   err: NodeJS.WritableStream = process.stderr,
+  runs: RunOnce = runOnce,
 ): Promise<number> {
   const { values, positionals } = parseArgs({
     args: argv,
@@ -59,21 +58,15 @@ export async function run(
     err.write("pinecall prompt: --state <file> is required\n");
     return 2;
   }
-  const channel = ChannelSchema.safeParse(values.channel);
-  const medium = MediumSchema.optional().safeParse(values.medium);
-  if (!channel.success || !medium.success) {
-    err.write("pinecall prompt: --channel is phone, web or whatsapp, and --medium is voice or text\n");
-    return 2;
-  }
-  const loaded = await load((await oneHome("prompt", positionals[0], values.agent)).file);
-  const agent = instanceFor(loaded, channel.data, medium.data);
-  agent.startIn(firstState(values.state, values.case));
-  out.write(`${showPrompt(agent)}\n\n${showMachine(agent)}\n`);
-  return 0;
+  const home = await oneHome("prompt", positionals[0], values.agent);
+  const pairs = Object.entries(firstState(values.state, values.case)).flatMap(([field, value]) => ["--state", `${field}=${JSON.stringify(value)}`]);
+  const medium = values.medium === undefined ? [] : ["--medium", values.medium];
+  const args = ["--file", home.file, "--slug", home.name, ...pairs, "--channel", values.channel, ...medium, "--show-machine"];
+  return await runs(startedWith(undefined, home.file, "prompt", args, { root: home.root }), out, err);
 }
 
 /** The state of case `which` (default 0) in a goldens file; a single object counts as one case. */
-export function firstState(file: string, which: string | undefined): Snapshot {
+export function firstState(file: string, which: string | undefined): Record<string, unknown> {
   const parsed = readNamedJson<Case | Case[]>("--state", file);
   const cases = Array.isArray(parsed) ? parsed : [parsed];
   const index = which === undefined ? 0 : Number(which);

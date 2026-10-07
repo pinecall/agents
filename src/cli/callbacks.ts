@@ -2,7 +2,7 @@
 
 import { doorLine, theDoor } from "./env.js";
 import type { Group } from "./groups.js";
-import { notASlug } from "./load.js";
+import { notASlug } from "./home.js";
 import { asked, type Door } from "./testing/gateway.js";
 import { refusal } from "./whoami.js";
 

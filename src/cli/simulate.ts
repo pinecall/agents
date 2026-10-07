@@ -13,8 +13,8 @@ import { pinecallFor } from "./client-for.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { anEarIn, type Ear } from "./listening.js";
-import { load, mountOptions, slugOfAgentFile } from "./load.js";
-import { AGENT_FLAG, oneHome } from "./home.js";
+import { load, mountOptions } from "./load.js";
+import { AGENT_FLAG, oneHome, slugOfAgentFile } from "./home.js";
 import { NOBODY, personaNamed, type Persona } from "./testing/personas.js";
 import { type Door, entriesOf, type Entry, type Persona as Calling, type Spoken, theNextLine } from "./testing/gateway.js";
 import { latencyLine, mediansOf } from "./testing/latency.js";
@@ -98,7 +98,7 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
   const home = await oneHome("simulate", values.file, values.agent);
   const door = await theDoor();
   if (door === undefined) return 2;
-  const agent = await slugOfAgentFile(home.file);
+  const agent = slugOfAgentFile(home.file);
   const persona = await personaNamed(door, agent, values.persona);
   if (persona === undefined) {
     process.stderr.write(`${NOBODY(values.persona, agent)}\n`);

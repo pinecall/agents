@@ -1,10 +1,13 @@
 /** Paths of an agent's files in the project layout, each folder named after the agent. */
 
 import { cannotRun } from "./cannot-run.js";
-import { existsSync, statSync } from "node:fs";
+import { existsSync, readdirSync, statSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 
-import { agentFilesOfTheProject, load, slugOfAgentFile } from "./load.js";
+import { AGENT_FILES } from "./language.js";
+
+/** Project folder holding one subfolder per agent. */
+export const PROJECT_AGENTS = "agents";
 
 /**
  * Paths a verb reads beside the class. Verbs never build these paths themselves.
@@ -64,19 +67,16 @@ export function hasDirectory(path: string): boolean {
 
 /**
  * The agents a verb acts on: `file` if given, else every agent in the project, or the one
- * `agent` names by folder name (`sales`) or slug (`bidfire-sales`).
+ * `agent` names by its folder's name, which is its slug.
  */
 export async function homesFor(file?: string, agent?: string): Promise<Home[]> {
   if (file !== undefined) return [homeOf(file)];
   const project = agentFilesOfTheProject();
-  if (project.length === 0) return [homeOf((await load()).file)];
+  if (project.length === 0) return [homeOf(theAgentHere())];
   const homes = project.map(homeOf);
   if (agent === undefined) return homes;
-  const byName = homes.find((home) => home.name === agent);
-  if (byName !== undefined) return [byName];
-  for (const home of homes) {
-    if ((await slugOfAgentFile(home.file)) === agent) return [home];
-  }
+  const named = homes.find((home) => home.name === agent);
+  if (named !== undefined) return [named];
   throw cannotRun(`no agent ${agent} in this project: it has ${homes.map((home) => home.name).join(", ")}`);
 }
 
@@ -90,5 +90,50 @@ export async function oneHome(verb: string, file?: string, agent?: string): Prom
   return homes[0]!;
 }
 
-/** The `--agent` option: a folder name in the project, or a slug. */
+/** The `--agent` option: an agent's folder's name in the project, which is its slug. */
 export const AGENT_FLAG = { agent: { type: "string" } } as const;
+
+/** Agent files of the project at `root`, sorted; folders without an agent file are skipped. */
+export function agentFilesOfTheProject(root: string = process.cwd()): string[] {
+  const folder = resolve(root, PROJECT_AGENTS);
+  if (!existsSync(folder)) return [];
+  return readdirSync(folder, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => AGENT_FILES.map((name) => resolve(folder, entry.name, name)).find((path) => existsSync(path)))
+    .filter((path): path is string => path !== undefined)
+    .sort();
+}
+
+/** The project's only agent; several must be named, none is an error naming where it looked. */
+export function theAgentHere(): string {
+  const project = agentFilesOfTheProject();
+  if (project.length === 1) return project[0]!;
+  if (project.length > 1) {
+    const names = project.map((file) => `--agent ${basename(dirname(file))}`).join(" or ");
+    throw cannotRun(`this project has ${project.length} agents: name one with ${names}`);
+  }
+  throw cannotRun(`no agent here: looked for ${PROJECT_AGENTS}/<name>/${AGENT_FILES.join(" or ")} in ${process.cwd()}`);
+}
+
+// `--agent` takes a slug and `--file` a path; a path passed to `--agent` gets a pointer to `--file`.
+const A_PATH = /\.(tsx?|rb|py)$|[/\\]/;
+
+/** Error message when a path was given where a slug is expected, else undefined. */
+export function notASlug(said: string | undefined): string | undefined {
+  if (said === undefined || !A_PATH.test(said)) return undefined;
+  return `an agent is named by its slug, not a file: \`--file ${said}\` names the class to load.`;
+}
+
+/** The agent's slug: the name of the folder its file is in. */
+export function slugOfAgentFile(file: string): string {
+  return basename(dirname(resolve(file)));
+}
+
+/** Slug of this directory's agent, or null when there is none or several. */
+export function agentOfThisDirectory(): string | null {
+  try {
+    return slugOfAgentFile(theAgentHere());
+  } catch {
+    return null;
+  }
+}
