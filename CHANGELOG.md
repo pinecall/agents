@@ -7,6 +7,8 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.9.20] — the package is @pinecall/agents, and the CLI is its own
+
 ### Added
 
 - The wire reads `call.started.state`, the state a call opens in when its opener asked for one,
