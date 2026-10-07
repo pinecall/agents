@@ -6,6 +6,8 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.9.19] — the language is the world's, and the prompt writes for the channel
+
 ### Changed
 
 - **Breaking: the language is the world's, not the class's.** A class that still declares
