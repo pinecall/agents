@@ -1,6 +1,6 @@
 /** `pinecall start` output modes: plain log, JSON lines, and the full-screen view. */
 
-import type { CamelEvent, Drained, Pinecall } from "../client/index.js";
+import type { CamelEvent, Pinecall } from "../client/index.js";
 import { drainLine } from "../serve/leaving.js";
 import { absorb, draw, screenFor, type Screen } from "./view.js";
 

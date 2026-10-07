@@ -6,7 +6,7 @@ import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { AGENT_FLAG, agentFilesOfTheProject, type Home, homeOf, oneHome, slugOfAgentFile } from "./home.js";
 import { asATable, linesOf, theFacts } from "./persona-lines.js";
-import { aSimulation, TURNS } from "./simulate.js";
+import { aSimulationOf, TURNS } from "./simulate.js";
 import { NOT_A_MODEL, theModelNamed } from "./testing/models.js";
 import { personasIn as personasInFiles } from "./testing/caller.js";
 import type { Door } from "./testing/gateway.js";
@@ -272,7 +272,7 @@ async function tried(
     err.write(`${NOBODY(name, agent)}\n`);
     return 2;
   }
-  const said = await aSimulation(persona, { door, agentFile: home.file, judge: false, voice: false, turns: TURNS, out });
+  const said = await aSimulationOf(home, persona, { door, judge: false, voice: false, turns: TURNS, out });
   return said === undefined ? 2 : 0;
 }
 

@@ -23,6 +23,12 @@ export interface Serving {
   onEvent(listener: (line: EventLine) => void): () => void;
 }
 
+/** An agent some process serves: its slug, and that process's app id, read anew on every dial. */
+export interface Served {
+  slug: string;
+  app(): string | undefined;
+}
+
 /** Long enough for tsx to compile a class and a socket to register it on a slow machine. */
 export const REGISTERS_WITHIN_MS = 30_000;
 

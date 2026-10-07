@@ -1,9 +1,9 @@
 /** Console door for simulated calls against the agent class in this directory. */
 
-import { aSimulation, degradedBy, ONLY_ON_A_LINE, TURNS } from "../simulate.js";
+import { aSimulation, degradedBy, ONLY_ON_A_LINE, TURNS, type Simulated, type Simulation } from "../simulate.js";
+import type { Served } from "../serving.js";
 import { NOBODY, personaNamed, type Persona } from "../testing/personas.js";
 import type { Door } from "../testing/gateway.js";
-import type { Home } from "../home.js";
 import { aFlag, anObject, aNumber, aString, maybeNumber } from "./asked.js";
 import { Refusal } from "./refusal.js";
 
@@ -38,7 +38,8 @@ export interface Simulating {
 
 /** Injectable parts of a simulation, replaceable in tests. */
 export interface Pieces {
-  simulate: typeof aSimulation;
+  /** One simulation at the agent this `pinecall start` serves. */
+  simulate: (persona: Persona, how: Omit<Simulation, "served">) => Promise<Simulated | undefined>;
 }
 
 /**
@@ -49,7 +50,7 @@ export function simulatingFrom(
   door: Door,
   agent: string | null,
   out: NodeJS.WritableStream,
-  pieces: Pieces = { simulate: aSimulation },
+  pieces: Pieces,
 ): Simulating {
   return {
     async start(asked: unknown): Promise<{ call: string }> {
@@ -75,7 +76,7 @@ async function opened(
   degraded: ReturnType<typeof degradedBy>,
   door: Door,
   out: NodeJS.WritableStream,
-  simulate: typeof aSimulation,
+  simulate: Pieces["simulate"],
 ): Promise<{ call: string }> {
   return await new Promise<{ call: string }>((answer, refuse) => {
     let answered = false;
@@ -117,7 +118,7 @@ function parsed(asked: unknown): Wanted {
   };
 }
 
-/** Simulation parts for one agent of a project. */
-export function simulatingPiecesFor(home: Home): Pieces {
-  return { simulate: (persona, how) => aSimulation(persona, { ...how, agentFile: home.file }) };
+/** Simulation parts for the agent `served` names. */
+export function simulatingPiecesFor(served: Served): Pieces {
+  return { simulate: async (persona, how) => await aSimulation(persona, { ...how, served }) };
 }

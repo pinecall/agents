@@ -65,9 +65,9 @@ shape: a category is your own word, a value is a literal, a supersession is an i
 back. Every judgment is code, so two runs of one case answer the same thing and a change is a
 change and not a mood.
 
-**Where each half runs.** The class is mounted in *this terminal's own process*, exactly as
-`pinecall test` mounts it, because the categories a golden may name and the tool names admission
-refuses a fact for are your class's OWN declaration. The extraction itself runs in the gateway, on
+**Where each half runs.** The agent is served by a process this terminal starts — its language's
+serve entry, exactly as `pinecall test` starts it — because the categories a golden may name and
+the tool names admission refuses a fact for are your class's OWN declaration. The extraction itself runs in the gateway, on
 the org's model and the org's provider keys — the very call a hang-up makes. **One model call per
 case**, which is why this is a ring-1 verb and not something CI runs for free.
 

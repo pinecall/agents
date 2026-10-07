@@ -53,6 +53,23 @@ export function startedWith(door: Door | undefined, file: string, verb: Verb, ar
   return { command: commandFor(languageOf(file), verb, args, how), env: envFor(door) };
 }
 
+/** One agent of the project, as the serve entry is told about it. */
+export interface AgentOfTheProject {
+  file: string;
+  /** Its folder's name: the slug it registers as. */
+  name: string;
+  root: string;
+}
+
+/**
+ * The serve entry holding one agent, its lines on stdout: a console's process, which takes no call
+ * it did not open, unless the calls it serves arrive naming no app (a spoken one, from a worker).
+ */
+export function servingOne(door: Door, agent: AgentOfTheProject, how: { console: boolean; inspect?: string[] }): Started {
+  const args = ["--file", agent.file, "--slug", agent.name, ...(how.console ? ["--console"] : []), "--events"];
+  return startedWith(door, agent.file, "start", args, { root: agent.root, ...(how.inspect === undefined ? {} : { inspect: how.inspect }) });
+}
+
 /** The command that runs a verb of a language's serve entry. */
 export function commandFor(language: Language, verb: Verb, args: string[], how: Starting): string[] {
   const inspect = how.inspect ?? [];

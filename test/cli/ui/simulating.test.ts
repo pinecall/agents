@@ -3,6 +3,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { TURNS, type Simulated, type Simulation } from "../../../src/cli/simulate.js";
+
+/** A simulation as the door asks for one: the agent served is the piece's to add. */
+type Asked = Omit<Simulation, "served">;
 import type { Persona } from "../../../src/cli/testing/personas.js";
 import { Refusal } from "../../../src/cli/ui/refusal.js";
 import { simulatingFrom } from "../../../src/cli/ui/simulating.js";
@@ -40,8 +43,8 @@ function holding(personas: Persona[]): string[] {
 }
 
 /** A simulation that opens a call, hangs up, and records its options. */
-function opensACall(): { asked: Simulation[]; simulate: (p: Persona, how: Simulation) => Promise<Simulated | undefined> } {
-  const asked: Simulation[] = [];
+function opensACall(): { asked: Asked[]; simulate: (p: Persona, how: Asked) => Promise<Simulated | undefined> } {
+  const asked: Asked[] = [];
   return {
     asked,
     simulate: async (_persona, how) => {

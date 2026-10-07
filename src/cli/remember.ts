@@ -5,13 +5,12 @@ import { parseArgs } from "node:util";
 
 import { type ExtractionGolden, type ExtractionRun } from "../wire/rest-retrieval.js";
 
-import { pinecallFor } from "./client-for.js";
+import { whileServing, type Spawns } from "./child.js";
 
-import { mount } from "../runtime/connect.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
-import { load, mountOptions } from "./load.js";
 import { AGENT_FLAG, oneHome } from "./home.js";
+import { servingOne } from "./language.js";
 import { asked, type Door } from "./testing/gateway.js";
 import { casesIn, matching } from "./testing/goldens.js";
 import { BROKEN, HELD } from "./testing/score.js";
@@ -33,7 +32,7 @@ export const group: Group = {
   values must not survive in any fact's text, and which held facts the call contradicted.
 
   Each case costs ONE model call, the very one a hang-up makes, run by the gateway on the org's
-  own keys against the class this terminal is holding. Every answer is judged by code: a category
+  own keys against the agent a process this terminal starts is holding. Every answer is judged by code: a category
   is the class's own word, a value is a literal, a supersession is an id — never one sentence
   compared to another, because two ways of writing one fact are one fact.`,
   run,
@@ -44,10 +43,12 @@ export interface Running {
   out?: NodeJS.WritableStream;
   err?: NodeJS.WritableStream;
   env?: NodeJS.ProcessEnv;
+  spawns?: Spawns;
 }
 
 /**
- * Mount the class locally (as `pinecall test` does) so the gateway reads its memory categories,
+ * Serve the agent from a process this terminal starts (as `pinecall test` does) so the gateway
+ * reads its memory categories off its declaration,
  * then run extraction on the gateway with the org's model and keys.
  */
 export async function run(argv: string[], how: Running = {}): Promise<number> {
@@ -78,21 +79,20 @@ export async function run(argv: string[], how: Running = {}): Promise<number> {
     err.write(`no case matched${values.grep === undefined ? "" : ` --grep ${values.grep}`}\n`);
     return 2;
   }
-  const loaded = await load(home?.file ?? values.file);
-  const pc = pinecallFor(door);
-  // takesUnclaimed: false, so a real call never rings in a terminal running a suite.
-  const mounted = mount(loaded.ctor, { ...mountOptions(loaded, pc), takesUnclaimed: false });
-  try {
-    await pc.connect();
-    const answer = await extracted(door, mounted.slug, cases);
-    out.write(values.json === true ? `${JSON.stringify(answer)}\n` : `${linesOf(answer).join("\n")}\n`);
-    return answer.held === answer.cases ? 0 : 1;
-  } catch (refused) {
-    err.write(`${refusal(refused)}\n`);
-    return 1;
-  } finally {
-    pc.close();
-  }
+  // Asked again outside an agent folder, so the refusal names where an agent belongs.
+  const agent = home ?? (await oneHome("remember", values.file, values.agent));
+  // A console's process, so a real call never rings in a terminal running a suite.
+  const started = servingOne(door, agent, { console: true });
+  return await whileServing(started, agent.name, async () => {
+    try {
+      const answer = await extracted(door, agent.name, cases);
+      out.write(values.json === true ? `${JSON.stringify(answer)}\n` : `${linesOf(answer).join("\n")}\n`);
+      return answer.held === answer.cases ? 0 : 1;
+    } catch (refused) {
+      err.write(`${refusal(refused)}\n`);
+      return 1;
+    }
+  }, how.spawns);
 }
 
 /** Run each case through one extraction on the gateway, scored by code. */

@@ -31,7 +31,7 @@ path end to end, with every output under it.
 | [`console`](#console) | the box's console in a browser, signed in: the sandbox's at `<url>/sandbox/`, `--prod` for production's at `<url>/` | yes |
 | [`chat`](#chat) | the same app in this terminal, and a written caller against it | yes |
 | [`prompt`](#prompt) | the exact prompt a state would produce, offline | **no** |
-| [`test`](#test) | ring 1 (and ring 2 with `--voice`): the goldens through this process | yes |
+| [`test`](#test) | ring 1 (and ring 2 with `--voice`): the goldens through the agent served from this terminal | yes |
 | [`simulate`](#simulate) | a model plays one caller, live, and the call is judged at hang-up | yes |
 | [`eval`](#eval) | ring 3: one real call re-checked by code | yes |
 | [`sessions`](#sessions) | the calls this agent has run, and one of them whole | yes |
@@ -449,11 +449,14 @@ Eres la recepción de Clínica Norte. Hablas de usted, con frases cortas. …
 
 ```
 pinecall test [paths] [--agent <name>] [--file agent.tsx] [--model m]… [--grep x] [--watch] [--json]
+              [--inspect[=host:port] | --inspect-brk]
 pinecall test --voice [--background-noise dB] [--packet-loss 0.05]
 ```
 
 Ring 1: every golden of `test/<name>/goldens/` (at a project's root, each agent's own) through
-the class **this terminal holds**, scored by the gateway's judges, printed as a matrix. Exits 1
+the agent a process **this terminal starts** serves — a console's process, which takes no call the
+run did not open, stopped when the run is over — scored by the gateway's judges, printed as a
+matrix. Exits 1
 when a golden did not hold. One agent with no goldens yet is told where to write one and exits 2;
 in a project, an agent with none is named and skipped. Every broken golden is
 written whole to `.pinecall/evals/<run>/<golden>.json` — the golden as written, the verdicts, and
@@ -477,11 +480,13 @@ at that many dB under them, and `--packet-loss` drops that share of their packet
 ```
 pinecall simulate --persona <name> [--judge] [--turns n (15)] [--voice] [--listen]
                   [--background-noise dB] [--packet-loss percent] [--agent <name>] [--file agent.tsx]
+                  [--inspect[=host:port] | --inspect-brk]
 ```
 
 A model in the gateway plays the caller — every turn improvised from the persona's goal, its style
-and its own facts, with no script. This terminal holds the class and prints the conversation; the
-gateway holds the provider keys.
+and its own facts, with no script. A process this terminal starts serves the agent (a written
+call names it; a spoken one arrives from a worker naming nobody, so for `--voice` that process
+takes unclaimed calls), this terminal prints the conversation, the gateway holds the provider keys.
 
 ```console
 $ pinecall simulate --persona apurado --listen --turns 2
@@ -1516,7 +1521,8 @@ code can call — over HTTP, in any language, with the same key.
 
 | verb | doors |
 |---|---|
-| `start` · `chat` · `test` · `simulate` · `remember` | `WS /v1/apps` — the class is mounted in the process that typed the verb |
+| `start` | `WS /v1/apps` — the class is mounted in the process that typed the verb |
+| `chat` · `test` · `simulate` · `remember` · `personas try` | `WS /v1/apps` from the agent's serve entry, a process the verb starts and stops |
 | `start`, once connected | `POST /v1/login/codes` (the console's URL, at the instance it registered at), `PUT /v1/line/from` (the kept phone, on every connect in the sandbox), `GET /v1/routes` (the doors it answers at), `GET /v1/agents/{slug}/line` (when one of them is a number) |
 | `chat` | `WS /v1/chat?agent=&app=&contact=` |
 | `start --events` · `sessions` · `supervise` | `GET /v1/calls/{call}/events` (SSE), `GET /v1/agents/{slug}/sessions` |

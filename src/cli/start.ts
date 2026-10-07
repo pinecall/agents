@@ -17,10 +17,11 @@ import { callingFrom } from "./signed-in.js";
 import { pinecallFor } from "./client-for.js";
 import { load, mountOptions } from "./load.js";
 import { instanceFor } from "../serve/load.js";
-import { AGENT_FLAG, agentFilesOfTheProject, homesFor } from "./home.js";
+import { AGENT_FLAG, homesFor } from "./home.js";
 import { goldensOf } from "./testing/goldens.js";
 import type { Door } from "./testing/gateway.js";
-import { chattingFrom, linesFromThisProcess, type Chatting } from "./ui/chatting.js";
+import { chattingFrom, linesThrough, type Chatting } from "./ui/chatting.js";
+import type { Served } from "./serving.js";
 import { devHandler, ownVerbs } from "./ui/doors.js";
 import { driftingFrom } from "./ui/drifting.js";
 import { hereOf, knowingFrom } from "./ui/knowing.js";
@@ -123,25 +124,18 @@ export async function run(argv: string[]): Promise<number> {
   try {
     const all = loaded.map(({ home, loaded: one }) => {
       const mounted = mount(one.ctor, mountOptions(one, pc));
-      const project = homes.length > 1 || agentFilesOfTheProject().length > 0;
-      const chatting = project
-        ? chattingFrom(door, mounted.slug, process.stdout, linesFromThisProcess(door, process.stdout, home.file), () => goldensOf(home.goldens))
-        : chattingFrom(door, mounted.slug, process.stdout);
+      // The console's verbs reach the agent this process serves, never a second mount of it.
+      const served: Served = { slug: mounted.slug, app: () => mounted.agent.app };
+      const chatting = chattingFrom(mounted.slug, linesThrough(door, process.stdout, served), () => goldensOf(home.goldens));
       chattings.push(chatting);
       mounted.agent.onDev(
         devHandler(
           ownVerbs({
-            simulating: project
-              ? simulatingFrom(door, mounted.slug, process.stdout, simulatingPiecesFor(home))
-              : simulatingFrom(door, mounted.slug, process.stdout),
-            testing: project
-              ? testingFrom(door, mounted.slug, process.stdout, testingPiecesFor(home))
-              : testingFrom(door, mounted.slug, process.stdout),
+            simulating: simulatingFrom(door, mounted.slug, process.stdout, simulatingPiecesFor(served)),
+            testing: testingFrom(door, mounted.slug, process.stdout, testingPiecesFor(home, served)),
             chatting,
-            knowing: project ? knowingFrom(door, mounted.slug, hereOf(home, mounted.slug)) : knowingFrom(door, mounted.slug),
-            remembering: project
-              ? rememberingFrom(door, mounted.slug, rememberingPiecesFor(home, mounted.slug))
-              : rememberingFrom(door, mounted.slug),
+            knowing: knowingFrom(door, mounted.slug, hereOf(home, mounted.slug)),
+            remembering: rememberingFrom(door, mounted.slug, rememberingPiecesFor(home)),
             promoting: promotingFrom(door, mounted.slug, process.stdout),
             viewing: viewingFrom(one.ctor, mounted.slug),
             drifting: driftingFrom(door),

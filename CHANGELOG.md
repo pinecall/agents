@@ -29,8 +29,10 @@ maintainer's call, so everything sits under Unreleased until one is cut.
   on the gateway, whatever its class is called; a class whose `static slug` says another is refused
   when it is served. A project whose folders were named apart from their classes renames them.
   `--agent` takes that name. `agent.rb` and `agent.py` count as agents of a project too.
-- `pinecall chat` and `pinecall prompt` run the agent in a process of its own, its language's serve
-  entry, which `chat` stops when it leaves.
+- `pinecall chat`, `prompt`, `test`, `simulate`, `remember` and `personas try` run the agent in a
+  process of their own, its language's serve entry, stopped when the verb is done; `chat`, `test`
+  and `simulate` take `--inspect` for it. The console's Chat, Tests, Simulations and Memory screens
+  reach the agent `pinecall start` serves instead of mounting a second one.
 
 ## [0.9.19] — the language is the world's, and the prompt writes for the channel
 

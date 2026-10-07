@@ -7,14 +7,14 @@ import type { CamelEvent } from "../client/index.js";
 import { signed } from "../client/signed.js";
 import WebSocket from "ws";
 
-import { mount } from "../runtime/connect.js";
 import { chatUrl, type Opened } from "./chat.js";
-import { pinecallFor } from "./client-for.js";
+import { whileServing } from "./child.js";
 import { theDoor } from "./env.js";
 import type { Group } from "./groups.js";
 import { anEarIn, type Ear } from "./listening.js";
-import { load, mountOptions } from "./load.js";
-import { AGENT_FLAG, oneHome, slugOfAgentFile } from "./home.js";
+import { AGENT_FLAG, oneHome, type Home } from "./home.js";
+import { inspectOf, servingOne } from "./language.js";
+import type { Served } from "./serving.js";
 import { NOBODY, personaNamed, type Persona } from "./testing/personas.js";
 import { type Door, entriesOf, type Entry, type Persona as Calling, type Spoken, theNextLine } from "./testing/gateway.js";
 import { latencyLine, mediansOf } from "./testing/latency.js";
@@ -24,14 +24,15 @@ import { after, Heard, SETTLE_MS } from "./testing/heard.js";
 
 const USAGE =
   "usage: pinecall simulate --persona <name> [--judge] [--turns n] [--voice] [--listen]\n" +
-  "       [--background-noise <dB under the caller>] [--packet-loss <percent>] [--agent <name>] [--file agent.tsx]\n";
+  "       [--background-noise <dB under the caller>] [--packet-loss <percent>] [--agent <name>] [--file agent.tsx]\n" +
+  "       [--inspect[=host:port] | --inspect-brk]\n";
 
 export const group: Group = {
   purpose: "a model plays one persona against the agent, live, and the call is scored at hang-up",
   usage: `${USAGE}
   A model in the gateway plays the caller: every turn improvised from the persona's goal, its
-  style and its own facts — there is no script. This terminal holds the class and the transcript;
-  the gateway holds the provider keys. The call lands in the log like any other.
+  style and its own facts — there is no script. A process this terminal starts serves the agent,
+  this terminal holds the transcript, the gateway holds the provider keys. The call lands in the log like any other.
 
   --persona <name>    one of the agent's personas, by name: pinecall personas lists them
   --judge             read back the call.score the log seals on, and print every judge
@@ -41,7 +42,8 @@ export const group: Group = {
   --background-noise  dB under the caller: a television behind them. Spoken runs only
   --packet-loss       percent of the caller's packets that never arrive. Spoken runs only
   --agent <name>      which agent of a project of several plays the other half
-  --file agent.tsx    which class to mount, when the directory holds more than one`,
+  --file agent.tsx    which class to serve, when the directory holds more than one
+  --inspect           Node's own flag, given to the agent's process (a TypeScript agent's alone)`,
   run,
 };
 
@@ -69,8 +71,9 @@ export interface Simulated {
 }
 
 export async function run(argv: string[], out: NodeJS.WritableStream = process.stdout): Promise<number> {
+  const { inspect, rest } = inspectOf(argv);
   const { values } = parseArgs({
-    args: argv,
+    args: rest,
     options: {
       persona: { type: "string" },
       judge: { type: "boolean", default: false },
@@ -98,23 +101,35 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
   const home = await oneHome("simulate", values.file, values.agent);
   const door = await theDoor();
   if (door === undefined) return 2;
-  const agent = slugOfAgentFile(home.file);
-  const persona = await personaNamed(door, agent, values.persona);
+  const persona = await personaNamed(door, home.name, values.persona);
   if (persona === undefined) {
-    process.stderr.write(`${NOBODY(values.persona, agent)}\n`);
+    process.stderr.write(`${NOBODY(values.persona, home.name)}\n`);
     return 2;
   }
-  const said = await aSimulation(persona, {
+  const said = await aSimulationOf(home, persona, {
     door,
-    agentFile: home.file,
     judge: values.judge === true,
     voice,
     listen,
     ...(degraded === undefined ? {} : { degraded }),
     turns: values.turns === undefined ? TURNS : Number(values.turns),
     out,
-  });
+  }, inspect);
   return exitCodeOf(said);
+}
+
+/**
+ * One simulation of an agent of this project, served by a process started for it: a console's
+ * process, unless the call is spoken — that one arrives from a worker naming no app.
+ */
+export async function aSimulationOf(
+  home: Home,
+  persona: Persona,
+  how: Omit<Simulation, "served"> & { door: Door },
+  inspect: string[] = [],
+): Promise<Simulated | undefined> {
+  const started = servingOne(how.door, home, { console: !how.voice, inspect });
+  return await whileServing(started, home.name, async (served) => await aSimulation(persona, { ...how, served }));
 }
 
 /** Parse --background-noise (dB) and --packet-loss (percent); undefined when neither is set. */
@@ -135,7 +150,8 @@ export function exitCodeOf(said: Simulated | undefined): number {
 
 /** Options for {@link aSimulation}. */
 export interface Simulation {
-  agentFile?: string | undefined;
+  /** The agent, and the process that serves the call. */
+  served: Served;
   judge: boolean;
   voice: boolean;
   /** Play the call on local speakers. Spoken calls only. */
@@ -150,28 +166,19 @@ export interface Simulation {
 }
 
 /**
- * Mount the agent in this process and run one call against a model playing the persona in the
- * gateway. With `judge`, print the resulting `call.score`.
+ * Run one call at the agent served against a model playing the persona in the gateway. With
+ * `judge`, print the resulting `call.score`.
  */
 export async function aSimulation(persona: Persona, how: Simulation): Promise<Simulated | undefined> {
   const door = how.door ?? (await theDoor());
   if (door === undefined) return undefined;
-  const loaded = await load(how.agentFile);
-  const url = door.url;
-  const pc = pinecallFor(door);
-  // A spoken call arrives via the worker, which names no app (worker/entry.py:82), so a --voice
-  // run must take unclaimed calls; a written call names the app in its socket URL.
-  const mounted = mount(loaded.ctor, { ...mountOptions(loaded, pc), takesUnclaimed: how.voice });
+  const { slug } = how.served;
   how.out.write(`${persona.name} · ${persona.goal}\n`);
-  try {
-    await pc.connect();
-    const call = how.voice
-      ? await outLoud(door, mounted.slug, persona, how)
-      : await inWriting(chatUrl(url, mounted.slug, writtenAs(persona, mounted.agent.app)), door, persona, how);
-    return { call, ...(await theEnding(door, call, how)) };
-  } finally {
-    pc.close();
-  }
+  // A written call names the app in its socket URL; a spoken one reaches whoever takes unclaimed calls.
+  const call = how.voice
+    ? await outLoud(door, slug, persona, how)
+    : await inWriting(chatUrl(door.url, slug, writtenAs(persona, how.served.app())), door, persona, how);
+  return { call, ...(await theEnding(door, call, how)) };
 }
 
 // Written call over one socket; closing it hangs up, which triggers scoring.

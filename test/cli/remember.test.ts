@@ -1,6 +1,6 @@
 // `pinecall remember`: cases read from disk, the door it calls, and its output.
 
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, writeFileSync } from "node:fs";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
@@ -10,6 +10,8 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { type ExtractionGolden, type ExtractionRun } from "../../src/wire/rest-retrieval.js";
 
 import { CASES, extracted, linesOf, NO_CASES, run } from "../../src/cli/remember.js";
+import type { Child } from "../../src/cli/child.js";
+import type { Started } from "../../src/cli/language.js";
 import { pointingAt } from "./home.js";
 import { casesIn } from "../../src/cli/testing/goldens.js";
 import { onStderr } from "./said.js";
@@ -123,3 +125,39 @@ describe("what remember needs before it can ask", () => {
     expect(said.text()).toContain(NO_CASES);
   });
 });
+
+describe("the agent the extraction reads", () => {
+  // The gateway reads the agent's categories off its declaration, so the agent is held for the run.
+  it("is served by a console's process for as long as the run takes, then stopped", async () => {
+    // Real, as the cwd is: on macOS the temporary directory is a link.
+    const root = realpathSync(mkdtempSync(join(tmpdir(), "pinecall-remember-")));
+    const folder = join(root, "test", "clinica-norte", "memory");
+    mkdirSync(folder, { recursive: true });
+    mkdirSync(join(root, "agents", "clinica-norte"), { recursive: true });
+    writeFileSync(join(root, "agents", "clinica-norte", "agent.tsx"), "");
+    writeFileSync(join(folder, "alergia.json"), JSON.stringify(A_CASE));
+    const started: Started[] = [];
+    let stopped = 0;
+    const child: Child = {
+      app: () => "app_1",
+      registered: async () => "app_1",
+      onEvent: () => () => undefined,
+      exited: new Promise<number>(() => undefined),
+      stop: async () => ((stopped += 1), 0),
+    };
+    const previous = process.cwd();
+    process.chdir(root);
+
+    const code = await run(["--json"], { env: pointingAt(gateway.url, A_KEY), out: writtenNowhere(), spawns: (asked) => (started.push(asked), child) });
+
+    process.chdir(previous);
+    expect(code).toBe(1);
+    expect(started[0]?.command.slice(-6)).toEqual(["--file", join(root, "agents", "clinica-norte", "agent.tsx"), "--slug", "clinica-norte", "--console", "--events"]);
+    expect(gateway.heard[0]?.path).toBe("/v1/agents/clinica-norte/memory/extraction");
+    expect(stopped).toBe(1);
+  });
+});
+
+function writtenNowhere(): NodeJS.WritableStream {
+  return { write: () => true } as unknown as NodeJS.WritableStream;
+}

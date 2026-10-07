@@ -1,39 +1,41 @@
-/** `pinecall test [paths]`: run goldens through the locally mounted agent, scored by the gateway. */
+/** `pinecall test [paths]`: run goldens through the agent served from this terminal, scored by the gateway. */
 
 import { existsSync, watch } from "node:fs";
 import { parseArgs } from "node:util";
 
-import { pinecallFor } from "./client-for.js";
-
+import { whileServing } from "./child.js";
 import { modelOf } from "./testing/models.js";
 import { theDoor, type Open } from "./env.js";
 import type { Group } from "./groups.js";
-import { load } from "./load.js";
 import { AGENT_FLAG, hasDirectory, homesFor, type Home } from "./home.js";
+import { inspectOf, servingOne } from "./language.js";
+import type { Served } from "./serving.js";
 import type { Wanted } from "./testing/gateway.js";
 import { GOLDENS, goldensIn, matching, NO_GOLDENS } from "./testing/goldens.js";
-import { mountedForASuite, ranSuite } from "./testing/suite.js";
+import { ranSuite } from "./testing/suite.js";
 
 const USAGE =
   "usage: pinecall test [paths] [--agent <name>] [--file agent.tsx] [--model m]… [--grep x] [--watch] [--json]\n" +
+  "                    [--inspect[=host:port] | --inspect-brk]\n" +
   "       pinecall test --voice [--background-noise dB] [--packet-loss 0.05]\n";
 
 export const group: Group = {
-  purpose: "the goldens, run through the app in this terminal's own process",
+  purpose: "the goldens, run through the agent served from this terminal",
   usage: `${USAGE}
-  Ring 1: every golden of test/goldens through the class this terminal holds, scored by the
-  gateway's judges, printed as a matrix. Exits 1 when a golden did not hold, and writes every
+  Ring 1: every golden of test/goldens through the agent a process this terminal starts serves,
+  scored by the gateway's judges, printed as a matrix. Exits 1 when a golden did not hold, and writes every
   broken one to .pinecall/evals/<run>/ with the requests the model answered.
 
   [paths]             files or directories of goldens; the whole of test/goldens when none
-  --file agent.tsx    which class to mount, when the directory holds more than one
+  --file agent.tsx    which class to serve, when the directory holds more than one
   --model m           a column of the matrix: vendor/model, repeatable
   --grep x            only the goldens whose name matches
   --watch             run again whenever a file changes
   --json              the run as one JSON document instead of the matrix
   --voice             ring 2: the same goldens said out loud on a real line
   --background-noise  dB under the caller, on a spoken run: a television behind them
-  --packet-loss       the share of the caller's packets that never arrive, 0 to 1`,
+  --packet-loss       the share of the caller's packets that never arrive, 0 to 1
+  --inspect           Node's own flag, given to the agent's process (a TypeScript agent's alone)`,
   run,
 };
 
@@ -59,13 +61,18 @@ function numberOf(said: string | undefined): number | undefined {
 // Debounce for --watch; each run costs real calls.
 const SETTLE_MS = 150;
 
+/** The flags of one run that reach the suite. */
+type Asked = Parameters<typeof aLine>[0] & { grep?: string | undefined; model?: string[] | undefined; json?: boolean | undefined };
+
 /**
- * Mount the agent in this process, as `pinecall chat` does, so @tool bodies run locally and can be
- * debugged; the gateway drives and scores the conversations. The suite is `testing/suite.ts`.
+ * Serve the agent from a process this terminal starts, as `pinecall chat` does, so @tool bodies run
+ * here and can be debugged; the gateway drives and scores the conversations. The suite is
+ * `testing/suite.ts`.
  */
 export async function run(argv: string[], out: NodeJS.WritableStream = process.stdout): Promise<number> {
+  const { inspect, rest } = inspectOf(argv);
   const { values, positionals } = parseArgs({
-    args: argv,
+    args: rest,
     allowPositionals: true,
     options: {
       file: { type: "string" },
@@ -94,7 +101,7 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
         out.write(`${home.name} · no goldens at ${home.goldens}\n`);
         continue;
       }
-      worst = Math.max(worst, await suiteOf(home, [home.goldens], door, values, out));
+      worst = Math.max(worst, await served(door, home, inspect, (agent) => suiteOf(agent, [home.goldens], door, values, out)));
     }
     return worst;
   }
@@ -104,28 +111,16 @@ export async function run(argv: string[], out: NodeJS.WritableStream = process.s
     process.stderr.write(`${NO_GOLDENS.replace(GOLDENS, home.goldens)}\n${USAGE}`);
     return 2;
   }
-  if (values.watch !== true) return await suiteOf(home, paths, door, values, out);
+  return await served(door, home, inspect, async (agent) => {
+    if (values.watch !== true) return await suiteOf(agent, paths, door, values, out);
+    await suiteOf(agent, paths, door, values, out);
+    return await watching(paths, () => suiteOf(agent, paths, door, values, out), out);
+  });
+}
 
-  const loaded = await load(home.file);
-  const pc = pinecallFor(door);
-  const held = mountedForASuite(loaded, pc);
-  const models = (values.model ?? []).map(modelOf).filter((model) => model !== undefined);
-
-  try {
-    await pc.connect();
-    const suite = async (): Promise<number> => {
-      const goldens = matching(await goldensIn(paths), values.grep);
-      if (goldens.length === 0) {
-        process.stderr.write(`no golden matched${values.grep === undefined ? "" : ` --grep ${values.grep}`}\n`);
-        return 2;
-      }
-      return await ranSuite({ door, loaded, held, goldens, models, line: aLine(values), out, json: values.json === true });
-    };
-    await suite();
-    return await watching(paths, suite, out);
-  } finally {
-    pc.close();
-  }
+// A console's process: a run names its app, and a real call never rings in a terminal running one.
+async function served(door: Open, home: Home, inspect: string[], use: (agent: Served) => Promise<number>): Promise<number> {
+  return await whileServing(servingOne(door, home, { console: true, inspect }), home.name, use);
 }
 
 // Re-runs on golden changes only: node will not re-import the already loaded class.
@@ -152,27 +147,13 @@ async function watching(
   return await new Promise<number>(() => {});
 }
 
-/** Run one agent's goldens through its class, mounted for the length of the run. */
-async function suiteOf(
-  home: Home,
-  paths: string[],
-  door: Open,
-  values: Parameters<typeof aLine>[0] & { grep?: string | undefined; model?: string[] | undefined; json?: boolean | undefined },
-  out: NodeJS.WritableStream,
-): Promise<number> {
-  const loaded = await load(home.file);
-  const pc = pinecallFor(door);
-  const held = mountedForASuite(loaded, pc);
+/** Run the goldens under `paths` through the agent served. */
+async function suiteOf(served: Served, paths: string[], door: Open, values: Asked, out: NodeJS.WritableStream): Promise<number> {
   const models = (values.model ?? []).map(modelOf).filter((model) => model !== undefined);
-  try {
-    await pc.connect();
-    const goldens = matching(await goldensIn(paths), values.grep);
-    if (goldens.length === 0) {
-      process.stderr.write(`no golden matched${values.grep === undefined ? "" : ` --grep ${values.grep}`}\n`);
-      return 2;
-    }
-    return await ranSuite({ door, loaded, held, goldens, models, line: aLine(values), out, json: values.json === true });
-  } finally {
-    pc.close();
+  const goldens = matching(await goldensIn(paths), values.grep);
+  if (goldens.length === 0) {
+    process.stderr.write(`no golden matched${values.grep === undefined ? "" : ` --grep ${values.grep}`}\n`);
+    return 2;
   }
+  return await ranSuite({ door, served, goldens, models, line: aLine(values), out, json: values.json === true });
 }

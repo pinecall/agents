@@ -1,14 +1,13 @@
 /** Console door for goldens: list this directory's and start a run of the chosen ones. */
 
-import { pinecallFor } from "../client-for.js";
 import { modelOf } from "../testing/models.js";
 
-import { load } from "../load.js";
 import { inFlight } from "../testing/progress.js";
 import type { Door, Wanted as RunWanted } from "../testing/gateway.js";
-import { goldensIn, goldensOf, type Golden } from "../testing/goldens.js";
+import { goldensOf, type Golden } from "../testing/goldens.js";
 import type { Home } from "../home.js";
-import { mountedForASuite, ranSuite } from "../testing/suite.js";
+import type { Served } from "../serving.js";
+import { ranSuite } from "../testing/suite.js";
 import { aFlag, anObject, aString, maybeNumber, names } from "./asked.js";
 import { Refusal } from "./refusal.js";
 
@@ -47,7 +46,7 @@ export interface Testing {
 /** Injectable parts of a run, replaceable in tests. */
 export interface Pieces {
   goldens: () => Promise<Golden[]>;
-  /** Run the goldens against this directory's class; resolves to the exit code. */
+  /** Run the goldens against the agent this `pinecall start` serves; resolves to the exit code. */
   suite: (
     door: Door,
     goldens: Golden[],
@@ -59,7 +58,7 @@ export interface Pieces {
   running: (door: Door, agent: string) => Promise<string | undefined>;
 }
 
-// The run's row is written before the first call, so this only covers mounting the class.
+// The run's row is written before the first call, so this only covers the gateway taking the run.
 const A_RUN_OPENS_WITHIN_MS = 20_000;
 const A_LOOK_EVERY_MS = 250;
 
@@ -79,7 +78,7 @@ export function testingFrom(
   door: Door,
   agent: string | null,
   out: NodeJS.WritableStream,
-  pieces: Pieces = { goldens: () => goldensIn([]), suite: inThisProcess, running: inFlight },
+  pieces: Pieces,
 ): Testing {
   return {
     async roster(): Promise<Roster> {
@@ -141,27 +140,6 @@ async function opened(
   throw new Refusal(502, NO_RUN);
 }
 
-/** Run the goldens against this directory's class, mounted for the run. */
-async function inThisProcess(
-  door: Door,
-  goldens: Golden[],
-  models: string[],
-  line: Partial<RunWanted>,
-  out: NodeJS.WritableStream,
-  file?: string,
-): Promise<number> {
-  const loaded = await load(file);
-  const pc = pinecallFor(door);
-  const held = mountedForASuite(loaded, pc);
-  try {
-    await pc.connect();
-    const asked = models.map(modelOf).filter((model) => model !== undefined);
-    return await ranSuite({ door, loaded, held, goldens, models: asked, line, out, json: false });
-  } finally {
-    pc.close();
-  }
-}
-
 function parsed(asked: unknown): Wanted {
   const given = anObject(asked, "a run");
   return {
@@ -174,11 +152,14 @@ function parsed(asked: unknown): Wanted {
   };
 }
 
-/** Run parts for one agent of a project. */
-export function testingPiecesFor(home: Home): Pieces {
+/** Run parts for one agent of a project, served by the process `served` names. */
+export function testingPiecesFor(home: Home, served: Served): Pieces {
   return {
     goldens: () => goldensOf(home.goldens),
-    suite: (door, goldens, models, line, out) => inThisProcess(door, goldens, models, line, out, home.file),
+    suite: async (door, goldens, models, line, out) => {
+      const asked = models.map(modelOf).filter((model) => model !== undefined);
+      return await ranSuite({ door, served, goldens, models: asked, line, out, json: false });
+    },
     running: inFlight,
   };
 }

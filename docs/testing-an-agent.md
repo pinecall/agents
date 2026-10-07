@@ -111,9 +111,9 @@ pinecall test --json                           # for a pipe; the human matrix ot
 pinecall test --voice --grep reserva           # ring 2: the same goldens, said out loud
 ```
 
-**Where each half runs.** The class is mounted in *this terminal's own process*, exactly as
-`pinecall chat` mounts it: your `@tool` bodies run against your database and a breakpoint in one
-is reachable. The gateway drives the conversations and scores them, because the judges, the
+**Where each half runs.** The agent is served by a process this terminal starts — its language's
+serve entry, exactly as `pinecall chat` starts it: your `@tool` bodies run against your database,
+and with `--inspect` a breakpoint in one is reachable. The gateway drives the conversations and scores them, because the judges, the
 provider keys and the log are its. So ring 1 needs a gateway and a key like any other verb — and
 the gateway runs **one suite at a time**, answering a second with a 409 that names the run
 already going.

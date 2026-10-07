@@ -7,11 +7,11 @@ import type { CamelEvent } from "../client/index.js";
 import { signed } from "../client/signed.js";
 import WebSocket from "ws";
 
-import { spawnServing, type Child } from "./child.js";
+import { spawnServing, whileServing, type Spawns } from "./child.js";
 import { theDoor, type Open } from "./env.js";
 import type { Group } from "./groups.js";
 import { AGENT_FLAG, notASlug, oneHome } from "./home.js";
-import { inspectOf, startedWith, type Started } from "./language.js";
+import { inspectOf, servingOne } from "./language.js";
 import { BROKE, CALLER, lineFor } from "./view.js";
 import { firstState } from "./prompt.js";
 
@@ -39,9 +39,6 @@ export const group: Group = {
   --inspect       Node's own flag, given to the agent's process (a TypeScript agent's alone)`,
   run,
 };
-
-/** What `chat` starts the agent's process with; a test hands in its own. */
-export type Spawns = (started: Started) => Child;
 
 /**
  * Without a slug: start this directory's agent as a console's process (it takes no call it did not
@@ -81,21 +78,16 @@ export async function run(argv: string[], spawns: Spawns = spawnServing): Promis
     return await talk(() => chatUrl(url, reach, opened), door, values.events === true);
   }
   const home = await oneHome("chat", values.file, values.agent);
-  // --console: a real phone call is never routed to this terminal's process.
-  const args = ["--file", home.file, "--slug", home.name, "--console", "--events"];
-  const child = spawns(startedWith(door, home.file, "start", args, { root: home.root, inspect }));
-  // Stopped on the way out, or it keeps the agent registered after this terminal is done.
-  try {
-    await child.registered(home.name);
+  // A console's process: a real phone call is never routed to this terminal.
+  const started = servingOne(door, home, { console: true, inspect });
+  return await whileServing(started, home.name, async (served) => {
     // Read on every dial: a gateway restart registers the process under a new app id.
     const address = (): string => {
-      const app = child.app(home.name);
+      const app = served.app();
       return chatUrl(url, home.name, app === undefined ? opened : { ...opened, app });
     };
     return await talk(address, door, values.events === true);
-  } finally {
-    await child.stop();
-  }
+  }, spawns);
 }
 
 /** How a written call opens: which process serves it, who calls, who plays them, in what state. */

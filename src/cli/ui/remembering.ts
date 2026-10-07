@@ -4,16 +4,13 @@ import { existsSync } from "node:fs";
 
 import { type ExtractionGolden, type ExtractionRun, type MemoryScore } from "../../wire/rest-retrieval.js";
 
-import { pinecallFor } from "../client-for.js";
-import { mount } from "../../runtime/connect.js";
 
 import { theQuestionsIn } from "../docs.js";
-import { load, mountOptions } from "../load.js";
 import { AN_EMPTY_GOLDEN, NO_GOLDEN, recalledOn } from "../memory.js";
 import { CASES, extracted, NO_CASES } from "../remember.js";
 import type { Door } from "../testing/gateway.js";
 import { casesIn } from "../testing/goldens.js";
-import { homeOf, MEMORY_GOLDEN, theAgentHere, type Home } from "../home.js";
+import { MEMORY_GOLDEN, type Home } from "../home.js";
 import { anObject, aString, maybeNumber } from "./asked.js";
 import { Refusal } from "./refusal.js";
 
@@ -43,7 +40,7 @@ const NOT_THIS_DIRECTORY = (asked: string, here: string | null): string =>
 export interface Pieces {
   /** Read this directory's extraction cases. */
   cases: () => Promise<ExtractionGolden[]>;
-  /** Run the cases against this directory's class, mounted for the run. */
+  /** Run the cases against the agent this `pinecall start` holds. */
   extract: (door: Door, cases: ExtractionGolden[]) => Promise<ExtractionRun>;
   /** Path of the recall golden and the slug of this directory's class. */
   golden: () => Promise<{ agent: string | null; golden: string | null }>;
@@ -56,7 +53,7 @@ export interface Pieces {
 export function rememberingFrom(
   door: Door,
   agent: string | null,
-  pieces: Pieces = { cases: theCases, extract: inThisProcess, golden: theGolden },
+  pieces: Pieces,
 ): Remembering {
   return {
     async roster(): Promise<Roster> {
@@ -93,39 +90,11 @@ function mine(asked: string, here: string | null): void {
   if (asked !== here) throw new Refusal(409, NOT_THIS_DIRECTORY(asked, here));
 }
 
-/** Extraction cases in `test/memory`, or none. */
-async function theCases(): Promise<ExtractionGolden[]> {
-  return existsSync(CASES) ? await casesIn<ExtractionGolden>([], CASES) : [];
-}
-
-// Mounted as `pinecall remember` does: the gateway reads the class's memory categories off this socket.
-async function inThisProcess(door: Door, cases: ExtractionGolden[], file?: string): Promise<ExtractionRun> {
-  const loaded = await load(file);
-  const pc = pinecallFor(door);
-  const held = mount(loaded.ctor, { ...mountOptions(loaded, pc), takesUnclaimed: false });
-  try {
-    await pc.connect();
-    return await extracted(door, held.slug, cases);
-  } finally {
-    pc.close();
-  }
-}
-
-/** Recall golden path and agent slug for this directory, or nulls when there is no agent. */
-async function theGolden(): Promise<{ agent: string | null; golden: string | null }> {
-  try {
-    const home = homeOf(theAgentHere());
-    return { agent: home.name, golden: home.memoryGolden };
-  } catch {
-    return { agent: null, golden: null };
-  }
-}
-
-/** Memory parts for one agent of a project. */
-export function rememberingPiecesFor(home: Home, slug: string): Pieces {
+/** Memory parts for one agent of a project; the gateway reads its categories off the `pinecall start` holding it. */
+export function rememberingPiecesFor(home: Home): Pieces {
   return {
     cases: async () => (existsSync(home.memoryCases) ? await casesIn<ExtractionGolden>([home.memoryCases], CASES) : []),
-    extract: (door, cases) => inThisProcess(door, cases, home.file),
-    golden: async () => ({ agent: slug, golden: home.memoryGolden }),
+    extract: async (door, cases) => await extracted(door, home.name, cases),
+    golden: async () => ({ agent: home.name, golden: home.memoryGolden }),
   };
 }

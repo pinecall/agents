@@ -6,7 +6,7 @@ description: Write, run or debug the goldens and personas of an agent — ring 1
 # Goldens, personas, and the rings
 
 A golden is one conversation written down; a persona is a caller, not a script. Ring 1 runs the
-class **in this terminal's own process** and lets the gateway drive and judge the conversation —
+class **in a process this terminal starts** and lets the gateway drive and judge the conversation —
 so your `@tool` bodies run against your database, and the judges, the keys and the log are the
 gateway's. The whole picture is `docs/testing-an-agent.md`.
 

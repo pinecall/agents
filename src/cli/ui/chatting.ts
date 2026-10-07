@@ -2,15 +2,13 @@
 
 import WebSocket from "ws";
 
-import type { CamelEvent, Pinecall } from "../../client/index.js";
+import type { CamelEvent } from "../../client/index.js";
 import { signed } from "../../client/signed.js";
 
-import { mount, type Mounted } from "../../runtime/connect.js";
 import { BACK_TRIES, chatUrl, waitBack, type Opened } from "../chat.js";
-import { pinecallFor } from "../client-for.js";
-import { load, mountOptions } from "../load.js";
+import type { Served } from "../serving.js";
 import type { Door } from "../testing/gateway.js";
-import { goldensIn, type Golden } from "../testing/goldens.js";
+import type { Golden } from "../testing/goldens.js";
 import { lineFor } from "../view.js";
 import { anObject, aString, someWords } from "./asked.js";
 import { Refusal } from "./refusal.js";
@@ -60,23 +58,21 @@ export interface Line {
   end(): void;
 }
 
-/** Opens lines; this process's mount by default, a fake in tests. */
+/** Opens lines at the agent a process serves; a fake in tests. */
 export interface Lines {
-  /** Open a written call, optionally in a given state (which gets its own mount). */
+  /** Open a written call, optionally in a given state, carried on its `call.started`. */
   open(contact: string | undefined, opening?: Record<string, unknown> | undefined): Promise<Line>;
   close(): Promise<void>;
 }
 
 /**
- * Chat door for one `pinecall start`. The class is mounted lazily in this process, so @tool
+ * Chat door for one `pinecall start`. Each call is served by the process `start` holds, so @tool
  * breakpoints work from the terminal; the page reads the call from the log.
  */
 export function chattingFrom(
-  door: Door,
   agent: string | null,
-  out: NodeJS.WritableStream,
-  lines: Lines = linesFromThisProcess(door, out),
-  goldens: () => Promise<Golden[]> = () => goldensIn([]),
+  lines: Lines,
+  goldens: () => Promise<Golden[]>,
 ): Chatting {
   const open = new Map<string, Line>();
   return {
@@ -147,39 +143,24 @@ async function theStateOf(
 }
 
 /**
- * Mount the class once for the console's lifetime and open one socket per call; the state a call
- * opens in rides its socket's URL. `takesUnclaimed: false` keeps real phone calls from ringing in
- * a browser tab.
+ * One socket per call at the agent `served` names; the state a call opens in rides its socket's
+ * URL. Naming the app routes the call to that process, not to the newest holder.
  */
-export function linesFromThisProcess(door: Door, out: NodeJS.WritableStream, file?: string): Lines {
-  let mounting: Promise<{ pc: Pinecall; mounted: Mounted }> | undefined;
-  const mountedOnce = async (): Promise<{ pc: Pinecall; mounted: Mounted }> => {
-    const loaded = await load(file);
-    const pc = pinecallFor(door);
-    const mounted = mount(loaded.ctor, { ...mountOptions(loaded, pc), takesUnclaimed: false });
-    await pc.connect();
-    return { pc, mounted };
-  };
+export function linesThrough(door: Door, out: NodeJS.WritableStream, served: Served): Lines {
   return {
     async open(contact: string | undefined, opening?: Record<string, unknown> | undefined): Promise<Line> {
-      const { mounted } = await (mounting ??= mountedOnce());
       const opened: Opened = {
         ...(contact === undefined ? {} : { contact }),
         ...(opening === undefined ? {} : { state: opening }),
       };
-      // Naming the app id routes the call to this process, not the last `pinecall start`. Read
-      // lazily: the id changes when the gateway restarts.
+      // Read on every dial: the id changes when the gateway restarts.
       const address = (): string => {
-        const app = mounted.agent.app;
-        return chatUrl(door.url, mounted.slug, app === undefined ? opened : { ...opened, app });
+        const app = served.app();
+        return chatUrl(door.url, served.slug, app === undefined ? opened : { ...opened, app });
       };
       return await aLine(address, door, out);
     },
-    async close(): Promise<void> {
-      const held = mounting;
-      mounting = undefined;
-      if (held !== undefined) (await held).pc.close();
-    },
+    async close(): Promise<void> {},
   };
 }
 

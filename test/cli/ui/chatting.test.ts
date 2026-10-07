@@ -4,13 +4,6 @@ import { describe, expect, it } from "vitest";
 
 import { chattingFrom, type Line, type Lines } from "../../../src/cli/ui/chatting.js";
 import { Refusal } from "../../../src/cli/ui/refusal.js";
-import type { Door } from "../../../src/cli/testing/gateway.js";
-
-const DOOR: Door = { url: "http://127.0.0.1:1", apiKey: "pk_never_sent_anywhere", world: "sandbox" };
-
-function quiet(): NodeJS.WritableStream {
-  return { write: () => true } as unknown as NodeJS.WritableStream;
-}
 
 /** Fake `Lines` that records every turn, opening state and hangup. */
 function aTerminal(): {
@@ -48,12 +41,12 @@ function aTerminal(): {
 
 describe("which class this console chats with", () => {
   it("names the class of the directory `pinecall ui` runs in", async () => {
-    const door = chattingFrom(DOOR, "clinica-norte", quiet(), aTerminal().lines, async () => []);
+    const door = chattingFrom("clinica-norte", aTerminal().lines, async () => []);
     expect(await door.roster()).toEqual({ agent: "clinica-norte", states: [] });
   });
 
   it("refuses another agent: the class mounted here is this directory's", async () => {
-    const door = chattingFrom(DOOR, "clinica-norte", quiet(), aTerminal().lines, async () => []);
+    const door = chattingFrom("clinica-norte", aTerminal().lines, async () => []);
     await expect(door.start({ agent: "tienda-sur" })).rejects.toBeInstanceOf(Refusal);
     await expect(door.start({ agent: "tienda-sur" })).rejects.toMatchObject({ status: 409 });
   });
@@ -62,7 +55,7 @@ describe("which class this console chats with", () => {
 describe("one written call", () => {
   it("opens it, files it under the contact the page named, and carries every turn down it", async () => {
     const terminal = aTerminal();
-    const door = chattingFrom(DOOR, "clinica-norte", quiet(), terminal.lines, async () => []);
+    const door = chattingFrom("clinica-norte", terminal.lines, async () => []);
 
     const opened = await door.start({ agent: "clinica-norte", as: "+34600111222" });
     await door.say({ call: opened.call, text: "quiero cambiar la cita" });
@@ -74,7 +67,7 @@ describe("one written call", () => {
 
   it("keeps two conversations apart, and each turn goes down its own socket", async () => {
     const terminal = aTerminal();
-    const door = chattingFrom(DOOR, "clinica-norte", quiet(), terminal.lines, async () => []);
+    const door = chattingFrom("clinica-norte", terminal.lines, async () => []);
 
     const first = await door.start({ agent: "clinica-norte" });
     const second = await door.start({ agent: "clinica-norte" });
@@ -86,7 +79,7 @@ describe("one written call", () => {
 
   it("hangs up, and then that call is not one this console holds any more", async () => {
     const terminal = aTerminal();
-    const door = chattingFrom(DOOR, "clinica-norte", quiet(), terminal.lines, async () => []);
+    const door = chattingFrom("clinica-norte", terminal.lines, async () => []);
 
     const opened = await door.start({ agent: "clinica-norte" });
     await door.end({ call: opened.call });
@@ -96,7 +89,7 @@ describe("one written call", () => {
   });
 
   it("refuses a call nobody here opened, and a body that is not what the page sends", async () => {
-    const door = chattingFrom(DOOR, "clinica-norte", quiet(), aTerminal().lines, async () => []);
+    const door = chattingFrom("clinica-norte", aTerminal().lines, async () => []);
     await expect(door.say({ call: "call_elsewhere", text: "hola" })).rejects.toMatchObject({ status: 404 });
     await expect(door.say({ call: "call_elsewhere" })).rejects.toMatchObject({ status: 422 });
     await expect(door.start({ agent: 3 })).rejects.toMatchObject({ status: 422 });
@@ -105,7 +98,7 @@ describe("one written call", () => {
   // An open socket would leave the gateway thinking the call is still served.
   it("ends every call it holds when the console closes", async () => {
     const terminal = aTerminal();
-    const door = chattingFrom(DOOR, "clinica-norte", quiet(), terminal.lines, async () => []);
+    const door = chattingFrom("clinica-norte", terminal.lines, async () => []);
 
     await door.start({ agent: "clinica-norte" });
     await door.start({ agent: "clinica-norte" });
@@ -120,7 +113,7 @@ describe("opening in a state", () => {
   const RESERVA = { name: "reserva", input: ["sí"], state: { stage: "confirm", slot: "martes a las diez" } };
 
   it("lists only the goldens that declare one", async () => {
-    const door = chattingFrom(DOOR, "clinica-norte", quiet(), aTerminal().lines, async () => [
+    const door = chattingFrom("clinica-norte", aTerminal().lines, async () => [
       RESERVA,
       { name: "saluda", input: ["hola"] },
     ]);
@@ -130,7 +123,7 @@ describe("opening in a state", () => {
 
   it("opens the call in that golden's state", async () => {
     const terminal = aTerminal();
-    const door = chattingFrom(DOOR, "clinica-norte", quiet(), terminal.lines, async () => [RESERVA]);
+    const door = chattingFrom("clinica-norte", terminal.lines, async () => [RESERVA]);
 
     await door.start({ agent: "clinica-norte", golden: "reserva" });
 
@@ -138,7 +131,7 @@ describe("opening in a state", () => {
   });
 
   it("refuses a golden that declares none, by name", async () => {
-    const door = chattingFrom(DOOR, "clinica-norte", quiet(), aTerminal().lines, async () => [
+    const door = chattingFrom("clinica-norte", aTerminal().lines, async () => [
       { name: "saluda", input: ["hola"] },
     ]);
 
