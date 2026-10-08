@@ -45,7 +45,7 @@ The CLI is its own package, [`pinecall`](https://github.com/pinecall/cli): it ne
 one, it starts the agents of your project through `@pinecall/agents/serve`, which is why both are
 dependencies of the project. It needs a gateway: use Pinecall's hosted one, or run your own with
 [`pip install pinecall`](https://github.com/pinecall/runtime) (see
-[from-zero](https://github.com/pinecall/runtime/blob/main/docs/from-zero.md)).
+[Self-hosting](https://docs.pinecall.io/self-hosting/overview/)).
 
 ## Quick start
 
@@ -77,7 +77,7 @@ Other useful verbs: `pinecall prompt --state <file>` prints the exact prompt a s
 (`--channel web --medium text` for the one a written chat gets);
 `pinecall docs push` uploads a knowledge base and `pinecall docs attach <base>` gives it to the
 agent; `pinecall deploy` runs the project on the box instead of your own server, with
-`pinecall secrets` for what it is started with ([docs/deploying.md](https://github.com/pinecall/cli/blob/main/docs/deploying.md)). Every verb runs against the sandbox unless `--prod` is given. The CLI reads `PINECALL_KEY`
+`pinecall secrets` for what it is started with ([Deploy to Pinecall](https://docs.pinecall.io/guides/deploy/)). Every verb runs against the sandbox unless `--prod` is given. The CLI reads `PINECALL_KEY`
 and `PINECALL_URL` from the environment or the project's `.env`. Full reference:
 [docs/the-cli.md](https://github.com/pinecall/cli/blob/main/docs/the-cli.md).
 
@@ -85,7 +85,7 @@ A project holds one or more agents: `agents/<name>/agent.tsx` and their tests in
 `test/<name>/`. Voice, model, language, greeting, knowledge and the documents an agent searches
 are per-world settings, not class fields or files in the repository: `pinecall agent set
 --language es` is how the agent's calls come to be in Spanish. Running in production on your own server:
-[docs/production.md](docs/production.md).
+[Run it on your own server](https://docs.pinecall.io/guides/own-server/).
 
 ## Development
 
@@ -120,14 +120,14 @@ The wire is the runtime's, kept in `src/wire/`; the runtime's golden call log, i
 
 | | |
 |---|---|
-| [docs/tutorial.md](docs/tutorial.md) | from an empty directory to an agent with knowledge and memory |
-| [docs/writing-an-agent.md](docs/writing-an-agent.md) | state, tools, stages, channels, knowledge, memory, hooks |
-| [docs/the-prompt.md](docs/the-prompt.md) | how the prompt is built and cached |
-| [docs/testing-an-agent.md](docs/testing-an-agent.md) | unit tests, goldens, personas, replays, scores |
-| [docs/your-first-ten-cases.md](docs/your-first-ten-cases.md) | the testing loop once: ten cases written, run, read and kept in CI |
-| [the CLI](https://github.com/pinecall/cli/blob/main/docs/the-cli.md) | every verb, in the `pinecall` repo |
-| [docs/worlds-and-teams.md](docs/worlds-and-teams.md) | keys, sandbox and production, teams |
-| [docs/production.md](docs/production.md) | running an agent on your own server |
+| [Build your first agent](https://docs.pinecall.io/start/your-first-agent/) | from an empty directory to an agent with knowledge and memory |
+| [Agent overview](https://docs.pinecall.io/concepts/agents/) | state, tools, stages, knowledge, memory, hooks |
+| [The prompt](https://docs.pinecall.io/concepts/prompt/) | how the prompt is built and cached |
+| [Tests](https://docs.pinecall.io/concepts/tests/) | unit tests, goldens, personas, replays, scores |
+| [Your first ten cases](https://docs.pinecall.io/guides/first-ten-cases/) | the testing loop once: ten cases written, run, read and kept in CI |
+| [The CLI](https://docs.pinecall.io/cli/overview/) | every verb |
+| [Sandbox and production](https://docs.pinecall.io/concepts/sandbox-and-production/) | keys, sandbox and production, teams |
+| [Run it on your own server](https://docs.pinecall.io/guides/own-server/) | running an agent on your own server |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | the package file by file |
 
 ## License

@@ -48,7 +48,7 @@ it. What to edit, by what you touched:
 |---|---|
 | a module, a directory, an entity or its fields, a line of the import table, the path something takes between two parts | `ARCHITECTURE.md` — the section, and any table that lists the file |
 | an install step, an export | `README.md` |
-| what a tenant writes, renders or tests | `docs/writing-an-agent.md` · `docs/the-prompt.md` · `docs/testing-an-agent.md` |
+| what a tenant writes, renders or tests | the site's pages in `../docs/pages/concepts/` (`agent-*.md`, `prompt-tags.md`, `tests-overview.md`, `goldens.md`, `golden-expectations.md`, `personas.md`, the judges') and `../docs/pages/guides/` — `../docs/pages/STYLE.md` says how; `docs/` here only points at the site |
 | a procedure with a trap in it — a NEVER, an order of steps, a refusal | the skill under `.claude/skills/` |
 | anything a tenant would notice | `CHANGELOG.md`, one line under `Unreleased` |
 
