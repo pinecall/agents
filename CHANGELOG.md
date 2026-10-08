@@ -7,6 +7,13 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.9.21] — a project starts with `pinecall new`
+
+### Changed
+
+- **The quick start begins with `pinecall new front-desk`** (CLI 0.9.22): a project of one agent,
+  its test, a golden and the toolchain, instead of a clone of this repository's example.
+
 ## [0.9.20] — the package is @pinecall/agents, and the CLI is its own
 
 ### Added

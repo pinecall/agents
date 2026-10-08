@@ -50,6 +50,19 @@ dependencies of the project. It needs a gateway: use Pinecall's hosted one, or r
 ## Quick start
 
 ```bash
+npm i -g pinecall
+pinecall new front-desk      # a project of one agent: the class, its test, a golden, the toolchain
+cd front-desk && npm install
+pinecall link                # sign in through the browser; writes your key to ./.env
+pinecall chat                # talk to the agent in this terminal
+pinecall test                # run its golden against a real model
+pinecall start               # run the agent (this is the process you deploy)
+```
+
+The whole example, a clinic's receptionist with stages, a calendar and documents, from this
+checkout:
+
+```bash
 pnpm install
 npm i -g pinecall            # the CLI; the example takes the framework from this checkout
 cd examples/clinica-norte
