@@ -18,8 +18,8 @@ it("reads call.started with the worker that runs the call", () => {
 });
 
 it("reads call.score with the judge that gave it", () => {
-  const score = { passed: true, judges: [], judge_calls: 1, judge_cost_usd: 0.002, judged_by: { provider: "anthropic", model: "claude-haiku-4-5", criteria: "c3f1" } };
-  expect(eventOf(decodeEntry(entry("call.score", score)))).toMatchObject({ data: { judged_by: { model: "claude-haiku-4-5" } } });
+  const score = { passed: true, judges: [], judge_calls: 1, judge_cost_usd: 0.002, judged_by: { provider: "anthropic", model: "claude-haiku-5-5", criteria: "c3f1" } };
+  expect(eventOf(decodeEntry(entry("call.score", score)))).toMatchObject({ data: { judged_by: { model: "claude-haiku-5-5" } } });
 });
 
 it("reads spend.unusual and vendor.switched", () => {
