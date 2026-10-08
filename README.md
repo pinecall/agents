@@ -124,6 +124,7 @@ The wire is the runtime's, kept in `src/wire/`; the runtime's golden call log, i
 | [docs/writing-an-agent.md](docs/writing-an-agent.md) | state, tools, stages, channels, knowledge, memory, hooks |
 | [docs/the-prompt.md](docs/the-prompt.md) | how the prompt is built and cached |
 | [docs/testing-an-agent.md](docs/testing-an-agent.md) | unit tests, goldens, personas, replays, scores |
+| [docs/your-first-ten-cases.md](docs/your-first-ten-cases.md) | the testing loop once: ten cases written, run, read and kept in CI |
 | [the CLI](https://github.com/pinecall/cli/blob/main/docs/the-cli.md) | every verb, in the `pinecall` repo |
 | [docs/worlds-and-teams.md](docs/worlds-and-teams.md) | keys, sandbox and production, teams |
 | [docs/production.md](docs/production.md) | running an agent on your own server |

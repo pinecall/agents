@@ -1,7 +1,20 @@
 # Testing an agent
 
-Five rings, and each one asks a different question. They are not levels of thoroughness: a green
-ring 0 says nothing about ring 1, and a green ring 1 says nothing about a real line.
+Testing an agent is a loop of four steps, and Pinecall runs every one of them but the first:
+
+1. **Write the cases.** A golden is a conversation written down, with what must be true at the
+   end. A persona is a caller a model plays, with a goal and a manner.
+2. **Run them.** `pinecall test` plays the goldens against a real model. `pinecall simulate` puts
+   a persona on the line, written or out loud.
+3. **Read what broke.** Every verdict carries its reason, and a golden that broke is written out
+   whole, with the exact requests the model answered.
+4. **Keep them.** The goldens are the gate in CI. After the deploy, every real call is judged at
+   hang-up by the same judges.
+
+New to it? [Your first ten cases](your-first-ten-cases.md) walks the loop once, start to finish.
+
+Each kind of test answers one question, and they are not levels of thoroughness: a green ring 0
+says nothing about ring 1, and a green ring 1 says nothing about a real line.
 
 | ring | the question | what runs it | costs |
 |---|---|---|---|
