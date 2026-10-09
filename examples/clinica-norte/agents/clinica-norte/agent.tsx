@@ -105,7 +105,7 @@ export default class ClinicaNorte extends Agent {
    * agenda devuelve la lista vacía, y esa lista vacía ES la respuesta que hay que darle—. No devuelve precios ni
    * información del centro.
    */
-  @tool({ stage: ["choose", "book"], preview: 2 })
+  @tool({ stage: ["choose", "book"], announce: "Un momento, miro la agenda." })
   async freeSlots(day: string, specialty: string): Promise<Slot[]> {
     // El día se resuelve a una FECHA aquí, no en la cabeza del modelo: «el martes» dicho un
     // viernes es una fecha y sólo una, y una cita sin fecha no es una cita.
