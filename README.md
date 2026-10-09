@@ -122,15 +122,13 @@ The wire is the runtime's, kept in `src/wire/`; the runtime's golden call log, i
 
 | | |
 |---|---|
-| [Build your first agent](https://docs.pinecall.io/start/your-first-agent/) | from an empty directory to an agent with knowledge and memory |
-| [Agent overview](https://docs.pinecall.io/concepts/agents/) | state, tools, stages, knowledge, memory, hooks |
-| [The prompt](https://docs.pinecall.io/concepts/prompt/) | how the prompt is built and cached |
-| [Tests](https://docs.pinecall.io/concepts/tests/) | unit tests, goldens, personas, replays, scores |
-| [Your first ten cases](https://docs.pinecall.io/guides/first-ten-cases/) | the testing loop once: ten cases written, run, read and kept in CI |
-| [The CLI](https://docs.pinecall.io/cli/overview/) | every verb |
-| [Sandbox and production](https://docs.pinecall.io/concepts/sandbox-and-production/) | keys, sandbox and production, teams |
-| [Run it on your own server](https://docs.pinecall.io/guides/own-server/) | running an agent on your own server |
+| [Tutorial](docs/tutorial.md) | forty minutes, from an empty directory to an agent with knowledge and memory, tested and shipped |
+| [Writing an agent](docs/writing-an-agent.md) | the class: config, state, stages, tools, hooks, the call, the panel |
+| [The view](docs/the-view.md) | the four blocks of the prompt, and `render()` |
+| [Testing an agent](docs/testing-an-agent.md) | ring 0 with no network, no key and no model, and the rings above |
+| [Production](docs/production.md) | `pinecall deploy`, `mount` in your own app, or `pinecall start --prod` |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | the package file by file |
+| [docs.pinecall.io](https://docs.pinecall.io) | the product: agents, judges, goldens, the console, the CLI |
 
 ## License
 

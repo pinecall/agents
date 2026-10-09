@@ -1,15 +1,17 @@
 # Docs
 
-How to build an agent with this package lives on [docs.pinecall.io](https://docs.pinecall.io), written as short pages,
-one idea each, from the pages `../../docs/pages/` holds. The files left here point there.
+Five pages, in the order a person meets them: the first is the walk a newcomer takes, from an empty
+directory to an agent that answers from your documents and remembers who called, and the other four
+are the reference it points at.
 
-| start with | about |
+| page | what it answers |
 |---|---|
-| [Quickstart](https://docs.pinecall.io/start/quickstart/) | from nothing to an agent that answers, in ten minutes |
-| [Build your first agent](https://docs.pinecall.io/start/your-first-agent/) | documents, memory, a golden, the console, going live |
-| [Agent overview](https://docs.pinecall.io/concepts/agents/) | the class: state, tools, stages, the prompt, the call, hooks |
-| [Tests](https://docs.pinecall.io/concepts/tests/) · [Judges](https://docs.pinecall.io/concepts/judges/) | goldens, personas, unit tests, a replay, and the score every call gets |
-| [The CLI](https://docs.pinecall.io/cli/overview/) | every verb |
+| [tutorial.md](tutorial.md) | forty minutes, from nothing: the class, a call, knowledge, the knowledge base, memory, the log, a test, and shipping it |
+| [writing-an-agent.md](writing-an-agent.md) | the class: config, state, stages, tools, hooks, the call, the panel, and what is refused when it loads |
+| [the-view.md](the-view.md) | the prompt as named blocks in two regions, and `render()`, the JSX that writes the view |
+| [testing-an-agent.md](testing-an-agent.md) | ring 0 with the package's helpers, a suite with no network, no key and no model, and the rings above |
+| [production.md](production.md) | how the agent runs where its callers reach it: `pinecall deploy`, `mount` in your own Node app, or `pinecall start --prod` |
 
-What the package IS, file by file, is [../ARCHITECTURE.md](../ARCHITECTURE.md). The example in
-`../examples/` is the same material as working code, and it is what CI and the nightly run.
+The product's own pages — what an agent is, the judges, the goldens, the console — are
+[docs.pinecall.io](https://docs.pinecall.io), written TypeScript first. The map of the package
+itself, file by file, is [../ARCHITECTURE.md](../ARCHITECTURE.md).

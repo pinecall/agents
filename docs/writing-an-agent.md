@@ -1,17 +1,242 @@
 # Writing an agent
 
-This page moved to [docs.pinecall.io](https://docs.pinecall.io), where it is written as short pages,
-one idea each, checked against the code:
+An agent is one TypeScript class, the default export of `agents/<slug>/agent.tsx`. Everything the
+model can see about it comes from four places: the docstring above the class, what the class
+declares, the docstrings of its tools, and `render()`.
 
-- [Agent overview](https://docs.pinecall.io/concepts/agents/) — An agent is a class: its fields are the state, its tools are what the model may do, its docstrings are the prompt.
-- [Project layout](https://docs.pinecall.io/concepts/project-layout/) — What pinecall new writes, where each file goes, and several agents in one repository.
-- [Agent settings](https://docs.pinecall.io/concepts/agent-settings/) — Voice, models, language, greeting and knowledge: settings of the agent, changed without a deploy.
-- [Tools](https://docs.pinecall.io/concepts/tools/) — A method the model may call: its docstring, its arguments, confirmation, masking and timeouts.
-- [Stages](https://docs.pinecall.io/concepts/stages/) — Which tools the model sees, by where the conversation is.
-- [State & visibility](https://docs.pinecall.io/concepts/state/) — Which fields are the state a call opens in, and who may see each one.
-- [The prompt](https://docs.pinecall.io/concepts/prompt/) — The blocks the model reads, which are cached, and render(): the only part that changes between turns.
-- [The call](https://docs.pinecall.io/concepts/the-call/) — this.call: who is on the line, on which channel, and what the agent can do to the call.
-- [Hooks & events](https://docs.pinecall.io/concepts/hooks/) — What runs when a call opens and ends, and facts your backend sends in mid-call.
-- [Overview](https://docs.pinecall.io/concepts/knowledge/) — What the agent knows by heart, what it looks up on every turn, and what it remembers about a caller.
-- [Memory](https://docs.pinecall.io/concepts/memory/) — What the agent keeps about a contact between calls, and when it recalls it.
-- [The side panel: @view](https://docs.pinecall.io/guides/side-panel/) — What a supervisor sees beside a conversation, drawn by the agent.
+```tsx
+import { Agent } from "@pinecall/agents";
+
+/**
+ * You are the front desk of Clínica Norte. Formal, short sentences.
+ * Everything you say is read aloud: no lists, no markdown.
+ */
+export default class ClinicaNorte extends Agent {}
+```
+
+That docstring is the `identity` block of the prompt — the first of the static blocks, which never
+change during a call and are what a provider caches. Write it as instructions to a person, not as
+documentation. It must be a `/** … */` comment directly above the class: the CLI hands the class
+its own source, so the comment survives compilation. `static doc = "…"` says it instead, for a
+build that strips comments.
+
+## Config: what the agent *is*
+
+Written on the class, because it is not something the agent remembers. It never changes during a
+call and no view renders it.
+
+| written | what it does |
+|---|---|
+| `channelRules = false` | leaves out the `<channel>` part of the prompt: how to write for a voice, a website's chat, WhatsApp |
+| `static slug = "front-desk"` | the name the agent registers as; left out, the folder's name. A class served under another slug is refused |
+| `static events = { "slot.released": { from: ["app"] } }` | the outside events the agent takes, and from whom: `app` is your backend, `participant` a browser in the call |
+
+### The world's, not the class's
+
+Everything the agent **runs on** is the world's: set per world, versioned, with who set it and
+why, and changed without a deploy — by `pinecall agent set`, the console's Settings tab, or the
+verb the table names. A class that still declares one of these fields is refused when it loads,
+before a prompt is printed or a gateway is knocked at, with the verb that sets it now:
+
+```
+`voice` is the world's now, not the class's: pinecall agent set --voice <name> — remove it from the class
+```
+
+| field | what it is | where it is set |
+|---|---|---|
+| `voice` | a voice **by name** — the platform resolves it to a vendor and an id | `pinecall agent set --voice` |
+| `llm` | `haiku`, `sonnet`, `opus`, or `vendor/model` | `pinecall agent set --llm` |
+| `stt` | the ears: `deepgram` (Flux), `soniox`, or `vendor/model` | `pinecall agent set --stt` |
+| `language` | the language the call is in | `pinecall agent set --language` |
+| `greeting` | how the call opens: the words, or what the model reads before finding its own | `pinecall agent set --greeting '…'` · `--reply '…'` |
+| `hangup` | whether the model may end the call itself, and when, in your words | `pinecall agent set --hangup '…'` |
+| `says` | how a word the voice would misread is said | `pinecall lexicon add <word> --say '…'` |
+| `hears` | the words the ears must know: names, brands, the doctor's surname | `pinecall lexicon hear <word> …` |
+| `memory` | what to remember about a caller across calls, and what never to | `pinecall memory policy --remember '…' --forget '…'` |
+| `record` | whether the call is recorded | `pinecall agent set --record on\|off` |
+| `knowledge` | what the agent knows by heart: a page of Markdown, read whole on every call | `pinecall agent knowledge edit` |
+| `docs` | the bases the agent searches per turn | `pinecall docs push`, then `pinecall docs attach <base>` |
+
+**Neither a fact the agent remembers nor a chunk of a base ever reaches the prompt.** Both arrive
+as a tool result, in the history, where a model reads them as information rather than as an
+instruction. A tool that searches calls `this.knowledge.search(…)`; the class says nothing else
+about it, and a class that reads `this.knowledge` is refused at registration when no base is
+attached, rather than at the first turn.
+
+## State: what it remembers
+
+Every own field of the instance is state, and so is every getter. Each call gets its own instance,
+so field initializers run once per call and two callers never share a list.
+
+```tsx
+import { Agent, state, type Stages } from "@pinecall/agents";
+
+export default class ClinicaNorte extends Agent {
+  @state stage: Stages<"identify" | "choose" | "book" | "done"> = "identify";
+  @state({ pii: true }) patient?: Patient | undefined;
+  @state slots: Slot[] = [];
+  @state proposed?: Slot | undefined;
+
+  get identified() {          // derived: in every snapshot, assigned by nobody
+    return this.patient !== undefined;
+  }
+
+  private agenda() {          // a method is a collaborator, never state
+    return new Agenda();
+  }
+}
+```
+
+- **`stage`** is typed with `Stages<…>`, which names its values once: a tool's `stage` uses the same
+  words, and a misspelled stage is a compile error.
+- **`@state`** says who may see a field: `@state({ pii: true })` masks it in the log,
+  `@state({ visibility: "public" })` lets a participant's browser read it, and bare `@state` is the
+  default, `tenant`. **Decorating one field decides them all**: a class with no `@state` has every
+  field as state, and a class with any has those and nothing else. An undecorated field is then
+  scratch space, out of the prompt, the log and goldens — `stage` included, so the tools it gates
+  would never show. Decorate every field, or none.
+- **A getter is state**, read every time the state is copied. A collaborator belongs in a method.
+
+**Tools and hooks are the only writers.** Once the agent is sealed — every call seals its instance —
+a write anywhere else throws `UnauthoredWrite`:
+
+```
+state field patient was assigned outside a tool and outside a lifecycle hook; tools are the only writers of state
+```
+
+Every write is recorded with its author — the tool's name, `hook:onCall`, `event:<name>` — carried
+by `AsyncLocalStorage`, so two calls served at the same moment never read each other's.
+`this.collapse("…")` replaces the record with one sentence; `this.log(name, data)` writes a line of
+your own into the call's log.
+
+## Tools: what the model may do
+
+```tsx
+/** Finds the patient's file by their full name and phone. Call it only once you have both. */
+@tool({ stage: "identify", pii: ["name", "phone"] })
+async findPatient(name: string, phone: string): Promise<Patient | null> {
+  this.patient = await this.agenda().find(name, phone);
+  if (this.patient) this.stage = "choose";
+  return this.patient ?? null;
+}
+```
+
+The docstring is what the model reads to choose the tool, joined into one line. The signature is
+the schema it fills: `string`, `number`, `boolean` and arrays of them are typed; an interface or a
+type declared in the same file is read field by field; an optional parameter is not required. What
+the model sends is checked against it before the method runs.
+
+| option | what it does |
+|---|---|
+| `stage` | visible while the state is in this stage, or one of these: `stage: ["choose", "book"]` |
+| `when` | a question asked of the state on every change: `when: (s) => s.slots.length > 0` |
+| `confirm` | the sentence said after the tool runs. **This is what makes a tool irreversible on the wire**; `{{result.x}}` names a field of what it returns |
+| `preview` | how many items of a list the *model* sees. The state keeps every one |
+| `pii` | the parameters that carry personal data, masked in the log |
+| `timeout` | how many seconds the platform waits for this method: 30 unless set, 300 at most |
+| `params` | an explicit zod schema, when the signature is not enough |
+
+A tool that throws does not crash the call: its message becomes the tool's result, marked as an
+error, and the model reads it. Throw a sentence a model can use — "Tuesday has no free slots" —
+never a stack trace. And ask the model for a word, not a record: `book(slot: string)`, looked up
+among the slots it was offered, is safer than `book(slot: Slot)`.
+
+## The hooks
+
+```tsx
+override async onCall(call: Call) {   // a call started; writes here are authored by the hook
+  this.patient = await this.agenda().byPhone(call.from ?? "");
+  if (this.patient) this.stage = "choose";
+}
+
+override onEnd(call: Call) {          // a line logged here still lands
+  this.log("outcome", { stage: this.stage });
+}
+
+override onEvent(name: string, data: Record<string, unknown>, meta: EventMeta) {}   // an accepted outside fact
+override onMemory(ops: MemoryOp[], call: Call) {}                                   // memory read or written
+```
+
+`onCall` runs before the first prompt goes out, so the model never reads a state the call was not
+in; the state a golden or a persona opens the call in is applied after it, so the hook never
+overwrites it. An outside fact reaches `onEvent` only if the class declared the pair in
+`static events`: an event declared `from: ["app"]` that arrives from a browser is somebody else's
+event with your name on it, and the hook never sees it.
+
+## The call
+
+Inside a tool, a hook or `render()`, `this.call` is the live call; outside one it throws.
+
+```tsx
+await this.say("One moment, let me check.");        // true once the turn lands, false after 30 s
+await this.reply("Tell them it is booked.");        // the model speaks, guided by words nobody hears
+this.call.send("cart", { total: 42 });              // a payload to the browsers in the room
+this.call.participant(identity).mute();             // and .remove()
+this.call.invite("+34910000001", { kind: "sip" });  // a phone leg into the call
+await this.call.transfer("+34910000002");           // { ok, to, mode, error? }: ok false if they are still here
+await this.call.attention("wants to talk to a person", { waitS: 60 });   // { ok, by, error? }
+this.call.hold();                                   // and unhold()
+this.call.dtmf("1#");
+this.call.claim("4821");                            // the page showing 4821 follows this call
+this.call.callback("+34600000001", { when: "tomorrow afternoon", note: "a quote" });
+this.call.optOut("does not want more calls");       // their number joins the do-not-call list
+this.call.hangup("done");
+await this.knowledge.search("summer opening hours", { k: 3 });   // the chunks, searched for this call
+```
+
+`this.call` also carries `id`, `contact`, `from`, `channel`, `medium`, `today` — the day the call
+opened, which is what "next Tuesday" is counted from — `history`, `room` and `claimed`.
+
+There is no LiveKit here and no escape hatch to it: a need the room cannot express is a new
+command with a name.
+
+## The panel beside a conversation: `@view`
+
+The console draws a pane beside every thread in **Calls**. A class that declares a view has its own
+panel drawn there — the customer's file, their orders, the balance — from your own systems:
+
+```tsx
+import { Agent, view, type Who } from "@pinecall/agents";
+import { Badge, Panel, Row, Rows, Stat, Table } from "@pinecall/agents/panels";
+
+async function CustomerCard(who: Who) {
+  const client = await crm.find(who.contact);
+  if (client === undefined) return <Panel title="Not on file">Not in the CRM.</Panel>;
+  return (
+    <Panel title={client.name}>
+      <Rows>
+        <Row label="Since">{client.since}</Row>
+        <Row label="Area">{client.area}</Row>
+      </Rows>
+      <Stat label="Jobs" value={client.jobs.length} />
+      <Table columns={["date", "job", "amount"]} rows={client.jobs} />
+      <Badge tone={client.debt > 0 ? "warn" : "good"}>{client.debt > 0 ? "owes" : "paid up"}</Badge>
+    </Panel>
+  );
+}
+
+@view(CustomerCard, "Customer")
+export default class ClinicaNorte extends Agent {}
+```
+
+What reaches the console is a tree of the closed catalogue — `Panel`, `Rows`, `Row`, `Stat`,
+`Table`, `Badge`, `Text` — drawn by the console's own parts; nothing a tenant writes reaches the
+page's styling or its scripts. `who` is the conversation — `agent`, `contact`, `call` — and nothing
+else: the panel is read beside threads that ended weeks ago, so it fetches what it shows. One per
+class.
+
+## What is refused when the class loads
+
+Every one of these is refused before any call, with a message that says what to write:
+
+| refused | the sentence |
+|---|---|
+| a tool with no docstring | `tool book: without a docstring no model can choose it; write a /** one line */ above the method` |
+| a tool name a model cannot call | `a tool name is one word a model can call, not …` |
+| `pii: ["dni"]` on a tool with no `dni` | `tool book: pii names parameters the tool has; unknown: dni` |
+| `stage` on a class with no `stage` field | `tool book: stage names a value of this agent's own stage field, and ClinicaNorte declares none; add \`stage: Stages<"…"> = "…"\` to the class, or ask when(state) instead` |
+| `@tool` on something that is not a method | `@tool goes on a method; … is not one` |
+| `@state({ pii: true, visibility: "public" })` | `two different answers to one question; write one` |
+| both `@render(Prompt)` and a `render()` method | `ClinicaNorte declares both @render(Prompt) and a render() method; two ways to answer one question — keep one` |
+| two `@view` decorators | `ClinicaNorte declares two views (…); a class draws one panel` |
+| `voice`, `llm`, `stt`, `language`, `greeting`, `hangup`, `says`, `hears`, `memory`, `record`, `knowledge`, `docs` | `` `<field>` is the world's now, not the class's: <verb> — remove it from the class`` |
