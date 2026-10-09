@@ -131,3 +131,17 @@ describe("what cannot be served", () => {
     expect(io.said()).toContain("says its slug is otra, and it is served as una");
   });
 });
+
+describe("a registration the gateway refuses", () => {
+  it("is one sentence on err and exit 2, never a stack", async () => {
+    const held = await FakeGateway.start({ apiKey: KEY, taken: [SLUG] });
+    gateway = held;
+    const io = anIo({ PINECALL_URL: held.url, PINECALL_KEY: KEY });
+
+    const code = await main(["start", "--file", AGENT, "--slug", SLUG], io);
+
+    expect(code).toBe(2);
+    expect(io.said()).toContain(`${SLUG} answers at a door somebody else has`);
+    expect(io.said()).not.toContain("    at ");
+  });
+});

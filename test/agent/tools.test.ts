@@ -38,7 +38,7 @@ describe("visibleTools", () => {
 });
 
 describe("the spec the wire carries", () => {
-  it("names its fields the way protocol/schema/defs.json names them", () => {
+  it("names its fields the way the wire names them", () => {
     const spec = toolNamed(clinica(), "book")?.spec;
     expect(spec).toMatchObject({
       name: "book",

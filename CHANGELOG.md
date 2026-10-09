@@ -7,8 +7,11 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.9.22] — a refused registration is a sentence
+
 ### Changed
 
+- A registration the gateway refuses — a slug that belongs to another org, a key it does not take — is one sentence on stderr and exit 2 from the serve entry, instead of a stack trace and exit 1.
 - `docs/` is the package's own reference again — the tutorial, the class, the view, testing, production — instead of five stubs pointing at the site; the site's SDKs tab is synced from it.
 - The README installs the framework alone in a project, and the CLI once per machine: a project no longer lists `pinecall`, since Pinecall starts a hosted project with its own. Every example is in English.
 

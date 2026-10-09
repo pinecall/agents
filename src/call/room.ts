@@ -3,7 +3,7 @@
 import { type Camel, type CommandData } from "../wire/codec.js";
 import { type CommandType } from "../wire/registry.js";
 
-/** A participant's role in the call (protocol/schema/defs.json). */
+/** A participant's role in the call (the wire's `ParticipantKind`, src/wire/defs.ts). */
 export type ParticipantKind = "caller" | "agent" | "supervisor" | "listener" | "sip";
 
 /** One participant in the room. */
