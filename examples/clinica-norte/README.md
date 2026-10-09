@@ -65,6 +65,15 @@ What the front desk knows by heart — hours, prices, what needs an authorisatio
 console, Settings ▸ Knowledge (or `pinecall agent knowledge edit`), and the model reads it whole on
 every call. The voice, the model and the greeting are on the same screen, or `pinecall agent set`.
 
+What it remembers about a patient between calls is a policy on the gateway, Settings ▸ Memory in
+the console or one line of the CLI, and the goldens of `test/clinica-norte/memory/` and the view's
+`remembers("médico habitual")` read these five categories:
+
+```bash
+pinecall memory policy --team --remember alergias --remember 'cómo prefiere que le llamen' \
+  --remember 'cuándo prefiere que le llamen' --remember 'médico habitual' --forget pagos
+```
+
 The documents it searches are not the repository's either: they are a base on the gateway, written
 in the console, Settings ▸ Docs, file by file. `docs/clinica-norte/` is here only because this is an
 example: the sample to create the base the first time. A `docs push` replaces the whole base, so
