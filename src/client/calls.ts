@@ -143,6 +143,8 @@ export class Call {
         this.status = "active";
         this.#line(event.data);
         this.medium = event.data.medium ?? null;
+        // A run's call says its day, which a golden may have pinned; a person's runs on the clock's.
+        if (event.data.today != null) this.today = event.data.today;
         return;
       case "call.ended":
         this.status = "ended";
@@ -153,7 +155,7 @@ export class Call {
         this.#line(event.data.started);
         this.medium = event.data.started.medium ?? null;
         this.state = { ...event.data.state };
-        this.today = dayOf(event.data.started.startedAt);
+        this.today = event.data.started.today ?? dayOf(event.data.started.startedAt);
         // `claimed` is absent from gateways before protocol 0.6.11.
         this.claimed = event.data.claimed ?? null;
         return;

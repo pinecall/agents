@@ -7,6 +7,12 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.9.23] — a call runs on the day a golden pinned
+
+### Added
+
+- `call.today` is the day `call.started` names when a golden pinned one (`today`), so an agent resolves "on Monday" against the golden's day, as the model does; the clock's day otherwise, as before. The field needs runtime 0.1.10.
+
 ## [0.9.22] — a refused registration is a sentence
 
 ### Changed

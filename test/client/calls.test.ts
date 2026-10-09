@@ -66,6 +66,17 @@ describe("a call", () => {
     await vi.waitFor(() => expect(call.medium).toBeNull());
   });
 
+  it("runs on the day call.started names when a run pinned one, and on the clock's day otherwise", async () => {
+    const call = await serving();
+    const started = { channel: "web", direction: "inbound", from: "web", to: AGENT, caller: null, started_at: Date.now() / 1000 };
+
+    gateway.emit(AGENT, CALL, "call.started", { ...started, run: "run_1", today: "2026-09-17" });
+    await vi.waitFor(() => expect(call.today).toBe("2026-09-17"));
+    gateway.emit(AGENT, CALL, "call.started", started);
+    await vi.waitFor(() => expect(call.status).toBe("active"));
+    expect(call.today).toBe("2026-09-17");
+  });
+
   it("writes the wire's own key names, never the app's", async () => {
     const call = await serving();
     call.say("Un momento");

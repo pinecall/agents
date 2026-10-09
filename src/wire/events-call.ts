@@ -93,6 +93,8 @@ export const CallStartedSchema = z.strictObject({
   medium: MediumSchema.nullish(),
   /** The state the call opens in, when whoever opened it asked for one (a golden, a persona, `?state=`); absent otherwise. */
   state: z.record(z.string(), z.unknown()).nullish(),
+  /** The day the call runs in, `YYYY-MM-DD`, on a call an eval run opened (a golden may pin it); absent on every other call. */
+  today: z.string().nullish(),
 });
 
 /** A call changed hands without ending. */
