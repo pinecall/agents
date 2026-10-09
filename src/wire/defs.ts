@@ -179,6 +179,7 @@ export const ToolSpecSchema = z.strictObject({
   parameters: z.record(z.string(), z.unknown()),
   side_effect: z.enum(["read", "write", "irreversible"]).nullish(),
   confirm: z.string().nullish(),
+  announce: z.string().nullish(),
   pii: z.array(z.string()).nullish(),
   timeout_s: z.number().nullish(),
 });

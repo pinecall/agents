@@ -7,6 +7,12 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.9.24] — a tool announces itself
+
+### Added
+
+- `@tool({ announce: "Let me check the agenda." })`: what the agent says as the tool starts, when the model's turn said nothing itself; a turn that spoke and then called the tool is not announced twice. Needs runtime 0.1.11.
+
 ## [0.9.23] — a call runs on the day a golden pinned
 
 ### Added

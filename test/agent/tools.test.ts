@@ -54,6 +54,11 @@ describe("the spec the wire carries", () => {
     expect(toolNamed(agent, "findPatient")?.spec.side_effect).toBe("read");
   });
 
+  it("carries the announcement the tool declared, and none when it declared none", () => {
+    expect(toolNamed(clinica(), "freeSlots")?.spec.announce).toBe("Un momento, miro la agenda.");
+    expect(toolNamed(clinica(), "book")?.spec.announce).toBeUndefined();
+  });
+
   it("carries the pii the tool declared", () => {
     expect(toolNamed(clinica(), "findPatient")?.spec.pii).toEqual(["name", "phone"]);
   });

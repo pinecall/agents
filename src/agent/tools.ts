@@ -23,6 +23,8 @@ export interface ToolOptions<T = unknown> {
   stage?: StageOf<T> | StageOf<T>[];
   /** Confirmation read back after the tool runs; `{{result.x}}` is filled from its return value. Marks the tool irreversible. */
   confirm?: string;
+  /** What the agent says as the tool starts ("Let me check the agenda."), when the model's turn said nothing itself. */
+  announce?: string;
   /** Number of rows of a list result shown to the model; the full result is kept. */
   preview?: number;
   /** Parameter names holding personal data, masked in the log. */
@@ -127,6 +129,7 @@ function specFor(ctor: Function, declared: Declared): ToolSpec {
     side_effect: options.confirm ? "irreversible" : "read",
   };
   if (options.confirm !== undefined) spec.confirm = options.confirm;
+  if (options.announce !== undefined) spec.announce = options.announce;
   if (options.pii !== undefined) spec.pii = [...options.pii];
   if (options.timeout !== undefined) spec.timeout_s = options.timeout;
   return spec;

@@ -67,7 +67,7 @@ export default class ClinicaNorte extends Agent {
   }
 
   /** Horas libres de un día. */
-  @tool({ when: (s) => s.identified && !s.done, preview: 2 })
+  @tool({ when: (s) => s.identified && !s.done, preview: 2, announce: "Un momento, miro la agenda." })
   async freeSlots(day: string): Promise<Slot[]> {
     return (this.slots = await agenda.free(day));
   }

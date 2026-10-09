@@ -131,6 +131,7 @@ the model sends is checked against it before the method runs.
 | `stage` | visible while the state is in this stage, or one of these: `stage: ["choose", "book"]` |
 | `when` | a question asked of the state on every change: `when: (s) => s.slots.length > 0` |
 | `confirm` | the sentence said after the tool runs. **This is what makes a tool irreversible on the wire**; `{{result.x}}` names a field of what it returns |
+| `announce` | what the agent says as the tool starts ("Let me check the agenda."), when the model's turn said nothing itself; a turn that spoke first is not announced twice |
 | `preview` | how many items of a list the *model* sees. The state keeps every one |
 | `pii` | the parameters that carry personal data, masked in the log |
 | `timeout` | how many seconds the platform waits for this method: 30 unless set, 300 at most |
