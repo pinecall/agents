@@ -44,7 +44,7 @@ npm i @pinecall/agents pinecall   # the framework, and the CLI that runs what yo
 The CLI is its own package, [`pinecall`](https://github.com/pinecall/cli): it never loads this
 one, it starts the agents of your project through `@pinecall/agents/serve`, which is why both are
 dependencies of the project. It needs a gateway: use Pinecall's hosted one, or run your own with
-[`pip install pinecall`](https://github.com/pinecall/runtime) (see
+[`pip install pinecall-runtime`](https://github.com/pinecall/runtime) (see
 [Self-hosting](https://docs.pinecall.io/self-hosting/overview/)).
 
 ## Quick start
@@ -76,7 +76,7 @@ pinecall test                # run the goldens
 Other useful verbs: `pinecall prompt --state <file>` prints the exact prompt a state produces
 (`--channel web --medium text` for the one a written chat gets);
 `pinecall docs push` uploads a knowledge base and `pinecall docs attach <base>` gives it to the
-agent; `pinecall deploy` runs the project on the box instead of your own server, with
+agent; `pinecall deploy` runs the project on Pinecall instead of your own server, with
 `pinecall secrets` for what it is started with ([Deploy to Pinecall](https://docs.pinecall.io/guides/deploy/)). Every verb runs against the sandbox unless `--prod` is given. The CLI reads `PINECALL_KEY`
 and `PINECALL_URL` from the environment or the project's `.env`. Full reference:
 [docs/the-cli.md](https://github.com/pinecall/cli/blob/main/docs/the-cli.md).
