@@ -185,7 +185,8 @@ await this.knowledge.search("summer opening hours", { k: 3 });   // the chunks, 
 ```
 
 `this.call` also carries `id`, `contact`, `from`, `channel`, `medium`, `today` — the day the call
-opened, which is what "next Tuesday" is counted from — `history`, `room` and `claimed`.
+runs in, which is what "next Tuesday" is counted from: the day a golden pinned when one did, else
+the day the call opened — `history`, `room` and `claimed`.
 
 There is no LiveKit here and no escape hatch to it: a need the room cannot express is a new
 command with a name.
