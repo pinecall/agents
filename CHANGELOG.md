@@ -7,6 +7,10 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+### Changed
+
+- The README installs the framework alone in a project, and the CLI once per machine: a project no longer lists `pinecall`, since Pinecall starts a hosted project with its own. Every example is in English.
+
 ## [0.9.21] — a project starts with `pinecall new`
 
 ### Changed

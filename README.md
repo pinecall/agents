@@ -5,12 +5,13 @@ methods are what the model can call, docstrings are the prompt, and `render()` d
 current turn.
 
 ```tsx
+/** You are the front desk of Clínica Norte. Formal, short sentences. */
 export default class ClinicaNorte extends Agent {
   stage: Stages<"identify" | "choose" | "book"> = "identify";
   patient?: Patient | undefined;
   slot?: Slot | undefined;
 
-  /** Busca al paciente por nombre y teléfono. Pide los dos antes de llamarla. */
+  /** Finds the patient by name and phone. Ask for both before calling it. */
   @tool({ stage: "identify", pii: ["name", "phone"] })
   async findPatient(name: string, phone: string): Promise<Patient | null> {
     this.patient = await this.agenda().find(name, phone);
@@ -22,8 +23,8 @@ export default class ClinicaNorte extends Agent {
   override render() {
     return (
       <>
-        {this.stage === "identify" && <p>Saluda y pide nombre y teléfono.</p>}
-        {this.patient && <p>Hablas con {this.patient.name}, ya en la ficha.</p>}
+        {this.stage === "identify" && <p>Greet the caller and ask for their name and phone.</p>}
+        {this.patient && <p>You are talking to {this.patient.name}, already on file.</p>}
       </>
     );
   }
@@ -38,12 +39,13 @@ WebSocket.
 ## Install
 
 ```bash
-npm i @pinecall/agents pinecall   # the framework, and the CLI that runs what you write in it
+npm i @pinecall/agents   # in the project: the framework your agents are written in
+npm i -g pinecall        # once per machine: the CLI, the same for TypeScript, Ruby and Python
 ```
 
-The CLI is its own package, [`pinecall`](https://github.com/pinecall/cli): it never loads this
-one, it starts the agents of your project through `@pinecall/agents/serve`, which is why both are
-dependencies of the project. It needs a gateway: use Pinecall's hosted one, or run your own with
+The CLI is its own package, [`pinecall`](https://github.com/pinecall/cli), and never a dependency
+of the project: it never loads this one, it starts the agents of your project through the
+`@pinecall/agents/serve` your project pinned. It needs a gateway: use Pinecall's hosted one, or run your own with
 [`pip install pinecall-runtime`](https://github.com/pinecall/runtime) (see
 [Self-hosting](https://docs.pinecall.io/self-hosting/overview/)).
 

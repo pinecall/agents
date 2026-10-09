@@ -1,80 +1,83 @@
 # Clínica Norte
 
-El tenant completo: una clase que se rinde a sí misma, la agenda de la clínica y los documentos que
-el agente busca. Todo lo demás — la máquina de estados, el gate de confirmación, la memoria, el
-retrieval, el log y la consola — lo pone la plataforma. Y lo que el agente se sabe de memoria, la
-voz, el modelo, el saludo y las palabras no están en este repo: son del mundo, en Settings.
+The whole tenant: a class that renders itself, the clinic's agenda, and the documents the agent
+searches. Everything else — the state machine, the confirmation gate, memory, retrieval, the log
+and the console — is the platform's. And what the agent knows by heart, the voice, the model, the
+greeting and the words are not in this repository: they are the world's, in Settings.
+
+The clinic is Spanish and so is everything its callers hear: the class's docstrings, its view and
+the goldens are in Spanish on purpose. The framework's own rules are English, and tell the model to
+answer in the caller's language.
 
 ```
 agents/clinica-norte/
-  agent.tsx           la clase: el estado son campos, las tools son métodos con docstring, y
-                      render() es el prompt como función del estado — lo último que lee el modelo
-  agenda.ts, crm.ts   los sistemas de la clínica; aquí, dobles deterministas
-docs/clinica-norte/   datos de muestra: la base que el agente BUSCA, para subirla una vez
+  agent.tsx           the class: the state is its fields, the tools are methods with a docstring,
+                      and render() is the prompt as a function of the state — the last thing the model reads
+  agenda.ts, crm.ts   the clinic's systems; here, deterministic doubles
+docs/clinica-norte/   sample data: the base the agent SEARCHES, to upload once
 test/clinica-norte/
-  agent.test.ts       la clase como software
-  goldens/            las conversaciones que `pinecall test` ejecuta; docs.json y memory.json,
-                      los goldens del retrieval y de la memoria
-  personas/           la semilla de quienes llaman: `pinecall personas push` las sube al gateway
-  memory/             los casos de extracción de `pinecall remember`
+  agent.test.ts       the class as software
+  goldens/            the conversations `pinecall test` runs; docs.json and memory.json, the
+                      goldens of retrieval and of memory
+  personas/           the seed of who calls: `pinecall personas push` uploads them to the gateway
+  memory/             the extraction cases of `pinecall remember`
 ```
 
-## El tsconfig
+## The tsconfig
 
 ```json
 { "extends": "@pinecall/agents/tsconfig.tenant.json" }
 ```
 
-Eso es todo lo que el tenant escribe. El preset trae el runtime JSX del `render()` y
-`experimentalDecorators`, que `@tool` y `@state` todavía necesitan porque el transform de vite 8
-(oxc) solo implementa los decoradores legacy — medido, con versiones, en
-`docs/decisions/agent.md`. El día que oxc traiga los del TC39, el flag desaparece del preset y
-aquí no se toca nada.
+That is all a tenant writes. The preset brings the JSX runtime of `render()` and
+`experimentalDecorators`, which `@tool` and `@state` still need because vite 8's transform (oxc)
+implements only the legacy decorators. The day oxc ships TC39's, the flag leaves the preset and
+nothing here changes.
 
-## Probarlo
+## Test it
 
 ```bash
-pnpm --filter @pinecall/example-clinica-norte test    # vitest, sin red y sin modelo
+pnpm --filter @pinecall/example-clinica-norte test    # vitest, no network and no model
 pnpm --filter @pinecall/example-clinica-norte lint    # tsc --noEmit
 ```
 
-`test/clinica-norte/agent.test.ts` recorre las cuatro fases con la clase en la mano;
-`walkthrough.test.ts` las recorre otra vez contra el `FakeGateway` del SDK, con los mismos
-`tool.result` que vería un modelo, incluido el "no" de la hora de las 13:00, que la agenda rechaza
-siempre.
+`test/clinica-norte/agent.test.ts` walks the four stages with the class in hand;
+`walkthrough.test.ts` walks them again against the SDK's `FakeGateway`, with the same
+`tool.result`s a model would see, including the "no" for the 13:00 slot, which the agenda always
+refuses.
 
-## Ejecutarlo
+## Run it
 
-Con el CLI, que es su propio paquete (`npm i -g pinecall`, o `node ../../../cli/bin/pinecall.js`
-desde un checkout de [pinecall/cli](https://github.com/pinecall/cli) al lado de este):
+With the CLI, which is its own package (`npm i -g pinecall`, or `node ../../../cli/bin/pinecall.js`
+from a checkout of [pinecall/cli](https://github.com/pinecall/cli) beside this one):
 
 ```bash
-pinecall link               # una vez: inicia sesión y escribe PINECALL_KEY en .env
-pinecall start              # la app: registra el agente y responde sus tools
-pinecall chat               # la app en ESTA terminal, y una llamada escrita contra ella
-pinecall test               # los goldens de test/clinica-norte/goldens/, puntuados por el runtime
-pinecall docs push          # una vez: docs/clinica-norte/ al gateway, como la base clinica-norte
-pinecall docs attach clinica-norte --k 4      # el agente la busca por turno
-pinecall simulate --persona apurado --judge   # una persona improvisada por un modelo, y su call.score
+pinecall link               # once: signs in and writes PINECALL_KEY to .env
+pinecall start              # the app: registers the agent and answers its tools
+pinecall chat               # the app in THIS terminal, and a written call against it
+pinecall test               # the goldens of test/clinica-norte/goldens/, scored by the runtime
+pinecall docs push          # once: docs/clinica-norte/ to the gateway, as the base clinica-norte
+pinecall docs attach clinica-norte --k 4      # the agent searches it every turn
+pinecall simulate --persona apurado --judge   # a persona a model improvises, and its call.score
 ```
 
-Lo que la recepción se sabe de memoria — horarios, precios, qué necesita autorización — se escribe
-en la consola, Settings ▸ Knowledge (o `pinecall agent knowledge edit`), y el modelo lo lee entero
-en cada llamada. La voz, el modelo y el saludo, en la misma pantalla, o `pinecall agent set`.
+What the front desk knows by heart — hours, prices, what needs an authorisation — is written in the
+console, Settings ▸ Knowledge (or `pinecall agent knowledge edit`), and the model reads it whole on
+every call. The voice, the model and the greeting are on the same screen, or `pinecall agent set`.
 
-Los documentos que busca tampoco son del repo: son una base del gateway, y se escriben en la consola,
-Settings ▸ Docs, archivo por archivo. `docs/clinica-norte/` está aquí solo porque es un ejemplo: la
-muestra para crear la base la primera vez. Un `docs push` reemplaza la base entera, así que después
-de editarla en la consola no se vuelve a empujar.
+The documents it searches are not the repository's either: they are a base on the gateway, written
+in the console, Settings ▸ Docs, file by file. `docs/clinica-norte/` is here only because this is an
+example: the sample to create the base the first time. A `docs push` replaces the whole base, so
+once it is edited in the console it is not pushed again.
 
-Los goldens viven en `test/clinica-norte/goldens/`: uno por fichero, `{state, input, expect}`.
+The goldens live in `test/clinica-norte/goldens/`: one per file, `{state, input, expect}`.
 
-Las personas son del agente y las guarda el gateway, junto a sus settings: su objetivo, su forma de
-hablar y los datos que saben de sí mismas — nunca un guion: un modelo las improvisa turno a turno.
-`pinecall personas` las enumera, `pinecall personas show apurado` abre una y `pinecall personas add`
-escribe otra; la pantalla Personas de la consola escribe las mismas. Los ficheros de
-`test/clinica-norte/personas/` son la semilla de este ejemplo: `pinecall personas push` los sube una
-vez, y a partir de ahí se editan donde vive el resto del mundo del agente.
+The personas are the agent's and the gateway keeps them, beside its settings: their goal, how they
+talk and what they know about themselves — never a script: a model improvises them turn by turn.
+`pinecall personas` lists them, `pinecall personas show apurado` opens one and `pinecall personas
+add` writes another; the console's Personas screen writes the same. The files in
+`test/clinica-norte/personas/` are this example's seed: `pinecall personas push` uploads them once,
+and from then on they are edited where the rest of the agent's world lives.
 
-El paciente `Ana García`, teléfono `+34 600 000 001`, tiene ficha; cualquier hora de las 13:00 la
-agenda la rechaza, así que el camino del "ese hueco acaba de ocuparse" se ve sin trucar nada.
+The patient `Ana García`, phone `+34 600 000 001`, has a file; the agenda refuses any 13:00 slot, so
+the "that slot was just taken" path shows without faking anything.
