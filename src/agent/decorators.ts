@@ -1,4 +1,4 @@
-/** The `@tool({...})` method decorator and the `@render(Prompt)` class decorator. */
+/** The `@tool({...})` method decorator, and the `@render(Prompt)`, `@voice`, `@llm` and `@stt` class decorators. */
 
 import { withAuthorAsync } from "./authors.js";
 import { lowerStage } from "./stages.js";
@@ -53,4 +53,55 @@ export function render<T extends object>(prompt: Prompt<T>) {
       configurable: true,
     });
   };
+}
+
+/** A plugin of the vendor's other than its default class, and its keyword arguments as the plugin names them. */
+export interface Plugin {
+  /** A class of the vendor's livekit plugin, dotted names allowed: `"responses.LLM"`. */
+  builds?: string;
+  /** Its keyword arguments, passed as given: `{ use_websocket: true }`. */
+  options?: Record<string, unknown>;
+}
+
+/**
+ * The voice, by its vendor and the vendor's own id for it: `@voice("cartesia", "<id>", { model: "sonic-2" })`.
+ * Declared, it wins over the agent's settings.
+ */
+export function voice(provider: string, voiceId: string, more: Plugin & { model?: string } = {}) {
+  return function decorate(ctor: Function): void {
+    declare(ctor, "voice", { provider, voiceId, ...more });
+  };
+}
+
+/**
+ * The model that answers, `vendor/model` or a vendor alone:
+ * `@llm("openai/gpt-5.4-mini", { builds: "responses.LLM", options: { use_websocket: true } })`.
+ * Declared, it wins over the agent's settings.
+ */
+export function llm(model: string, more: Plugin & { temperature?: number } = {}) {
+  return function decorate(ctor: Function): void {
+    declare(ctor, "llm", { ...modelOf(model), ...more });
+  };
+}
+
+/** The ears, `vendor/model` or a vendor alone: `@stt("deepgram/nova-3")`. Declared, it wins over the agent's settings. */
+export function stt(model: string, more: Plugin = {}) {
+  return function decorate(ctor: Function): void {
+    declare(ctor, "stt", { ...modelOf(model), ...more });
+  };
+}
+
+// The model id keeps every slash after the vendor's: `livekit/openai/gpt-5-mini`.
+function modelOf(named: string): { provider: string; model: string } {
+  const slash = named.indexOf("/");
+  if (slash < 0) return { provider: named, model: "" };
+  return { provider: named.slice(0, slash), model: named.slice(slash + 1) };
+}
+
+// Refuse both spellings on one class, as @render does: one of them would be silently dead.
+function declare(ctor: Function, field: "voice" | "llm" | "stt", value: object): void {
+  if (Object.hasOwn(ctor, field)) {
+    throw new DeclarationRefused(`${ctor.name} declares both @${field}(…) and a static ${field}; keep one`);
+  }
+  Object.defineProperty(ctor, field, { value, writable: true, configurable: true, enumerable: true });
 }

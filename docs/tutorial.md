@@ -157,7 +157,7 @@ that is the next step.
 
 Put your Markdown under `docs/clinica-norte/`, one file per subject, with headings, and push it.
 With no arguments the verb reads that folder and pushes it under the agent's slug. Attaching the
-base to the agent, with its `k` and `min_score`, is the world's.
+base to the agent, with its `k` and `min_score`, is a setting — or the class's `static docs`.
 
 ```bash
 pinecall docs push
@@ -178,7 +178,7 @@ A push replaces the base whole, so push again after every edit.
 pinecall memory policy --remember "how they like to be addressed" "allergies" "their usual doctor" --forget "payments"
 ```
 
-The policy is the world's, not the class's. `remember` is the vocabulary, **in your own words**, of
+The policy is a setting, or the class's `static memory`, which wins over it. `remember` is the vocabulary, **in your own words**, of
 what is worth keeping about a person; `forget` is what is never written whatever the model heard.
 A `recall` runs beside the `search` on every turn; at hang-up, one model call reads the call and
 writes what it taught. On the phone and on WhatsApp the number is the identity; on the web nobody is

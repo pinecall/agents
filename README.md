@@ -103,7 +103,7 @@ so tests and the example run from sources with no build step.
 
 | `src/` | |
 |---|---|
-| `agent/` | the `Agent` class, `@tool`, `@render`, `@state`, stages, hooks |
+| `agent/` | the `Agent` class, `@tool`, `@render`, `@state`, `@voice` · `@llm` · `@stt`, stages, hooks |
 | `views/` | JSX-to-text rendering and the prompt's named blocks |
 | `call/` | the live call as a value, reduced from log entries |
 | `client/` | `@pinecall/agents/client`: the WebSocket client and the wire, nothing else |

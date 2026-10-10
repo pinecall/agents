@@ -46,6 +46,7 @@ const PUBLIC = [
     "jsx",
     "jsxDEV",
     "jsxs",
+    "llm",
     "logOf",
     "methodDoc",
     "methodParams",
@@ -74,6 +75,7 @@ const PUBLIC = [
     "slugOf",
     "snapshot",
     "state",
+    "stt",
     "tagged",
     "tool",
     "toolNamed",
@@ -83,6 +85,7 @@ const PUBLIC = [
     "visibilityOf",
     "visibleTools",
     "visibleToolsOf",
+    "voice",
     "withAuthor",
     "withAuthorAsync",
 ];

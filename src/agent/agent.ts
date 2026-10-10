@@ -4,6 +4,8 @@
 import { currentAuthor, UnauthoredWrite } from "./authors.js";
 import { docOf, toolsOf, visibleToolsOf, type ToolSpec } from "./tools.js";
 import type { Child } from "../views/jsx-runtime.js";
+import type { AgentConfig } from "../wire/agent-config.js";
+import type { Camel } from "../wire/codec.js";
 import type { CallWorld } from "../call/call.js";
 import type { Knowledge } from "./knowledge.js";
 import type { EventDeclarations, EventMeta } from "./accepts.js";
@@ -11,9 +13,11 @@ import { declaredStateOf, type Visibility } from "./visibility.js";
 import type { Call, MemoryOp } from "./lifecycle.js";
 import { collapse, restore, snapshot, type LastCall, type Snapshot } from "./state.js";
 
+type Declared = Camel<AgentConfig>;
+
 // Fields that configure the agent instead of holding state: never diffed, never snapshotted.
-// Every other setting (voice, models, language, opening, memory) belongs to the world and is
-// refused at load.
+// The environment (voice, models, language, opening, memory) is declared on the class, static or
+// by decorator, and refused as an instance field.
 export const CONFIG_FIELDS = ["phone", "whatsapp", "web", "channelRules"] as const;
 
 // state.ts derives `ConfigName` from CONFIG_FIELDS, so a name added here is dropped from snapshots.
@@ -138,6 +142,31 @@ export class Agent {
 
   /** Field visibility as a map, as an alternative to `@state`. */
   static visibility?: Record<string, Visibility>;
+
+  // The environment the class may declare: each one declared wins over the agent's settings, and
+  // the console shows it set by the class. `voice`, `llm` and `stt` are what @voice, @llm, @stt set.
+  /** The language the agent speaks and expects, a BCP 47 tag: `"es"`, `"pt-BR"`. */
+  static language?: Declared["language"];
+  static voice?: Declared["voice"];
+  static llm?: Declared["llm"];
+  static stt?: Declared["stt"];
+  /** How a call opens: `{ say: "…" }`, or `{ reply: "…" }` for the model to write it. */
+  static greeting?: Declared["greeting"];
+  /** When the model may end the call itself: `{ when: "…" }`. */
+  static hangup?: Declared["hangup"];
+  static turn?: Declared["turn"];
+  /** How the voice says a word: `[{ word: "GSA", spoken: "G S A" }]`. */
+  static says?: Declared["says"];
+  /** Words the ears must know. */
+  static hears?: Declared["hears"];
+  /** Markdown read whole into every call: `{ path, text }`. */
+  static knowledge?: Declared["knowledge"];
+  /** The knowledge base searched: `{ base: "clinica", k: 4 }`. */
+  static docs?: Declared["docs"];
+  /** What memory keeps of a contact and never keeps: `{ remember: […], forget: […] }`. */
+  static memory?: Declared["memory"];
+  /** Whether the calls keep their audio. */
+  static record?: Declared["record"];
 
   /** The class docstring, as the model reads it. */
   doc(): string | undefined {

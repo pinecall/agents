@@ -7,6 +7,22 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.9.25] — the class declares its voice, its models and the rest, and wins
+
+- **A class declares its environment again, and it wins over the settings.** `@voice("<vendor>",
+  "<id>", { model })`, `@llm("<vendor>/<model>", { temperature })` and `@stt("<vendor>/<model>")`,
+  and `static` fields for the rest: `language`, `greeting`, `hangup`, `turn`, `says`, `hears`,
+  `knowledge`, `docs`, `memory`, `record`. A field the class declares is not read from the
+  settings, the console shows it "set by the class", and `pinecall agent set` of it is refused.
+  Needs runtime 0.1.42.
+- **A plugin's own class and options**, on any of the three: `@llm("openai/gpt-5.4-mini", { builds:
+  "responses.LLM", options: { use_websocket: true } })` runs the OpenAI Responses API over a
+  WebSocket. Only on the org's own key for the vendor; refused on a key Pinecall lends.
+- `@pinecall/agents/wire`: the settings' `temperature`, `llm_builds`, `llm_options` and the `stt` and
+  `tts` twins, and `fixed` on the settings and lexicon answers, the fields the class declares.
+- An environment field written on the instance (`language = "es"`) is refused at load with how to
+  declare it: an instance field is a call's state. The old refusal that named a CLI verb is gone.
+
 ## [0.9.24] — a tool announces itself
 
 ### Added

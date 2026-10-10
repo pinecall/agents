@@ -45,7 +45,7 @@ a directory earns its place there by having a line in that table (§13).
 | `agent.ts` | the `Agent` base: the Proxy that turns an assignment into an authored change, the internals kept off the instance, `seal`, `collapse`, `restore`, `startIn`, `log`, `say`/`reply`, `this.call`, `this.knowledge`, `render()`, `remembers()`, the four hooks. `CONFIG_FIELDS` is the names that configure and are not state: `channelRules`, and the three door names a class no longer declares, kept on the list so an old class's `phone` stays out of the state |
 | `knowledge.ts` | `Knowledge`: what a class reaches its bases through — `this.knowledge.search(query, {k})`, one verb the gateway answers for the call in hand |
 | `searching.ts` | whether a class searches at all: its source read with oxc for a `this.knowledge` member expression — never a regex, because the words inside a string or a comment are not a search. What it answers travels as `uses_knowledge` in the declaration |
-| `decorators.ts` | `@tool({…})`, which registers a method and wraps it so every write inside it carries its name, and `@render(Prompt)`, which gives the class a prompt written beside it. `Prompt<T> = (agent: T) => Child` |
+| `decorators.ts` | `@tool({…})`, which registers a method and wraps it so every write inside it carries its name; `@render(Prompt)`, which gives the class a prompt written beside it (`Prompt<T> = (agent: T) => Child`); and `@voice`, `@llm`, `@stt`, which set the class's static `voice`, `llm`, `stt` in the wire's shape, with the plugin's `builds` and `options` (`Plugin`) |
 | `authors.ts` | who is writing the state right now: the `AsyncLocalStorage` the author rides, `withAuthor`, `withAuthorAsync`, `currentAuthor`, and `UnauthoredWrite` |
 | `tools.ts` | the tool registry: `ToolOptions`, `ToolDeclaration`, the wire `ToolSpec` built and cached per class, `visibleToolsOf`, `DeclarationRefused` |
 | `docstrings.ts` | a class's own source read with oxc: the JSDoc above the class, above each method, and the parameter names and types |
@@ -98,7 +98,7 @@ a directory earns its place there by having a line in that table (§13).
 |---|---|
 | `connect.ts` | `mount()`: the class registered once, one live instance per call, and the sync that sends only what changed. `optionsFor` is the declaration read off a probe instance — the routes, the tools, whether it searches, the state fields, the events — and the first thing it does is refuse a field of the world's. Also `slugOf` |
 | `recall.ts` | a `memory.ops` entry → the words this call has been told about the caller, which is what `remembers()` answers from |
-| `environment.ts` | `THE_WORLDS`: the fields a class may no longer declare — `voice`, `llm`, `stt`, `greeting`, `hangup`, `says`, `hears`, `memory`, `knowledge`, `docs` — each with the verb that sets it in the world, and `refuseTheEnvironment`, which stops a class still carrying one at load, naming that verb |
+| `environment.ts` | `ENVIRONMENT`: the settings a class may declare — `language`, `voice`, `llm`, `stt`, `greeting`, `hangup`, `turn`, `says`, `hears`, `knowledge`, `docs`, `memory`, `record` — read off the class (`environmentOf`, its statics and what `@voice`/`@llm`/`@stt` set) into the declaration, where each wins over the agent's settings; and `refuseTheEnvironment`, which stops a class that declares one on the instance, where it would be a call's state |
 | `dispatch.ts` | an outside fact off the wire, gated by the declaration and handed to `onEvent` — one at a time, in order |
 | `run-tool.ts` | one tool call: the args checked against the spec, the method run through the instance, the result cut to its `preview` |
 
@@ -172,7 +172,7 @@ Beside `src/`:
 |---|---|---|
 | `Blocks` / `Block` | `views/layout.ts` | `blocks` in send order, each `name`, `region` (`static` · `dynamic`), `text`; `history` |
 | `PROMPT_BLOCKS` | `views/layout.ts` | the four, in the one order they are sent: `identity` · `knowledge` · `tools` static, then `view` dynamic |
-| `THE_WORLDS` | `runtime/environment.ts` | the fields a class may no longer declare, each with the verb that sets it in the world |
+| `ENVIRONMENT` | `runtime/environment.ts` | the settings a class may declare, each winning over the agent's settings |
 | `Child` | `views/jsx-runtime.ts` | what a `render()` hands back: an element, a string, a number, nothing, or an array of those |
 | `Prompt<T>` | `agent/decorators.ts` | `(agent: T) => Child` — a prompt written beside the class, which `@render` hands the instance |
 

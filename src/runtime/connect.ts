@@ -18,7 +18,7 @@ import { viewOf } from "../agent/view.js";
 import { PROMPT_BLOCKS } from "../views/layout.js";
 import { promptOf } from "../views/render.js";
 import { inOrder, type Serving } from "./dispatch.js";
-import { refuseTheEnvironment } from "./environment.js";
+import { environmentOf, refuseTheEnvironment } from "./environment.js";
 import { wordsRecalled } from "./recall.js";
 import { runTool, ToolFailed } from "./run-tool.js";
 
@@ -82,14 +82,14 @@ function stateFieldsOf(ctor: Function): AgentOptions["stateFields"] {
 
 /**
  * Build the declaration sent to the gateway: tools, prompt layout, knowledge use, state fields,
- * events and view. Environment fields are refused. `instance` is a throwaway probe;
- * knowledge use is detected from `source` (or the class body).
+ * events, view, and the environment the class declares. An environment field on the instance is
+ * refused. `instance` is a throwaway probe; knowledge use is detected from `source` (or the class body).
  */
 export function optionsFor(ctor: Ctor, tools: Tool[], instance: Agent = new ctor(), file?: string, source?: string): AgentOptions {
   const probe = instance as unknown as Record<string, unknown>;
   refuseTheEnvironment(probe);
   // Phone numbers are org rows managed with `pinecall numbers`, so a `phone` field is never sent.
-  const options: AgentOptions = { tools };
+  const options: AgentOptions = { tools, ...environmentOf(ctor) };
   if (searchesKnowledge(source ?? ctor.toString(), file)) options.usesKnowledge = true;
   // Always sent whole, so the runtime and console name blocks the same way.
   options.prompt = [...PROMPT_BLOCKS];

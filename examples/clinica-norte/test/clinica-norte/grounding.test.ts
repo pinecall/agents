@@ -23,18 +23,18 @@ describe("la declaración que recibe el gateway", () => {
     }
   });
 
-  // Así estaba escrito hasta hoy: la base nombrada en la clase. Es del mundo, y el rechazo dice
-  // con qué verbo se adjunta.
-  it("rechaza una clase que todavía nombra su base, y dice el verbo que la adjunta", () => {
-    /** Un agente escrito como antes. */
-    class DeAntes extends Agent {
+  // La base es de la clase sólo como campo estático: en la instancia sería estado de la llamada, y
+  // el rechazo dice cómo declararla.
+  it("rechaza una base nombrada en la instancia, y dice cómo declararla en la clase", () => {
+    /** Un agente que nombra su base donde va el estado. */
+    class EnLaInstancia extends Agent {
       constructor() {
         super();
-        Object.defineProperty(this, "docs", { value: "clinica-norte", enumerable: true });
+        Object.defineProperty(this, "docs", { value: { base: "clinica-norte" }, enumerable: true });
       }
     }
 
-    expect(() => optionsFor(DeAntes, [], new DeAntes(), AGENT)).toThrow("pinecall docs attach <base>");
+    expect(() => optionsFor(EnLaInstancia, [], new EnLaInstancia(), AGENT)).toThrow("declare it as static docs = …");
   });
 });
 

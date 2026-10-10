@@ -9,7 +9,7 @@ import { FakeGateway } from "../../src/client/testing/index.js";
 
 import Busca from "../agent/busca.js";
 import ClinicaNorte from "../agent/clinica-norte.js";
-import { movedToTheWorld } from "../../src/runtime/environment.js";
+import { declaredOnTheInstance } from "../../src/runtime/environment.js";
 import { mount, optionsFor } from "../../src/runtime/connect.js";
 
 const KEY = "pk_test";
@@ -88,7 +88,7 @@ class DeMemoria extends ClinicaNorte {
   }
 }
 
-it("refuses a class that still carries a knowledge file: what it knows by heart is a setting", () => {
-  expect(() => optionsFor(DeMemoria, [], new DeMemoria(), FILE, SOURCE)).toThrow(movedToTheWorld("knowledge"));
-  expect(movedToTheWorld("knowledge")).toContain("pinecall agent knowledge edit");
+it("refuses a knowledge file carried on the instance, where it would shadow this.knowledge", () => {
+  expect(() => optionsFor(DeMemoria, [], new DeMemoria(), FILE, SOURCE)).toThrow(declaredOnTheInstance("knowledge"));
+  expect(declaredOnTheInstance("knowledge")).toContain("static knowledge = …");
 });

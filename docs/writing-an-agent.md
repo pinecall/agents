@@ -31,31 +31,52 @@ call and no view renders it.
 | `static slug = "front-desk"` | the name the agent registers as; left out, the folder's name. A class served under another slug is refused |
 | `static events = { "slot.released": { from: ["app"] } }` | the outside events the agent takes, and from whom: `app` is your backend, `participant` a browser in the call |
 
-### The world's, not the class's
+### The environment: the settings', or the class's
 
-Everything the agent **runs on** is the world's: set per world, versioned, with who set it and
+Everything the agent **runs on** is its settings': set per world, versioned, with who set it and
 why, and changed without a deploy — by `pinecall agent set`, the console's Settings tab, or the
-verb the table names. A class that still declares one of these fields is refused when it loads,
-before a prompt is printed or a gateway is knocked at, with the verb that sets it now:
+verb the table names. The class may declare any of it instead, and **what the class declares wins**:
+the settings of that field are not read for the agent, the console shows it locked, "set by the
+class", and a set of it is refused naming the class. Take it out of the class to set it again.
 
-```
-`voice` is the world's now, not the class's: pinecall agent set --voice <name> — remove it from the class
+```tsx
+@voice("cartesia", "a0e99841-438c-4a64-b679-ae501e7d6091", { model: "sonic-2" })
+@llm("openai/gpt-5.4-mini", { temperature: 0.3, builds: "responses.LLM", options: { use_websocket: true } })
+@stt("deepgram/flux-general-multi")
+export default class ClinicaNorte extends Agent {
+  static language = "es";
+  static greeting = { say: "Clínica Norte, buenas, ¿en qué le ayudo?" };
+}
 ```
 
-| field | what it is | where it is set |
-|---|---|---|
-| `voice` | a voice **by name** — the platform resolves it to a vendor and an id | `pinecall agent set --voice` |
-| `llm` | `haiku`, `sonnet`, `opus`, or `vendor/model` | `pinecall agent set --llm` |
-| `stt` | the ears: `deepgram` (Flux), `soniox`, or `vendor/model` | `pinecall agent set --stt` |
-| `language` | the language the call is in | `pinecall agent set --language` |
-| `greeting` | how the call opens: the words, or what the model reads before finding its own | `pinecall agent set --greeting '…'` · `--reply '…'` |
-| `hangup` | whether the model may end the call itself, and when, in your words | `pinecall agent set --hangup '…'` |
-| `says` | how a word the voice would misread is said | `pinecall lexicon add <word> --say '…'` |
-| `hears` | the words the ears must know: names, brands, the doctor's surname | `pinecall lexicon hear <word> …` |
-| `memory` | what to remember about a caller across calls, and what never to | `pinecall memory policy --remember '…' --forget '…'` |
-| `record` | whether the call is recorded | `pinecall agent set --record on\|off` |
-| `knowledge` | what the agent knows by heart: a page of Markdown, read whole on every call | `pinecall agent knowledge edit` |
-| `docs` | the bases the agent searches per turn | `pinecall docs push`, then `pinecall docs attach <base>` |
+`@llm` and `@stt` take `vendor/model` or a vendor alone; `@voice` the vendor and its own id for the
+voice. Each takes `builds`, a class of the vendor's livekit plugin other than its default (dotted
+names reach a module of it: `responses.LLM` is OpenAI's Responses API, and `use_websocket` its
+WebSocket), and `options`, that class's keyword arguments as the plugin names them, passed as given
+and over the operator's. **Both run only on your org's own key for that vendor**: on a key Pinecall
+lends they are refused at registration, naming `pinecall providers add <vendor>`, since an option
+can point the plugin at another server. `@llm` also takes `temperature`, which runs on any key. A
+vendor that is not installed, or does not do the stage, is refused at registration. A decorator
+fixes the whole stage: with `@llm` in the class, `--temperature`, `--llm-builds` and `--llm-option`
+are refused too. The settings take the same knobs for a class that leaves the stage to them
+(`pinecall agent set --temperature 0.3 --llm-builds responses.LLM --llm-option use_websocket=true`). The rest are `static` fields: an instance field is the call's state, so one of these
+declared there is refused when the class loads.
+
+| field | what it is | on the class | or in the settings |
+|---|---|---|---|
+| `voice` | the voice: its vendor and the vendor's id | `@voice("<vendor>", "<id>")` | `pinecall agent set --voice` |
+| `llm` | the model that answers, and its temperature | `@llm("<vendor>/<model>", { temperature })` | `pinecall agent set --llm` |
+| `stt` | the ears | `@stt("<vendor>/<model>")` | `pinecall agent set --stt` |
+| `language` | the language the call is in | `static language = "es"` | `pinecall agent set --language` |
+| `greeting` | how the call opens: the words, or what the model reads before finding its own | `static greeting = { say: "…" }` · `{ reply: "…" }` | `pinecall agent set --greeting '…'` · `--reply '…'` |
+| `hangup` | whether the model may end the call itself, and when, in your words | `static hangup = { when: "…" }` | `pinecall agent set --hangup '…'` |
+| `turn` | when the caller has finished, and may interrupt | `static turn = { endpointingMs: 300 }` | `pinecall agent set` |
+| `says` | how a word the voice would misread is said | `static says = [{ word, spoken }]` | `pinecall lexicon add <word> --say '…'` |
+| `hears` | the words the ears must know: names, brands, the doctor's surname | `static hears = ["…"]` | `pinecall lexicon hear <word> …` |
+| `memory` | what to remember about a caller across calls, and what never to | `static memory = { remember: […], forget: […] }` | `pinecall memory policy --remember '…' --forget '…'` |
+| `record` | whether the call is recorded | `static record = false` | `pinecall agent set --record on\|off` |
+| `knowledge` | what the agent knows by heart: a page of Markdown, read whole on every call | `static knowledge = { path, text }` | `pinecall agent knowledge edit` |
+| `docs` | the base the agent searches per turn | `static docs = { base: "…", k: 4 }` | `pinecall docs push`, then `pinecall docs attach <base>` |
 
 **Neither a fact the agent remembers nor a chunk of a base ever reaches the prompt.** Both arrive
 as a tool result, in the history, where a model reads them as information rather than as an
@@ -241,4 +262,5 @@ Every one of these is refused before any call, with a message that says what to 
 | `@state({ pii: true, visibility: "public" })` | `two different answers to one question; write one` |
 | both `@render(Prompt)` and a `render()` method | `ClinicaNorte declares both @render(Prompt) and a render() method; two ways to answer one question — keep one` |
 | two `@view` decorators | `ClinicaNorte declares two views (…); a class draws one panel` |
-| `voice`, `llm`, `stt`, `language`, `greeting`, `hangup`, `says`, `hears`, `memory`, `record`, `knowledge`, `docs` | `` `<field>` is the world's now, not the class's: <verb> — remove it from the class`` |
+| `language`, `greeting`, `says`, … as an instance field | `` `language` is the class's, not a call's state: declare it as static language = …`` |
+| both `@llm(…)` and a `static llm` | `ClinicaNorte declares both @llm(…) and a static llm; keep one` |

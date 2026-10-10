@@ -46,7 +46,7 @@ export async function loadAgent(file: string): Promise<Loaded> {
   if (typeof ctor !== "function") throw new CannotServe(`${path} has no default-exported Agent class`);
   const source = readFileSync(path, "utf8");
   describe(ctor, source, path);
-  // Refuse environment-owned fields (voice, model, ...) here, since `prompt` never mounts.
+  // Refuse environment fields on the instance here, since `prompt` never mounts.
   refuseTheEnvironment(new (ctor as new () => Agent)());
   return { ctor: ctor as new () => Agent, file: path, source };
 }

@@ -8,7 +8,6 @@ import { Pinecall } from "../../src/client/index.js";
 import { FakeGateway } from "../../src/client/testing/index.js";
 
 import ClinicaNorte from "../agent/clinica-norte.js";
-import { THE_WORLDS, movedToTheWorld } from "../../src/runtime/environment.js";
 import { mount, optionsFor, slugOf, type Mounted } from "../../src/runtime/connect.js";
 
 const KEY = "pk_test";
@@ -233,36 +232,6 @@ it("runs onEnd and forgets the instance when the call ends", async () => {
   await settled();
   expect(ended).toEqual([CALL]);
   expect(mounted.instanceOf(CALL)).toBeUndefined();
-});
-
-// Environment fields (voice, models, memory, ...) are set by CLI verbs; a class declaring one is refused at load.
-it.each(Object.keys(THE_WORLDS))("refuses a class that still declares %s, naming the verb that sets it", (field) => {
-  class DeAntes extends ClinicaNorte {
-    constructor() {
-      super();
-      // Assigned at runtime, as a class compiled against an older package would.
-      Object.defineProperty(this, field, { value: "carolina", enumerable: true });
-    }
-  }
-  expect(() => optionsFor(DeAntes, [], new DeAntes(), FILE)).toThrow(movedToTheWorld(field));
-  expect(movedToTheWorld(field)).toContain("pinecall ");
-});
-
-it("sends none of the environment in the configure, the language among it", async () => {
-  await connected();
-  const config = commands("agent.configure")[0]?.["config"] as Record<string, unknown>;
-  expect(THE_WORLDS).toHaveProperty("language");
-  for (const field of Object.keys(THE_WORLDS)) expect(config[field]).toBeUndefined();
-});
-
-it("refuses a class that still declares its language, saying the world sets it now", () => {
-  /** Recepción que todavía dice su idioma. */
-  class EnEspanol extends ClinicaNorte {
-    language = "es";
-  }
-  expect(() => optionsFor(EnEspanol, [], new EnEspanol(), FILE)).toThrow(
-    "`language` is the world's now, not the class's: pinecall agent set --language <tag> — remove it from the class",
-  );
 });
 
 it("reads the medium off call.started, and takes the channel's when the gateway does not say", async () => {

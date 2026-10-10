@@ -15,13 +15,22 @@ export const VoiceConfigSchema = z.strictObject({
   provider: z.string().nullish(),
   model: z.string().nullish(),
   voice_id: z.string().nullish(),
+  // A class of the vendor's livekit plugin other than its TTS, and its keyword arguments.
+  builds: z.string().nullish(),
+  options: z.record(z.string(), z.unknown()).nullish(),
 });
+
+export type VoiceConfig = z.infer<typeof VoiceConfigSchema>;
 
 /** Which model does a job (the LLM, or the STT), and the one or two knobs worth turning. */
 export const ModelConfigSchema = z.strictObject({
   provider: z.string(),
   model: z.string(),
   temperature: z.number().nullish(),
+  // A class of the vendor's livekit plugin other than its LLM or STT (`responses.LLM`), and its
+  // keyword arguments as the plugin names them (`{ use_websocket: true }`).
+  builds: z.string().nullish(),
+  options: z.record(z.string(), z.unknown()).nullish(),
 });
 
 export type ModelConfig = z.infer<typeof ModelConfigSchema>;
@@ -125,12 +134,13 @@ export const MemoryConfigSchema = z.strictObject({
 /**
  * What an app declares about its agent: the prompt's layout, the tools, whether it searches its
  * bases itself, and who may see and send what. Every field is optional so a configure can change
- * one thing. The environment — voice, models, language, greeting, hangup, turn, says, hears,
- * knowledge, docs, memory — is the world's, set in the agent's settings, and no longer read off
- * this declaration.
+ * one thing. The environment — language, voice, models, greeting, hangup, turn, says, hears,
+ * knowledge, docs, memory, record — is the agent's settings' unless the class declares it: what
+ * the class declares wins over the settings.
  */
 export const AgentConfigSchema = z.strictObject({
   prompt: z.array(PromptBlockSpecSchema).nullish(),
+  language: z.string().nullish(),
   greeting: GreetingConfigSchema.nullish(),
   voice: VoiceConfigSchema.nullish(),
   llm: ModelConfigSchema.nullish(),
