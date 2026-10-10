@@ -57,7 +57,7 @@ instruction for the opening. The caller cannot cut it short unless it says so:
 `hangup` is when the model may end the call, in your words, or `true` whenever it judges the call
 done. `@stt` also takes `endOfTurn`, who says the caller's turn is over: `"stt"` the ears
 themselves (Deepgram Flux; refused for ears that cannot), `"livekit"` or `"smart-turn"` (Smart Turn
-v3), a model on the worker that runs on any key.
+v3), a model on the worker that runs on any key. Left out, the ears end the turn where they can and Smart Turn v3 does everywhere else.
 
 `@llm` and `@stt` take `vendor/model` or a vendor alone; `@voice` the vendor and its own id for the
 voice. Each takes `builds`, a class of the vendor's livekit plugin other than its default (dotted
