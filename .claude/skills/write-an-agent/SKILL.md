@@ -21,11 +21,13 @@ and what the example already paid for. The long form is `docs/writing-an-agent.m
 - **Never ask the model for a record.** `book(chosen: string)` and resolve it against what is on
   the table. Asked for a whole `Slot`, a model invents one and the agenda gets a slot nobody
   offered — a golden caught exactly this.
-- **Never declare the world on the class.** `voice`, `llm`, `stt`, `language`, `greeting`,
-  `hangup`, `says`, `hears`, `memory`, `knowledge`, `docs` are refused at load with the verb that
-  sets each: they are settings, per world and corner, versioned (`pinecall agent`, `pinecall
-  lexicon`, `pinecall memory policy`, `pinecall docs attach`). The class declares the contract —
-  the state, the tools, `render()` — and nothing else. The framework's rules are English and tell
+- **Declare the environment on the class only where it must not change without a review.**
+  `@voice`, `@llm`, `@stt` and `static` fields (`language`, `greeting`, `hangup`, `turn`, `says`,
+  `hears`, `memory`, `record`, `knowledge`, `docs`) WIN over the settings and lock them in the
+  console; leave in the settings (`pinecall agent`, `pinecall lexicon`, `pinecall memory policy`,
+  `pinecall docs attach`) what an operator tunes. Never as an instance field: that is a call's
+  state, and it is refused at load. `greeting` is a string or `improvise`; `hangup` a string or
+  `true`. The framework's rules are English and tell
   the model to answer in the caller's language; the language the voice and the ears are set to is
   `pinecall agent set --language <tag>`. How to write for the channel is the framework's
   `<channel>` block, on unless the class sets `channelRules = false`.

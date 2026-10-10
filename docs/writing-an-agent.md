@@ -42,12 +42,22 @@ class", and a set of it is refused naming the class. Take it out of the class to
 ```tsx
 @voice("cartesia", "a0e99841-438c-4a64-b679-ae501e7d6091", { model: "sonic-2" })
 @llm("openai/gpt-5.4-mini", { temperature: 0.3, builds: "responses.LLM", options: { use_websocket: true } })
-@stt("deepgram/flux-general-multi")
+@stt("soniox/stt-rt-v3", { endOfTurn: "smart-turn" })
 export default class ClinicaNorte extends Agent {
   static language = "es";
-  static greeting = { say: "Clínica Norte, buenas, ¿en qué le ayudo?" };
+  static greeting = "Clínica Norte, buenas, ¿en qué le ayudo?";
+  static hangup = "the caller says goodbye or needs nothing else";
 }
 ```
+
+`greeting` is the words, said as written — instant, and no model runs — or the model's own:
+`improvise` opens on the prompt alone, `improvise("Greet them by name if you know it")` with an
+instruction for the opening. The caller cannot cut it short unless it says so:
+`improvise("…", { interruptible: true })`, or `{ text: "…", interruptible: true }` for words.
+`hangup` is when the model may end the call, in your words, or `true` whenever it judges the call
+done. `@stt` also takes `endOfTurn`, who says the caller's turn is over: `"stt"` the ears
+themselves (Deepgram Flux; refused for ears that cannot), `"livekit"` or `"smart-turn"` (Smart Turn
+v3), a model on the worker that runs on any key.
 
 `@llm` and `@stt` take `vendor/model` or a vendor alone; `@voice` the vendor and its own id for the
 voice. Each takes `builds`, a class of the vendor's livekit plugin other than its default (dotted
@@ -66,10 +76,10 @@ declared there is refused when the class loads.
 |---|---|---|---|
 | `voice` | the voice: its vendor and the vendor's id | `@voice("<vendor>", "<id>")` | `pinecall agent set --voice` |
 | `llm` | the model that answers, and its temperature | `@llm("<vendor>/<model>", { temperature })` | `pinecall agent set --llm` |
-| `stt` | the ears | `@stt("<vendor>/<model>")` | `pinecall agent set --stt` |
+| `stt` | the ears, and who ends the caller's turn | `@stt("<vendor>/<model>", { endOfTurn })` | `pinecall agent set --stt` · `--end-of-turn` |
 | `language` | the language the call is in | `static language = "es"` | `pinecall agent set --language` |
-| `greeting` | how the call opens: the words, or what the model reads before finding its own | `static greeting = { say: "…" }` · `{ reply: "…" }` | `pinecall agent set --greeting '…'` · `--reply '…'` |
-| `hangup` | whether the model may end the call itself, and when, in your words | `static hangup = { when: "…" }` | `pinecall agent set --hangup '…'` |
+| `greeting` | how the call opens: the words, or the model's own | `static greeting = "…"` · `improvise` · `improvise("…")` | `pinecall agent set --greeting '…'` · `--greeting improvise` · `--greeting improvise:'…'` |
+| `hangup` | whether the model may end the call itself, and when, in your words | `static hangup = "…"` · `true` | `pinecall agent set --hangup '…'` · `--hangup any` |
 | `turn` | when the caller has finished, and may interrupt | `static turn = { endpointingMs: 300 }` | `pinecall agent set` |
 | `says` | how a word the voice would misread is said | `static says = [{ word, spoken }]` | `pinecall lexicon add <word> --say '…'` |
 | `hears` | the words the ears must know: names, brands, the doctor's surname | `static hears = ["…"]` | `pinecall lexicon hear <word> …` |

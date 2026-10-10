@@ -7,6 +7,7 @@ export * from "./agent/authors.js";
 export * from "./agent/state.js";
 export * from "./agent/tools.js";
 export * from "./agent/decorators.js";
+export * from "./agent/opening.js";
 // Only the type; stage readers are internal.
 export type { Stages } from "./agent/stages.js";
 export * from "./agent/docstrings.js";

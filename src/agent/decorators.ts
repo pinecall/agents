@@ -4,6 +4,7 @@ import { withAuthorAsync } from "./authors.js";
 import { lowerStage } from "./stages.js";
 import { DeclarationRefused, register, type ToolOptions } from "./tools.js";
 import type { Child } from "../views/jsx-runtime.js";
+import type { EndOfTurn } from "../wire/agent-config.js";
 
 /**
  * Declare a method as a tool. Its JSDoc is the description and its signature the schema;
@@ -84,10 +85,15 @@ export function llm(model: string, more: Plugin & { temperature?: number } = {})
   };
 }
 
-/** The ears, `vendor/model` or a vendor alone: `@stt("deepgram/nova-3")`. Declared, it wins over the agent's settings. */
-export function stt(model: string, more: Plugin = {}) {
+/**
+ * The ears, `vendor/model` or a vendor alone: `@stt("soniox/stt-rt-v3", { endOfTurn: "smart-turn" })`.
+ * `endOfTurn` is who says the caller's turn is over: `"stt"` the ears themselves (Deepgram Flux),
+ * `"livekit"` or `"smart-turn"` a model on the worker. Declared, they win over the agent's settings.
+ */
+export function stt(model: string, more: Plugin & { endOfTurn?: EndOfTurn } = {}) {
   return function decorate(ctor: Function): void {
-    declare(ctor, "stt", { ...modelOf(model), ...more });
+    const { endOfTurn, ...plugin } = more;
+    declare(ctor, "stt", { ...modelOf(model), ...plugin, ...(endOfTurn === undefined ? {} : { endOfTurn }) });
   };
 }
 

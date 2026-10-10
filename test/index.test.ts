@@ -41,6 +41,7 @@ const PUBLIC = [
     "emitEvent",
     "eventsOf",
     "headerFor",
+    "improvise",
     "internalsOf",
     "isConfigField",
     "jsx",

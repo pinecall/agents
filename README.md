@@ -85,8 +85,8 @@ and `PINECALL_URL` from the environment or the project's `.env`. Full reference:
 
 A project holds one or more agents: `agents/<name>/agent.tsx` and their tests in
 `test/<name>/`. Voice, model, language, greeting, knowledge and the documents an agent searches
-are per-world settings, not class fields or files in the repository: `pinecall agent set
---language es` is how the agent's calls come to be in Spanish. Running in production on your own server:
+are per-world settings (`pinecall agent set --language es`), unless the class declares them
+itself — `@voice`, `@llm`, `@stt` and `static` fields — and then the class wins. Running in production on your own server:
 [Run it on your own server](https://docs.pinecall.io/guides/own-server/).
 
 ## Development

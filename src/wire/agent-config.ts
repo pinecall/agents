@@ -22,6 +22,11 @@ export const VoiceConfigSchema = z.strictObject({
 
 export type VoiceConfig = z.infer<typeof VoiceConfigSchema>;
 
+/** Who says the caller's turn is over: the ears themselves, livekit's detector, or Smart Turn v3. */
+export const EndOfTurnSchema = z.enum(["stt", "livekit", "smart-turn"]);
+
+export type EndOfTurn = z.infer<typeof EndOfTurnSchema>;
+
 /** Which model does a job (the LLM, or the STT), and the one or two knobs worth turning. */
 export const ModelConfigSchema = z.strictObject({
   provider: z.string(),
@@ -31,6 +36,8 @@ export const ModelConfigSchema = z.strictObject({
   // keyword arguments as the plugin names them (`{ use_websocket: true }`).
   builds: z.string().nullish(),
   options: z.record(z.string(), z.unknown()).nullish(),
+  // The ears' alone: who says the caller's turn is over.
+  end_of_turn: EndOfTurnSchema.nullish(),
 });
 
 export type ModelConfig = z.infer<typeof ModelConfigSchema>;

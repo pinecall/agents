@@ -8,6 +8,7 @@ import { Pinecall } from "../../src/client/index.js";
 import { FakeGateway } from "../../src/client/testing/index.js";
 import { DeclarationRefused } from "../../src/agent/tools.js";
 import { llm, stt, voice } from "../../src/agent/decorators.js";
+import { improvise } from "../../src/agent/opening.js";
 import ClinicaNorte from "../agent/clinica-norte.js";
 import { ENVIRONMENT, declaredOnTheInstance, environmentOf } from "../../src/runtime/environment.js";
 import { mount, optionsFor } from "../../src/runtime/connect.js";
@@ -33,10 +34,11 @@ afterEach(async () => {
 /** Recepción que fija su voz, su modelo, sus oídos, su idioma y cómo abre. */
 @voice("cartesia", "a0e99841-438c-4a64-b679-ae501e7d6091", { model: "sonic-2" })
 @llm("openai/gpt-5.4-mini", { builds: "responses.LLM", options: { use_websocket: true } })
-@stt("deepgram")
+@stt("soniox/stt-rt-v3", { endOfTurn: "smart-turn" })
 class Fijada extends ClinicaNorte {
   static override language = "es";
-  static override greeting = { say: "Clínica Norte, buenas." };
+  static override greeting = "Clínica Norte, buenas.";
+  static override hangup = "the caller says goodbye";
   static override says = [{ word: "GSA", spoken: "G S A" }];
 }
 
@@ -56,9 +58,10 @@ it("sends what the class declares, the plugin's options under their own names", 
     builds: "responses.LLM",
     options: { use_websocket: true },
   });
-  expect(config["stt"]).toEqual({ provider: "deepgram", model: "" });
+  expect(config["stt"]).toEqual({ provider: "soniox", model: "stt-rt-v3", end_of_turn: "smart-turn" });
   expect(config["language"]).toBe("es");
   expect(config["greeting"]).toEqual({ say: "Clínica Norte, buenas." });
+  expect(config["hangup"]).toEqual({ when: "the caller says goodbye" });
   expect(config["says"]).toEqual([{ word: "GSA", spoken: "G S A" }]);
   expect(config["memory"]).toBeUndefined();
 });
@@ -94,4 +97,24 @@ it("refuses an environment field on the instance, where it would be the call's s
     "`language` is the class's, not a call's state: declare it as static language = …",
   );
   expect(declaredOnTheInstance("voice")).toContain("@voice('<vendor>', '<voice id>')");
+});
+
+it("reads an opening as words said, or the model's own with or without an instruction", () => {
+  const greeted = (greeting: unknown) => {
+    class Abre extends ClinicaNorte {}
+    (Abre as unknown as { greeting: unknown }).greeting = greeting;
+    return environmentOf(Abre).greeting;
+  };
+  expect(greeted(improvise)).toEqual({ reply: "" });
+  expect(greeted(improvise("Saludá por el nombre"))).toEqual({ reply: "Saludá por el nombre" });
+  expect(greeted(improvise("Saludá", { interruptible: true }))).toEqual({ reply: "Saludá", allowInterruptions: true });
+  expect(greeted({ text: "Aviso legal…", interruptible: false })).toEqual({ say: "Aviso legal…", allowInterruptions: false });
+  expect(() => greeted(42)).toThrow("a greeting is the words, as a string, or improvise");
+});
+
+it("reads hangup as when, in words, or true for whenever the model judges", () => {
+  class Cuelga extends ClinicaNorte {
+    static override hangup = true as const;
+  }
+  expect(environmentOf(Cuelga).hangup).toEqual({ when: "" });
 });

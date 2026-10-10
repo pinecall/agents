@@ -8,6 +8,7 @@ import type { AgentConfig } from "../wire/agent-config.js";
 import type { Camel } from "../wire/codec.js";
 import type { CallWorld } from "../call/call.js";
 import type { Knowledge } from "./knowledge.js";
+import type { Ending, Opening } from "./opening.js";
 import type { EventDeclarations, EventMeta } from "./accepts.js";
 import { declaredStateOf, type Visibility } from "./visibility.js";
 import type { Call, MemoryOp } from "./lifecycle.js";
@@ -150,10 +151,10 @@ export class Agent {
   static voice?: Declared["voice"];
   static llm?: Declared["llm"];
   static stt?: Declared["stt"];
-  /** How a call opens: `{ say: "…" }`, or `{ reply: "…" }` for the model to write it. */
-  static greeting?: Declared["greeting"];
-  /** When the model may end the call itself: `{ when: "…" }`. */
-  static hangup?: Declared["hangup"];
+  /** How a call opens: the words, as a string, or `improvise` for the model's own. */
+  static greeting?: Opening;
+  /** When the model may end the call: in your words, or `true` whenever it judges it done. */
+  static hangup?: Ending;
   static turn?: Declared["turn"];
   /** How the voice says a word: `[{ word: "GSA", spoken: "G S A" }]`. */
   static says?: Declared["says"];

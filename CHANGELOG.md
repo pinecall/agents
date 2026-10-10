@@ -7,6 +7,18 @@ maintainer's call, so everything sits under Unreleased until one is cut.
 
 ## [Unreleased]
 
+## [0.9.26] — a greeting is words or `improvise`, a hangup is words or `true`, and the ears choose who ends the turn
+
+- **`static greeting` is a string** (said as written) **or `improvise`** (the model opens on its
+  prompt) **or `improvise("…")`** (with an instruction); `{ text, interruptible }` and
+  `improvise("…", { interruptible: true })` for an opening the caller may cut short, which by
+  default they cannot. The `{ say }` / `{ reply }` objects are gone.
+- **`static hangup` is a string** (when, in your words) **or `true`** (whenever the model judges);
+  the `{ when }` object is gone.
+- **`@stt(…, { endOfTurn: "stt" | "livekit" | "smart-turn" })`**: who says the caller's turn is
+  over — Soniox with Smart Turn v3 is one line. The wire's `end_of_turn`, on the declaration and
+  the settings. Needs runtime 0.1.43.
+
 ## [0.9.25] — the class declares its voice, its models and the rest, and wins
 
 - **A class declares its environment again, and it wins over the settings.** `@voice("<vendor>",
